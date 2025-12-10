@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Test Page - External Website Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .info-box h3 {
+            color: #0ea5e9;
+            margin-top: 0;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: monospace;
+        }
+        .success {
+            color: #22c55e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Widget Test Page</h1>
+        <p>This page simulates an external website where the chatbot widget is embedded. Look at the bottom-right corner of this page - you should see a <span class="success">chat button</span>!</p>
+        
+        <div class="info-box">
+            <h3>📌 How it works:</h3>
+            <ol>
+                <li>The widget script is loaded from your server</li>
+                <li>It creates a floating chat button in the corner</li>
+                <li>When clicked, it opens a chat interface</li>
+                <li>Messages are sent to your API endpoint</li>
+            </ol>
+        </div>
+        
+        <div class="info-box">
+            <h3>📋 The embed code used on this page:</h3>
+            <div class="code-block">
+                &lt;script 
+    src="http://localhost:5000/widget.js"
+    data-agent-id="325ba636-139c-4cab-924d-d2a0fb4766c6"
+    data-primary-color="#6366f1"
+    data-position="bottom-right"&gt;
+&lt;/script&gt;
+            </div>
+        </div>
+        
+        <h2>Try the Chat!</h2>
+        <p>Click the chat button in the bottom-right corner to test the chatbot. You can:</p>
+        <ul>
+            <li>Send messages and receive responses</li>
+            <li>See the typing indicator</li>
+            <li>Minimize the chat window</li>
+        </ul>
+        
+        <p style="margin-top: 40px; color: #999; font-size: 14px;">
+            Note: Make sure your development server is running on localhost:5000 for this test to work.
+        </p>
+    </div>
+    
+    <!-- The chatbot widget embed code -->
+    <script 
+        src="http://localhost:5000/widget.js"
+        data-agent-id="325ba636-139c-4cab-924d-d2a0fb4766c6"
+        data-primary-color="#6366f1"
+        data-position="bottom-right">
+    </script>
+</body>
+</html>

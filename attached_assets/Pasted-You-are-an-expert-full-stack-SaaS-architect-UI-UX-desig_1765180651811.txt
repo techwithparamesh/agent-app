@@ -1,0 +1,153 @@
+You are an expert full-stack SaaS architect, UI/UX designer, backend engineer, and AI agent systems developer.
+Your job is to build a complete SaaS platform with the following requirements:
+🌐 1. PUBLIC WEBSITE (Marketing Pages)
+Create a beautiful, modern, responsive front-end website with the following pages:
+Navbar
+Home
+About Us
+Features
+Pricing
+Contact Us
+Login / Signup button on the right side
+Home Page
+Hero section with headline, subheadline, CTA
+Features overview
+How it works steps
+Testimonials
+Footer with links
+About Us Page
+Mission, vision
+Why we built this product
+Meet the team (dummy content)
+Features Page
+Explain major features:
+AI Agents Builder
+Website Scanner
+Knowledge Base Creation
+Landing Page Generator
+Chatbot Automation
+Integrations
+API Access
+Pricing Page
+Show 3 pricing tiers:
+Starter
+Pro
+Enterprise
+Include:
+Monthly/yearly toggle
+Feature comparison
+Contact Us Page
+Contact form
+Support email
+FAQ
+🔐 2. AUTHENTICATION
+Implement:
+Signup
+Login
+Logout
+Account verification
+Forgot password
+JWT-based auth (or Clerk/Auth0/Supabase depending on tech stack)
+🧠 3. USER DASHBOARD AFTER LOGIN
+The dashboard layout should include:
+Left Sidebar (AI Agents Menu)
+Agents (main menu)
+Create New Agent
+Scan Website
+URLs (Testing URL, Production URL)
+Knowledge Base Overview
+Chatbot Settings
+Integrations
+Analytics
+Include icons and professional UI.
+Dashboard Main Area (default)
+Show:
+Welcome message with username
+Quick actions:
+“Create New Agent”
+“Scan Website”
+“Generate Landing Page”
+“View Chatbot Demo”
+🤖 4. AI AGENT BUILDER (Core Feature)
+When user clicks Create New Agent:
+Ask for Agent Name
+Ask for Website URL
+Ask for Description
+Ask for Tone of Voice
+Ask for Purpose (Sales, Support, Informational)
+Save agent in database
+🔍 5. WEBSITE SCANNER FLOW
+When user adds a website URL:
+Crawl all pages
+Extract readable content
+Break into meaningful chunks
+Generate structured data using Claude SDK
+Store in vector database (Pinecone, Qdrant, Weaviate)
+Example structured output:
+{
+  "title": "",
+  "section": "",
+  "content": "",
+  "faq": [],
+  "products": [],
+  "services": []
+}
+💬 6. AI CHATBOT RAG PIPELINE
+When user or website visitor asks a question:
+Run vector search → retrieve relevant chunks
+Send to Claude with instruction:
+“Answer based only on the provided context.”
+Generate final answer for chatbot UI
+🖥️ 7. LANDING PAGE GENERATOR
+Add a section in the dashboard:
+Landing Page Generator
+User enters a prompt like:
+"Generate a landing page for a SaaS CRM tool"
+Claude should output:
+Hero text
+Subheadline
+Feature sections
+Pricing box
+Testimonials
+CTA buttons
+SEO-optimized keywords
+Color scheme suggestions
+Optional: Export HTML
+🛠️ 8. HOW TO USE CLAUDE SDK (BACKEND INTEGRATION)
+Claude will be used for:
+Website content cleaning & structuring
+Chunk optimization before embedding
+Vector-aware answer generation (RAG)
+Landing page generation
+Agent planning & tool usage
+Creating summaries of large website data
+Rewrite, paraphrase, classify user content
+Include these functions:
+claude.generateAnswer(context, query)
+claude.generateLandingPage(prompt)
+claude.structureWebsiteContent(rawText)
+claude.createAgentProfile(details)
+claude.extractFAQs(content)
+claude.planAgentTasks(agentSettings)
+🧱 9. TECH STACK SUGGESTIONS
+Frontend:
+Next.js (recommended)
+TailwindCSS
+ShadCN UI
+Backend:
+Node.js / Express / Next.js API Routes
+PostgreSQL / MongoDB
+Vector DB: Pinecone / Qdrant
+Claude SDK
+🧩 10. WHAT TO OUTPUT
+Produce:
+Folder structure
+UI components
+API endpoints
+Database schema
+Claude SDK integration examples
+Website crawler logic
+Vector search implementation
+Chatbot widget script
+📌 Your job:
+Generate full code, architecture, API design, components, and implementation details.
