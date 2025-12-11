@@ -55,6 +55,83 @@ const quickActions = [
   },
 ];
 
+// Hero stats for marketing section (low numbers for new project)
+const heroStats = [
+  { label: "Active agents", value: "10+" },
+  { label: "Conversions", value: "100+" },
+  { label: "Uptime", value: "99.9%" },
+  { label: "User rating", value: "4.9" },
+];
+
+const testimonials = [
+  {
+    quote: "AgentForge reduced our support tickets by 60%. The AI agents handle complex queries with ease.",
+    name: "Roja",
+    role: "Software Engineer",
+    initials: "R"
+  },
+  {
+    quote: "The landing page generator saved us weeks of work. Our conversion rate increased by 35%.",
+    name: "Lakshmi",
+    role: "Graphic Designer",
+    initials: "L"
+  },
+  {
+    quote: "Finally, a tool that actually understands our product. Setup took less than 10 minutes.",
+    name: "Jashwanth",
+    role: "Wordpress Developer",
+    initials: "J"
+  }
+];
+
+const supportOptions = [
+  {
+    type: "Email Support",
+    description: "Our team typically responds within 24 hours",
+    contact: "digitalagency4us@gmail.com",
+    link: "mailto:digitalagency4us@gmail.com"
+  },
+  {
+    type: "Live Chat",
+    description: "Available Monday to Saturday, 8am-8pm",
+    contact: "Start a conversation",
+    link: "#"
+  },
+  {
+    type: "Phone",
+    description: "Enterprise customers only",
+    contact: "9059576080",
+    link: "tel:9059576080"
+  }
+];
+
+const teamMembers = [
+  {
+    initials: "PR",
+    name: "Parameswar Reddy",
+    role: "CEO & Founder",
+    description: "Visionary leader driving innovation and growth."
+  },
+  {
+    initials: "NR",
+    name: "NagaBhushan Reddy",
+    role: "Co-Founder",
+    description: "Strategic partner and technology expert."
+  },
+  {
+    initials: "RB",
+    name: "Rajasekhar Babu",
+    role: "Marketing Analyst",
+    description: "Data-driven marketer focused on growth and analytics."
+  },
+  {
+    initials: "PR",
+    name: "Parameswar Reddy",
+    role: "Product Owner",
+    description: "Product owner ensuring user-centric development."
+  }
+];
+
 export default function Dashboard() {
   const { user } = useAuth();
   
@@ -112,6 +189,16 @@ export default function Dashboard() {
               Create Agent
             </Button>
           </Link>
+        </div>
+
+        {/* Hero Stats Section */}
+        <div className="flex justify-center gap-12 mb-8">
+          {heroStats.map((stat, idx) => (
+            <div key={idx} className="text-center">
+              <p className="text-3xl font-bold font-display">{stat.value}</p>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
         </div>
 
         {/* Stats Grid */}
