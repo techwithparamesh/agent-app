@@ -769,13 +769,14 @@ export async function registerRoutes(
           if (content.length > 30) {
             seenContentHashes.add(contentHash);
             scannedPages.push({ url: currentUrl, title: pageTitle, content });
-            
             sendProgress({ 
               type: 'found', 
               message: `Found content: ${pageTitle.substring(0, 50)}...`,
               pagesFound: scannedPages.length,
               progress: progressPercent
             });
+          } else {
+            console.log(`Skipping ${currentUrl} - content too short (${content.length} chars)`);
           }
           
           const links = usePuppeteer ? discoveredLinks : extractLinks(html, currentUrl);
