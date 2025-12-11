@@ -72,28 +72,28 @@ const steps = [
 
 const testimonials = [
   {
-    name: "Sarah Chen",
-    role: "CEO at TechStart",
+    name: "Roja",
+    role: "Digital Marketer",
     content: "AgentForge reduced our support tickets by 60%. The AI agents handle complex queries with ease.",
-    avatar: "SC",
+    avatar: "R",
   },
   {
-    name: "Marcus Johnson",
-    role: "Marketing Director",
+    name: "Lakshmi",
+    role: "Freelancer",
     content: "The landing page generator saved us weeks of work. Our conversion rate increased by 35%.",
-    avatar: "MJ",
+    avatar: "L",
   },
   {
-    name: "Emily Rodriguez",
-    role: "Product Manager",
+    name: "Jashwanth",
+    role: "SEO Analyst",
     content: "Finally, a tool that actually understands our product. Setup took less than 10 minutes.",
-    avatar: "ER",
+    avatar: "J",
   },
 ];
 
 const stats = [
-  { value: "10K+", label: "Active Agents" },
-  { value: "50M+", label: "Conversations" },
+  { value: "10+", label: "Active Agents" },
+  { value: "100+", label: "Conversations" },
   { value: "99.9%", label: "Uptime" },
   { value: "4.9", label: "User Rating", icon: Star },
 ];

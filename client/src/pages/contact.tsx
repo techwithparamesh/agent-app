@@ -22,19 +22,19 @@ const contactMethods = [
     icon: Mail,
     title: "Email Support",
     description: "Our team typically responds within 24 hours",
-    value: "support@agentforge.com",
+    value: "digitalagency4us@gmail.com",
   },
   {
     icon: MessageSquare,
     title: "Live Chat",
-    description: "Available Monday to Friday, 9am-6pm EST",
+    description: "Available Monday to Saturday, 8am-8pm",
     value: "Start a conversation",
   },
   {
     icon: Phone,
     title: "Phone",
     description: "Enterprise customers only",
-    value: "+1 (555) 123-4567",
+    value: "9059576080",
   },
 ];
 
