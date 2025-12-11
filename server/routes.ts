@@ -787,6 +787,14 @@ export async function registerRoutes(
           
           await new Promise(resolve => setTimeout(resolve, 100));
           
+          // Always send progress after each iteration, even if no content found
+          sendProgress({
+            type: 'progress',
+            message: `Progress: ${progressPercent}%`,
+            scannedCount,
+            totalPages: totalToScan,
+            progress: progressPercent
+          });
         } catch (error: any) {
           continue;
         }
