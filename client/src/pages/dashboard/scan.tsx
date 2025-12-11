@@ -126,6 +126,12 @@ export default function WebsiteScanner() {
             if (eventData.pagesFound) setPagesFound(eventData.pagesFound);
             break;
             
+          case 'progress':
+            if (eventData.progress) setScanProgress(eventData.progress);
+            if (eventData.scannedCount) setPagesFound(eventData.scannedCount);
+            setScanMessage(eventData.message);
+            break;
+            
           case 'complete':
             setScanProgress(100);
             setScanStatus("complete");
