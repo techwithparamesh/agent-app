@@ -165,6 +165,11 @@ export default function Signup() {
                 Sign in
               </Link>
             </p>
+            <p className="text-sm text-muted-foreground text-center">
+              <Link href="/" className="text-primary hover:underline">
+                ← Back to Home
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>
