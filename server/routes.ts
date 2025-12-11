@@ -365,18 +365,45 @@ export async function registerRoutes(
       // ========== PUPPETEER BROWSER FOR SPA SCANNING ==========
       let browser: any = null;
       let usePuppeteer = false;
+      let puppeteerAvailable = true; // Track if Puppeteer can be used
       
       // Helper function to fetch page with Puppeteer (for SPAs)
       const fetchWithPuppeteer = async (pageUrl: string): Promise<{ html: string; links: string[] }> => {
+        if (!puppeteerAvailable) {
+          throw new Error('Puppeteer not available');
+        }
+        
         if (!browser) {
           try {
+            // Try to find system Chromium on Linux
+            const chromiumPaths = [
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+              '/snap/bin/chromium',
+              '/usr/bin/google-chrome',
+              '/usr/bin/google-chrome-stable',
+            ];
+            let executablePath: string | undefined;
+            for (const p of chromiumPaths) {
+              try {
+                const fs = await import('fs');
+                if (fs.existsSync(p)) {
+                  executablePath = p;
+                  break;
+                }
+              } catch (e) {}
+            }
+            
             browser = await puppeteer.launch({
               headless: true,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+              executablePath,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
             });
             sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
-          } catch (e) {
-            console.error('Failed to launch Puppeteer:', e);
+          } catch (e: any) {
+            console.error('Failed to launch Puppeteer:', e.message);
+            puppeteerAvailable = false;
+            sendProgress({ type: 'status', message: 'Puppeteer unavailable, using standard fetch', progress: 10 });
             throw e;
           }
         }
@@ -676,13 +703,29 @@ export async function registerRoutes(
           let html = '';
           let discoveredLinks: string[] = [];
           
-          if (usePuppeteer) {
+          if (usePuppeteer && puppeteerAvailable) {
             try {
               const result = await fetchWithPuppeteer(currentUrl);
               html = result.html;
               discoveredLinks = result.links;
             } catch (e: any) {
-              continue;
+              // Puppeteer failed - fallback to regular fetch for this page
+              console.log(`Puppeteer failed for ${currentUrl}, trying regular fetch...`);
+              try {
+                const response = await fetch(currentUrl, {
+                  headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                  signal: AbortSignal.timeout(30000),
+                });
+                if (response.ok) {
+                  const contentType = response.headers.get('content-type') || '';
+                  if (contentType.includes('text/html')) {
+                    html = await response.text();
+                  }
+                }
+              } catch (fetchErr) {
+                continue;
+              }
+              if (!html) continue;
             }
           } else {
             const controller = new AbortController();
@@ -795,9 +838,13 @@ export async function registerRoutes(
               type: "website",
             });
             entriesCreated++;
-          } catch (e) {}
+          } catch (e: any) {
+            console.error('Failed to save knowledge entry:', e.message);
+          }
         }
       }
+      
+      console.log(`Scan complete. Pages scanned: ${scannedPages.length}, Entries created: ${entriesCreated}`);
       
       sendProgress({ 
         type: 'complete', 
@@ -872,18 +919,44 @@ export async function registerRoutes(
       // ========== PUPPETEER BROWSER FOR SPA SCANNING ==========
       let browser: any = null;
       let usePuppeteer = false;
+      let puppeteerAvailable = true; // Track if Puppeteer can be used
       
       // Helper function to fetch page with Puppeteer (for SPAs)
       const fetchWithPuppeteer = async (pageUrl: string): Promise<{ html: string; links: string[] }> => {
+        if (!puppeteerAvailable) {
+          throw new Error('Puppeteer not available');
+        }
+        
         if (!browser) {
           try {
+            // Try to find system Chromium on Linux
+            const chromiumPaths = [
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+              '/snap/bin/chromium',
+              '/usr/bin/google-chrome',
+              '/usr/bin/google-chrome-stable',
+            ];
+            let executablePath: string | undefined;
+            for (const p of chromiumPaths) {
+              try {
+                const fs = await import('fs');
+                if (fs.existsSync(p)) {
+                  executablePath = p;
+                  break;
+                }
+              } catch (e) {}
+            }
+            
             browser = await puppeteer.launch({
               headless: true,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+              executablePath,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
             });
             console.log('Puppeteer browser launched for SPA scanning');
-          } catch (e) {
-            console.error('Failed to launch Puppeteer:', e);
+          } catch (e: any) {
+            console.error('Failed to launch Puppeteer:', e.message);
+            puppeteerAvailable = false;
             throw e;
           }
         }
@@ -1461,15 +1534,30 @@ export async function registerRoutes(
           let discoveredLinks: string[] = [];
           
           // Use Puppeteer for SPAs to render JavaScript
-          if (usePuppeteer) {
+          if (usePuppeteer && puppeteerAvailable) {
             try {
               const result = await fetchWithPuppeteer(currentUrl);
               html = result.html;
               discoveredLinks = result.links;
               console.log(`  Puppeteer rendered ${html.length} chars, found ${discoveredLinks.length} links`);
             } catch (e: any) {
-              console.log(`  Puppeteer failed for ${currentUrl}: ${e.message}`);
-              continue;
+              console.log(`  Puppeteer failed for ${currentUrl}: ${e.message}, trying regular fetch...`);
+              // Fallback to regular fetch
+              try {
+                const response = await fetch(currentUrl, {
+                  headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                  signal: AbortSignal.timeout(30000),
+                });
+                if (response.ok) {
+                  const contentType = response.headers.get('content-type') || '';
+                  if (contentType.includes('text/html')) {
+                    html = await response.text();
+                  }
+                }
+              } catch (fetchErr) {
+                continue;
+              }
+              if (!html) continue;
             }
           } else {
             // Regular fetch for non-SPA sites
