@@ -390,37 +390,44 @@ export async function registerRoutes(
               ]
             };
             
-            // Try launching with bundled browser first
-            try {
-              browser = await puppeteer.launch(launchOptions);
-              sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
-            } catch (bundledError: any) {
-              console.log('Bundled browser failed, trying system Chromium...');
-              // Fall back to system Chromium
-              const chromiumPaths = [
-                '/usr/bin/chromium-browser',
-                '/usr/bin/chromium',
-                '/snap/bin/chromium',
-                '/usr/bin/google-chrome',
-                '/usr/bin/google-chrome-stable',
-                '/opt/google/chrome/chrome',
-              ];
-              let executablePath: string | undefined;
-              const fs = await import('fs');
-              for (const p of chromiumPaths) {
+            // Find Chrome executable - check Puppeteer cache first, then system paths
+            const fs = await import('fs');
+            const path = await import('path');
+            const os = await import('os');
+            
+            const chromiumPaths = [
+              // Puppeteer cache locations
+              path.join(os.homedir(), '.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome'),
+              '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome',
+              // System Chrome/Chromium
+              '/usr/bin/google-chrome-stable',
+              '/usr/bin/google-chrome',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+              '/opt/google/chrome/chrome',
+              // Snap (last resort due to sandbox issues)
+              '/snap/bin/chromium',
+            ];
+            
+            let executablePath: string | undefined;
+            for (const p of chromiumPaths) {
+              try {
                 if (fs.existsSync(p)) {
                   executablePath = p;
-                  console.log(`Found system browser at: ${p}`);
+                  console.log(`Found Chrome at: ${p}`);
                   break;
                 }
-              }
-              
-              if (executablePath) {
-                browser = await puppeteer.launch({ ...launchOptions, executablePath });
-                sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
-              } else {
-                throw bundledError;
-              }
+              } catch (e) {}
+            }
+            
+            if (executablePath) {
+              browser = await puppeteer.launch({ ...launchOptions, executablePath });
+              sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
+            } else {
+              // Try without specifying path (use Puppeteer's auto-detection)
+              console.log('No Chrome found, trying Puppeteer auto-detection...');
+              browser = await puppeteer.launch(launchOptions);
+              sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
             }
           } catch (e: any) {
             console.error('Failed to launch Puppeteer:', e.message);
@@ -1374,37 +1381,44 @@ export async function registerRoutes(
               ]
             };
             
-            // Try launching with bundled browser first
-            try {
-              browser = await puppeteer.launch(launchOptions);
-              console.log('Puppeteer browser launched for SPA scanning');
-            } catch (bundledError: any) {
-              console.log('Bundled browser failed, trying system Chromium...');
-              // Fall back to system Chromium
-              const chromiumPaths = [
-                '/usr/bin/chromium-browser',
-                '/usr/bin/chromium',
-                '/snap/bin/chromium',
-                '/usr/bin/google-chrome',
-                '/usr/bin/google-chrome-stable',
-                '/opt/google/chrome/chrome',
-              ];
-              let executablePath: string | undefined;
-              const fs = await import('fs');
-              for (const p of chromiumPaths) {
+            // Find Chrome executable - check Puppeteer cache first, then system paths
+            const fs = await import('fs');
+            const path = await import('path');
+            const os = await import('os');
+            
+            const chromiumPaths = [
+              // Puppeteer cache locations
+              path.join(os.homedir(), '.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome'),
+              '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome',
+              // System Chrome/Chromium
+              '/usr/bin/google-chrome-stable',
+              '/usr/bin/google-chrome',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+              '/opt/google/chrome/chrome',
+              // Snap (last resort due to sandbox issues)
+              '/snap/bin/chromium',
+            ];
+            
+            let executablePath: string | undefined;
+            for (const p of chromiumPaths) {
+              try {
                 if (fs.existsSync(p)) {
                   executablePath = p;
-                  console.log(`Found system browser at: ${p}`);
+                  console.log(`Found Chrome at: ${p}`);
                   break;
                 }
-              }
-              
-              if (executablePath) {
-                browser = await puppeteer.launch({ ...launchOptions, executablePath });
-                console.log('Puppeteer browser launched for SPA scanning');
-              } else {
-                throw bundledError;
-              }
+              } catch (e) {}
+            }
+            
+            if (executablePath) {
+              browser = await puppeteer.launch({ ...launchOptions, executablePath });
+              console.log('Puppeteer browser launched for SPA scanning');
+            } else {
+              // Try without specifying path (use Puppeteer's auto-detection)
+              console.log('No Chrome found, trying Puppeteer auto-detection...');
+              browser = await puppeteer.launch(launchOptions);
+              console.log('Puppeteer browser launched for SPA scanning');
             }
           } catch (e: any) {
             console.error('Failed to launch Puppeteer:', e.message);
