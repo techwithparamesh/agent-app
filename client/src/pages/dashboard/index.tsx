@@ -191,15 +191,7 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Hero Stats Section */}
-        <div className="flex justify-center gap-12 mb-8">
-          {heroStats.map((stat, idx) => (
-            <div key={idx} className="text-center">
-              <p className="text-3xl font-bold font-display">{stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
-        </div>
+        {/* ...existing code... */}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
