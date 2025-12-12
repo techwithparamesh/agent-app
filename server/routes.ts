@@ -375,31 +375,53 @@ export async function registerRoutes(
         
         if (!browser) {
           try {
-            // Try to find system Chromium on Linux
-            const chromiumPaths = [
-              '/usr/bin/chromium-browser',
-              '/usr/bin/chromium',
-              '/snap/bin/chromium',
-              '/usr/bin/google-chrome',
-              '/usr/bin/google-chrome-stable',
-            ];
-            let executablePath: string | undefined;
-            for (const p of chromiumPaths) {
-              try {
-                const fs = await import('fs');
+            // Puppeteer launch options
+            const launchOptions: any = {
+              headless: true,
+              args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+              ]
+            };
+            
+            // Try launching with bundled browser first
+            try {
+              browser = await puppeteer.launch(launchOptions);
+              sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
+            } catch (bundledError: any) {
+              console.log('Bundled browser failed, trying system Chromium...');
+              // Fall back to system Chromium
+              const chromiumPaths = [
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/snap/bin/chromium',
+                '/usr/bin/google-chrome',
+                '/usr/bin/google-chrome-stable',
+                '/opt/google/chrome/chrome',
+              ];
+              let executablePath: string | undefined;
+              const fs = await import('fs');
+              for (const p of chromiumPaths) {
                 if (fs.existsSync(p)) {
                   executablePath = p;
+                  console.log(`Found system browser at: ${p}`);
                   break;
                 }
-              } catch (e) {}
+              }
+              
+              if (executablePath) {
+                browser = await puppeteer.launch({ ...launchOptions, executablePath });
+                sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
+              } else {
+                throw bundledError;
+              }
             }
-            
-            browser = await puppeteer.launch({
-              headless: true,
-              executablePath,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
-            });
-            sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
           } catch (e: any) {
             console.error('Failed to launch Puppeteer:', e.message);
             puppeteerAvailable = false;
@@ -1337,31 +1359,53 @@ export async function registerRoutes(
         
         if (!browser) {
           try {
-            // Try to find system Chromium on Linux
-            const chromiumPaths = [
-              '/usr/bin/chromium-browser',
-              '/usr/bin/chromium',
-              '/snap/bin/chromium',
-              '/usr/bin/google-chrome',
-              '/usr/bin/google-chrome-stable',
-            ];
-            let executablePath: string | undefined;
-            for (const p of chromiumPaths) {
-              try {
-                const fs = await import('fs');
+            // Puppeteer launch options
+            const launchOptions: any = {
+              headless: true,
+              args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+              ]
+            };
+            
+            // Try launching with bundled browser first
+            try {
+              browser = await puppeteer.launch(launchOptions);
+              console.log('Puppeteer browser launched for SPA scanning');
+            } catch (bundledError: any) {
+              console.log('Bundled browser failed, trying system Chromium...');
+              // Fall back to system Chromium
+              const chromiumPaths = [
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/snap/bin/chromium',
+                '/usr/bin/google-chrome',
+                '/usr/bin/google-chrome-stable',
+                '/opt/google/chrome/chrome',
+              ];
+              let executablePath: string | undefined;
+              const fs = await import('fs');
+              for (const p of chromiumPaths) {
                 if (fs.existsSync(p)) {
                   executablePath = p;
+                  console.log(`Found system browser at: ${p}`);
                   break;
                 }
-              } catch (e) {}
+              }
+              
+              if (executablePath) {
+                browser = await puppeteer.launch({ ...launchOptions, executablePath });
+                console.log('Puppeteer browser launched for SPA scanning');
+              } else {
+                throw bundledError;
+              }
             }
-            
-            browser = await puppeteer.launch({
-              headless: true,
-              executablePath,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
-            });
-            console.log('Puppeteer browser launched for SPA scanning');
           } catch (e: any) {
             console.error('Failed to launch Puppeteer:', e.message);
             puppeteerAvailable = false;
