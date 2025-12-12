@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertAgentSchema, insertKnowledgeBaseSchema, insertGeneratedPageSchema } from "@shared/schema";
+import { insertAgentSchema, insertKnowledgeBaseSchema, insertGeneratedPageSchema, type KnowledgeBase } from "@shared/schema";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
@@ -368,7 +368,7 @@ export async function registerRoutes(
       let puppeteerAvailable = true; // Track if Puppeteer can be used
       
       // Helper function to fetch page with Puppeteer (for SPAs)
-      const fetchWithPuppeteer = async (pageUrl: string): Promise<{ html: string; links: string[] }> => {
+      const fetchWithPuppeteer = async (pageUrl: string): Promise<{ html: string; links: string[]; textContent: string }> => {
         if (!puppeteerAvailable) {
           throw new Error('Puppeteer not available');
         }
@@ -414,12 +414,96 @@ export async function registerRoutes(
         try {
           await page.goto(pageUrl, { 
             waitUntil: 'networkidle2',
-            timeout: 30000 
+            timeout: 45000 
           });
           
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Wait longer for SPA content to fully render
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          // Try to scroll to trigger lazy loading
+          await page.evaluate(() => {
+            window.scrollTo(0, document.body.scrollHeight / 2);
+          });
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           const html = await page.content();
+          
+          // Extract text content directly from the rendered DOM
+          const textContent = await page.evaluate(() => {
+            // Remove script and style elements
+            const scripts = document.querySelectorAll('script, style, noscript, iframe');
+            scripts.forEach(el => el.remove());
+            
+            // Get all text content
+            const getText = (element: Element): string => {
+              let text = '';
+              
+              // Skip hidden elements
+              const style = window.getComputedStyle(element);
+              if (style.display === 'none' || style.visibility === 'hidden') {
+                return '';
+              }
+              
+              // Get text from headings, paragraphs, list items, divs, spans
+              const tagName = element.tagName.toLowerCase();
+              if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'span', 'a', 'strong', 'em', 'b', 'i'].includes(tagName)) {
+                const nodeText = element.textContent?.trim() || '';
+                if (nodeText.length > 0) {
+                  text += nodeText + ' ';
+                }
+              } else {
+                // For containers, recurse into children
+                for (const child of element.children) {
+                  text += getText(child);
+                }
+              }
+              
+              return text;
+            };
+            
+            // Get title
+            const title = document.title || '';
+            
+            // Get meta description
+            const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+            
+            // Get main content areas
+            const main = document.querySelector('main') || document.querySelector('[role="main"]');
+            const body = document.body;
+            
+            let content = '';
+            if (main) {
+              content = getText(main);
+            } else {
+              content = getText(body);
+            }
+            
+            // Also extract any visible headings separately
+            const headings: string[] = [];
+            document.querySelectorAll('h1, h2, h3, h4').forEach(h => {
+              const hText = h.textContent?.trim();
+              if (hText && hText.length > 0 && hText.length < 200) {
+                headings.push(hText);
+              }
+            });
+            
+            // Extract button/CTA text
+            const ctaTexts: string[] = [];
+            document.querySelectorAll('button, a.btn, a.button, [role="button"]').forEach(btn => {
+              const btnText = btn.textContent?.trim();
+              if (btnText && btnText.length > 2 && btnText.length < 50) {
+                ctaTexts.push(btnText);
+              }
+            });
+            
+            let fullText = '';
+            if (metaDesc) fullText += metaDesc + '. ';
+            if (headings.length > 0) fullText += 'Sections: ' + headings.slice(0, 10).join(', ') + '. ';
+            fullText += content;
+            if (ctaTexts.length > 0) fullText += ' Actions: ' + [...new Set(ctaTexts)].slice(0, 5).join(', ') + '.';
+            
+            return fullText.replace(/\s+/g, ' ').trim();
+          });
           
           const links = await page.evaluate((baseDomainArg: string) => {
             const anchors = document.querySelectorAll('a[href]');
@@ -440,7 +524,7 @@ export async function registerRoutes(
           }, baseDomain);
           
           await page.close();
-          return { html, links };
+          return { html, links, textContent };
         } catch (e) {
           await page.close();
           throw e;
@@ -478,73 +562,213 @@ export async function registerRoutes(
         return urls;
       };
       
-      const isSPASite = (html: string): boolean => {
-        const spaIndicators = [
-          /<div\s+id=["']root["']/i,
-          /<div\s+id=["']app["']/i,
-          /<div\s+id=["']__next["']/i,
-          /react/i,
-          /@vite\/client/i,
-          /vue/i,
-          /angular/i,
-          /window\.__INITIAL_STATE__/i,
-          /window\.__NUXT__/i,
-        ];
+      // Detect website type for better handling
+      const detectWebsiteType = (html: string): { type: string; needsJS: boolean } => {
+        const lowerHtml = html.toLowerCase();
         
-        for (const indicator of spaIndicators) {
-          if (indicator.test(html)) {
-            console.log(`Detected SPA site (has SPA indicator)`);
-            return true;
-          }
+        // WordPress detection
+        if (lowerHtml.includes('wp-content') || lowerHtml.includes('wordpress') || 
+            lowerHtml.includes('wp-includes') || lowerHtml.includes('wp-json')) {
+          // Check if WordPress uses heavy JS (like Elementor, Divi, etc.)
+          const needsJS = lowerHtml.includes('elementor') || lowerHtml.includes('divi') ||
+                         lowerHtml.includes('wpbakery') || lowerHtml.includes('beaver-builder') ||
+                         lowerHtml.includes('oxygen-builder');
+          return { type: 'wordpress', needsJS };
         }
         
-        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        // React/Vite SPA
+        if (html.includes('@vite/client') || html.includes('react-refresh') ||
+            html.includes('createHotContext') || html.includes('injectIntoGlobalHook')) {
+          return { type: 'react-vite', needsJS: true };
+        }
+        
+        // Next.js (can be SSR or SSG)
+        if (lowerHtml.includes('__next') || lowerHtml.includes('next/script') ||
+            lowerHtml.includes('_next/static')) {
+          // Check if content is already rendered (SSR/SSG) or needs JS
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          const bodyContent = bodyMatch ? bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, '').trim() : '';
+          return { type: 'nextjs', needsJS: bodyContent.length < 200 };
+        }
+        
+        // Nuxt.js
+        if (lowerHtml.includes('__nuxt') || lowerHtml.includes('nuxt/')) {
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          const bodyContent = bodyMatch ? bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, '').trim() : '';
+          return { type: 'nuxtjs', needsJS: bodyContent.length < 200 };
+        }
+        
+        // Vue.js
+        if (lowerHtml.includes('vue.') || lowerHtml.includes('vue@') || 
+            html.includes('id="app"') && html.includes('vue')) {
+          return { type: 'vue', needsJS: true };
+        }
+        
+        // Angular
+        if (lowerHtml.includes('ng-version') || lowerHtml.includes('angular') ||
+            html.includes('app-root')) {
+          return { type: 'angular', needsJS: true };
+        }
+        
+        // Gatsby
+        if (lowerHtml.includes('gatsby') || lowerHtml.includes('___gatsby')) {
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          const bodyContent = bodyMatch ? bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, '').trim() : '';
+          return { type: 'gatsby', needsJS: bodyContent.length < 200 };
+        }
+        
+        // Wix
+        if (lowerHtml.includes('wix.com') || lowerHtml.includes('wixsite') ||
+            lowerHtml.includes('static.wixstatic')) {
+          return { type: 'wix', needsJS: true };
+        }
+        
+        // Squarespace
+        if (lowerHtml.includes('squarespace') || lowerHtml.includes('sqsp')) {
+          return { type: 'squarespace', needsJS: false };
+        }
+        
+        // Shopify
+        if (lowerHtml.includes('shopify') || lowerHtml.includes('cdn.shopify')) {
+          return { type: 'shopify', needsJS: false };
+        }
+        
+        // Webflow
+        if (lowerHtml.includes('webflow') || lowerHtml.includes('wf-page')) {
+          return { type: 'webflow', needsJS: false };
+        }
+        
+        // Generic SPA detection (empty body with scripts)
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
         if (bodyMatch) {
           const cleanBody = bodyMatch[1]
             .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
             .replace(/<[^>]+>/g, '')
             .trim();
           
           if (cleanBody.length < 100 && html.includes('<script')) {
-            return true;
+            return { type: 'spa-unknown', needsJS: true };
           }
         }
         
-        return false;
+        // Static HTML / Traditional server-rendered
+        return { type: 'static', needsJS: false };
       };
       
-      const getCommonSPARoutes = (html: string): string[] => {
+      const isSPASite = (html: string): boolean => {
+        const { needsJS } = detectWebsiteType(html);
+        return needsJS;
+      };
+      
+      // Get common routes based on website type and content
+      const getCommonRoutes = (html: string): string[] => {
         const routes: string[] = [];
+        const { type: siteType } = detectWebsiteType(html);
+        
+        // Universal common routes
         const commonRoutes = [
           '/about', '/services', '/contact', '/portfolio', '/pricing',
-          '/blog', '/team', '/faq', '/gallery', '/work', '/projects'
+          '/blog', '/team', '/faq', '/gallery', '/work', '/projects',
+          '/features', '/about-us', '/contact-us', '/privacy', '/terms'
         ];
         
+        // WordPress-specific routes
+        if (siteType === 'wordpress') {
+          routes.push('/blog', '/category', '/tag', '/author', '/page/2',
+            '/wp-sitemap.xml', '/sitemap_index.xml');
+        }
+        
+        // Shopify-specific routes
+        if (siteType === 'shopify') {
+          routes.push('/collections', '/products', '/pages/about', '/pages/contact',
+            '/pages/faq', '/blogs', '/cart', '/account');
+        }
+        
+        // Webflow-specific routes
+        if (siteType === 'webflow') {
+          routes.push('/work', '/case-studies', '/blog', '/contact');
+        }
+        
+        // Analyze content for industry-specific routes
         const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1]?.toLowerCase() || '';
         const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.toLowerCase() || '';
-        const combined = metaDesc + ' ' + title;
+        const bodyText = html.replace(/<[^>]+>/g, ' ').toLowerCase();
+        const combined = metaDesc + ' ' + title + ' ' + bodyText.substring(0, 2000);
         
-        if (combined.includes('interior') || combined.includes('design') || combined.includes('kitchen')) {
+        // Interior design / Furniture
+        if (combined.includes('interior') || combined.includes('design') || combined.includes('kitchen') ||
+            combined.includes('furniture') || combined.includes('decor')) {
           routes.push('/modular-kitchen', '/bedroom', '/living-room', '/wardrobe', '/wardrobes',
             '/tv-unit', '/pooja-mandir', '/bathroom', '/book-consultation', '/our-work', '/testimonials');
         }
         
-        if (combined.includes('shop') || combined.includes('store') || combined.includes('product')) {
-          routes.push('/products', '/shop', '/cart', '/categories', '/collections');
+        // E-commerce / Shop
+        if (combined.includes('shop') || combined.includes('store') || combined.includes('product') ||
+            combined.includes('buy') || combined.includes('order')) {
+          routes.push('/products', '/shop', '/cart', '/categories', '/collections', '/sale', '/new-arrivals');
         }
         
-        if (combined.includes('agency') || combined.includes('company') || combined.includes('marketing')) {
-          routes.push('/case-studies', '/clients', '/careers', '/testimonials', '/our-work');
+        // Digital agency / Web development
+        if (combined.includes('agency') || combined.includes('digital') || combined.includes('web') || 
+            combined.includes('development') || combined.includes('wordpress') || combined.includes('hosting') ||
+            combined.includes('software') || combined.includes('tech')) {
+          routes.push('/case-studies', '/clients', '/careers', '/testimonials', '/our-work',
+            '/web-development', '/wordpress', '/hosting', '/maintenance', '/custom-development',
+            '/seo', '/digital-marketing', '/support', '/packages', '/plans', '/solutions');
+        }
+        
+        // Marketing agency
+        if (combined.includes('marketing') || combined.includes('seo') || combined.includes('advertising') ||
+            combined.includes('branding')) {
+          routes.push('/case-studies', '/clients', '/careers', '/testimonials', '/our-work',
+            '/social-media', '/content-marketing', '/ppc', '/analytics');
+        }
+        
+        // Restaurant / Food
+        if (combined.includes('restaurant') || combined.includes('food') || combined.includes('menu') ||
+            combined.includes('dining') || combined.includes('cafe')) {
+          routes.push('/menu', '/reservations', '/locations', '/catering', '/order-online');
+        }
+        
+        // Real Estate
+        if (combined.includes('real estate') || combined.includes('property') || combined.includes('homes') ||
+            combined.includes('apartments') || combined.includes('rent')) {
+          routes.push('/listings', '/properties', '/buy', '/rent', '/sell', '/agents', '/neighborhoods');
+        }
+        
+        // Healthcare / Medical
+        if (combined.includes('health') || combined.includes('medical') || combined.includes('doctor') ||
+            combined.includes('clinic') || combined.includes('hospital')) {
+          routes.push('/services', '/doctors', '/appointments', '/patients', '/specialties', '/locations');
+        }
+        
+        // Education
+        if (combined.includes('education') || combined.includes('school') || combined.includes('course') ||
+            combined.includes('training') || combined.includes('learn')) {
+          routes.push('/courses', '/programs', '/admissions', '/faculty', '/campus', '/events');
+        }
+        
+        // Law firm / Legal
+        if (combined.includes('law') || combined.includes('legal') || combined.includes('attorney') ||
+            combined.includes('lawyer')) {
+          routes.push('/practice-areas', '/attorneys', '/case-results', '/resources', '/consultations');
         }
         
         return [...commonRoutes, ...routes];
       };
+      
+      // Keep old function name for compatibility
+      const getCommonSPARoutes = getCommonRoutes;
       
       const isErrorPage = (html: string, content: string): boolean => {
         const errorPatterns = [
           /404\s*(page)?\s*(not)?\s*found/i,
           /page\s*(not)?\s*found/i,
           /error\s*404/i,
+          /page\s*does\s*not\s*exist/i,
+          /nothing\s*found/i,
+          /oops/i,
         ];
         
         for (const pattern of errorPatterns) {
@@ -594,34 +818,169 @@ export async function registerRoutes(
         let title = titleMatch ? titleMatch[1].trim() : "Untitled Page";
         title = title.replace(/\s+/g, ' ').replace(/\|.*$/, '').replace(/-.*$/, '').trim() || "Untitled Page";
         
-        const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+        // Detect website type for optimized extraction
+        const { type: siteType } = detectWebsiteType(html);
+        
+        // Try multiple meta description patterns
+        const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
+                              html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
         const metaDesc = metaDescMatch ? metaDescMatch[1].trim() : "";
         
-        let bodyContent = "";
-        const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
-        const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        // Also try OG description
+        const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+        const ogDesc = ogDescMatch ? ogDescMatch[1].trim() : "";
         
-        if (mainMatch) {
-          bodyContent = mainMatch[1];
-        } else if (bodyMatch) {
-          bodyContent = bodyMatch[1];
-        } else {
-          bodyContent = html;
+        let bodyContent = "";
+        
+        // WordPress-specific extraction
+        if (siteType === 'wordpress') {
+          // Try WordPress-specific content containers
+          const wpContentMatch = html.match(/<div[^>]*class=["'][^"']*(?:entry-content|post-content|page-content|the-content|content-area)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+          const wpMainMatch = html.match(/<main[^>]*id=["'](?:main|content|primary)[^"']*["'][^>]*>([\s\S]*?)<\/main>/i);
+          const wpArticleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+          
+          if (wpContentMatch) {
+            bodyContent = wpContentMatch[1];
+          } else if (wpMainMatch) {
+            bodyContent = wpMainMatch[1];
+          } else if (wpArticleMatch) {
+            bodyContent = wpArticleMatch[1];
+          }
         }
         
+        // Shopify-specific extraction
+        if (siteType === 'shopify' && !bodyContent) {
+          const shopifyMainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+          const productMatch = html.match(/<div[^>]*class=["'][^"']*product[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi);
+          
+          if (shopifyMainMatch) {
+            bodyContent = shopifyMainMatch[1];
+          } else if (productMatch) {
+            bodyContent = productMatch.join(' ');
+          }
+        }
+        
+        // Webflow-specific extraction  
+        if (siteType === 'webflow' && !bodyContent) {
+          const wfMainMatch = html.match(/<div[^>]*class=["'][^"']*(?:main-wrapper|page-wrapper|body)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+          if (wfMainMatch) {
+            bodyContent = wfMainMatch[1];
+          }
+        }
+        
+        // Generic fallback extraction strategies
+        if (!bodyContent) {
+          const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+          const articleMatches = html.match(/<article[^>]*>([\s\S]*?)<\/article>/gi);
+          const sectionMatches = html.match(/<section[^>]*>([\s\S]*?)<\/section>/gi);
+          const contentDivMatch = html.match(/<div[^>]*(?:class|id)=["'][^"']*(?:content|main|page|wrapper|container)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi);
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          
+          if (mainMatch) {
+            bodyContent = mainMatch[1];
+          } else if (articleMatches && articleMatches.length > 0) {
+            bodyContent = articleMatches.join(' ');
+          } else if (contentDivMatch && contentDivMatch.length > 0) {
+            bodyContent = contentDivMatch.join(' ');
+          } else if (sectionMatches && sectionMatches.length > 0) {
+            bodyContent = sectionMatches.join(' ');
+          } else if (bodyMatch) {
+            bodyContent = bodyMatch[1];
+          } else {
+            bodyContent = html;
+          }
+        }
+        
+        // Remove unwanted elements
         bodyContent = bodyContent.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
         bodyContent = bodyContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
         bodyContent = bodyContent.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "");
         bodyContent = bodyContent.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "");
         bodyContent = bodyContent.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "");
-        bodyContent = bodyContent.replace(/<[^>]+>/g, " ");
-        bodyContent = bodyContent.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+        bodyContent = bodyContent.replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, "");
+        bodyContent = bodyContent.replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, "");
+        bodyContent = bodyContent.replace(/<!--[\s\S]*?-->/gi, "");
+        // Remove WordPress-specific widgets and sidebars
+        bodyContent = bodyContent.replace(/<div[^>]*class=["'][^"']*(?:sidebar|widget|wp-block-sidebar)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, "");
         
-        let fullContent = metaDesc ? metaDesc + ". " : "";
+        // Extract headings for better context
+        const headings: string[] = [];
+        const headingMatches = bodyContent.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi);
+        for (const match of headingMatches) {
+          const headingText = match[1].replace(/<[^>]+>/g, '').trim();
+          if (headingText.length > 0 && headingText.length < 200) {
+            headings.push(headingText);
+          }
+        }
+        
+        // Extract list items for services/features
+        const listItems: string[] = [];
+        const liMatches = bodyContent.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi);
+        for (const match of liMatches) {
+          const liText = match[1].replace(/<[^>]+>/g, '').trim();
+          if (liText.length > 10 && liText.length < 300) {
+            listItems.push(liText);
+          }
+        }
+        
+        // Extract paragraphs
+        const paragraphs: string[] = [];
+        const pMatches = bodyContent.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+        for (const match of pMatches) {
+          const pText = match[1].replace(/<[^>]+>/g, '').trim();
+          if (pText.length > 20) {
+            paragraphs.push(pText);
+          }
+        }
+        
+        // Strip all remaining HTML tags
+        bodyContent = bodyContent.replace(/<[^>]+>/g, " ");
+        
+        // Decode HTML entities
+        bodyContent = bodyContent
+          .replace(/&nbsp;/g, " ")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&#x27;/g, "'")
+          .replace(/&#x2F;/g, "/")
+          .replace(/&rsquo;/g, "'")
+          .replace(/&lsquo;/g, "'")
+          .replace(/&rdquo;/g, '"')
+          .replace(/&ldquo;/g, '"')
+          .replace(/&ndash;/g, "-")
+          .replace(/&mdash;/g, "-")
+          .replace(/\s+/g, " ")
+          .trim();
+        
+        // Build comprehensive content
+        let fullContent = "";
+        
+        // Add meta description first
+        if (metaDesc) {
+          fullContent += metaDesc + ". ";
+        } else if (ogDesc) {
+          fullContent += ogDesc + ". ";
+        }
+        
+        // Add headings as section context
+        if (headings.length > 0) {
+          fullContent += "Page sections: " + headings.slice(0, 10).join(", ") + ". ";
+        }
+        
+        // Add main body content
         fullContent += bodyContent;
         
-        if (fullContent.trim().length < 50 && metaDesc) {
-          fullContent = `${title}. ${metaDesc}`;
+        // Add list items if they provide additional context
+        if (listItems.length > 0 && listItems.length <= 20) {
+          fullContent += " Key points: " + listItems.slice(0, 10).join("; ") + ".";
+        }
+        
+        // If still too short, use meta description with title
+        if (fullContent.trim().length < 50 && (metaDesc || ogDesc)) {
+          fullContent = `${title}. ${metaDesc || ogDesc}`;
         }
         
         return { title, content: fullContent };
@@ -662,15 +1021,20 @@ export async function registerRoutes(
           if (sitemapUrls.length === 0 && isSPASite(homepageHtml)) {
             sendProgress({ type: 'status', message: 'SPA detected - enabling JavaScript rendering...', progress: 18 });
             usePuppeteer = true;
-            const commonRoutes = getCommonSPARoutes(homepageHtml);
-            for (const route of commonRoutes) {
-              try {
-                const fullUrl = new URL(route, baseDomain).href;
-                if (!urlsToScan.includes(fullUrl)) {
-                  urlsToScan.push(fullUrl);
-                }
-              } catch (e) {}
-            }
+          }
+          
+          // Add common routes based on detected website type
+          const { type: detectedType } = detectWebsiteType(homepageHtml);
+          sendProgress({ type: 'status', message: `Detected website type: ${detectedType}`, progress: 19 });
+          
+          const commonRoutes = getCommonRoutes(homepageHtml);
+          for (const route of commonRoutes) {
+            try {
+              const fullUrl = new URL(route, baseDomain).href;
+              if (!urlsToScan.includes(fullUrl)) {
+                urlsToScan.push(fullUrl);
+              }
+            } catch (e) {}
           }
         }
       } catch (e) {}
@@ -702,12 +1066,14 @@ export async function registerRoutes(
           
           let html = '';
           let discoveredLinks: string[] = [];
+          let puppeteerTextContent = '';
           
           if (usePuppeteer && puppeteerAvailable) {
             try {
               const result = await fetchWithPuppeteer(currentUrl);
               html = result.html;
               discoveredLinks = result.links;
+              puppeteerTextContent = result.textContent || '';
             } catch (e: any) {
               // Puppeteer failed - fallback to regular fetch for this page
               console.log(`Puppeteer failed for ${currentUrl}, trying regular fetch...`);
@@ -733,7 +1099,7 @@ export async function registerRoutes(
             
             try {
               const response = await fetch(currentUrl, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
                 signal: controller.signal,
               });
               clearTimeout(timeoutId);
@@ -744,6 +1110,24 @@ export async function registerRoutes(
               if (!contentType.includes('text/html')) continue;
               
               html = await response.text();
+              
+              // Check if content is too sparse (might need JS rendering)
+              const quickExtract = extractContent(html);
+              if (quickExtract.content.length < 100 && puppeteerAvailable && !usePuppeteer) {
+                // Try Puppeteer for this page as fallback
+                console.log(`Content too sparse for ${currentUrl}, trying Puppeteer...`);
+                try {
+                  const puppeteerResult = await fetchWithPuppeteer(currentUrl);
+                  if (puppeteerResult.textContent && puppeteerResult.textContent.length > quickExtract.content.length) {
+                    html = puppeteerResult.html;
+                    puppeteerTextContent = puppeteerResult.textContent;
+                    discoveredLinks = puppeteerResult.links;
+                  }
+                } catch (puppeteerErr) {
+                  // Puppeteer fallback failed, continue with sparse content
+                  console.log(`Puppeteer fallback failed for ${currentUrl}`);
+                }
+              }
             } catch (e) {
               clearTimeout(timeoutId);
               continue;
@@ -752,7 +1136,22 @@ export async function registerRoutes(
           
           if (isErrorPage(html, '')) continue;
           
-          const { title, content } = extractContent(html);
+          // For SPAs with Puppeteer, prefer the directly extracted text content
+          let title: string;
+          let content: string;
+          
+          if (puppeteerTextContent && puppeteerTextContent.length > 50) {
+            // Use the text content extracted directly from rendered DOM
+            const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+            title = titleMatch ? titleMatch[1].trim() : "Untitled Page";
+            title = title.replace(/\s+/g, ' ').replace(/\|.*$/, '').replace(/-.*$/, '').trim() || "Untitled Page";
+            content = puppeteerTextContent;
+            console.log(`Using Puppeteer text content for ${currentUrl}: ${content.length} chars`);
+          } else {
+            const extracted = extractContent(html);
+            title = extracted.title;
+            content = extracted.content;
+          }
           
           if (isErrorPage('', content)) continue;
           
@@ -844,7 +1243,7 @@ export async function registerRoutes(
               title: entryTitle,
               content: chunk,
               sourceUrl: page.url,
-              type: "website",
+              contentType: "website",
             });
             entriesCreated++;
           } catch (e: any) {
@@ -1741,6 +2140,107 @@ export async function registerRoutes(
   });
 
   // ========== CHAT ==========
+  
+  // Helper function to find relevant knowledge entries based on user query
+  function findRelevantKnowledge(knowledge: KnowledgeBase[], userQuery: string, maxEntries: number = 15): KnowledgeBase[] {
+    if (knowledge.length === 0) return [];
+    
+    // Extract keywords from user query (remove common words)
+    const stopWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 
+      'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
+      'must', 'shall', 'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with',
+      'at', 'by', 'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below',
+      'between', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why',
+      'how', 'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
+      'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because', 'until',
+      'while', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'your', 'yours', 'you',
+      'i', 'me', 'my', 'mine', 'we', 'us', 'our', 'ours', 'they', 'them', 'their', 'theirs', 'it', 'its',
+      'he', 'him', 'his', 'she', 'her', 'hers', 'about', 'please', 'tell', 'know', 'want', 'like', 'get']);
+    
+    const queryWords = userQuery.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word));
+    
+    // Score each knowledge entry
+    const scoredKnowledge = knowledge.map(entry => {
+      const contentLower = (entry.content || '').toLowerCase();
+      const titleLower = (entry.title || '').toLowerCase();
+      const sectionLower = (entry.section || '').toLowerCase();
+      
+      let score = 0;
+      
+      // Check for keyword matches
+      for (const word of queryWords) {
+        // Exact word match in content (higher weight)
+        const contentMatches = (contentLower.match(new RegExp(`\\b${word}\\b`, 'g')) || []).length;
+        score += contentMatches * 2;
+        
+        // Title match (highest weight)
+        if (titleLower.includes(word)) {
+          score += 10;
+        }
+        
+        // Section match (high weight)
+        if (sectionLower.includes(word)) {
+          score += 5;
+        }
+      }
+      
+      // Boost for common query patterns
+      const lowerQuery = userQuery.toLowerCase();
+      if (lowerQuery.includes('contact') && (contentLower.includes('email') || contentLower.includes('phone') || contentLower.includes('@'))) {
+        score += 20;
+      }
+      if (lowerQuery.includes('price') || lowerQuery.includes('pricing') || lowerQuery.includes('cost')) {
+        if (contentLower.includes('price') || contentLower.includes('$') || contentLower.includes('cost') || contentLower.includes('plan')) {
+          score += 20;
+        }
+      }
+      if (lowerQuery.includes('service') || lowerQuery.includes('offer') || lowerQuery.includes('provide')) {
+        if (contentLower.includes('service') || titleLower.includes('service')) {
+          score += 15;
+        }
+      }
+      if (lowerQuery.includes('about') || lowerQuery.includes('who')) {
+        if (titleLower.includes('about') || contentLower.includes('about us') || contentLower.includes('who we are')) {
+          score += 15;
+        }
+      }
+      if (lowerQuery.includes('location') || lowerQuery.includes('address') || lowerQuery.includes('where')) {
+        if (contentLower.includes('address') || contentLower.includes('location') || contentLower.includes('street')) {
+          score += 15;
+        }
+      }
+      if (lowerQuery.includes('hour') || lowerQuery.includes('open') || lowerQuery.includes('timing')) {
+        if (contentLower.includes('hour') || contentLower.includes('open') || contentLower.includes('am') || contentLower.includes('pm')) {
+          score += 15;
+        }
+      }
+      
+      return { entry, score };
+    });
+    
+    // Sort by score and take top entries
+    scoredKnowledge.sort((a, b) => b.score - a.score);
+    
+    // Get top relevant entries (score > 0), plus some general entries
+    const relevant = scoredKnowledge
+      .filter(sk => sk.score > 0)
+      .slice(0, maxEntries)
+      .map(sk => sk.entry);
+    
+    // If not enough relevant entries, add some general ones
+    if (relevant.length < 5) {
+      const general = scoredKnowledge
+        .slice(0, 5 - relevant.length)
+        .map(sk => sk.entry);
+      return [...relevant, ...general].slice(0, maxEntries);
+    }
+    
+    return relevant;
+  }
+  
   // ========== WIDGET CHAT (for embedded chatbots - no auth required) ==========
   app.post("/api/widget/chat", async (req: any, res) => {
     // Enable CORS for widget
@@ -1767,11 +2267,12 @@ export async function registerRoutes(
         });
       }
 
-      const knowledge = await storage.getKnowledgeByAgentId(agentId);
-      const knowledgeContext = knowledge
-        .slice(0, 10)
-        .map((k) => k.content)
-        .join("\n\n");
+      const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
+      // Use smart search to find relevant knowledge based on user's query
+      const relevantKnowledge = findRelevantKnowledge(allKnowledge, message, 15);
+      const knowledgeContext = relevantKnowledge
+        .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
+        .join("\n\n---\n\n");
 
       const systemPrompt = `You are ${agent.name}, an AI assistant for a website.
 ${agent.description ? `Description: ${agent.description}` : ""}
@@ -1860,20 +2361,26 @@ Instructions:
         return res.status(404).json({ message: "Agent not found" });
       }
 
-      const knowledge = await storage.getKnowledgeByAgentId(agentId);
-      const knowledgeContext = knowledge
-        .slice(0, 10)
-        .map((k) => k.content)
-        .join("\n\n");
+      const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
+      // Use smart search to find relevant knowledge based on user's query
+      const relevantKnowledge = findRelevantKnowledge(allKnowledge, message, 15);
+      const knowledgeContext = relevantKnowledge
+        .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
+        .join("\n\n---\n\n");
 
       const systemPrompt = `You are ${agent.name}, an AI assistant.
 ${agent.description ? `Description: ${agent.description}` : ""}
-Tone: ${agent.toneOfVoice || "friendly"}
+Tone: ${agent.toneOfVoice || "friendly and professional"}
 Purpose: ${agent.purpose || "support"}
 
-${knowledgeContext ? `Here is relevant information from the knowledge base:\n\n${knowledgeContext}\n\n` : ""}
+${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}\n\n` : ""}
 
-Use this information to answer questions accurately. If you don't have relevant information, say so politely.`;
+IMPORTANT INSTRUCTIONS:
+- Use ONLY the information provided above to answer questions
+- Be accurate and helpful - extract specific details like names, numbers, emails, prices from the knowledge base
+- If the user asks about contact info, pricing, services, or other specifics - find and provide the exact details from the knowledge base
+- If you don't have the specific information requested, be honest about it
+- Keep responses clear and concise`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
