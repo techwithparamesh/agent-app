@@ -456,82 +456,95 @@ export async function registerRoutes(
           // Using a string function to avoid esbuild's __name injection
           const textContent = await page.evaluate(`
             (function() {
-              // Remove script and style elements
-              var scripts = document.querySelectorAll('script, style, noscript, iframe');
-              scripts.forEach(function(el) { el.remove(); });
+              // Remove unwanted elements
+              var unwanted = document.querySelectorAll('script, style, noscript, iframe, svg, path, nav, header, footer');
+              unwanted.forEach(function(el) { el.remove(); });
               
-              // Get all text content
-              function getText(element) {
+              // Simple text extraction - get ALL visible text
+              function getAllText(element) {
                 var text = '';
                 
-                // Skip hidden elements
-                var style = window.getComputedStyle(element);
-                if (style.display === 'none' || style.visibility === 'hidden') {
-                  return '';
-                }
-                
-                // Get text from headings, paragraphs, list items, divs, spans
-                var tagName = element.tagName.toLowerCase();
-                if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'span', 'a', 'strong', 'em', 'b', 'i'].indexOf(tagName) !== -1) {
-                  var nodeText = (element.textContent || '').trim();
-                  if (nodeText.length > 0) {
-                    text += nodeText + ' ';
+                // Skip if element is not visible
+                try {
+                  var style = window.getComputedStyle(element);
+                  if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                    return '';
                   }
-                } else {
-                  // For containers, recurse into children
-                  for (var i = 0; i < element.children.length; i++) {
-                    text += getText(element.children[i]);
+                } catch(e) {}
+                
+                // Get direct text nodes
+                for (var i = 0; i < element.childNodes.length; i++) {
+                  var node = element.childNodes[i];
+                  if (node.nodeType === 3) { // Text node
+                    var nodeText = (node.textContent || '').trim();
+                    if (nodeText.length > 0) {
+                      text += nodeText + ' ';
+                    }
+                  } else if (node.nodeType === 1) { // Element node
+                    text += getAllText(node);
                   }
                 }
                 
                 return text;
               }
               
-              // Get title
-              var title = document.title || '';
-              
               // Get meta description
               var metaEl = document.querySelector('meta[name="description"]');
               var metaDesc = metaEl ? (metaEl.getAttribute('content') || '') : '';
               
-              // Get main content areas
-              var main = document.querySelector('main') || document.querySelector('[role="main"]');
-              var body = document.body;
+              // Get OG description as fallback
+              var ogEl = document.querySelector('meta[property="og:description"]');
+              var ogDesc = ogEl ? (ogEl.getAttribute('content') || '') : '';
+              
+              // Get main content areas - try multiple selectors
+              var mainSelectors = ['main', '[role="main"]', '#main', '#content', '.main', '.content', 'article', '.container', '#root', '#app'];
+              var main = null;
+              for (var i = 0; i < mainSelectors.length; i++) {
+                main = document.querySelector(mainSelectors[i]);
+                if (main) break;
+              }
               
               var content = '';
               if (main) {
-                content = getText(main);
-              } else {
-                content = getText(body);
+                content = getAllText(main);
               }
               
-              // Also extract any visible headings separately
+              // If main content is too short, get from body
+              if (content.length < 100) {
+                content = getAllText(document.body);
+              }
+              
+              // Get all headings
               var headings = [];
-              document.querySelectorAll('h1, h2, h3, h4').forEach(function(h) {
+              document.querySelectorAll('h1, h2, h3, h4, h5').forEach(function(h) {
                 var hText = (h.textContent || '').trim();
-                if (hText && hText.length > 0 && hText.length < 200) {
+                if (hText && hText.length > 2 && hText.length < 300) {
                   headings.push(hText);
                 }
               });
               
-              // Extract button/CTA text
-              var ctaTexts = [];
-              document.querySelectorAll('button, a.btn, a.button, [role="button"]').forEach(function(btn) {
-                var btnText = (btn.textContent || '').trim();
-                if (btnText && btnText.length > 2 && btnText.length < 50) {
-                  ctaTexts.push(btnText);
+              // Get all links text (useful for navigation/category pages)
+              var linkTexts = [];
+              document.querySelectorAll('a').forEach(function(a) {
+                var aText = (a.textContent || '').trim();
+                if (aText && aText.length > 3 && aText.length < 100) {
+                  linkTexts.push(aText);
                 }
               });
               
               var fullText = '';
               if (metaDesc) fullText += metaDesc + '. ';
-              if (headings.length > 0) fullText += 'Sections: ' + headings.slice(0, 10).join(', ') + '. ';
+              if (ogDesc && ogDesc !== metaDesc) fullText += ogDesc + '. ';
+              if (headings.length > 0) fullText += 'Sections: ' + headings.slice(0, 15).join(', ') + '. ';
               fullText += content;
-              if (ctaTexts.length > 0) {
-                var uniqueCtas = ctaTexts.filter(function(v, i, a) { return a.indexOf(v) === i; });
-                fullText += ' Actions: ' + uniqueCtas.slice(0, 5).join(', ') + '.';
+              
+              // Add unique link texts if content is sparse
+              if (content.length < 500 && linkTexts.length > 0) {
+                var uniqueLinks = linkTexts.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 30);
+                fullText += ' Links: ' + uniqueLinks.join(', ') + '.';
               }
               
+              // Clean up excessive whitespace
               return fullText.replace(/\\s+/g, ' ').trim();
             })()
           `);
@@ -799,18 +812,28 @@ export async function registerRoutes(
       const getCommonSPARoutes = getCommonRoutes;
       
       const isErrorPage = (html: string, content: string): boolean => {
+        const combined = (html + ' ' + content).toLowerCase();
+        
+        // More specific error patterns - avoid false positives
         const errorPatterns = [
           /404\s*(page)?\s*(not)?\s*found/i,
           /page\s*(not)?\s*found/i,
           /error\s*404/i,
           /page\s*does\s*not\s*exist/i,
-          /nothing\s*found/i,
-          /oops/i,
+          /nothing\s*(was)?\s*found\s*(here)?/i,
+          /this\s*page\s*(doesn't|does\s*not)\s*exist/i,
+          /we\s*couldn't\s*find/i,
+          /sorry.*page.*not.*available/i,
         ];
         
+        // Check if it looks like an actual error page (short content with error message)
         for (const pattern of errorPatterns) {
-          if (pattern.test(html) || pattern.test(content)) {
-            return true;
+          if (pattern.test(combined)) {
+            // Only consider it an error page if content is also very short
+            const cleanContent = content.replace(/<[^>]+>/g, '').trim();
+            if (cleanContent.length < 500) {
+              return true;
+            }
           }
         }
         return false;
@@ -1198,7 +1221,7 @@ export async function registerRoutes(
           let title: string;
           let content: string;
           
-          if (puppeteerTextContent && puppeteerTextContent.length > 50) {
+          if (puppeteerTextContent && puppeteerTextContent.length > 30) {
             // Use the text content extracted directly from rendered DOM
             const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
             title = titleMatch ? titleMatch[1].trim() : "Untitled Page";
@@ -1206,12 +1229,17 @@ export async function registerRoutes(
             content = puppeteerTextContent;
             console.log(`Using Puppeteer text content for ${currentUrl}: ${content.length} chars`);
           } else {
+            console.log(`Puppeteer text content too short for ${currentUrl}: ${puppeteerTextContent?.length || 0} chars, using HTML extraction`);
             const extracted = extractContent(html);
             title = extracted.title;
             content = extracted.content;
+            console.log(`HTML extraction for ${currentUrl}: ${content.length} chars`);
           }
           
-          if (isErrorPage('', content)) continue;
+          if (isErrorPage('', content)) {
+            console.log(`Skipping ${currentUrl} - detected as error page`);
+            continue;
+          }
           
           const urlPath = new URL(currentUrl).pathname;
           const contentHashBase = usePuppeteer ? `${urlPath}:${content.substring(0, 200)}` : content;
@@ -1699,24 +1727,28 @@ export async function registerRoutes(
       
       // Helper function to check if content looks like a 404/error page
       const isErrorPage = (html: string, content: string): boolean => {
+        const combined = (html + ' ' + content).toLowerCase();
+        
+        // More specific error patterns - avoid false positives
         const errorPatterns = [
           /404\s*(page)?\s*(not)?\s*found/i,
           /page\s*(not)?\s*found/i,
-          /not\s*found/i,
           /error\s*404/i,
-          /404\s*error/i,
-          /page\s*doesn'?t\s*exist/i,
           /page\s*does\s*not\s*exist/i,
-          /did you forget to add the page/i,
-          /this page (doesn't|does not) exist/i,
-          /oops.*not found/i,
-          /sorry.*page.*not.*found/i,
-          /we couldn'?t find/i
+          /nothing\s*(was)?\s*found\s*(here)?/i,
+          /this\s*page\s*(doesn't|does\s*not)\s*exist/i,
+          /we\s*couldn't\s*find/i,
+          /sorry.*page.*not.*available/i,
         ];
         
+        // Check if it looks like an actual error page (short content with error message)
         for (const pattern of errorPatterns) {
-          if (pattern.test(html) || pattern.test(content)) {
-            return true;
+          if (pattern.test(combined)) {
+            // Only consider it an error page if content is also very short
+            const cleanContent = content.replace(/<[^>]+>/g, '').trim();
+            if (cleanContent.length < 500) {
+              return true;
+            }
           }
         }
         return false;
