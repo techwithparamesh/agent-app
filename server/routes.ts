@@ -392,6 +392,7 @@ export async function registerRoutes(
             const launchOptions: any = {
               headless: 'new',
               executablePath: chromePath,
+              ignoreHTTPSErrors: true,
               args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -426,14 +427,26 @@ export async function registerRoutes(
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
+        // Block images, fonts, stylesheets to speed up loading
+        await page.setRequestInterception(true);
+        page.on('request', (req: any) => {
+          const resourceType = req.resourceType();
+          if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+            req.abort();
+          } else {
+            req.continue();
+          }
+        });
+        
         try {
+          // Use domcontentloaded instead of networkidle2 (much faster)
           await page.goto(pageUrl, { 
-            waitUntil: 'networkidle2',
-            timeout: 45000 
+            waitUntil: 'domcontentloaded',
+            timeout: 60000 
           });
           
-          // Wait longer for SPA content to fully render
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Wait for JavaScript to render content
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Try to scroll to trigger lazy loading
           await page.evaluate(() => {
@@ -1369,6 +1382,7 @@ export async function registerRoutes(
             const launchOptions: any = {
               headless: 'new',
               executablePath: chromePath,
+              ignoreHTTPSErrors: true,
               args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -1401,15 +1415,26 @@ export async function registerRoutes(
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
+        // Block images, fonts, stylesheets to speed up loading
+        await page.setRequestInterception(true);
+        page.on('request', (req: any) => {
+          const resourceType = req.resourceType();
+          if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+            req.abort();
+          } else {
+            req.continue();
+          }
+        });
+        
         try {
-          // Navigate and wait for network to be idle (JavaScript rendered)
+          // Use domcontentloaded instead of networkidle2 (much faster)
           await page.goto(pageUrl, { 
-            waitUntil: 'networkidle2',
-            timeout: 30000 
+            waitUntil: 'domcontentloaded',
+            timeout: 60000 
           });
           
-          // Wait a bit more for any lazy-loaded content
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Wait for JavaScript to render content
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Get rendered HTML
           const html = await page.content();
