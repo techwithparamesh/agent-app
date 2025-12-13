@@ -374,9 +374,11 @@ export async function registerRoutes(
         }
       }
       
-      // ========== PUPPETEER BROWSER FOR SPA SCANNING ==========
+      // ========== PUPPETEER BROWSER FOR UNIVERSAL SCANNING ==========
+      // ALWAYS use Puppeteer by default for maximum compatibility
+      // This ensures we can scan ANY website: React, Vue, Angular, WordPress, Shopify, etc.
       let browser: any = null;
-      let usePuppeteer = false;
+      let usePuppeteer = true; // DEFAULT TO TRUE - scan everything with JS rendering
       let puppeteerAvailable = true; // Track if Puppeteer can be used
       
       // Helper function to fetch page with Puppeteer (for SPAs)
@@ -450,17 +452,19 @@ export async function registerRoutes(
         try {
           console.log(`Navigating to: ${pageUrl}`);
           await page.goto(pageUrl, { 
-            waitUntil: 'domcontentloaded',
-            timeout: 30000 
+            waitUntil: 'networkidle2',
+            timeout: 45000 
           });
           console.log(`Navigation completed: ${pageUrl}`);
           
-          // Wait for JavaScript to render content
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait for JavaScript to render content (longer for heavy SPAs like Flipkart)
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
           // Try to scroll to trigger lazy loading (use string to avoid esbuild __name issue)
+          await page.evaluate(`window.scrollTo(0, document.body.scrollHeight / 3)`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
           await page.evaluate(`window.scrollTo(0, document.body.scrollHeight / 2)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           const html = await page.content();
           
@@ -550,77 +554,108 @@ export async function registerRoutes(
               if (headings.length > 0) fullText += 'Sections: ' + headings.slice(0, 15).join(', ') + '. ';
               fullText += content;
               
-              // Add unique link texts if content is sparse
-              if (content.length < 500 && linkTexts.length > 0) {
-                var uniqueLinks = linkTexts.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 30);
-                fullText += ' Links: ' + uniqueLinks.join(', ') + '.';
-              }
+              // ========== UNIVERSAL LINK EXTRACTION ==========
+              // Extract ALL links with their text - works for ANY website
+              var allLinksWithText = [];
               
-              // E-commerce specific extraction - Products WITH URLs
-              var productsWithUrls = [];
-              
-              // Amazon specific product extraction
-              document.querySelectorAll('[data-component-type="s-search-result"], .s-result-item').forEach(function(el) {
-                var titleEl = el.querySelector('h2 a, .a-link-normal.a-text-normal');
-                var priceEl = el.querySelector('.a-price .a-offscreen, .a-price-whole');
-                if (titleEl) {
-                  var titleText = (titleEl.textContent || '').trim();
-                  var href = titleEl.getAttribute('href');
-                  var priceText = priceEl ? (priceEl.textContent || '').trim() : '';
-                  if (titleText.length > 10 && titleText.length < 300) {
-                    var productUrl = href ? (href.startsWith('http') ? href : window.location.origin + href) : '';
-                    var productInfo = titleText;
-                    if (priceText) productInfo += ' - ' + priceText;
-                    if (productUrl) productInfo += ' | Link: ' + productUrl;
-                    productsWithUrls.push(productInfo);
+              document.querySelectorAll('a[href]').forEach(function(a) {
+                var href = a.getAttribute('href');
+                var text = (a.textContent || '').trim().replace(/\\s+/g, ' ');
+                
+                // Skip empty, javascript, mailto, tel links
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
+                    href.startsWith('mailto:') || href.startsWith('tel:')) return;
+                
+                // Build absolute URL
+                var absoluteUrl = '';
+                try {
+                  if (href.startsWith('http')) {
+                    absoluteUrl = href;
+                  } else {
+                    absoluteUrl = new URL(href, window.location.origin).href;
                   }
+                } catch(e) { return; }
+                
+                // Get meaningful text - try multiple sources
+                if (!text || text.length < 3) {
+                  text = a.getAttribute('title') || a.getAttribute('aria-label') || '';
+                }
+                if (!text || text.length < 3) {
+                  var img = a.querySelector('img');
+                  if (img) text = img.getAttribute('alt') || '';
+                }
+                
+                // Only include if we have meaningful text
+                if (text && text.length >= 3 && text.length < 200) {
+                  allLinksWithText.push(text + ' | URL: ' + absoluteUrl);
                 }
               });
               
-              // Generic product extraction with links
-              if (productsWithUrls.length === 0) {
-                document.querySelectorAll('[class*="product-card"], [class*="product-item"], .product, .item').forEach(function(el) {
-                  var titleEl = el.querySelector('a[href*="/product"], a[href*="/p/"], a[href*="/dp/"], h2 a, h3 a, .title a, .name a');
-                  var priceEl = el.querySelector('[class*="price"]');
+              // ========== UNIVERSAL ITEM/PRODUCT EXTRACTION ==========
+              // Look for any card-like containers with links and prices
+              var itemsWithDetails = [];
+              
+              // Generic selectors that work across most sites
+              var cardSelectors = [
+                '[class*="card"]', '[class*="item"]', '[class*="product"]',
+                '[class*="listing"]', '[class*="result"]', '[class*="tile"]',
+                '[class*="box"]', 'article', '[role="listitem"]',
+                'li > a', '.grid > div', '[class*="col"] > div'
+              ];
+              
+              document.querySelectorAll(cardSelectors.join(', ')).forEach(function(el) {
+                var link = el.querySelector('a[href]') || (el.tagName === 'A' ? el : null) || el.closest('a');
+                if (!link) return;
+                
+                var href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+                
+                // Get title from various sources
+                var title = '';
+                var titleSources = ['h1', 'h2', 'h3', 'h4', '[class*="title"]', '[class*="name"]', 
+                                   '[class*="brand"]', '[class*="heading"]', 'strong', 'b'];
+                for (var i = 0; i < titleSources.length; i++) {
+                  var titleEl = el.querySelector(titleSources[i]);
                   if (titleEl) {
-                    var titleText = (titleEl.textContent || '').trim();
-                    var href = titleEl.getAttribute('href');
-                    var priceText = priceEl ? (priceEl.textContent || '').trim() : '';
-                    if (titleText.length > 5 && titleText.length < 300) {
-                      var productUrl = href ? (href.startsWith('http') ? href : window.location.origin + href) : '';
-                      var productInfo = titleText;
-                      if (priceText) productInfo += ' - ' + priceText;
-                      if (productUrl) productInfo += ' | Link: ' + productUrl;
-                      productsWithUrls.push(productInfo);
-                    }
+                    title = (titleEl.textContent || '').trim();
+                    if (title.length >= 3) break;
                   }
-                });
-              }
-              
-              // Fallback: Extract any product-like links
-              if (productsWithUrls.length === 0) {
-                document.querySelectorAll('a[href*="/product"], a[href*="/dp/"], a[href*="/p/"], a[href*="/item"]').forEach(function(a) {
-                  var titleText = (a.textContent || '').trim();
-                  var href = a.getAttribute('href');
-                  if (titleText.length > 10 && titleText.length < 200 && href) {
-                    var productUrl = href.startsWith('http') ? href : window.location.origin + href;
-                    productsWithUrls.push(titleText + ' | Link: ' + productUrl);
-                  }
-                });
-              }
-              
-              // Extract standalone prices for context
-              var prices = [];
-              document.querySelectorAll('.a-price .a-offscreen, [class*="price"]:not([class*="product"])').forEach(function(el) {
-                var priceText = (el.textContent || '').trim();
-                if (priceText.match(/[₹$€£]/) && priceText.length < 30) {
-                  prices.push(priceText);
+                }
+                if (!title) title = (link.textContent || '').trim().substring(0, 100);
+                
+                // Get price if available
+                var price = '';
+                var priceEl = el.querySelector('[class*="price"], [class*="cost"], [class*="amount"]');
+                if (priceEl) {
+                  price = (priceEl.textContent || '').trim();
+                  // Validate it looks like a price
+                  if (!price.match(/[₹$€£¥]|\\d/)) price = '';
+                }
+                
+                // Build absolute URL
+                var absoluteUrl = '';
+                try {
+                  absoluteUrl = href.startsWith('http') ? href : new URL(href, window.location.origin).href;
+                } catch(e) { return; }
+                
+                if (title && title.length >= 3 && title.length < 300) {
+                  var itemInfo = title;
+                  if (price) itemInfo += ' - ' + price;
+                  itemInfo += ' | URL: ' + absoluteUrl;
+                  itemsWithDetails.push(itemInfo);
                 }
               });
               
-              if (productsWithUrls.length > 0) {
-                var uniqueProducts = productsWithUrls.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 15);
-                fullText += ' PRODUCTS: ' + uniqueProducts.join(' || ') + '.';
+              // Add items/products to output
+              if (itemsWithDetails.length > 0) {
+                var uniqueItems = itemsWithDetails.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 25);
+                fullText += ' ITEMS: ' + uniqueItems.join(' || ') + '.';
+              }
+              
+              // Add all other links for reference
+              if (allLinksWithText.length > 0) {
+                var uniqueLinks = allLinksWithText.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 30);
+                fullText += ' LINKS: ' + uniqueLinks.join(' || ') + '.';
               }
               
               // Clean up excessive whitespace
@@ -705,83 +740,40 @@ export async function registerRoutes(
         return urls;
       };
       
-      // Detect website type for better handling
+      // Simple website type detection - just for logging, we use Puppeteer for everything
       const detectWebsiteType = (html: string): { type: string; needsJS: boolean } => {
         const lowerHtml = html.toLowerCase();
         
-        // WordPress detection
-        if (lowerHtml.includes('wp-content') || lowerHtml.includes('wordpress') || 
-            lowerHtml.includes('wp-includes') || lowerHtml.includes('wp-json')) {
-          // Check if WordPress uses heavy JS (like Elementor, Divi, etc.)
-          const needsJS = lowerHtml.includes('elementor') || lowerHtml.includes('divi') ||
-                         lowerHtml.includes('wpbakery') || lowerHtml.includes('beaver-builder') ||
-                         lowerHtml.includes('oxygen-builder');
-          return { type: 'wordpress', needsJS };
+        // Check for common frameworks/platforms (for logging only)
+        if (lowerHtml.includes('wp-content') || lowerHtml.includes('wordpress')) {
+          return { type: 'wordpress', needsJS: true };
         }
-        
-        // React/Vite SPA
-        if (html.includes('@vite/client') || html.includes('react-refresh') ||
-            html.includes('createHotContext') || html.includes('injectIntoGlobalHook')) {
-          return { type: 'react-vite', needsJS: true };
+        if (lowerHtml.includes('shopify') || lowerHtml.includes('cdn.shopify')) {
+          return { type: 'shopify', needsJS: true };
         }
-        
-        // Next.js (can be SSR or SSG)
-        if (lowerHtml.includes('__next') || lowerHtml.includes('next/script') ||
-            lowerHtml.includes('_next/static')) {
-          // Check if content is already rendered (SSR/SSG) or needs JS
-          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-          const bodyContent = bodyMatch ? bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, '').trim() : '';
-          return { type: 'nextjs', needsJS: bodyContent.length < 200 };
+        if (lowerHtml.includes('wix.com') || lowerHtml.includes('wixsite')) {
+          return { type: 'wix', needsJS: true };
         }
-        
-        // Nuxt.js
-        if (lowerHtml.includes('__nuxt') || lowerHtml.includes('nuxt/')) {
-          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-          const bodyContent = bodyMatch ? bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, '').trim() : '';
-          return { type: 'nuxtjs', needsJS: bodyContent.length < 200 };
+        if (lowerHtml.includes('squarespace')) {
+          return { type: 'squarespace', needsJS: true };
         }
-        
-        // Vue.js
-        if (lowerHtml.includes('vue.') || lowerHtml.includes('vue@') || 
-            html.includes('id="app"') && html.includes('vue')) {
+        if (html.includes('__next') || html.includes('_next/')) {
+          return { type: 'nextjs', needsJS: true };
+        }
+        if (html.includes('__nuxt') || html.includes('nuxt')) {
+          return { type: 'nuxtjs', needsJS: true };
+        }
+        if (html.includes('@vite') || html.includes('react')) {
+          return { type: 'react', needsJS: true };
+        }
+        if (html.includes('ng-version') || html.includes('angular')) {
+          return { type: 'angular', needsJS: true };
+        }
+        if (html.includes('vue')) {
           return { type: 'vue', needsJS: true };
         }
         
-        // Angular
-        if (lowerHtml.includes('ng-version') || lowerHtml.includes('angular') ||
-            html.includes('app-root')) {
-          return { type: 'angular', needsJS: true };
-        }
-        
-        // Gatsby
-        if (lowerHtml.includes('gatsby') || lowerHtml.includes('___gatsby')) {
-          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-          const bodyContent = bodyMatch ? bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, '').trim() : '';
-          return { type: 'gatsby', needsJS: bodyContent.length < 200 };
-        }
-        
-        // Wix
-        if (lowerHtml.includes('wix.com') || lowerHtml.includes('wixsite') ||
-            lowerHtml.includes('static.wixstatic')) {
-          return { type: 'wix', needsJS: true };
-        }
-        
-        // Squarespace
-        if (lowerHtml.includes('squarespace') || lowerHtml.includes('sqsp')) {
-          return { type: 'squarespace', needsJS: false };
-        }
-        
-        // Shopify
-        if (lowerHtml.includes('shopify') || lowerHtml.includes('cdn.shopify')) {
-          return { type: 'shopify', needsJS: false };
-        }
-        
-        // Webflow
-        if (lowerHtml.includes('webflow') || lowerHtml.includes('wf-page')) {
-          return { type: 'webflow', needsJS: false };
-        }
-        
-        // Generic SPA detection (empty body with scripts)
+        // Check if content is sparse (likely needs JS)
         const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
         if (bodyMatch) {
           const cleanBody = bodyMatch[1]
@@ -789,154 +781,79 @@ export async function registerRoutes(
             .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
             .replace(/<[^>]+>/g, '')
             .trim();
-          
-          if (cleanBody.length < 100 && html.includes('<script')) {
-            return { type: 'spa-unknown', needsJS: true };
+          if (cleanBody.length < 500) {
+            return { type: 'spa-detected', needsJS: true };
           }
         }
         
-        // Static HTML / Traditional server-rendered
-        return { type: 'static', needsJS: false };
+        // Default - treat as dynamic, use Puppeteer anyway for best results
+        return { type: 'website', needsJS: true };
       };
       
-      const isSPASite = (html: string): boolean => {
-        const { needsJS } = detectWebsiteType(html);
-        return needsJS;
-      };
-      
-      // Get common routes based on website type and content
+      // Universal route discovery - no site-specific code
       const getCommonRoutes = (html: string): string[] => {
         const routes: string[] = [];
-        const { type: siteType } = detectWebsiteType(html);
         
-        // Universal common routes
-        const commonRoutes = [
-          '/about', '/services', '/contact', '/portfolio', '/pricing',
-          '/blog', '/team', '/faq', '/gallery', '/work', '/projects',
-          '/features', '/about-us', '/contact-us', '/privacy', '/terms'
+        // Universal common routes that exist on most websites
+        const universalRoutes = [
+          '/about', '/services', '/contact', '/pricing', '/blog',
+          '/products', '/shop', '/cart', '/faq', '/team',
+          '/portfolio', '/work', '/projects', '/gallery', '/features',
+          '/about-us', '/contact-us', '/privacy', '/terms', '/policy',
+          '/categories', '/collections', '/sale', '/new', '/offers'
         ];
+        routes.push(...universalRoutes);
         
-        // WordPress-specific routes
-        if (siteType === 'wordpress') {
-          routes.push('/blog', '/category', '/tag', '/author', '/page/2',
-            '/wp-sitemap.xml', '/sitemap_index.xml');
+        // Extract ALL internal links from the HTML
+        const linkMatches = html.matchAll(/href=["']([^"']+)["']/gi);
+        for (const match of linkMatches) {
+          const href = match[1];
+          // Skip external links, anchors, javascript, mailto, tel
+          if (href.startsWith('http') || href.startsWith('#') || 
+              href.startsWith('javascript:') || href.startsWith('mailto:') || 
+              href.startsWith('tel:') || href.startsWith('//')) {
+            continue;
+          }
+          // Add internal paths
+          if (href.startsWith('/') && !href.includes('?') && href.length > 1 && href.length < 100) {
+            routes.push(href);
+          }
         }
         
-        // Shopify-specific routes
-        if (siteType === 'shopify') {
-          routes.push('/collections', '/products', '/pages/about', '/pages/contact',
-            '/pages/faq', '/blogs', '/cart', '/account');
-        }
-        
-        // Webflow-specific routes
-        if (siteType === 'webflow') {
-          routes.push('/work', '/case-studies', '/blog', '/contact');
-        }
-        
-        // Analyze content for industry-specific routes
-        const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1]?.toLowerCase() || '';
-        const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.toLowerCase() || '';
-        const bodyText = html.replace(/<[^>]+>/g, ' ').toLowerCase();
-        const combined = metaDesc + ' ' + title + ' ' + bodyText.substring(0, 2000);
-        
-        // Interior design / Furniture
-        if (combined.includes('interior') || combined.includes('design') || combined.includes('kitchen') ||
-            combined.includes('furniture') || combined.includes('decor')) {
-          routes.push('/modular-kitchen', '/bedroom', '/living-room', '/wardrobe', '/wardrobes',
-            '/tv-unit', '/pooja-mandir', '/bathroom', '/book-consultation', '/our-work', '/testimonials');
-        }
-        
-        // E-commerce / Shop - EXPANDED for major platforms
-        if (combined.includes('shop') || combined.includes('store') || combined.includes('product') ||
-            combined.includes('buy') || combined.includes('order') || combined.includes('cart') ||
-            combined.includes('ecommerce') || combined.includes('e-commerce')) {
-          routes.push(
-            // General e-commerce routes
-            '/products', '/shop', '/cart', '/categories', '/collections', '/sale', '/new-arrivals',
-            '/bestsellers', '/best-sellers', '/deals', '/offers', '/clearance', '/outlet',
-            // Category pages
-            '/electronics', '/clothing', '/fashion', '/shoes', '/accessories', '/jewelry',
-            '/home', '/kitchen', '/beauty', '/health', '/sports', '/toys', '/books',
-            '/mobiles', '/phones', '/laptops', '/computers', '/tablets', '/cameras',
-            '/appliances', '/furniture', '/grocery', '/baby', '/pets',
-            // Amazon specific
-            '/gp/bestsellers', '/gp/new-releases', '/gp/movers-and-shakers',
-            // Shopify/general
-            '/collections/all', '/collections/new', '/collections/sale',
-            '/pages/shipping', '/pages/returns', '/pages/size-guide'
-          );
-        }
-        
-        // Amazon specific detection
-        if (combined.includes('amazon') || html.includes('amazon.')) {
-          routes.push(
-            '/gp/bestsellers', '/gp/new-releases', '/gp/most-wished-for',
-            '/gp/browse.html', '/b/', '/s?k=', 
-            '/electronics', '/fashion', '/home-kitchen', '/beauty', '/sports',
-            '/toys-games', '/baby', '/health-personal-care', '/automotive',
-            '/books', '/movies-tv', '/music', '/software', '/video-games'
-          );
-        }
-        
-        // Flipkart specific
-        if (combined.includes('flipkart')) {
-          routes.push(
-            '/mobiles', '/electronics', '/tvs', '/fashion', '/home-furniture',
-            '/appliances', '/beauty-toys', '/sports', '/books'
-          );
-        }
-        
-        // Digital agency / Web development
-        if (combined.includes('agency') || combined.includes('digital') || combined.includes('web') || 
-            combined.includes('development') || combined.includes('wordpress') || combined.includes('hosting') ||
-            combined.includes('software') || combined.includes('tech')) {
-          routes.push('/case-studies', '/clients', '/careers', '/testimonials', '/our-work',
-            '/web-development', '/wordpress', '/hosting', '/maintenance', '/custom-development',
-            '/seo', '/digital-marketing', '/support', '/packages', '/plans', '/solutions');
-        }
-        
-        // Marketing agency
-        if (combined.includes('marketing') || combined.includes('seo') || combined.includes('advertising') ||
-            combined.includes('branding')) {
-          routes.push('/case-studies', '/clients', '/careers', '/testimonials', '/our-work',
-            '/social-media', '/content-marketing', '/ppc', '/analytics');
-        }
-        
-        // Restaurant / Food
-        if (combined.includes('restaurant') || combined.includes('food') || combined.includes('menu') ||
-            combined.includes('dining') || combined.includes('cafe')) {
-          routes.push('/menu', '/reservations', '/locations', '/catering', '/order-online');
-        }
-        
-        // Real Estate
-        if (combined.includes('real estate') || combined.includes('property') || combined.includes('homes') ||
-            combined.includes('apartments') || combined.includes('rent')) {
-          routes.push('/listings', '/properties', '/buy', '/rent', '/sell', '/agents', '/neighborhoods');
-        }
-        
-        // Healthcare / Medical
-        if (combined.includes('health') || combined.includes('medical') || combined.includes('doctor') ||
-            combined.includes('clinic') || combined.includes('hospital')) {
-          routes.push('/services', '/doctors', '/appointments', '/patients', '/specialties', '/locations');
-        }
-        
-        // Education
-        if (combined.includes('education') || combined.includes('school') || combined.includes('course') ||
-            combined.includes('training') || combined.includes('learn')) {
-          routes.push('/courses', '/programs', '/admissions', '/faculty', '/campus', '/events');
-        }
-        
-        // Law firm / Legal
-        if (combined.includes('law') || combined.includes('legal') || combined.includes('attorney') ||
-            combined.includes('lawyer')) {
-          routes.push('/practice-areas', '/attorneys', '/case-results', '/resources', '/consultations');
-        }
-        
-        return [...commonRoutes, ...routes];
+        return [...new Set(routes)]; // Remove duplicates
       };
       
-      // Keep old function name for compatibility
-      const getCommonSPARoutes = getCommonRoutes;
+      // Extract all links from HTML
+      const extractLinks = (html: string, currentUrl: string): string[] => {
+        const links: string[] = [];
+        const foundHrefs = new Set<string>();
+        
+        // Find all href attributes
+        const linkRegex = /href=["']([^"']+)["']/gi;
+        let match;
+        while ((match = linkRegex.exec(html)) !== null) {
+          foundHrefs.add(match[1].trim());
+        }
+        
+        for (let href of foundHrefs) {
+          if (href.startsWith('#') || href.startsWith('javascript:') || 
+              href.startsWith('mailto:') || href.startsWith('tel:')) continue;
+          
+          try {
+            const absoluteUrl = new URL(href, currentUrl);
+            if (absoluteUrl.origin === baseDomain) {
+              absoluteUrl.hash = '';
+              const normalizedUrl = absoluteUrl.href;
+              // Skip static assets
+              if (!normalizedUrl.match(/\.(jpg|jpeg|png|gif|svg|webp|pdf|css|js|ico|woff|woff2|ttf|mp4|mp3)$/i)) {
+                links.push(normalizedUrl);
+              }
+            }
+          } catch (e) {}
+        }
+        
+        return [...new Set(links)];
+      };
       
       const isErrorPage = (html: string, content: string): boolean => {
         const combined = (html + ' ' + content).toLowerCase();
@@ -968,36 +885,6 @@ export async function registerRoutes(
       
       const getContentHash = (content: string): string => {
         return content.toLowerCase().replace(/\s+/g, ' ').trim().substring(0, 500);
-      };
-      
-      const extractLinks = (html: string, currentUrl: string): string[] => {
-        const links: string[] = [];
-        const linkPatterns = [/<a[^>]+href=["']([^"']+)["'][^>]*>/gi, /href=["']([^"']+)["']/gi];
-        const foundHrefs = new Set<string>();
-        
-        for (const linkRegex of linkPatterns) {
-          let match;
-          while ((match = linkRegex.exec(html)) !== null) {
-            foundHrefs.add(match[1].trim());
-          }
-        }
-        
-        for (let href of foundHrefs) {
-          if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) continue;
-          
-          try {
-            const absoluteUrl = new URL(href, currentUrl);
-            if (absoluteUrl.origin === baseDomain) {
-              absoluteUrl.hash = '';
-              const normalizedUrl = absoluteUrl.href;
-              if (!normalizedUrl.match(/\.(jpg|jpeg|png|gif|svg|webp|pdf|css|js|ico|woff|woff2|ttf|mp4|mp3)$/i)) {
-                links.push(normalizedUrl);
-              }
-            }
-          } catch (e) {}
-        }
-        
-        return [...new Set(links)];
       };
       
       const extractContent = (html: string): { title: string; content: string } => {
@@ -1290,56 +1177,76 @@ export async function registerRoutes(
         sendProgress({ type: 'status', message: 'No sitemap found, discovering pages...', progress: 12 });
       }
       
-      // STEP 2: Analyze homepage
-      sendProgress({ type: 'status', message: 'Analyzing homepage...', progress: 15 });
+      // STEP 2: Analyze homepage with Puppeteer (universal scanning)
+      sendProgress({ type: 'status', message: 'Loading homepage with JavaScript rendering...', progress: 15 });
       let homepageHtml = '';
-      try {
-        const homeResponse = await fetch(url as string, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          signal: AbortSignal.timeout(15000)
-        });
-        if (homeResponse.ok) {
-          homepageHtml = await homeResponse.text();
+      
+      // Always use Puppeteer for the homepage to ensure we get all content
+      if (puppeteerAvailable) {
+        try {
+          sendProgress({ type: 'status', message: 'Launching browser for full content extraction...', progress: 16 });
+          const homeResult = await fetchWithPuppeteer(url as string);
+          homepageHtml = homeResult.html;
           
-          // Check if site needs JavaScript rendering (SPA detection)
-          const { type: detectedType, needsJS } = detectWebsiteType(homepageHtml);
-          console.log(`Detected website type: ${detectedType}, needsJS: ${needsJS}`);
+          // Detect website type for logging
+          const { type: detectedType } = detectWebsiteType(homepageHtml);
+          console.log(`Website detected as: ${detectedType}`);
+          sendProgress({ type: 'status', message: `Detected: ${detectedType} - extracting content...`, progress: 17 });
           
-          if (needsJS) {
-            sendProgress({ type: 'status', message: `SPA detected (${detectedType}) - enabling JavaScript rendering...`, progress: 18 });
-            usePuppeteer = true;
-            console.log('Puppeteer ENABLED for SPA rendering');
-          } else {
-            // Also check body content - if it's empty/sparse, enable Puppeteer
-            const bodyMatch = homepageHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-            if (bodyMatch) {
-              const cleanBody = bodyMatch[1]
-                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                .replace(/<[^>]+>/g, '')
-                .trim();
-              
-              if (cleanBody.length < 200) {
-                sendProgress({ type: 'status', message: 'Sparse content detected - enabling JavaScript rendering...', progress: 18 });
-                usePuppeteer = true;
-                console.log(`Puppeteer ENABLED due to sparse content (${cleanBody.length} chars)`);
-              }
+          // Add discovered links from Puppeteer
+          for (const link of homeResult.links) {
+            if (!urlsToScan.includes(link)) {
+              urlsToScan.push(link);
             }
           }
+          console.log(`Homepage loaded with Puppeteer: ${homepageHtml.length} chars, ${homeResult.links.length} links found`);
           
-          sendProgress({ type: 'status', message: `Detected website type: ${detectedType}`, progress: 19 });
-          
-          const commonRoutes = getCommonRoutes(homepageHtml);
-          for (const route of commonRoutes) {
-            try {
-              const fullUrl = new URL(route, baseDomain).href;
-              if (!urlsToScan.includes(fullUrl)) {
-                urlsToScan.push(fullUrl);
-              }
-            } catch (e) {}
+          // Also extract and save homepage content immediately
+          if (homeResult.textContent && homeResult.textContent.length > 50) {
+            const titleMatch = homepageHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
+            const homeTitle = titleMatch ? titleMatch[1].trim().replace(/\s+/g, ' ').replace(/\|.*$/, '').replace(/-.*$/, '').trim() : 'Homepage';
+            scannedPages.push({ 
+              url: url as string, 
+              title: homeTitle, 
+              content: homeResult.textContent 
+            });
+            visitedUrls.add(url as string);
+            sendProgress({ type: 'found', message: `Found content: ${homeTitle}`, pagesFound: 1, progress: 18 });
           }
+        } catch (e: any) {
+          console.log(`Puppeteer homepage fetch failed: ${e.message}, trying regular fetch`);
+          puppeteerAvailable = false;
         }
-      } catch (e) {}
+      }
+      
+      // Fallback to regular fetch only if Puppeteer failed
+      if (!homepageHtml && !puppeteerAvailable) {
+        try {
+          const homeResponse = await fetch(url as string, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            signal: AbortSignal.timeout(15000)
+          });
+          if (homeResponse.ok) {
+            homepageHtml = await homeResponse.text();
+            console.log(`Homepage loaded with regular fetch: ${homepageHtml.length} chars`);
+          }
+        } catch (e) {
+          console.log('Regular homepage fetch also failed');
+        }
+      }
+      
+      // Get common routes from homepage HTML
+      if (homepageHtml) {
+        const commonRoutes = getCommonRoutes(homepageHtml);
+        for (const route of commonRoutes) {
+          try {
+            const fullUrl = new URL(route, baseDomain).href;
+            if (!urlsToScan.includes(fullUrl)) {
+              urlsToScan.push(fullUrl);
+            }
+          } catch (e) {}
+        }
+      }
       
       sendProgress({ type: 'status', message: `Found ${urlsToScan.length} pages to scan`, progress: 20, totalPages: urlsToScan.length });
       
@@ -1633,9 +1540,11 @@ export async function registerRoutes(
         }
       }
       
-      // ========== PUPPETEER BROWSER FOR SPA SCANNING ==========
+      // ========== PUPPETEER BROWSER FOR UNIVERSAL SCANNING ==========
+      // ALWAYS use Puppeteer by default for maximum compatibility
+      // This ensures we can scan ANY website: React, Vue, Angular, WordPress, Shopify, etc.
       let browser: any = null;
-      let usePuppeteer = false;
+      let usePuppeteer = true; // DEFAULT TO TRUE - scan everything with JS rendering
       let puppeteerAvailable = true; // Track if Puppeteer can be used
       
       // Helper function to fetch page with Puppeteer (for SPAs)
