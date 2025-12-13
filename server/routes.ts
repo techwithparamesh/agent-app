@@ -544,34 +544,71 @@ export async function registerRoutes(
                 fullText += ' Links: ' + uniqueLinks.join(', ') + '.';
               }
               
-              // E-commerce specific extraction
-              // Extract product names
-              var productNames = [];
-              document.querySelectorAll('[class*="product"], [class*="item"], [data-component-type="s-search-result"]').forEach(function(el) {
-                var title = el.querySelector('h2, h3, h4, [class*="title"], [class*="name"]');
-                if (title) {
-                  var titleText = (title.textContent || '').trim();
-                  if (titleText.length > 5 && titleText.length < 200) {
-                    productNames.push(titleText);
+              // E-commerce specific extraction - Products WITH URLs
+              var productsWithUrls = [];
+              
+              // Amazon specific product extraction
+              document.querySelectorAll('[data-component-type="s-search-result"], .s-result-item').forEach(function(el) {
+                var titleEl = el.querySelector('h2 a, .a-link-normal.a-text-normal');
+                var priceEl = el.querySelector('.a-price .a-offscreen, .a-price-whole');
+                if (titleEl) {
+                  var titleText = (titleEl.textContent || '').trim();
+                  var href = titleEl.getAttribute('href');
+                  var priceText = priceEl ? (priceEl.textContent || '').trim() : '';
+                  if (titleText.length > 10 && titleText.length < 300) {
+                    var productUrl = href ? (href.startsWith('http') ? href : window.location.origin + href) : '';
+                    var productInfo = titleText;
+                    if (priceText) productInfo += ' - ' + priceText;
+                    if (productUrl) productInfo += ' | Link: ' + productUrl;
+                    productsWithUrls.push(productInfo);
                   }
                 }
               });
               
-              // Extract prices
+              // Generic product extraction with links
+              if (productsWithUrls.length === 0) {
+                document.querySelectorAll('[class*="product-card"], [class*="product-item"], .product, .item').forEach(function(el) {
+                  var titleEl = el.querySelector('a[href*="/product"], a[href*="/p/"], a[href*="/dp/"], h2 a, h3 a, .title a, .name a');
+                  var priceEl = el.querySelector('[class*="price"]');
+                  if (titleEl) {
+                    var titleText = (titleEl.textContent || '').trim();
+                    var href = titleEl.getAttribute('href');
+                    var priceText = priceEl ? (priceEl.textContent || '').trim() : '';
+                    if (titleText.length > 5 && titleText.length < 300) {
+                      var productUrl = href ? (href.startsWith('http') ? href : window.location.origin + href) : '';
+                      var productInfo = titleText;
+                      if (priceText) productInfo += ' - ' + priceText;
+                      if (productUrl) productInfo += ' | Link: ' + productUrl;
+                      productsWithUrls.push(productInfo);
+                    }
+                  }
+                });
+              }
+              
+              // Fallback: Extract any product-like links
+              if (productsWithUrls.length === 0) {
+                document.querySelectorAll('a[href*="/product"], a[href*="/dp/"], a[href*="/p/"], a[href*="/item"]').forEach(function(a) {
+                  var titleText = (a.textContent || '').trim();
+                  var href = a.getAttribute('href');
+                  if (titleText.length > 10 && titleText.length < 200 && href) {
+                    var productUrl = href.startsWith('http') ? href : window.location.origin + href;
+                    productsWithUrls.push(titleText + ' | Link: ' + productUrl);
+                  }
+                });
+              }
+              
+              // Extract standalone prices for context
               var prices = [];
-              document.querySelectorAll('[class*="price"], [class*="Price"], .a-price, .price').forEach(function(el) {
+              document.querySelectorAll('.a-price .a-offscreen, [class*="price"]:not([class*="product"])').forEach(function(el) {
                 var priceText = (el.textContent || '').trim();
-                if (priceText.match(/[₹$€£]|\\d+/)) {
-                  prices.push(priceText.substring(0, 50));
+                if (priceText.match(/[₹$€£]/) && priceText.length < 30) {
+                  prices.push(priceText);
                 }
               });
               
-              if (productNames.length > 0) {
-                fullText += ' Products: ' + productNames.slice(0, 20).join(', ') + '.';
-              }
-              if (prices.length > 0) {
-                var uniquePrices = prices.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 10);
-                fullText += ' Prices: ' + uniquePrices.join(', ') + '.';
+              if (productsWithUrls.length > 0) {
+                var uniqueProducts = productsWithUrls.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 15);
+                fullText += ' PRODUCTS: ' + uniqueProducts.join(' || ') + '.';
               }
               
               // Clean up excessive whitespace
@@ -1096,22 +1133,49 @@ export async function registerRoutes(
           }
         }
         
-        // E-commerce: Extract product names from various patterns
-        const productNames: string[] = [];
-        // Amazon product titles
-        const amazonTitles = bodyContent.matchAll(/<span[^>]*class=["'][^"']*a-text-normal[^"']*["'][^>]*>([\s\S]*?)<\/span>/gi);
-        for (const match of amazonTitles) {
-          const titleText = match[1].replace(/<[^>]+>/g, '').trim();
+        // E-commerce: Extract products WITH URLs
+        const productsWithUrls: string[] = [];
+        
+        // Extract product links with titles - Amazon format
+        const amazonProductLinks = bodyContent.matchAll(/<a[^>]*href=["']([^"']*\/dp\/[^"']+)["'][^>]*>[\s\S]*?<span[^>]*class=["'][^"']*a-text-normal[^"']*["'][^>]*>([\s\S]*?)<\/span>/gi);
+        for (const match of amazonProductLinks) {
+          const href = match[1];
+          const titleText = match[2].replace(/<[^>]+>/g, '').trim();
           if (titleText.length > 10 && titleText.length < 300) {
-            productNames.push(titleText);
+            const fullUrl = href.startsWith('http') ? href : baseDomain + href;
+            productsWithUrls.push(`${titleText} | Link: ${fullUrl}`);
           }
         }
-        // Generic product titles
-        const prodTitles = bodyContent.matchAll(/<[^>]*class=["'][^"']*(?:product-title|product-name|item-title|item-name)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/gi);
-        for (const match of prodTitles) {
-          const titleText = match[1].replace(/<[^>]+>/g, '').trim();
+        
+        // Extract product links - generic format
+        const genericProductLinks = bodyContent.matchAll(/<a[^>]*href=["']([^"']*(?:\/product|\/p\/|\/item)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi);
+        for (const match of genericProductLinks) {
+          const href = match[1];
+          const titleText = match[2].replace(/<[^>]+>/g, '').trim();
           if (titleText.length > 5 && titleText.length < 300) {
-            productNames.push(titleText);
+            const fullUrl = href.startsWith('http') ? href : baseDomain + href;
+            productsWithUrls.push(`${titleText} | Link: ${fullUrl}`);
+          }
+        }
+        
+        // Fallback: Extract product names without URLs
+        const productNames: string[] = [];
+        if (productsWithUrls.length === 0) {
+          // Amazon product titles
+          const amazonTitles = bodyContent.matchAll(/<span[^>]*class=["'][^"']*a-text-normal[^"']*["'][^>]*>([\s\S]*?)<\/span>/gi);
+          for (const match of amazonTitles) {
+            const titleText = match[1].replace(/<[^>]+>/g, '').trim();
+            if (titleText.length > 10 && titleText.length < 300) {
+              productNames.push(titleText);
+            }
+          }
+          // Generic product titles
+          const prodTitles = bodyContent.matchAll(/<[^>]*class=["'][^"']*(?:product-title|product-name|item-title|item-name)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/gi);
+          for (const match of prodTitles) {
+            const titleText = match[1].replace(/<[^>]+>/g, '').trim();
+            if (titleText.length > 5 && titleText.length < 300) {
+              productNames.push(titleText);
+            }
           }
         }
         
@@ -1170,11 +1234,16 @@ export async function registerRoutes(
           fullContent += " Key points: " + listItems.slice(0, 10).join("; ") + ".";
         }
         
-        // Add e-commerce product info
-        if (productNames.length > 0) {
+        // Add e-commerce product info WITH URLs (priority)
+        if (productsWithUrls.length > 0) {
+          const uniqueProducts = [...new Set(productsWithUrls)].slice(0, 20);
+          fullContent += " PRODUCTS WITH LINKS: " + uniqueProducts.join(" || ") + ".";
+        } else if (productNames.length > 0) {
+          // Fallback: products without URLs
           const uniqueProducts = [...new Set(productNames)].slice(0, 25);
           fullContent += " Products available: " + uniqueProducts.join(", ") + ".";
         }
+        
         if (prices.length > 0) {
           const uniquePrices = [...new Set(prices)].slice(0, 15);
           fullContent += " Price range: " + uniquePrices.join(", ") + ".";
