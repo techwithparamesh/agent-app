@@ -447,24 +447,36 @@ export async function registerRoutes(
           throw pageErr;
         }
         
+        // Set viewport and user agent to look like a real browser
+        await page.setViewport({ width: 1920, height: 1080 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        // Anti-detection settings
+        await page.evaluateOnNewDocument(`
+          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+          window.chrome = { runtime: {} };
+        `);
         
         try {
           console.log(`Navigating to: ${pageUrl}`);
           await page.goto(pageUrl, { 
             waitUntil: 'networkidle2',
-            timeout: 45000 
+            timeout: 60000 
           });
           console.log(`Navigation completed: ${pageUrl}`);
           
           // Wait for JavaScript to render content (longer for heavy SPAs like Flipkart)
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise(resolve => setTimeout(resolve, 4000));
           
-          // Try to scroll to trigger lazy loading (use string to avoid esbuild __name issue)
-          await page.evaluate(`window.scrollTo(0, document.body.scrollHeight / 3)`);
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          await page.evaluate(`window.scrollTo(0, document.body.scrollHeight / 2)`);
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Scroll multiple times to trigger lazy loading
+          await page.evaluate(`window.scrollTo(0, 500)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await page.evaluate(`window.scrollTo(0, 1500)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await page.evaluate(`window.scrollTo(0, 3000)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await page.evaluate(`window.scrollTo(0, 0)`); // Scroll back to top
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           const html = await page.content();
           
@@ -472,8 +484,8 @@ export async function registerRoutes(
           // Using a string function to avoid esbuild's __name injection
           const textContent = await page.evaluate(`
             (function() {
-              // Remove unwanted elements
-              var unwanted = document.querySelectorAll('script, style, noscript, iframe, svg, path, nav, header, footer');
+              // Remove ONLY script/style tags, keep navigation for link discovery
+              var unwanted = document.querySelectorAll('script, style, noscript, iframe, svg, path');
               unwanted.forEach(function(el) { el.remove(); });
               
               // Simple text extraction - get ALL visible text
@@ -790,36 +802,45 @@ export async function registerRoutes(
         return { type: 'website', needsJS: true };
       };
       
-      // Universal route discovery - no site-specific code
-      const getCommonRoutes = (html: string): string[] => {
+      // Universal route discovery - extract only REAL links from HTML, no guessing
+      const getCommonRoutes = (html: string, baseUrl: string): string[] => {
         const routes: string[] = [];
+        const baseDomainUrl = new URL(baseUrl).origin;
         
-        // Universal common routes that exist on most websites
-        const universalRoutes = [
-          '/about', '/services', '/contact', '/pricing', '/blog',
-          '/products', '/shop', '/cart', '/faq', '/team',
-          '/portfolio', '/work', '/projects', '/gallery', '/features',
-          '/about-us', '/contact-us', '/privacy', '/terms', '/policy',
-          '/categories', '/collections', '/sale', '/new', '/offers'
-        ];
-        routes.push(...universalRoutes);
-        
-        // Extract ALL internal links from the HTML
+        // Extract ALL internal links from the HTML - both relative and absolute
         const linkMatches = html.matchAll(/href=["']([^"']+)["']/gi);
         for (const match of linkMatches) {
-          const href = match[1];
-          // Skip external links, anchors, javascript, mailto, tel
-          if (href.startsWith('http') || href.startsWith('#') || 
-              href.startsWith('javascript:') || href.startsWith('mailto:') || 
-              href.startsWith('tel:') || href.startsWith('//')) {
+          let href = match[1].trim();
+          
+          // Skip non-navigable links
+          if (href.startsWith('#') || href.startsWith('javascript:') || 
+              href.startsWith('mailto:') || href.startsWith('tel:') ||
+              href.startsWith('data:')) {
             continue;
           }
-          // Add internal paths
-          if (href.startsWith('/') && !href.includes('?') && href.length > 1 && href.length < 100) {
-            routes.push(href);
+          
+          try {
+            // Convert to absolute URL
+            const absoluteUrl = new URL(href, baseUrl);
+            
+            // Only include links from same domain
+            if (absoluteUrl.origin === baseDomainUrl) {
+              // Skip static assets
+              if (!absoluteUrl.pathname.match(/\.(jpg|jpeg|png|gif|svg|webp|pdf|css|js|ico|woff|woff2|ttf|mp4|mp3|zip|exe)$/i)) {
+                // Clean the URL - remove hash, keep path
+                absoluteUrl.hash = '';
+                const cleanUrl = absoluteUrl.href;
+                if (cleanUrl !== baseUrl && cleanUrl !== baseDomainUrl + '/') {
+                  routes.push(cleanUrl);
+                }
+              }
+            }
+          } catch (e) {
+            // Invalid URL, skip
           }
         }
         
+        console.log(`Discovered ${routes.length} real links from page HTML`);
         return [...new Set(routes)]; // Remove duplicates
       };
       
@@ -1237,14 +1258,12 @@ export async function registerRoutes(
       
       // Get common routes from homepage HTML
       if (homepageHtml) {
-        const commonRoutes = getCommonRoutes(homepageHtml);
+        const commonRoutes = getCommonRoutes(homepageHtml, url as string);
         for (const route of commonRoutes) {
-          try {
-            const fullUrl = new URL(route, baseDomain).href;
-            if (!urlsToScan.includes(fullUrl)) {
-              urlsToScan.push(fullUrl);
-            }
-          } catch (e) {}
+          // Routes are already absolute URLs now
+          if (!urlsToScan.includes(route)) {
+            urlsToScan.push(route);
+          }
         }
       }
       
@@ -1611,18 +1630,32 @@ export async function registerRoutes(
           throw pageErr;
         }
         
+        // Set viewport and user agent to look like a real browser
+        await page.setViewport({ width: 1920, height: 1080 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        // Anti-detection settings
+        await page.evaluateOnNewDocument(`
+          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+          window.chrome = { runtime: {} };
+        `);
         
         try {
           console.log(`Navigating to: ${pageUrl}`);
           await page.goto(pageUrl, { 
-            waitUntil: 'domcontentloaded',
-            timeout: 30000 
+            waitUntil: 'networkidle2',
+            timeout: 60000 
           });
           console.log(`Navigation completed: ${pageUrl}`);
           
           // Wait for JavaScript to render content
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 4000));
+          
+          // Scroll to trigger lazy loading
+          await page.evaluate(`window.scrollTo(0, 500)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await page.evaluate(`window.scrollTo(0, 1500)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Get rendered HTML
           const html = await page.content();
@@ -1733,44 +1766,46 @@ export async function registerRoutes(
         return false;
       };
       
-      // Common routes to try for SPAs without sitemaps
-      const getCommonSPARoutes = (html: string): string[] => {
+      // Universal route discovery - extract only REAL links from HTML, no guessing
+      const getCommonSPARoutes = (html: string, baseUrl: string): string[] => {
         const routes: string[] = [];
+        const baseDomainUrl = new URL(baseUrl).origin;
         
-        // Standard pages most sites have
-        const commonRoutes = [
-          '/about', '/services', '/contact', '/portfolio', '/pricing',
-          '/blog', '/team', '/faq', '/gallery', '/work', '/projects'
-        ];
-        
-        // Detect industry from meta tags and add industry-specific routes
-        const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1]?.toLowerCase() || '';
-        const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.toLowerCase() || '';
-        const combined = metaDesc + ' ' + title;
-        
-        // Interior design specific routes
-        if (combined.includes('interior') || combined.includes('design') || combined.includes('kitchen') || 
-            combined.includes('furniture') || combined.includes('home')) {
-          routes.push(
-            '/modular-kitchen', '/bedroom', '/living-room', '/wardrobe', '/wardrobes',
-            '/tv-unit', '/pooja-mandir', '/bathroom', '/living-room/hall',
-            '/book-consultation', '/our-work', '/testimonials'
-          );
+        // Extract ALL internal links from the HTML - both relative and absolute
+        const linkMatches = html.matchAll(/href=["']([^"']+)["']/gi);
+        for (const match of linkMatches) {
+          let href = match[1].trim();
+          
+          // Skip non-navigable links
+          if (href.startsWith('#') || href.startsWith('javascript:') || 
+              href.startsWith('mailto:') || href.startsWith('tel:') ||
+              href.startsWith('data:')) {
+            continue;
+          }
+          
+          try {
+            // Convert to absolute URL
+            const absoluteUrl = new URL(href, baseUrl);
+            
+            // Only include links from same domain
+            if (absoluteUrl.origin === baseDomainUrl) {
+              // Skip static assets
+              if (!absoluteUrl.pathname.match(/\.(jpg|jpeg|png|gif|svg|webp|pdf|css|js|ico|woff|woff2|ttf|mp4|mp3|zip|exe)$/i)) {
+                // Clean the URL - remove hash, keep path
+                absoluteUrl.hash = '';
+                const cleanUrl = absoluteUrl.href;
+                if (cleanUrl !== baseUrl && cleanUrl !== baseDomainUrl + '/') {
+                  routes.push(cleanUrl);
+                }
+              }
+            }
+          } catch (e) {
+            // Invalid URL, skip
+          }
         }
         
-        // E-commerce routes
-        if (combined.includes('shop') || combined.includes('store') || combined.includes('buy') ||
-            combined.includes('product')) {
-          routes.push('/products', '/shop', '/cart', '/categories', '/collections');
-        }
-        
-        // Agency/business routes
-        if (combined.includes('agency') || combined.includes('company') || combined.includes('digital') ||
-            combined.includes('marketing')) {
-          routes.push('/case-studies', '/clients', '/careers', '/testimonials', '/our-work');
-        }
-        
-        return [...commonRoutes, ...routes];
+        console.log(`Discovered ${routes.length} real links from page HTML`);
+        return [...new Set(routes)]; // Remove duplicates
       };
       
       // Helper function to extract routes from JavaScript bundles (for SPAs)
@@ -2182,14 +2217,12 @@ export async function registerRoutes(
           }
           
           // Add common routes based on website type
-          const commonRoutes = getCommonSPARoutes(homepageHtml);
+          const commonRoutes = getCommonSPARoutes(homepageHtml, url);
           for (const route of commonRoutes) {
-            try {
-              const fullUrl = new URL(route, baseDomain).href;
-              if (!urlsToScan.includes(fullUrl) && !visitedUrls.has(fullUrl)) {
-                urlsToScan.push(fullUrl);
-              }
-            } catch (e) {}
+            // Routes are already absolute URLs now
+            if (!urlsToScan.includes(route) && !visitedUrls.has(route)) {
+              urlsToScan.push(route);
+            }
           }
           console.log(`Added ${commonRoutes.length} common routes`);
         }
