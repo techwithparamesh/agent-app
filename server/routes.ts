@@ -1055,13 +1055,32 @@ export async function registerRoutes(
         if (homeResponse.ok) {
           homepageHtml = await homeResponse.text();
           
-          if (sitemapUrls.length === 0 && isSPASite(homepageHtml)) {
-            sendProgress({ type: 'status', message: 'SPA detected - enabling JavaScript rendering...', progress: 18 });
+          // Check if site needs JavaScript rendering (SPA detection)
+          const { type: detectedType, needsJS } = detectWebsiteType(homepageHtml);
+          console.log(`Detected website type: ${detectedType}, needsJS: ${needsJS}`);
+          
+          if (needsJS) {
+            sendProgress({ type: 'status', message: `SPA detected (${detectedType}) - enabling JavaScript rendering...`, progress: 18 });
             usePuppeteer = true;
+            console.log('Puppeteer ENABLED for SPA rendering');
+          } else {
+            // Also check body content - if it's empty/sparse, enable Puppeteer
+            const bodyMatch = homepageHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+            if (bodyMatch) {
+              const cleanBody = bodyMatch[1]
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<[^>]+>/g, '')
+                .trim();
+              
+              if (cleanBody.length < 200) {
+                sendProgress({ type: 'status', message: 'Sparse content detected - enabling JavaScript rendering...', progress: 18 });
+                usePuppeteer = true;
+                console.log(`Puppeteer ENABLED due to sparse content (${cleanBody.length} chars)`);
+              }
+            }
           }
           
-          // Add common routes based on detected website type
-          const { type: detectedType } = detectWebsiteType(homepageHtml);
           sendProgress({ type: 'status', message: `Detected website type: ${detectedType}`, progress: 19 });
           
           const commonRoutes = getCommonRoutes(homepageHtml);
@@ -1961,6 +1980,30 @@ export async function registerRoutes(
         if (homeResponse.ok) {
           homepageHtml = await homeResponse.text();
           
+          // Check if site needs JavaScript rendering (SPA detection)
+          const { type: detectedType, needsJS } = detectWebsiteType(homepageHtml);
+          console.log(`Detected website type: ${detectedType}, needsJS: ${needsJS}`);
+          
+          if (needsJS) {
+            console.log(`SPA detected (${detectedType}) - enabling Puppeteer for JavaScript rendering...`);
+            usePuppeteer = true;
+          } else {
+            // Also check body content - if it's empty/sparse, enable Puppeteer
+            const bodyMatch = homepageHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+            if (bodyMatch) {
+              const cleanBody = bodyMatch[1]
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<[^>]+>/g, '')
+                .trim();
+              
+              if (cleanBody.length < 200) {
+                console.log(`Sparse content detected (${cleanBody.length} chars) - enabling Puppeteer...`);
+                usePuppeteer = true;
+              }
+            }
+          }
+          
           // Discover routes from JavaScript
           const jsRoutes = await discoverFromJavaScript(homepageHtml);
           console.log(`Found ${jsRoutes.length} potential routes from JavaScript:`, jsRoutes);
@@ -1974,21 +2017,17 @@ export async function registerRoutes(
             } catch (e) {}
           }
           
-          // If this is an SPA with no sitemap, add common routes and enable Puppeteer
-          if (sitemapUrls.length === 0 && isSPASite(homepageHtml)) {
-            console.log('SPA detected without sitemap - enabling Puppeteer for JavaScript rendering...');
-            usePuppeteer = true;
-            const commonRoutes = getCommonSPARoutes(homepageHtml);
-            for (const route of commonRoutes) {
-              try {
-                const fullUrl = new URL(route, baseDomain).href;
-                if (!urlsToScan.includes(fullUrl) && !visitedUrls.has(fullUrl)) {
-                  urlsToScan.push(fullUrl);
-                }
-              } catch (e) {}
-            }
-            console.log(`Added ${commonRoutes.length} common SPA routes`);
+          // Add common routes based on website type
+          const commonRoutes = getCommonSPARoutes(homepageHtml);
+          for (const route of commonRoutes) {
+            try {
+              const fullUrl = new URL(route, baseDomain).href;
+              if (!urlsToScan.includes(fullUrl) && !visitedUrls.has(fullUrl)) {
+                urlsToScan.push(fullUrl);
+              }
+            } catch (e) {}
           }
+          console.log(`Added ${commonRoutes.length} common routes`);
         }
       } catch (e) {
         console.log('Could not fetch homepage for route discovery');
