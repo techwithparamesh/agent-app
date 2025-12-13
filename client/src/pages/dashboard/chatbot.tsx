@@ -42,6 +42,34 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+// Helper function to convert URLs in text to clickable links
+const renderMessageWithLinks = (content: string) => {
+  // Regex to match URLs
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+  
+  const parts = content.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      // Reset regex lastIndex since we're reusing it
+      urlRegex.lastIndex = 0;
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/80 break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part.length > 60 ? part.substring(0, 60) + '...' : part}
+        </a>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
+
 export default function ChatbotPage() {
   const [location] = useLocation();
   const { toast } = useToast();
@@ -51,6 +79,9 @@ export default function ChatbotPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [usageStats, setUsageStats] = useState<{ remaining: number; limit: number; plan: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Session ID for conversation tracking
+  const [sessionId] = useState(() => `dashboard_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   // Get agent from URL params
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
@@ -96,6 +127,7 @@ export default function ChatbotPage() {
       const response = await apiRequest("POST", "/api/chat", {
         agentId: currentAgentId,
         message,
+        sessionId,
       });
       
       // Check if limit reached
@@ -306,7 +338,10 @@ export default function ChatbotPage() {
                                 data-testid={`message-${message.role}-${message.id}`}
                               >
                                 <p className="text-sm whitespace-pre-wrap">
-                                  {message.content}
+                                  {message.role === "assistant" 
+                                    ? renderMessageWithLinks(message.content)
+                                    : message.content
+                                  }
                                 </p>
                               </div>
                               {message.role === "user" && (

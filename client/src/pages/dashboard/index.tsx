@@ -141,30 +141,46 @@ export default function Dashboard() {
     staleTime: 0,
   });
 
+  // Fetch real dashboard stats
+  const { data: dashboardStats } = useQuery<{
+    totalConversations: number;
+    uniqueVisitors: number;
+    totalMessages: number;
+    responseRate: number;
+  }>({
+    queryKey: ["/api/dashboard/stats"],
+    refetchOnMount: "always",
+    staleTime: 0,
+  });
+
   const stats = [
     {
       icon: Bot,
       label: "Active Agents",
       value: agents?.length || 0,
-      change: "Create your first agent",
+      change: agents?.length ? `${agents.length} active` : "Create your first agent",
+      href: "/dashboard/agents",
     },
     {
       icon: MessageSquare,
       label: "Conversations",
-      value: "0",
-      change: "Start chatting",
+      value: dashboardStats?.totalConversations || 0,
+      change: dashboardStats?.totalConversations ? "Start chatting" : "Start chatting",
+      href: "/dashboard/chatbot",
     },
     {
       icon: Users,
       label: "Visitors Engaged",
-      value: "0",
-      change: "Embed widget to track",
+      value: dashboardStats?.uniqueVisitors || 0,
+      change: dashboardStats?.uniqueVisitors ? `${dashboardStats.uniqueVisitors} unique` : "Embed widget to track",
+      href: "/dashboard/analytics",
     },
     {
       icon: TrendingUp,
       label: "Response Rate",
-      value: "--",
-      change: "No data yet",
+      value: dashboardStats?.responseRate ? `${dashboardStats.responseRate}%` : "--",
+      change: dashboardStats?.responseRate ? "Based on responses" : "No data yet",
+      href: "/dashboard/analytics",
     },
   ];
 
@@ -196,26 +212,28 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <stat.icon className="h-5 w-5 text-primary" />
+            <Link key={index} href={stat.href}>
+              <Card className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <stat.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {stat.change}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {stat.change}
-                  </Badge>
-                </div>
-                <div>
-                  {agentsLoading && index === 0 ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    <p className="text-3xl font-bold font-display">{stat.value}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </div>
-              </CardContent>
-            </Card>
+                  <div>
+                    {agentsLoading && index === 0 ? (
+                      <Skeleton className="h-8 w-16 mb-1" />
+                    ) : (
+                      <p className="text-3xl font-bold font-display">{stat.value}</p>
+                    )}
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 

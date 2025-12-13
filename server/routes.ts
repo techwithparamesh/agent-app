@@ -163,6 +163,18 @@ export async function registerRoutes(
     }
   });
 
+  // Get dashboard stats (conversations, visitors, etc.)
+  app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const stats = await storage.getDashboardStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
   // ========== AGENTS ==========
   app.get("/api/agents", isAuthenticated, async (req: any, res) => {
     try {
@@ -2602,11 +2614,14 @@ export async function registerRoutes(
     res.header("Access-Control-Allow-Headers", "Content-Type");
     
     try {
-      const { agentId, message } = req.body;
+      const { agentId, message, sessionId: clientSessionId } = req.body;
 
       if (!agentId || !message) {
         return res.status(400).json({ message: "Agent ID and message are required" });
       }
+
+      // Use provided session ID or generate one
+      const sessionId = clientSessionId || `widget_${crypto.randomUUID()}`;
 
       const agent = await storage.getAgentById(agentId);
       if (!agent) {
@@ -2617,8 +2632,19 @@ export async function registerRoutes(
       if (!agent.isActive) {
         return res.json({
           response: "This assistant is currently unavailable. Please try again later.",
+          sessionId,
         });
       }
+
+      // Track conversation and messages
+      const conversation = await storage.getOrCreateConversation(agentId, sessionId);
+      
+      // Save user message
+      await storage.addMessage({
+        conversationId: conversation.id,
+        role: 'user',
+        content: message,
+      });
 
       const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
       // Use smart search to find relevant knowledge based on user's query
@@ -2643,8 +2669,16 @@ Instructions:
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
+        const fallbackResponse = `Hi! I'm ${agent.name}. I'd be happy to help you! What would you like to know?`;
+        // Save assistant response
+        await storage.addMessage({
+          conversationId: conversation.id,
+          role: 'assistant',
+          content: fallbackResponse,
+        });
         return res.json({
-          response: `Hi! I'm ${agent.name}. I'd be happy to help you! What would you like to know?`,
+          response: fallbackResponse,
+          sessionId,
         });
       }
 
@@ -2662,7 +2696,14 @@ Instructions:
           ? completion.content[0].text
           : "I apologize, but I couldn't generate a response.";
 
-      res.json({ response: responseText });
+      // Save assistant response
+      await storage.addMessage({
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: responseText,
+      });
+
+      res.json({ response: responseText, sessionId });
     } catch (error: any) {
       console.error("Error in widget chat:", error);
       
@@ -2690,12 +2731,15 @@ Instructions:
 
   app.post("/api/chat", isAuthenticated, async (req: any, res) => {
     try {
-      const { agentId, message } = req.body;
+      const { agentId, message, sessionId: clientSessionId } = req.body;
       const userId = req.user.claims.sub;
 
       if (!agentId || !message) {
         return res.status(400).json({ message: "Agent ID and message are required" });
       }
+
+      // Use provided session ID or generate one based on user
+      const sessionId = clientSessionId || `dashboard_${userId}_${Date.now()}`;
 
       // Check message limit
       const usageCheck = await storage.canSendMessage(userId);
@@ -2713,6 +2757,16 @@ Instructions:
       if (!agent) {
         return res.status(404).json({ message: "Agent not found" });
       }
+
+      // Track conversation and messages
+      const conversation = await storage.getOrCreateConversation(agentId, sessionId);
+      
+      // Save user message
+      await storage.addMessage({
+        conversationId: conversation.id,
+        role: 'user',
+        content: message,
+      });
 
       const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
       // Use smart search to find relevant knowledge based on user's query
@@ -2741,8 +2795,18 @@ IMPORTANT INSTRUCTIONS:
         await storage.incrementMessageCount(userId);
         const updatedUsage = await storage.canSendMessage(userId);
         
+        const fallbackResponse = `I'm ${agent.name}. I'd be happy to help you! However, the AI service is not configured yet. Please add your Anthropic API key to enable intelligent responses.`;
+        
+        // Save assistant response
+        await storage.addMessage({
+          conversationId: conversation.id,
+          role: 'assistant',
+          content: fallbackResponse,
+        });
+        
         return res.json({
-          response: `I'm ${agent.name}. I'd be happy to help you! However, the AI service is not configured yet. Please add your Anthropic API key to enable intelligent responses.`,
+          response: fallbackResponse,
+          sessionId,
           usage: {
             remaining: updatedUsage.remaining,
             limit: updatedUsage.limit,
@@ -2764,12 +2828,20 @@ IMPORTANT INSTRUCTIONS:
           ? completion.content[0].text
           : "I apologize, but I couldn't generate a response.";
 
+      // Save assistant response
+      await storage.addMessage({
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: responseText,
+      });
+
       // Increment message count after successful response
       await storage.incrementMessageCount(userId);
       const updatedUsage = await storage.canSendMessage(userId);
 
       res.json({ 
         response: responseText,
+        sessionId,
         usage: {
           remaining: updatedUsage.remaining,
           limit: updatedUsage.limit,

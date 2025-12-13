@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
 import {
   users,
   agents,
@@ -391,6 +391,100 @@ export class DatabaseStorage implements IStorage {
       .set({ ...pageData })
       .where(eq(generatedPages.id, id));
     return this.getGeneratedPageById(id);
+  }
+
+  // Dashboard Stats
+  async getDashboardStats(userId: string): Promise<{
+    totalConversations: number;
+    uniqueVisitors: number;
+    totalMessages: number;
+    responseRate: number;
+  }> {
+    // Get all agents for this user
+    const userAgents = await db
+      .select({ id: agents.id })
+      .from(agents)
+      .where(eq(agents.userId, userId));
+    
+    if (userAgents.length === 0) {
+      return {
+        totalConversations: 0,
+        uniqueVisitors: 0,
+        totalMessages: 0,
+        responseRate: 0,
+      };
+    }
+
+    const agentIds = userAgents.map(a => a.id);
+
+    // Get total conversations across all user's agents
+    const conversationStats = await db
+      .select({
+        total: count(),
+        uniqueSessions: sql<number>`COUNT(DISTINCT session_id)`,
+      })
+      .from(conversations)
+      .where(inArray(conversations.agentId, agentIds));
+
+    // Get total messages
+    const allConversations = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(inArray(conversations.agentId, agentIds));
+    
+    let totalMessages = 0;
+    let userMessages = 0;
+    let assistantMessages = 0;
+
+    if (allConversations.length > 0) {
+      const convIds = allConversations.map(c => c.id);
+      const messageStats = await db
+        .select({
+          total: count(),
+          userMsgs: sql<number>`SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END)`,
+          assistantMsgs: sql<number>`SUM(CASE WHEN role = 'assistant' THEN 1 ELSE 0 END)`,
+        })
+        .from(messages)
+        .where(inArray(messages.conversationId, convIds));
+      
+      totalMessages = Number(messageStats[0]?.total) || 0;
+      userMessages = Number(messageStats[0]?.userMsgs) || 0;
+      assistantMessages = Number(messageStats[0]?.assistantMsgs) || 0;
+    }
+
+    // Calculate response rate (assistant responses / user messages)
+    const responseRate = userMessages > 0 
+      ? Math.round((assistantMessages / userMessages) * 100) 
+      : 0;
+
+    return {
+      totalConversations: Number(conversationStats[0]?.total) || 0,
+      uniqueVisitors: Number(conversationStats[0]?.uniqueSessions) || 0,
+      totalMessages,
+      responseRate,
+    };
+  }
+
+  // Get or create conversation by session
+  async getOrCreateConversation(agentId: string, sessionId: string): Promise<Conversation> {
+    // Try to find existing conversation for this session and agent
+    const [existing] = await db
+      .select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.agentId, agentId),
+        eq(conversations.sessionId, sessionId)
+      ))
+      .limit(1);
+    
+    if (existing) {
+      return existing;
+    }
+
+    // Create new conversation
+    const id = crypto.randomUUID();
+    await db.insert(conversations).values({ id, agentId, sessionId });
+    return this.getConversationById(id) as Promise<Conversation>;
   }
 }
 

@@ -168,6 +168,16 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
+    .af-widget-message.assistant a {
+      color: ${primaryColor};
+      text-decoration: underline;
+      word-break: break-all;
+    }
+
+    .af-widget-message.assistant a:hover {
+      opacity: 0.8;
+    }
+
     .af-widget-typing {
       display: flex;
       gap: 4px;
@@ -343,11 +353,28 @@
   toggleBtn.addEventListener('click', toggleChat);
   closeBtn.addEventListener('click', toggleChat);
 
+  // Helper function to convert URLs to clickable links
+  function linkify(text) {
+    const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+    return text.replace(urlRegex, function(url) {
+      // Truncate display URL if too long
+      const displayUrl = url.length > 50 ? url.substring(0, 50) + '...' : url;
+      return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color: ' + primaryColor + '; text-decoration: underline; word-break: break-all;">' + displayUrl + '</a>';
+    });
+  }
+
   // Add message to chat
   function addMessage(content, role) {
     const messageEl = document.createElement('div');
     messageEl.className = `af-widget-message ${role}`;
-    messageEl.textContent = content;
+    
+    // For assistant messages, convert URLs to clickable links
+    if (role === 'assistant') {
+      messageEl.innerHTML = linkify(content);
+    } else {
+      messageEl.textContent = content;
+    }
+    
     messagesContainer.appendChild(messageEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
@@ -371,6 +398,18 @@
     if (typingEl) typingEl.remove();
   }
 
+  // Generate or get session ID for conversation tracking
+  function getSessionId() {
+    let sessionId = localStorage.getItem('af_widget_session');
+    if (!sessionId) {
+      sessionId = 'widget_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('af_widget_session', sessionId);
+    }
+    return sessionId;
+  }
+
+  const sessionId = getSessionId();
+
   // Send message to API
   async function sendMessage() {
     const message = inputField.value.trim();
@@ -393,6 +432,7 @@
         body: JSON.stringify({
           agentId: agentId,
           message: message,
+          sessionId: sessionId,
         }),
       });
 
