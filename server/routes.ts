@@ -2007,7 +2007,9 @@ export async function registerRoutes(
               discoveredLinks = result.links;
               console.log(`  Puppeteer rendered ${html.length} chars, found ${discoveredLinks.length} links`);
             } catch (e: any) {
-              console.log(`  Puppeteer failed for ${currentUrl}: ${e.message}, trying regular fetch...`);
+              console.error(`  Puppeteer failed for ${currentUrl}:`, e.message);
+              if (e.stack) console.error('  Stack:', e.stack.split('\n').slice(0, 3).join('\n'));
+              console.log(`  Trying regular fetch...`);
               // Fallback to regular fetch
               try {
                 const response = await fetch(currentUrl, {
