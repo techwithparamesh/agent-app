@@ -402,7 +402,7 @@ export async function registerRoutes(
               console.log('Chrome not found at expected path, using auto-detection');
             }
             
-            // Puppeteer launch options optimized for Linux VPS as root
+            // Puppeteer launch options optimized for Linux VPS as root with stealth
             const launchOptions: any = {
               headless: 'new',
               executablePath: chromePath,
@@ -420,10 +420,14 @@ export async function registerRoutes(
                 '--disable-extensions',
                 '--disable-sync',
                 '--disable-translate',
-                '--hide-scrollbars',
                 '--metrics-recording-only',
                 '--mute-audio',
                 '--safebrowsing-disable-auto-update',
+                '--window-size=1920,1080',
+                '--start-maximized',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-infobars',
+                '--enable-features=NetworkService,NetworkServiceInProcess',
               ]
             };
             
@@ -448,13 +452,74 @@ export async function registerRoutes(
         }
         
         // Set viewport and user agent to look like a real browser
-        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
-        // Anti-detection settings
+        // Set extra HTTP headers to look more like a real browser
+        await page.setExtraHTTPHeaders({
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1'
+        });
+        
+        // Comprehensive anti-detection settings
         await page.evaluateOnNewDocument(`
-          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-          window.chrome = { runtime: {} };
+          // Override webdriver detection
+          Object.defineProperty(navigator, 'webdriver', { get: () => false });
+          
+          // Chrome runtime
+          window.chrome = { runtime: {}, loadTimes: function(){}, csi: function(){} };
+          
+          // Override permissions
+          const originalQuery = window.navigator.permissions.query;
+          window.navigator.permissions.query = (parameters) => (
+            parameters.name === 'notifications' ?
+              Promise.resolve({ state: Notification.permission }) :
+              originalQuery(parameters)
+          );
+          
+          // Override plugins to look like real browser
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [
+              { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
+              { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+              { name: 'Native Client', filename: 'internal-nacl-plugin' }
+            ]
+          });
+          
+          // Override languages
+          Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+          
+          // Override platform
+          Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+          
+          // Override hardware concurrency
+          Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+          
+          // Override device memory
+          Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+          
+          // Fix iframe contentWindow
+          const originalContentWindow = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');
+          Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+            get: function() {
+              const win = originalContentWindow.get.call(this);
+              if (win) {
+                Object.defineProperty(win.navigator, 'webdriver', { get: () => false });
+              }
+              return win;
+            }
+          });
         `);
         
         try {
@@ -466,17 +531,17 @@ export async function registerRoutes(
           console.log(`Navigation completed: ${pageUrl}`);
           
           // Wait for JavaScript to render content (longer for heavy SPAs like Flipkart)
-          await new Promise(resolve => setTimeout(resolve, 4000));
+          await new Promise(resolve => setTimeout(resolve, 5000));
           
           // Scroll multiple times to trigger lazy loading
           await page.evaluate(`window.scrollTo(0, 500)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           await page.evaluate(`window.scrollTo(0, 1500)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           await page.evaluate(`window.scrollTo(0, 3000)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           await page.evaluate(`window.scrollTo(0, 0)`); // Scroll back to top
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           const html = await page.content();
           
@@ -1587,7 +1652,7 @@ export async function registerRoutes(
               console.log('Chrome not found at expected path, using auto-detection');
             }
             
-            // Puppeteer launch options optimized for Linux VPS as root
+            // Puppeteer launch options optimized for Linux VPS as root with stealth
             const launchOptions: any = {
               headless: 'new',
               executablePath: chromePath,
@@ -1605,10 +1670,14 @@ export async function registerRoutes(
                 '--disable-extensions',
                 '--disable-sync',
                 '--disable-translate',
-                '--hide-scrollbars',
                 '--metrics-recording-only',
                 '--mute-audio',
                 '--safebrowsing-disable-auto-update',
+                '--window-size=1920,1080',
+                '--start-maximized',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-infobars',
+                '--enable-features=NetworkService,NetworkServiceInProcess',
               ]
             };
             
@@ -1631,13 +1700,62 @@ export async function registerRoutes(
         }
         
         // Set viewport and user agent to look like a real browser
-        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
-        // Anti-detection settings
+        // Set extra HTTP headers to look more like a real browser
+        await page.setExtraHTTPHeaders({
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1'
+        });
+        
+        // Comprehensive anti-detection settings
         await page.evaluateOnNewDocument(`
-          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-          window.chrome = { runtime: {} };
+          // Override webdriver detection
+          Object.defineProperty(navigator, 'webdriver', { get: () => false });
+          
+          // Chrome runtime
+          window.chrome = { runtime: {}, loadTimes: function(){}, csi: function(){} };
+          
+          // Override permissions
+          const originalQuery = window.navigator.permissions.query;
+          window.navigator.permissions.query = (parameters) => (
+            parameters.name === 'notifications' ?
+              Promise.resolve({ state: Notification.permission }) :
+              originalQuery(parameters)
+          );
+          
+          // Override plugins to look like real browser
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [
+              { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
+              { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+              { name: 'Native Client', filename: 'internal-nacl-plugin' }
+            ]
+          });
+          
+          // Override languages
+          Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+          
+          // Override platform
+          Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+          
+          // Override hardware concurrency
+          Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+          
+          // Override device memory
+          Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
         `);
         
         try {
@@ -1649,16 +1767,22 @@ export async function registerRoutes(
           console.log(`Navigation completed: ${pageUrl}`);
           
           // Wait for JavaScript to render content
-          await new Promise(resolve => setTimeout(resolve, 4000));
+          await new Promise(resolve => setTimeout(resolve, 5000));
           
           // Scroll to trigger lazy loading
           await page.evaluate(`window.scrollTo(0, 500)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           await page.evaluate(`window.scrollTo(0, 1500)`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          await page.evaluate(`window.scrollTo(0, 3000)`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          await page.evaluate(`window.scrollTo(0, 0)`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Get rendered HTML
           const html = await page.content();
+          
+          console.log(`Page HTML length: ${html.length} chars`);
           
           // Extract all links from rendered page (using string to avoid esbuild __name issue)
           const links = await page.evaluate(`
