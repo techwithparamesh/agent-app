@@ -544,6 +544,36 @@ export async function registerRoutes(
                 fullText += ' Links: ' + uniqueLinks.join(', ') + '.';
               }
               
+              // E-commerce specific extraction
+              // Extract product names
+              var productNames = [];
+              document.querySelectorAll('[class*="product"], [class*="item"], [data-component-type="s-search-result"]').forEach(function(el) {
+                var title = el.querySelector('h2, h3, h4, [class*="title"], [class*="name"]');
+                if (title) {
+                  var titleText = (title.textContent || '').trim();
+                  if (titleText.length > 5 && titleText.length < 200) {
+                    productNames.push(titleText);
+                  }
+                }
+              });
+              
+              // Extract prices
+              var prices = [];
+              document.querySelectorAll('[class*="price"], [class*="Price"], .a-price, .price').forEach(function(el) {
+                var priceText = (el.textContent || '').trim();
+                if (priceText.match(/[₹$€£]|\\d+/)) {
+                  prices.push(priceText.substring(0, 50));
+                }
+              });
+              
+              if (productNames.length > 0) {
+                fullText += ' Products: ' + productNames.slice(0, 20).join(', ') + '.';
+              }
+              if (prices.length > 0) {
+                var uniquePrices = prices.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 10);
+                fullText += ' Prices: ' + uniquePrices.join(', ') + '.';
+              }
+              
               // Clean up excessive whitespace
               return fullText.replace(/\\s+/g, ' ').trim();
             })()
@@ -554,6 +584,8 @@ export async function registerRoutes(
               var baseDomainArg = "${baseDomain}";
               var anchors = document.querySelectorAll('a[href]');
               var foundLinks = [];
+              var productLinks = [];
+              
               anchors.forEach(function(a) {
                 var href = a.getAttribute('href');
                 if (href && href.indexOf('#') !== 0 && href.indexOf('javascript:') !== 0 && 
@@ -561,13 +593,25 @@ export async function registerRoutes(
                   try {
                     var absoluteUrl = new URL(href, window.location.origin);
                     if (absoluteUrl.origin === baseDomainArg) {
-                      foundLinks.push(absoluteUrl.href);
+                      var urlPath = absoluteUrl.pathname.toLowerCase();
+                      
+                      // Prioritize product/category links for e-commerce
+                      if (urlPath.includes('/product') || urlPath.includes('/dp/') || 
+                          urlPath.includes('/item') || urlPath.includes('/p/') ||
+                          urlPath.includes('/collection') || urlPath.includes('/category') ||
+                          urlPath.includes('/shop') || urlPath.includes('/gp/')) {
+                        productLinks.push(absoluteUrl.href);
+                      } else {
+                        foundLinks.push(absoluteUrl.href);
+                      }
                     }
                   } catch (e) {}
                 }
               });
-              // Return unique links
-              return foundLinks.filter(function(v, i, a) { return a.indexOf(v) === i; });
+              
+              // Return product links first, then other links (all unique)
+              var allLinks = productLinks.concat(foundLinks);
+              return allLinks.filter(function(v, i, a) { return a.indexOf(v) === i; });
             })()
           `);
           
@@ -753,10 +797,44 @@ export async function registerRoutes(
             '/tv-unit', '/pooja-mandir', '/bathroom', '/book-consultation', '/our-work', '/testimonials');
         }
         
-        // E-commerce / Shop
+        // E-commerce / Shop - EXPANDED for major platforms
         if (combined.includes('shop') || combined.includes('store') || combined.includes('product') ||
-            combined.includes('buy') || combined.includes('order')) {
-          routes.push('/products', '/shop', '/cart', '/categories', '/collections', '/sale', '/new-arrivals');
+            combined.includes('buy') || combined.includes('order') || combined.includes('cart') ||
+            combined.includes('ecommerce') || combined.includes('e-commerce')) {
+          routes.push(
+            // General e-commerce routes
+            '/products', '/shop', '/cart', '/categories', '/collections', '/sale', '/new-arrivals',
+            '/bestsellers', '/best-sellers', '/deals', '/offers', '/clearance', '/outlet',
+            // Category pages
+            '/electronics', '/clothing', '/fashion', '/shoes', '/accessories', '/jewelry',
+            '/home', '/kitchen', '/beauty', '/health', '/sports', '/toys', '/books',
+            '/mobiles', '/phones', '/laptops', '/computers', '/tablets', '/cameras',
+            '/appliances', '/furniture', '/grocery', '/baby', '/pets',
+            // Amazon specific
+            '/gp/bestsellers', '/gp/new-releases', '/gp/movers-and-shakers',
+            // Shopify/general
+            '/collections/all', '/collections/new', '/collections/sale',
+            '/pages/shipping', '/pages/returns', '/pages/size-guide'
+          );
+        }
+        
+        // Amazon specific detection
+        if (combined.includes('amazon') || html.includes('amazon.')) {
+          routes.push(
+            '/gp/bestsellers', '/gp/new-releases', '/gp/most-wished-for',
+            '/gp/browse.html', '/b/', '/s?k=', 
+            '/electronics', '/fashion', '/home-kitchen', '/beauty', '/sports',
+            '/toys-games', '/baby', '/health-personal-care', '/automotive',
+            '/books', '/movies-tv', '/music', '/software', '/video-games'
+          );
+        }
+        
+        // Flipkart specific
+        if (combined.includes('flipkart')) {
+          routes.push(
+            '/mobiles', '/electronics', '/tvs', '/fashion', '/home-furniture',
+            '/appliances', '/beauty-toys', '/sports', '/books'
+          );
         }
         
         // Digital agency / Web development
@@ -928,6 +1006,31 @@ export async function registerRoutes(
           }
         }
         
+        // E-commerce / Amazon-specific extraction
+        if (!bodyContent) {
+          // Amazon product grid/search results
+          const amazonResults = html.match(/<div[^>]*data-component-type=["']s-search-result["'][^>]*>([\s\S]*?)<\/div>/gi);
+          if (amazonResults && amazonResults.length > 0) {
+            bodyContent = amazonResults.join(' ');
+          }
+          
+          // Generic product containers
+          if (!bodyContent) {
+            const productContainers = html.match(/<div[^>]*class=["'][^"']*(?:product-card|product-item|product-grid|product-list|item-card)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi);
+            if (productContainers && productContainers.length > 0) {
+              bodyContent = productContainers.join(' ');
+            }
+          }
+          
+          // Category/collection pages
+          if (!bodyContent) {
+            const categoryContent = html.match(/<div[^>]*class=["'][^"']*(?:category|collection|catalog|shop-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi);
+            if (categoryContent && categoryContent.length > 0) {
+              bodyContent = categoryContent.join(' ');
+            }
+          }
+        }
+        
         // Generic fallback extraction strategies
         if (!bodyContent) {
           const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
@@ -993,6 +1096,35 @@ export async function registerRoutes(
           }
         }
         
+        // E-commerce: Extract product names from various patterns
+        const productNames: string[] = [];
+        // Amazon product titles
+        const amazonTitles = bodyContent.matchAll(/<span[^>]*class=["'][^"']*a-text-normal[^"']*["'][^>]*>([\s\S]*?)<\/span>/gi);
+        for (const match of amazonTitles) {
+          const titleText = match[1].replace(/<[^>]+>/g, '').trim();
+          if (titleText.length > 10 && titleText.length < 300) {
+            productNames.push(titleText);
+          }
+        }
+        // Generic product titles
+        const prodTitles = bodyContent.matchAll(/<[^>]*class=["'][^"']*(?:product-title|product-name|item-title|item-name)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/gi);
+        for (const match of prodTitles) {
+          const titleText = match[1].replace(/<[^>]+>/g, '').trim();
+          if (titleText.length > 5 && titleText.length < 300) {
+            productNames.push(titleText);
+          }
+        }
+        
+        // E-commerce: Extract prices
+        const prices: string[] = [];
+        const priceMatches = bodyContent.matchAll(/<[^>]*class=["'][^"']*(?:price|a-price|product-price)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/gi);
+        for (const match of priceMatches) {
+          const priceText = match[1].replace(/<[^>]+>/g, '').trim();
+          if (priceText.match(/[₹$€£]|\d+/) && priceText.length < 50) {
+            prices.push(priceText);
+          }
+        }
+        
         // Strip all remaining HTML tags
         bodyContent = bodyContent.replace(/<[^>]+>/g, " ");
         
@@ -1036,6 +1168,16 @@ export async function registerRoutes(
         // Add list items if they provide additional context
         if (listItems.length > 0 && listItems.length <= 20) {
           fullContent += " Key points: " + listItems.slice(0, 10).join("; ") + ".";
+        }
+        
+        // Add e-commerce product info
+        if (productNames.length > 0) {
+          const uniqueProducts = [...new Set(productNames)].slice(0, 25);
+          fullContent += " Products available: " + uniqueProducts.join(", ") + ".";
+        }
+        if (prices.length > 0) {
+          const uniquePrices = [...new Set(prices)].slice(0, 15);
+          fullContent += " Price range: " + uniquePrices.join(", ") + ".";
         }
         
         // If still too short, use meta description with title
