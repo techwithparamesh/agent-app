@@ -446,108 +446,117 @@ export async function registerRoutes(
           // Wait for JavaScript to render content
           await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Try to scroll to trigger lazy loading
-          await page.evaluate(() => {
-            window.scrollTo(0, document.body.scrollHeight / 2);
-          });
+          // Try to scroll to trigger lazy loading (use string to avoid esbuild __name issue)
+          await page.evaluate(`window.scrollTo(0, document.body.scrollHeight / 2)`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const html = await page.content();
           
           // Extract text content directly from the rendered DOM
-          const textContent = await page.evaluate(() => {
-            // Remove script and style elements
-            const scripts = document.querySelectorAll('script, style, noscript, iframe');
-            scripts.forEach(el => el.remove());
-            
-            // Get all text content
-            const getText = (element: Element): string => {
-              let text = '';
+          // Using a string function to avoid esbuild's __name injection
+          const textContent = await page.evaluate(`
+            (function() {
+              // Remove script and style elements
+              var scripts = document.querySelectorAll('script, style, noscript, iframe');
+              scripts.forEach(function(el) { el.remove(); });
               
-              // Skip hidden elements
-              const style = window.getComputedStyle(element);
-              if (style.display === 'none' || style.visibility === 'hidden') {
-                return '';
-              }
-              
-              // Get text from headings, paragraphs, list items, divs, spans
-              const tagName = element.tagName.toLowerCase();
-              if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'span', 'a', 'strong', 'em', 'b', 'i'].includes(tagName)) {
-                const nodeText = element.textContent?.trim() || '';
-                if (nodeText.length > 0) {
-                  text += nodeText + ' ';
+              // Get all text content
+              function getText(element) {
+                var text = '';
+                
+                // Skip hidden elements
+                var style = window.getComputedStyle(element);
+                if (style.display === 'none' || style.visibility === 'hidden') {
+                  return '';
                 }
-              } else {
-                // For containers, recurse into children
-                for (const child of element.children) {
-                  text += getText(child);
-                }
-              }
-              
-              return text;
-            };
-            
-            // Get title
-            const title = document.title || '';
-            
-            // Get meta description
-            const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-            
-            // Get main content areas
-            const main = document.querySelector('main') || document.querySelector('[role="main"]');
-            const body = document.body;
-            
-            let content = '';
-            if (main) {
-              content = getText(main);
-            } else {
-              content = getText(body);
-            }
-            
-            // Also extract any visible headings separately
-            const headings: string[] = [];
-            document.querySelectorAll('h1, h2, h3, h4').forEach(h => {
-              const hText = h.textContent?.trim();
-              if (hText && hText.length > 0 && hText.length < 200) {
-                headings.push(hText);
-              }
-            });
-            
-            // Extract button/CTA text
-            const ctaTexts: string[] = [];
-            document.querySelectorAll('button, a.btn, a.button, [role="button"]').forEach(btn => {
-              const btnText = btn.textContent?.trim();
-              if (btnText && btnText.length > 2 && btnText.length < 50) {
-                ctaTexts.push(btnText);
-              }
-            });
-            
-            let fullText = '';
-            if (metaDesc) fullText += metaDesc + '. ';
-            if (headings.length > 0) fullText += 'Sections: ' + headings.slice(0, 10).join(', ') + '. ';
-            fullText += content;
-            if (ctaTexts.length > 0) fullText += ' Actions: ' + [...new Set(ctaTexts)].slice(0, 5).join(', ') + '.';
-            
-            return fullText.replace(/\s+/g, ' ').trim();
-          });
-          
-          const links = await page.evaluate((baseDomainArg: string) => {
-            const anchors = document.querySelectorAll('a[href]');
-            const foundLinks: string[] = [];
-            anchors.forEach((a) => {
-              const href = a.getAttribute('href');
-              if (href && !href.startsWith('#') && !href.startsWith('javascript:') && 
-                  !href.startsWith('mailto:') && !href.startsWith('tel:')) {
-                try {
-                  const absoluteUrl = new URL(href, window.location.origin);
-                  if (absoluteUrl.origin === baseDomainArg) {
-                    foundLinks.push(absoluteUrl.href);
+                
+                // Get text from headings, paragraphs, list items, divs, spans
+                var tagName = element.tagName.toLowerCase();
+                if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'span', 'a', 'strong', 'em', 'b', 'i'].indexOf(tagName) !== -1) {
+                  var nodeText = (element.textContent || '').trim();
+                  if (nodeText.length > 0) {
+                    text += nodeText + ' ';
                   }
-                } catch (e) {}
+                } else {
+                  // For containers, recurse into children
+                  for (var i = 0; i < element.children.length; i++) {
+                    text += getText(element.children[i]);
+                  }
+                }
+                
+                return text;
               }
-            });
-            return [...new Set(foundLinks)];
-          }, baseDomain);
+              
+              // Get title
+              var title = document.title || '';
+              
+              // Get meta description
+              var metaEl = document.querySelector('meta[name="description"]');
+              var metaDesc = metaEl ? (metaEl.getAttribute('content') || '') : '';
+              
+              // Get main content areas
+              var main = document.querySelector('main') || document.querySelector('[role="main"]');
+              var body = document.body;
+              
+              var content = '';
+              if (main) {
+                content = getText(main);
+              } else {
+                content = getText(body);
+              }
+              
+              // Also extract any visible headings separately
+              var headings = [];
+              document.querySelectorAll('h1, h2, h3, h4').forEach(function(h) {
+                var hText = (h.textContent || '').trim();
+                if (hText && hText.length > 0 && hText.length < 200) {
+                  headings.push(hText);
+                }
+              });
+              
+              // Extract button/CTA text
+              var ctaTexts = [];
+              document.querySelectorAll('button, a.btn, a.button, [role="button"]').forEach(function(btn) {
+                var btnText = (btn.textContent || '').trim();
+                if (btnText && btnText.length > 2 && btnText.length < 50) {
+                  ctaTexts.push(btnText);
+                }
+              });
+              
+              var fullText = '';
+              if (metaDesc) fullText += metaDesc + '. ';
+              if (headings.length > 0) fullText += 'Sections: ' + headings.slice(0, 10).join(', ') + '. ';
+              fullText += content;
+              if (ctaTexts.length > 0) {
+                var uniqueCtas = ctaTexts.filter(function(v, i, a) { return a.indexOf(v) === i; });
+                fullText += ' Actions: ' + uniqueCtas.slice(0, 5).join(', ') + '.';
+              }
+              
+              return fullText.replace(/\\s+/g, ' ').trim();
+            })()
+          `);
+          
+          const links = await page.evaluate(`
+            (function() {
+              var baseDomainArg = "${baseDomain}";
+              var anchors = document.querySelectorAll('a[href]');
+              var foundLinks = [];
+              anchors.forEach(function(a) {
+                var href = a.getAttribute('href');
+                if (href && href.indexOf('#') !== 0 && href.indexOf('javascript:') !== 0 && 
+                    href.indexOf('mailto:') !== 0 && href.indexOf('tel:') !== 0) {
+                  try {
+                    var absoluteUrl = new URL(href, window.location.origin);
+                    if (absoluteUrl.origin === baseDomainArg) {
+                      foundLinks.push(absoluteUrl.href);
+                    }
+                  } catch (e) {}
+                }
+              });
+              // Return unique links
+              return foundLinks.filter(function(v, i, a) { return a.indexOf(v) === i; });
+            })()
+          `);
           
           await page.close();
           console.log(`Page closed after success: ${pageUrl}`);
@@ -1439,24 +1448,28 @@ export async function registerRoutes(
           // Get rendered HTML
           const html = await page.content();
           
-          // Extract all links from rendered page
-          const links = await page.evaluate((baseDomain: string) => {
-            const anchors = document.querySelectorAll('a[href]');
-            const foundLinks: string[] = [];
-            anchors.forEach((a) => {
-              const href = a.getAttribute('href');
-              if (href && !href.startsWith('#') && !href.startsWith('javascript:') && 
-                  !href.startsWith('mailto:') && !href.startsWith('tel:')) {
-                try {
-                  const absoluteUrl = new URL(href, window.location.origin);
-                  if (absoluteUrl.origin === baseDomain) {
-                    foundLinks.push(absoluteUrl.href);
-                  }
-                } catch (e) {}
-              }
-            });
-            return [...new Set(foundLinks)];
-          }, baseDomain);
+          // Extract all links from rendered page (using string to avoid esbuild __name issue)
+          const links = await page.evaluate(`
+            (function() {
+              var baseDomainArg = "${baseDomain}";
+              var anchors = document.querySelectorAll('a[href]');
+              var foundLinks = [];
+              anchors.forEach(function(a) {
+                var href = a.getAttribute('href');
+                if (href && href.indexOf('#') !== 0 && href.indexOf('javascript:') !== 0 && 
+                    href.indexOf('mailto:') !== 0 && href.indexOf('tel:') !== 0) {
+                  try {
+                    var absoluteUrl = new URL(href, window.location.origin);
+                    if (absoluteUrl.origin === baseDomainArg) {
+                      foundLinks.push(absoluteUrl.href);
+                    }
+                  } catch (e) {}
+                }
+              });
+              // Return unique links
+              return foundLinks.filter(function(v, i, a) { return a.indexOf(v) === i; });
+            })()
+          `);
           
           await page.close();
           console.log(`Page closed after success: ${pageUrl}`);
