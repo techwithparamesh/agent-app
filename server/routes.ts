@@ -375,60 +375,46 @@ export async function registerRoutes(
         
         if (!browser) {
           try {
-            // Puppeteer launch options
+            // Use the verified Chrome path directly
+            const executablePath = '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome';
+            
+            // Check if it exists, fall back to auto-detection if not
+            const fs = await import('fs');
+            const chromePath = fs.existsSync(executablePath) ? executablePath : undefined;
+            
+            if (chromePath) {
+              console.log(`Using Chrome at: ${chromePath}`);
+            } else {
+              console.log('Chrome not found at expected path, using auto-detection');
+            }
+            
+            // Puppeteer launch options optimized for Linux VPS as root
             const launchOptions: any = {
-              headless: true,
+              headless: 'new',
+              executablePath: chromePath,
               args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
-                '--disable-software-rasterizer',
                 '--no-first-run',
                 '--no-zygote',
-                '--single-process',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-extensions',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--safebrowsing-disable-auto-update',
               ]
             };
             
-            // Find Chrome executable - check Puppeteer cache first, then system paths
-            const fs = await import('fs');
-            const path = await import('path');
-            const os = await import('os');
-            
-            const chromiumPaths = [
-              // Puppeteer cache locations
-              path.join(os.homedir(), '.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome'),
-              '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome',
-              // System Chrome/Chromium
-              '/usr/bin/google-chrome-stable',
-              '/usr/bin/google-chrome',
-              '/usr/bin/chromium-browser',
-              '/usr/bin/chromium',
-              '/opt/google/chrome/chrome',
-              // Snap (last resort due to sandbox issues)
-              '/snap/bin/chromium',
-            ];
-            
-            let executablePath: string | undefined;
-            for (const p of chromiumPaths) {
-              try {
-                if (fs.existsSync(p)) {
-                  executablePath = p;
-                  console.log(`Found Chrome at: ${p}`);
-                  break;
-                }
-              } catch (e) {}
-            }
-            
-            if (executablePath) {
-              browser = await puppeteer.launch({ ...launchOptions, executablePath });
-              sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
-            } else {
-              // Try without specifying path (use Puppeteer's auto-detection)
-              console.log('No Chrome found, trying Puppeteer auto-detection...');
-              browser = await puppeteer.launch(launchOptions);
-              sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
-            }
+            browser = await puppeteer.launch(launchOptions);
+            console.log('Puppeteer browser launched successfully');
+            sendProgress({ type: 'status', message: 'Browser launched for JavaScript rendering', progress: 10 });
           } catch (e: any) {
             console.error('Failed to launch Puppeteer:', e.message);
             puppeteerAvailable = false;
@@ -1366,60 +1352,45 @@ export async function registerRoutes(
         
         if (!browser) {
           try {
-            // Puppeteer launch options
+            // Use the verified Chrome path directly
+            const executablePath = '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome';
+            
+            // Check if it exists, fall back to auto-detection if not
+            const fs = await import('fs');
+            const chromePath = fs.existsSync(executablePath) ? executablePath : undefined;
+            
+            if (chromePath) {
+              console.log(`Using Chrome at: ${chromePath}`);
+            } else {
+              console.log('Chrome not found at expected path, using auto-detection');
+            }
+            
+            // Puppeteer launch options optimized for Linux VPS as root
             const launchOptions: any = {
-              headless: true,
+              headless: 'new',
+              executablePath: chromePath,
               args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
-                '--disable-software-rasterizer',
                 '--no-first-run',
                 '--no-zygote',
-                '--single-process',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-extensions',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--safebrowsing-disable-auto-update',
               ]
             };
             
-            // Find Chrome executable - check Puppeteer cache first, then system paths
-            const fs = await import('fs');
-            const path = await import('path');
-            const os = await import('os');
-            
-            const chromiumPaths = [
-              // Puppeteer cache locations
-              path.join(os.homedir(), '.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome'),
-              '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome',
-              // System Chrome/Chromium
-              '/usr/bin/google-chrome-stable',
-              '/usr/bin/google-chrome',
-              '/usr/bin/chromium-browser',
-              '/usr/bin/chromium',
-              '/opt/google/chrome/chrome',
-              // Snap (last resort due to sandbox issues)
-              '/snap/bin/chromium',
-            ];
-            
-            let executablePath: string | undefined;
-            for (const p of chromiumPaths) {
-              try {
-                if (fs.existsSync(p)) {
-                  executablePath = p;
-                  console.log(`Found Chrome at: ${p}`);
-                  break;
-                }
-              } catch (e) {}
-            }
-            
-            if (executablePath) {
-              browser = await puppeteer.launch({ ...launchOptions, executablePath });
-              console.log('Puppeteer browser launched for SPA scanning');
-            } else {
-              // Try without specifying path (use Puppeteer's auto-detection)
-              console.log('No Chrome found, trying Puppeteer auto-detection...');
-              browser = await puppeteer.launch(launchOptions);
-              console.log('Puppeteer browser launched for SPA scanning');
-            }
+            browser = await puppeteer.launch(launchOptions);
+            console.log('Puppeteer browser launched successfully for SPA scanning');
           } catch (e: any) {
             console.error('Failed to launch Puppeteer:', e.message);
             puppeteerAvailable = false;
