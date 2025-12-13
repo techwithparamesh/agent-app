@@ -424,26 +424,24 @@ export async function registerRoutes(
           }
         }
         
-        const page = await browser.newPage();
+        let page;
+        try {
+          page = await browser.newPage();
+          console.log(`Page created for: ${pageUrl}`);
+        } catch (pageErr: any) {
+          console.error(`Failed to create page: ${pageErr.message}`);
+          throw pageErr;
+        }
+        
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
-        // Block images, fonts, stylesheets to speed up loading
-        await page.setRequestInterception(true);
-        page.on('request', (req: any) => {
-          const resourceType = req.resourceType();
-          if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
-            req.abort();
-          } else {
-            req.continue();
-          }
-        });
-        
         try {
-          // Use domcontentloaded instead of networkidle2 (much faster)
+          console.log(`Navigating to: ${pageUrl}`);
           await page.goto(pageUrl, { 
             waitUntil: 'domcontentloaded',
-            timeout: 60000 
+            timeout: 30000 
           });
+          console.log(`Navigation completed: ${pageUrl}`);
           
           // Wait for JavaScript to render content
           await new Promise(resolve => setTimeout(resolve, 2000));
@@ -552,8 +550,10 @@ export async function registerRoutes(
           }, baseDomain);
           
           await page.close();
+          console.log(`Page closed after success: ${pageUrl}`);
           return { html, links, textContent };
-        } catch (e) {
+        } catch (e: any) {
+          console.error(`Navigation/content error for ${pageUrl}: ${e.message}`);
           await page.close();
           throw e;
         }
@@ -1102,9 +1102,10 @@ export async function registerRoutes(
               html = result.html;
               discoveredLinks = result.links;
               puppeteerTextContent = result.textContent || '';
+              console.log(`Puppeteer successfully fetched: ${currentUrl} (${html.length} chars)`);
             } catch (e: any) {
-              // Puppeteer failed - fallback to regular fetch for this page
-              console.log(`Puppeteer failed for ${currentUrl}, trying regular fetch...`);
+              // Puppeteer failed - log the actual error and fallback to regular fetch
+              console.log(`Puppeteer failed for ${currentUrl}: ${e.message}`);
               try {
                 const response = await fetch(currentUrl, {
                   headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
@@ -1114,6 +1115,7 @@ export async function registerRoutes(
                   const contentType = response.headers.get('content-type') || '';
                   if (contentType.includes('text/html')) {
                     html = await response.text();
+                    console.log(`Regular fetch succeeded: ${currentUrl} (${html.length} chars)`);
                   }
                 }
               } catch (fetchErr) {
@@ -1412,26 +1414,24 @@ export async function registerRoutes(
           }
         }
         
-        const page = await browser.newPage();
+        let page;
+        try {
+          page = await browser.newPage();
+          console.log(`Page created for: ${pageUrl}`);
+        } catch (pageErr: any) {
+          console.error(`Failed to create page: ${pageErr.message}`);
+          throw pageErr;
+        }
+        
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
-        // Block images, fonts, stylesheets to speed up loading
-        await page.setRequestInterception(true);
-        page.on('request', (req: any) => {
-          const resourceType = req.resourceType();
-          if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
-            req.abort();
-          } else {
-            req.continue();
-          }
-        });
-        
         try {
-          // Use domcontentloaded instead of networkidle2 (much faster)
+          console.log(`Navigating to: ${pageUrl}`);
           await page.goto(pageUrl, { 
             waitUntil: 'domcontentloaded',
-            timeout: 60000 
+            timeout: 30000 
           });
+          console.log(`Navigation completed: ${pageUrl}`);
           
           // Wait for JavaScript to render content
           await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1459,13 +1459,15 @@ export async function registerRoutes(
           }, baseDomain);
           
           await page.close();
+          console.log(`Page closed after success: ${pageUrl}`);
           return { html, links };
-        } catch (e) {
+        } catch (e: any) {
+          console.error(`Navigation/content error for ${pageUrl}: ${e.message}`);
           await page.close();
           throw e;
         }
       };
-      
+
       // Helper function to discover pages from sitemap.xml
       const discoverFromSitemap = async (): Promise<string[]> => {
         const sitemapUrls: string[] = [];
