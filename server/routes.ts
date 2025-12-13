@@ -2482,6 +2482,13 @@ IMPORTANT INSTRUCTIONS:
       });
     } catch (error: any) {
       console.error("Error in chat:", error);
+      console.error("Error details:", JSON.stringify({
+        message: error?.message,
+        status: error?.status,
+        error: error?.error,
+        type: error?.type,
+        name: error?.name
+      }, null, 2));
       
       // Check for specific error types
       if (error?.message?.includes('credit balance is too low') || 
@@ -2491,13 +2498,14 @@ IMPORTANT INSTRUCTIONS:
         });
       }
       
-      if (error?.status === 401 || error?.message?.includes('invalid_api_key')) {
+      if (error?.status === 401 || error?.message?.includes('invalid_api_key') || error?.message?.includes('authentication')) {
         return res.json({
           response: "The AI service is not properly configured. Please check the API key configuration."
         });
       }
       
-      res.status(500).json({ message: "Failed to process chat message" });
+      // Return actual error for debugging
+      res.status(500).json({ message: "Failed to process chat message", error: error?.message });
     }
   });
 
