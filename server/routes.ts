@@ -3392,33 +3392,58 @@ Based on this content, generate a landing page that:
           const completion = await anthropic.messages.create({
             model: "claude-sonnet-4-20250514",
             max_tokens: 2048,
-            system: `You are a landing page content generator. Generate structured JSON content for a landing page based on the user's description or website content. Return a JSON object with these fields:
-- title: Page title (compelling and relevant)
-- heroText: Main headline (impactful, captures the brand essence)
-- subheadline: Supporting text (expands on the headline)
-- features: Array of {title, description} objects (3-4 items showing key offerings)
-- ctaButtons: Array of {text, url} objects (1-2 items with action-oriented text)
-- seoKeywords: Array of relevant keywords (4-6 items)
-- colorScheme: Object with primary, secondary, and background hex colors (suggest colors that match the brand if content is from a website)
+            system: `You are a landing page content generator. Generate structured JSON content for a landing page based on the user's description or website content.
 
-Return ONLY valid JSON, no other text.`,
+Return ONLY a valid JSON object (no markdown, no code blocks, no explanation) with these fields:
+{
+  "title": "Page title (compelling and relevant)",
+  "heroText": "Main headline (impactful, captures the brand essence)",
+  "subheadline": "Supporting text (expands on the headline)",
+  "features": [{"title": "...", "description": "..."}, ...] (3-4 items showing key offerings),
+  "ctaButtons": [{"text": "...", "url": "..."}, ...] (1-2 items with action-oriented text),
+  "seoKeywords": ["keyword1", "keyword2", ...] (4-6 relevant keywords),
+  "colorScheme": {"primary": "#hex", "secondary": "#hex", "background": "#ffffff"}
+}
+
+IMPORTANT: Return ONLY the JSON object. Do not wrap it in code blocks or add any text before/after.`,
             messages: [{ role: "user", content: finalPrompt }],
           });
 
           const responseText = completion.content[0].type === "text" ? completion.content[0].text : "{}";
 
           try {
-            pageContent = JSON.parse(responseText);
-          } catch {
-            pageContent = {
-              title: "Generated Landing Page",
-              heroText: responseText.substring(0, 100),
-              subheadline: "AI-generated content",
-              features: [],
-              ctaButtons: [{ text: "Get Started", url: "#" }],
-              seoKeywords: [],
-              colorScheme: { primary: "#6366f1", secondary: "#8b5cf6", background: "#ffffff" },
-            };
+            // Clean up the response - remove markdown code blocks if present
+            let cleanedResponse = responseText.trim();
+            
+            // Remove ```json or ``` markers
+            if (cleanedResponse.startsWith('```json')) {
+              cleanedResponse = cleanedResponse.slice(7);
+            } else if (cleanedResponse.startsWith('```')) {
+              cleanedResponse = cleanedResponse.slice(3);
+            }
+            if (cleanedResponse.endsWith('```')) {
+              cleanedResponse = cleanedResponse.slice(0, -3);
+            }
+            cleanedResponse = cleanedResponse.trim();
+            
+            pageContent = JSON.parse(cleanedResponse);
+          } catch (parseError) {
+            console.error("JSON parse error:", parseError, "Response was:", responseText.substring(0, 200));
+            // If JSON parsing fails, use fallback from website scan
+            if (websiteUrl && scannedPages && scannedPages.length > 0) {
+              console.log("Using fallback content from scanned website");
+              pageContent = generateFallbackFromWebsite(scannedPages, websiteUrl);
+            } else {
+              pageContent = {
+                title: "Generated Landing Page",
+                heroText: "Transform Your Business Today",
+                subheadline: "AI-generated content",
+                features: [],
+                ctaButtons: [{ text: "Get Started", url: "#" }],
+                seoKeywords: [],
+                colorScheme: { primary: "#6366f1", secondary: "#8b5cf6", background: "#ffffff" },
+              };
+            }
           }
         } catch (apiError: any) {
           console.error("Anthropic API error:", apiError.message);
