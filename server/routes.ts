@@ -306,14 +306,19 @@ export async function registerRoutes(
     
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.flushHeaders();
     
-    // Helper to send SSE message
+    // Helper to send SSE message with immediate flush
     const sendProgress = (data: any) => {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
+      // Force flush to prevent buffering
+      if (typeof (res as any).flush === 'function') {
+        (res as any).flush();
+      }
     };
     
     try {
@@ -1332,11 +1337,18 @@ export async function registerRoutes(
         }
       }
       
-      sendProgress({ type: 'status', message: `Found ${urlsToScan.length} pages to scan`, progress: 20, totalPages: urlsToScan.length });
+      const totalToScan = Math.min(urlsToScan.length, maxPages);
+      sendProgress({ 
+        type: 'status', 
+        message: `Found ${urlsToScan.length} pages to scan`, 
+        progress: 20, 
+        totalPages: totalToScan,
+        scannedCount: 0
+      });
       
       // STEP 3: Crawl all pages with progress updates
       let scannedCount = 0;
-      const totalToScan = Math.min(urlsToScan.length, maxPages);
+      let lastProgressUpdate = Date.now();
       
       while (urlsToScan.length > 0 && scannedPages.length < maxPages) {
         const currentUrl = urlsToScan.shift()!;
@@ -1345,18 +1357,20 @@ export async function registerRoutes(
         visitedUrls.add(currentUrl);
         
         scannedCount++;
-        const progressPercent = Math.min(20 + Math.floor((scannedCount / totalToScan) * 70), 90);
+        const progressPercent = Math.min(20 + Math.floor((scannedCount / Math.max(totalToScan, 1)) * 70), 90);
+        
+        // Send progress update immediately for each page
+        sendProgress({ 
+          type: 'scanning', 
+          message: `Scanning page ${scannedCount} of ${totalToScan}: ${new URL(currentUrl).pathname || '/'}`,
+          currentUrl: currentUrl,
+          scannedCount: scannedCount,
+          totalPages: totalToScan,
+          progress: progressPercent,
+          pagesFound: scannedPages.length
+        });
         
         try {
-          sendProgress({ 
-            type: 'scanning', 
-            message: `Scanning: ${new URL(currentUrl).pathname || '/'}`,
-            currentUrl: currentUrl,
-            scannedCount: scannedCount,
-            totalPages: totalToScan,
-            progress: progressPercent
-          });
-          
           let html = '';
           let discoveredLinks: string[] = [];
           let puppeteerTextContent = '';

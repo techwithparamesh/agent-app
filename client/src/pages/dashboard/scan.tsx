@@ -356,14 +356,17 @@ export default function WebsiteScanner() {
                   {scanMessage || "Crawling website and extracting content from pages..."}
                 </p>
                 {currentUrl && (
-                  <p className="text-xs text-muted-foreground mb-4 font-mono truncate max-w-md mx-auto">
+                  <p className="text-xs text-muted-foreground mb-4 font-mono truncate max-w-md mx-auto bg-muted/50 px-3 py-2 rounded">
                     {currentUrl}
                   </p>
                 )}
-                <Progress value={scanProgress} className="mb-2" />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{scanProgress}% complete</span>
-                  {pagesFound > 0 && <span>{pagesFound} pages found</span>}
+                <Progress value={scanProgress} className="mb-3 h-3" />
+                <div className="flex justify-between text-sm text-muted-foreground mb-4">
+                  <span className="font-medium text-primary">{scanProgress}% complete</span>
+                  {pagesFound > 0 && <span className="font-medium">{pagesFound} pages with content</span>}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Please wait while we scan your website. This may take a few minutes.
                 </div>
               </div>
             )}
