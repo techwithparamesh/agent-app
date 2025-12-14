@@ -357,21 +357,45 @@ export async function registerRoutes(
         } catch (e) {}
       }
 
+      // Normalize URL - add https:// if missing
+      let normalizedUrl = (url as string).trim();
+      if (!normalizedUrl.match(/^https?:\/\//i)) {
+        // Remove www. prefix if present to avoid https://www.www.
+        normalizedUrl = normalizedUrl.replace(/^www\./i, '');
+        normalizedUrl = 'https://' + normalizedUrl;
+      }
+      console.log(`Normalized URL: ${url} -> ${normalizedUrl}`);
+
       // Parse the base URL to get the domain
-      const baseUrl = new URL(url as string);
+      let baseUrl: URL;
+      try {
+        baseUrl = new URL(normalizedUrl);
+      } catch (e) {
+        sendProgress({ type: 'error', message: 'Invalid URL format. Please enter a valid website address.' });
+        res.end();
+        return;
+      }
       const baseDomain = baseUrl.origin;
       
       // Track visited URLs and pages to scan
       const visitedUrls = new Set<string>();
-      const urlsToScan: string[] = [url as string];
+      const urlsToScan: string[] = [normalizedUrl];
       
       // Add any additional URLs provided by the user
       for (const additionalUrl of additionalUrls) {
         if (additionalUrl && typeof additionalUrl === 'string') {
           try {
-            const fullUrl = additionalUrl.startsWith('http') 
-              ? additionalUrl 
-              : new URL(additionalUrl, baseDomain).href;
+            let fullUrl = additionalUrl.trim();
+            // Normalize additional URL too
+            if (!fullUrl.match(/^https?:\/\//i)) {
+              if (fullUrl.startsWith('/')) {
+                // Relative path
+                fullUrl = new URL(fullUrl, baseDomain).href;
+              } else {
+                // Domain without protocol
+                fullUrl = 'https://' + fullUrl.replace(/^www\./i, '');
+              }
+            }
             if (!urlsToScan.includes(fullUrl)) {
               urlsToScan.push(fullUrl);
             }
@@ -1611,23 +1635,41 @@ export async function registerRoutes(
         console.log(`Rescan: Deleted ${deletedEntries} existing entries`);
       }
 
+      // Normalize URL - add https:// if missing
+      let normalizedUrl = url.trim();
+      if (!normalizedUrl.match(/^https?:\/\//i)) {
+        normalizedUrl = normalizedUrl.replace(/^www\./i, '');
+        normalizedUrl = 'https://' + normalizedUrl;
+      }
+      console.log(`Normalized URL: ${url} -> ${normalizedUrl}`);
+
       // Parse the base URL to get the domain
-      const baseUrl = new URL(url);
+      let baseUrl: URL;
+      try {
+        baseUrl = new URL(normalizedUrl);
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid URL format. Please enter a valid website address.' });
+      }
       const baseDomain = baseUrl.origin;
       
       // Track visited URLs and pages to scan
       const visitedUrls = new Set<string>();
-      const urlsToScan: string[] = [url];
+      const urlsToScan: string[] = [normalizedUrl];
       
       // Add any additional URLs provided by the user (for SPAs where links are JS-rendered)
       if (additionalUrls && Array.isArray(additionalUrls)) {
         for (const additionalUrl of additionalUrls) {
           if (additionalUrl && typeof additionalUrl === 'string') {
-            // If it's a relative path, convert to absolute
             try {
-              const fullUrl = additionalUrl.startsWith('http') 
-                ? additionalUrl 
-                : new URL(additionalUrl, baseDomain).href;
+              let fullUrl = additionalUrl.trim();
+              // Normalize additional URL too
+              if (!fullUrl.match(/^https?:\/\//i)) {
+                if (fullUrl.startsWith('/')) {
+                  fullUrl = new URL(fullUrl, baseDomain).href;
+                } else {
+                  fullUrl = 'https://' + fullUrl.replace(/^www\./i, '');
+                }
+              }
               if (!urlsToScan.includes(fullUrl)) {
                 urlsToScan.push(fullUrl);
               }

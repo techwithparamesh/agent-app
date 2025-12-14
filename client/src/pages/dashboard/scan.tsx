@@ -33,9 +33,29 @@ import type { Agent } from "@shared/schema";
 import { Textarea } from "@/components/ui/textarea";
 import { Scan, Globe, Loader2, Check, AlertCircle, Database, RefreshCw, Plus } from "lucide-react";
 
+// Helper to normalize URL - add https:// if missing
+const normalizeUrl = (url: string): string => {
+  let normalized = url.trim();
+  if (!normalized) return normalized;
+  
+  // Remove any leading/trailing whitespace
+  normalized = normalized.trim();
+  
+  // If it doesn't start with http:// or https://, add https://
+  if (!normalized.match(/^https?:\/\//i)) {
+    // Remove www. prefix if present to avoid https://www.www.
+    normalized = normalized.replace(/^www\./i, '');
+    normalized = 'https://' + normalized;
+  }
+  
+  return normalized;
+};
+
 const scanFormSchema = z.object({
   agentId: z.string().min(1, "Please select an agent"),
-  url: z.string().url("Please enter a valid URL"),
+  url: z.string().min(1, "Please enter a website URL").transform(normalizeUrl).pipe(
+    z.string().url("Please enter a valid URL (e.g., example.com or https://example.com)")
+  ),
   additionalUrls: z.string().optional(),
   rescan: z.boolean().default(false),
 });
@@ -255,7 +275,7 @@ export default function WebsiteScanner() {
                           <div className="relative">
                             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                              placeholder="https://example.com"
+                              placeholder="example.com or https://example.com"
                               className="pl-10"
                               {...field}
                               data-testid="input-scan-url"
@@ -263,7 +283,7 @@ export default function WebsiteScanner() {
                           </div>
                         </FormControl>
                         <FormDescription>
-                          Enter the starting URL - the scanner will crawl linked pages automatically
+                          Enter the website domain (e.g., amazon.in) or full URL - https:// will be added automatically
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
