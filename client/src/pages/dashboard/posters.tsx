@@ -390,18 +390,19 @@ export default function PostersPage() {
               {selectedPoster?.svgContent ? (
                 <div className="space-y-4">
                   <div 
-                    className="border rounded-lg overflow-hidden bg-muted flex items-center justify-center p-4"
-                    style={{ 
-                      maxHeight: "500px",
-                    }}
+                    className="border rounded-lg overflow-hidden bg-muted flex items-center justify-center p-2"
                   >
                     <div
                       dangerouslySetInnerHTML={{ __html: selectedPoster.svgContent }}
-                      className="w-full h-full"
+                      className="w-full flex items-center justify-center"
                       style={{
-                        maxHeight: "450px",
+                        maxHeight: "400px",
                       }}
                     />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground">
+                    {selectedPoster.headline && <p className="font-semibold text-foreground">{selectedPoster.headline}</p>}
+                    {selectedPoster.platform} • {selectedPoster.size}
                   </div>
                   
                   {/* Edit Button - Prominent */}
@@ -484,32 +485,40 @@ export default function PostersPage() {
                   return (
                     <div
                       key={poster.id}
-                      className={`group relative border rounded-lg overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary ${
-                        selectedPoster?.id === poster.id ? "ring-2 ring-primary" : ""
+                      role="button"
+                      tabIndex={0}
+                      className={`group relative border rounded-lg overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary hover:shadow-lg ${
+                        selectedPoster?.id === poster.id ? "ring-2 ring-primary bg-accent/10" : ""
                       }`}
                       onClick={() => setSelectedPoster(poster)}
+                      onKeyDown={(e) => e.key === 'Enter' && setSelectedPoster(poster)}
                     >
                       {poster.svgContent ? (
                         <div 
-                          className="aspect-square bg-muted flex items-center justify-center p-2"
-                          dangerouslySetInnerHTML={{ __html: poster.svgContent }}
-                          style={{ maxHeight: "200px" }}
-                        />
+                          className="aspect-square bg-muted flex items-center justify-center overflow-hidden"
+                          style={{ minHeight: "150px", maxHeight: "200px" }}
+                        >
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: poster.svgContent }}
+                            className="w-full h-full flex items-center justify-center poster-thumbnail"
+                            style={{ pointerEvents: "none" }}
+                          />
+                        </div>
                       ) : (
-                        <div className="aspect-square bg-muted flex items-center justify-center">
+                        <div className="aspect-square bg-muted flex items-center justify-center" style={{ minHeight: "150px" }}>
                           <Image className="h-8 w-8 opacity-20" />
                         </div>
                       )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3 pt-8">
                         <div className="flex items-center gap-2">
                           <PlatformIcon className="h-4 w-4 text-white" />
                           <span className="text-xs text-white capitalize">
                             {poster.platform} • {poster.size}
                           </span>
                         </div>
-                        {poster.headline && (
+                        {(poster.headline || poster.title) && (
                           <p className="text-sm font-medium text-white truncate mt-1">
-                            {poster.headline}
+                            {poster.headline || poster.title}
                           </p>
                         )}
                       </div>

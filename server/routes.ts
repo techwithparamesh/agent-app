@@ -4411,74 +4411,73 @@ Return ONLY the JSON object.`,
       };
 
       const isVertical = dimensions.height > dimensions.width;
+      const isWide = dimensions.width > dimensions.height * 1.5;
+      const w = dimensions.width;
+      const h = dimensions.height;
       
-      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dimensions.width} ${dimensions.height}" width="${dimensions.width}" height="${dimensions.height}">
+      // Generate unique IDs for this poster to avoid conflicts
+      const uid = Date.now().toString(36);
+      
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:${colors.background};stop-opacity:1" />
-      <stop offset="100%" style="stop-color:${colors.secondary}30;stop-opacity:1" />
+    <linearGradient id="bg_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${colors.background}"/>
+      <stop offset="50%" stop-color="${colors.secondary}22"/>
+      <stop offset="100%" stop-color="${colors.background}"/>
     </linearGradient>
-    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:${colors.primary};stop-opacity:1" />
-      <stop offset="100%" style="stop-color:${colors.accent};stop-opacity:1" />
+    <linearGradient id="accent_${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${colors.primary}"/>
+      <stop offset="100%" stop-color="${colors.accent}"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <linearGradient id="shine_${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow_${uid}" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    <filter id="shadow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.4"/>
     </filter>
   </defs>
   
   <!-- Background -->
-  <rect width="100%" height="100%" fill="url(#bgGradient)"/>
+  <rect width="100%" height="100%" fill="url(#bg_${uid})"/>
   
-  <!-- Decorative circles -->
-  <circle cx="${dimensions.width * 0.1}" cy="${dimensions.height * 0.2}" r="${Math.min(dimensions.width, dimensions.height) * 0.15}" fill="${colors.primary}" opacity="0.1"/>
-  <circle cx="${dimensions.width * 0.9}" cy="${dimensions.height * 0.8}" r="${Math.min(dimensions.width, dimensions.height) * 0.2}" fill="${colors.accent}" opacity="0.1"/>
+  <!-- Decorative elements -->
+  <circle cx="${w * 0.85}" cy="${h * 0.15}" r="${Math.min(w, h) * 0.25}" fill="${colors.primary}" opacity="0.08"/>
+  <circle cx="${w * 0.1}" cy="${h * 0.85}" r="${Math.min(w, h) * 0.2}" fill="${colors.accent}" opacity="0.1"/>
+  <circle cx="${w * 0.5}" cy="${h * 0.5}" r="${Math.min(w, h) * 0.35}" fill="${colors.secondary}" opacity="0.05"/>
+  
+  <!-- Top accent line -->
+  <rect x="${w * 0.1}" y="${h * 0.04}" width="${w * 0.8}" height="4" rx="2" fill="url(#accent_${uid})" opacity="0.6"/>
   
   <!-- Offer badge -->
-  <g transform="translate(${dimensions.width * 0.5}, ${isVertical ? dimensions.height * 0.15 : dimensions.height * 0.2})">
-    <rect x="-${Math.min(dimensions.width * 0.3, 200)}" y="-40" width="${Math.min(dimensions.width * 0.6, 400)}" height="80" rx="40" fill="url(#accentGradient)" filter="url(#glow)"/>
-    <text x="0" y="12" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 42 : 36}" font-weight="800" fill="${colors.text}">${posterContent.offerText || '50% OFF'}</text>
+  <g transform="translate(${w * 0.5}, ${isVertical ? h * 0.18 : isWide ? h * 0.3 : h * 0.22})">
+    <rect x="-${w * 0.35}" y="-${isVertical ? 45 : 35}" width="${w * 0.7}" height="${isVertical ? 90 : 70}" rx="${isVertical ? 45 : 35}" fill="url(#accent_${uid})" filter="url(#glow_${uid})"/>
+    <rect x="-${w * 0.35}" y="-${isVertical ? 45 : 35}" width="${w * 0.7}" height="${(isVertical ? 90 : 70) / 2}" rx="${isVertical ? 45 : 35}" fill="url(#shine_${uid})"/>
+    <text x="0" y="${isVertical ? 14 : 10}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 48 : isWide ? 36 : 40}" font-weight="900" fill="#ffffff" letter-spacing="2">${posterContent.offerText || '50% OFF'}</text>
   </g>
   
   <!-- Main headline -->
-  <text x="${dimensions.width * 0.5}" y="${isVertical ? dimensions.height * 0.35 : dimensions.height * 0.45}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 72 : 56}" font-weight="800" fill="${colors.text}" filter="url(#shadow)">
-    ${posterContent.headline || 'SPECIAL OFFER'}
-  </text>
+  <text x="${w * 0.5}" y="${isVertical ? h * 0.38 : isWide ? h * 0.52 : h * 0.48}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 64 : isWide ? 48 : 52}" font-weight="900" fill="${colors.text}" filter="url(#shadow_${uid})" letter-spacing="1">${posterContent.headline || 'SPECIAL OFFER'}</text>
   
   <!-- Subheadline -->
-  <text x="${dimensions.width * 0.5}" y="${isVertical ? dimensions.height * 0.42 : dimensions.height * 0.55}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 36 : 28}" fill="${colors.text}" opacity="0.9">
-    ${posterContent.subheadline || 'Limited Time Only'}
-  </text>
-  
-  ${posterContent.features && posterContent.features.length > 0 ? `
-  <!-- Features -->
-  <g transform="translate(${dimensions.width * 0.5}, ${isVertical ? dimensions.height * 0.52 : dimensions.height * 0.65})">
-    ${posterContent.features.slice(0, 3).map((feature: string, i: number) => `
-    <g transform="translate(0, ${i * (isVertical ? 50 : 40)})">
-      <circle cx="${-dimensions.width * 0.25}" cy="0" r="8" fill="${colors.accent}"/>
-      <text x="${-dimensions.width * 0.22}" y="6" font-family="Arial, sans-serif" font-size="${isVertical ? 28 : 22}" fill="${colors.text}" opacity="0.85">${feature}</text>
-    </g>
-    `).join('')}
-  </g>
-  ` : ''}
+  <text x="${w * 0.5}" y="${isVertical ? h * 0.46 : isWide ? h * 0.62 : h * 0.58}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 32 : isWide ? 24 : 28}" fill="${colors.text}" opacity="0.85" letter-spacing="0.5">${posterContent.subheadline || 'Limited Time Only'}</text>
   
   <!-- CTA Button -->
-  <g transform="translate(${dimensions.width * 0.5}, ${isVertical ? dimensions.height * 0.78 : dimensions.height * 0.82})">
-    <rect x="-${Math.min(dimensions.width * 0.25, 180)}" y="-35" width="${Math.min(dimensions.width * 0.5, 360)}" height="70" rx="35" fill="${colors.accent}" filter="url(#shadow)"/>
-    <text x="0" y="10" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 32 : 28}" font-weight="700" fill="${colors.background}">${posterContent.ctaText || 'SHOP NOW'}</text>
+  <g transform="translate(${w * 0.5}, ${isVertical ? h * 0.75 : isWide ? h * 0.78 : h * 0.78})">
+    <rect x="-${w * 0.28}" y="-${isVertical ? 40 : 32}" width="${w * 0.56}" height="${isVertical ? 80 : 64}" rx="${isVertical ? 40 : 32}" fill="${colors.accent}" filter="url(#shadow_${uid})"/>
+    <rect x="-${w * 0.28}" y="-${isVertical ? 40 : 32}" width="${w * 0.56}" height="${(isVertical ? 80 : 64) / 2}" rx="${isVertical ? 40 : 32}" fill="url(#shine_${uid})" opacity="0.3"/>
+    <text x="0" y="${isVertical ? 12 : 8}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 34 : isWide ? 26 : 28}" font-weight="800" fill="#ffffff">${posterContent.ctaText || 'SHOP NOW'}</text>
   </g>
   
   <!-- Brand name -->
-  <text x="${dimensions.width * 0.5}" y="${isVertical ? dimensions.height * 0.92 : dimensions.height * 0.94}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 28 : 24}" font-weight="600" fill="${colors.text}" opacity="0.7">
-    ${posterContent.brandName || 'Your Brand'}
-  </text>
+  <text x="${w * 0.5}" y="${isVertical ? h * 0.92 : h * 0.93}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 26 : isWide ? 20 : 22}" font-weight="600" fill="${colors.text}" opacity="0.6" letter-spacing="2">${(posterContent.brandName || 'Your Brand').toUpperCase()}</text>
+  
+  <!-- Bottom accent line -->
+  <rect x="${w * 0.3}" y="${h * 0.96}" width="${w * 0.4}" height="3" rx="1.5" fill="url(#accent_${uid})" opacity="0.5"/>
 </svg>`;
 
       // Save to database
