@@ -190,18 +190,18 @@ export default function Dashboard() {
     <DashboardLayout title="Dashboard">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Welcome Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in-up">
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight mb-1" data-testid="text-dashboard-welcome">
-              Welcome back, {firstName}!
+              Welcome back, <span className="bg-gradient-to-r from-primary to-chart-3 bg-clip-text text-transparent">{firstName}</span>!
             </h1>
             <p className="text-muted-foreground">
               Here's what's happening with your AI agents today.
             </p>
           </div>
           <Link href="/dashboard/agents/new">
-            <Button data-testid="button-create-agent">
-              <PlusCircle className="mr-2 h-4 w-4" />
+            <Button className="btn-shine group" data-testid="button-create-agent">
+              <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
               Create Agent
             </Button>
           </Link>
@@ -213,10 +213,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, index) => (
             <Link key={index} href={stat.href}>
-              <Card className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md">
+              <Card className="cursor-pointer card-hover border-transparent hover:border-primary/30 bg-card/80 backdrop-blur-sm group animate-fade-in-up opacity-0" style={{ animationDelay: `${index * 0.1}s` }}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <stat.icon className="h-5 w-5 text-primary" />
                     </div>
                     <Badge variant="secondary" className="text-xs">
@@ -225,9 +225,9 @@ export default function Dashboard() {
                   </div>
                   <div>
                     {agentsLoading && index === 0 ? (
-                      <Skeleton className="h-8 w-16 mb-1" />
+                      <div className="h-8 w-16 mb-1 animate-shimmer rounded" />
                     ) : (
-                      <p className="text-3xl font-bold font-display">{stat.value}</p>
+                      <p className="text-3xl font-bold font-display group-hover:text-primary transition-colors">{stat.value}</p>
                     )}
                     <p className="text-sm text-muted-foreground">{stat.label}</p>
                   </div>
@@ -238,17 +238,17 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div>
+        <div className="animate-fade-in-up opacity-0" style={{ animationDelay: '0.4s' }}>
           <h2 className="font-display text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
               <Link key={index} href={action.href}>
-                <Card className="h-full hover-elevate cursor-pointer group">
+                <Card className="h-full card-hover cursor-pointer group border-transparent hover:border-primary/20 bg-card/80 backdrop-blur-sm">
                   <CardContent className="p-6">
-                    <div className={`w-12 h-12 rounded-lg ${action.bgColor} flex items-center justify-center mb-4`}>
+                    <div className={`w-12 h-12 rounded-xl ${action.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                       <action.icon className={`h-6 w-6 ${action.color}`} />
                     </div>
-                    <h3 className="font-semibold mb-1 flex items-center gap-2">
+                    <h3 className="font-semibold mb-1 flex items-center gap-2 group-hover:text-primary transition-colors">
                       {action.title}
                       <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </h3>
@@ -261,13 +261,13 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Agents */}
-        <div>
+        <div className="animate-fade-in-up opacity-0" style={{ animationDelay: '0.5s' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-semibold">Recent Agents</h2>
             <Link href="/dashboard/agents">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="group">
                 View All
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </div>
@@ -275,30 +275,33 @@ export default function Dashboard() {
           {agentsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(3)].map((_, i) => (
-                <Card key={i}>
+                <Card key={i} className="overflow-hidden">
                   <CardContent className="p-6">
-                    <Skeleton className="h-10 w-10 rounded-lg mb-4" />
-                    <Skeleton className="h-5 w-32 mb-2" />
-                    <Skeleton className="h-4 w-48" />
+                    <div className="h-10 w-10 rounded-xl mb-4 animate-shimmer" />
+                    <div className="h-5 w-32 mb-2 animate-shimmer rounded" />
+                    <div className="h-4 w-48 animate-shimmer rounded" />
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : agents && agents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {agents.slice(0, 3).map((agent) => (
+              {agents.slice(0, 3).map((agent, index) => (
                 <Link key={agent.id} href={`/dashboard/agents/${agent.id}`}>
-                  <Card className="h-full hover-elevate cursor-pointer">
+                  <Card className="h-full card-hover cursor-pointer group border-transparent hover:border-primary/20 bg-card/80 backdrop-blur-sm">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-chart-3/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                           <Bot className="h-5 w-5 text-primary" />
                         </div>
-                        <Badge variant={agent.isActive ? "default" : "secondary"}>
+                        <Badge 
+                          variant={agent.isActive ? "default" : "secondary"}
+                          className={agent.isActive ? "bg-chart-2/20 text-chart-2 border-chart-2/30" : ""}
+                        >
                           {agent.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </div>
-                      <h3 className="font-semibold mb-1">{agent.name}</h3>
+                      <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">{agent.name}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {agent.description || "No description"}
                       </p>
@@ -313,18 +316,18 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <Card>
+            <Card className="border-dashed border-2 border-muted-foreground/20 bg-transparent">
               <CardContent className="p-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="h-8 w-8 text-muted-foreground" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-chart-3/10 flex items-center justify-center mx-auto mb-4 animate-bounce-gentle">
+                  <Sparkles className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="font-semibold text-lg mb-2">No agents yet</h3>
                 <p className="text-muted-foreground mb-4">
                   Create your first AI agent to get started.
                 </p>
                 <Link href="/dashboard/agents/new">
-                  <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
+                  <Button className="btn-shine group">
+                    <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
                     Create Your First Agent
                   </Button>
                 </Link>

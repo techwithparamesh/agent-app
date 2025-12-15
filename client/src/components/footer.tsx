@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Bot, Github, Twitter, Linkedin } from "lucide-react";
+import { Bot, Github, Twitter, Linkedin, Sparkles, Heart } from "lucide-react";
 
 const footerLinks = {
   product: [
@@ -23,12 +23,18 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-muted/30">
+    <footer className="border-t border-border bg-muted/30 relative overflow-hidden">
+      {/* Decorative gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      
       <div className="container mx-auto max-w-7xl px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 font-display font-bold text-xl mb-4">
-              <Bot className="h-7 w-7 text-primary" />
+            <Link href="/" className="flex items-center gap-2 font-display font-bold text-xl mb-4 group">
+              <div className="relative">
+                <Bot className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
+                <Sparkles className="h-3 w-3 text-chart-4 absolute -top-1 -right-1 animate-pulse-soft" />
+              </div>
               <span className="tracking-tight">AgentForge</span>
             </Link>
             <p className="text-muted-foreground max-w-sm mb-6">
@@ -37,21 +43,21 @@ export function Footer() {
             <div className="flex items-center gap-3">
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center hover-elevate"
+                className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center transition-all hover:bg-primary/20 hover:scale-110 hover:text-primary"
                 data-testid="link-twitter"
               >
                 <Twitter className="h-5 w-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center hover-elevate"
+                className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center transition-all hover:bg-primary/20 hover:scale-110 hover:text-primary"
                 data-testid="link-github"
               >
                 <Github className="h-5 w-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center hover-elevate"
+                className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center transition-all hover:bg-primary/20 hover:scale-110 hover:text-primary"
                 data-testid="link-linkedin"
               >
                 <Linkedin className="h-5 w-5" />
@@ -66,7 +72,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors link-underline"
                   >
                     {link.label}
                   </Link>
@@ -82,7 +88,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors link-underline"
                   >
                     {link.label}
                   </Link>
@@ -98,7 +104,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors link-underline"
                   >
                     {link.label}
                   </Link>
@@ -110,10 +116,10 @@ export function Footer() {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            2024 AgentForge. All rights reserved.
+            © 2024 AgentForge. All rights reserved.
           </p>
-          <p className="text-sm text-muted-foreground">
-            Powered by AI
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            Made with <Heart className="h-3 w-3 text-destructive fill-destructive animate-pulse-soft" /> and AI
           </p>
         </div>
       </div>
