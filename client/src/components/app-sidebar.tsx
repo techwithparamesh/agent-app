@@ -44,6 +44,7 @@ import {
   GraduationCap,
   Building2,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -67,8 +68,8 @@ const templateSubItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
-  const [dashboardOpen, setDashboardOpen] = useState(location.startsWith("/dashboard") && !location.includes("/agents") && !location.includes("/scan") && !location.includes("/knowledge") && !location.includes("/chatbot") && !location.includes("/templates") && !location.includes("/analytics") && !location.includes("/integrations"));
-  const [templatesOpen, setTemplatesOpen] = useState(location.includes("/templates"));
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   // Fetch agents for count
   const { data: agents } = useQuery<Agent[]>({
@@ -112,6 +113,9 @@ export function AppSidebar() {
     }
   };
 
+  const isDashboardActive = location === "/dashboard";
+  const isTemplatesActive = location === "/dashboard/templates" || location.startsWith("/dashboard/templates");
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
@@ -132,15 +136,29 @@ export function AppSidebar() {
               {/* Dashboard with Dropdown */}
               <Collapsible open={dashboardOpen} onOpenChange={setDashboardOpen}>
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="gap-3 w-full justify-between">
-                      <div className="flex items-center gap-3">
+                  <div className="flex items-center w-full">
+                    {/* Main Dashboard Link */}
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isDashboardActive}
+                      className="flex-1 gap-3"
+                    >
+                      <Link href="/dashboard">
                         <LayoutDashboard className="h-5 w-5" />
                         <span>Dashboard</span>
-                      </div>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${dashboardOpen ? "rotate-180" : ""}`} />
+                      </Link>
                     </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                    {/* Dropdown Toggle */}
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 hover:bg-sidebar-accent"
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${dashboardOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {dashboardSubItems.map((item) => (
@@ -158,13 +176,6 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild>
-                          <Link href="/dashboard" className="text-primary font-medium">
-                            View Full Dashboard →
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
@@ -260,17 +271,43 @@ export function AppSidebar() {
               {/* Templates with Dropdown */}
               <Collapsible open={templatesOpen} onOpenChange={setTemplatesOpen}>
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="gap-3 w-full justify-between">
-                      <div className="flex items-center gap-3">
+                  <div className="flex items-center w-full">
+                    {/* Main Templates Link */}
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isTemplatesActive}
+                      className="flex-1 gap-3"
+                    >
+                      <Link href="/dashboard/templates">
                         <LayoutTemplate className="h-5 w-5" />
                         <span>Templates</span>
-                      </div>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${templatesOpen ? "rotate-180" : ""}`} />
+                      </Link>
                     </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                    {/* Dropdown Toggle */}
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 hover:bg-sidebar-accent"
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${templatesOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
                   <CollapsibleContent>
                     <SidebarMenuSub>
+                      {/* Create Template Option */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                          <Link 
+                            href="/dashboard/templates/new"
+                            className="flex items-center gap-2 text-primary font-medium"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            <span>Create Template</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
                       {templateSubItems.map((item) => (
                         <SidebarMenuSubItem key={item.category}>
                           <SidebarMenuSubButton asChild>
@@ -284,13 +321,6 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild>
-                          <Link href="/dashboard/templates" className="text-primary font-medium">
-                            View All Templates →
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
