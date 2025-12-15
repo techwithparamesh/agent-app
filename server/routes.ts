@@ -4273,6 +4273,9 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
       let posterContent: any;
       let finalPrompt = prompt || "";
 
+      console.log("Poster generation request:", { prompt, websiteUrl, platform, size });
+      console.log("API Key available:", !!apiKey);
+
       // If websiteUrl is provided, scan for brand info
       if (websiteUrl && !prompt) {
         try {
@@ -4302,6 +4305,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
       // Generate poster content with AI
       if (!apiKey) {
         // Fallback without AI
+        console.log("No ANTHROPIC_API_KEY found - using default poster content");
         posterContent = {
           brandName: "Your Brand",
           headline: "Special Offer!",
@@ -4318,6 +4322,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
         };
       } else {
         try {
+          console.log("Calling Anthropic API with prompt:", finalPrompt.substring(0, 100) + "...");
           const anthropic = new Anthropic({ apiKey });
 
           const completion = await anthropic.messages.create({
@@ -4359,6 +4364,7 @@ Return ONLY the JSON object.`,
           });
 
           const responseText = completion.content[0].type === "text" ? completion.content[0].text : "{}";
+          console.log("Anthropic poster response:", responseText.substring(0, 300));
 
           try {
             let cleanedResponse = responseText.trim();
@@ -4366,7 +4372,9 @@ Return ONLY the JSON object.`,
             if (cleanedResponse.startsWith('```')) cleanedResponse = cleanedResponse.slice(3);
             if (cleanedResponse.endsWith('```')) cleanedResponse = cleanedResponse.slice(0, -3);
             posterContent = JSON.parse(cleanedResponse.trim());
+            console.log("Parsed poster content:", posterContent);
           } catch (parseError) {
+            console.error("Failed to parse poster AI response:", parseError);
             posterContent = {
               brandName: "Your Brand",
               headline: "Special Offer!",

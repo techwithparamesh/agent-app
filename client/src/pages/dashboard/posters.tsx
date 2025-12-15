@@ -542,9 +542,38 @@ export default function PostersPage() {
                           </p>
                         )}
                       </div>
+                      {/* Hover action icons */}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-7 w-7 bg-background/90 hover:bg-primary hover:text-primary-foreground shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPoster(poster);
+                            setShowEditor(true);
+                          }}
+                          title="Edit Poster"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-7 w-7 bg-background/90 hover:bg-destructive hover:text-destructive-foreground shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteMutation.mutate(poster.id);
+                          }}
+                          title="Delete Poster"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      {/* Date badge */}
                       <Badge
                         variant="secondary"
-                        className="absolute top-2 right-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 left-2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity bg-background/90"
                       >
                         {new Date(poster.createdAt!).toLocaleDateString()}
                       </Badge>
