@@ -122,7 +122,7 @@ export default function Home() {
             <div className="max-w-4xl mx-auto text-center">
               <Badge variant="secondary" className="mb-6 animate-fade-in-down">
                 <Sparkles className="h-3 w-3 mr-1 animate-pulse-soft" />
-                Powered by Claude AI
+                Powered by DigitalAgency4Us
               </Badge>
               
               <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in-up" data-testid="text-hero-title">
