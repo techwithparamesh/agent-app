@@ -10,9 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { PosterEditor } from "@/components/poster-editor";
 import type { GeneratedPoster } from "@shared/schema";
 import {
   Image,
@@ -27,6 +34,11 @@ import {
   Facebook,
   Linkedin,
   Twitter,
+  Edit,
+  Pencil,
+  FileImage,
+  FileCode,
+  ChevronDown,
 } from "lucide-react";
 
 const PLATFORMS = [
@@ -65,6 +77,7 @@ export default function PostersPage() {
   const [platform, setPlatform] = useState("instagram");
   const [size, setSize] = useState("post");
   const [selectedPoster, setSelectedPoster] = useState<GeneratedPoster | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
 
   const { data: posters, isLoading } = useQuery<GeneratedPoster[]>({
     queryKey: ["/api/posters"],
@@ -123,6 +136,36 @@ export default function PostersPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const response = await apiRequest("PUT", `/api/posters/${id}`, updates);
+      if (!response.ok) throw new Error("Failed to update");
+      return response.json();
+    },
+    onSuccess: (updatedPoster) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posters"] });
+      setSelectedPoster(updatedPoster);
+      setShowEditor(false);
+      toast({
+        title: "Poster updated!",
+        description: "Your changes have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditorSave = (updates: any) => {
+    if (selectedPoster) {
+      updateMutation.mutate({ id: selectedPoster.id, updates });
+    }
+  };
+
   const handleGenerate = () => {
     if (generationMode === "prompt" && !prompt.trim()) {
       toast({
@@ -150,7 +193,7 @@ export default function PostersPage() {
     });
   };
 
-  const downloadPoster = (poster: GeneratedPoster, format: "svg" | "png") => {
+  const downloadPoster = (poster: GeneratedPoster, format: "svg" | "png" | "jpg") => {
     if (!poster.svgContent) return;
 
     if (format === "svg") {
@@ -162,27 +205,32 @@ export default function PostersPage() {
       a.click();
       URL.revokeObjectURL(url);
     } else {
-      // Convert SVG to PNG
+      // Convert SVG to PNG or JPG
       const svgBlob = new Blob([poster.svgContent], { type: "image/svg+xml" });
       const url = URL.createObjectURL(svgBlob);
       const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
+        // Use higher resolution for better quality
+        const scale = 2;
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
         const ctx = canvas.getContext("2d");
         if (ctx) {
+          ctx.scale(scale, scale);
           ctx.drawImage(img, 0, 0);
+          const mimeType = format === "png" ? "image/png" : "image/jpeg";
+          const quality = format === "jpg" ? 0.92 : undefined;
           canvas.toBlob((blob) => {
             if (blob) {
-              const pngUrl = URL.createObjectURL(blob);
+              const imageUrl = URL.createObjectURL(blob);
               const a = document.createElement("a");
-              a.href = pngUrl;
-              a.download = `${poster.title || "poster"}-${poster.platform}-${poster.size}.png`;
+              a.href = imageUrl;
+              a.download = `${poster.title || "poster"}-${poster.platform}-${poster.size}.${format}`;
               a.click();
-              URL.revokeObjectURL(pngUrl);
+              URL.revokeObjectURL(imageUrl);
             }
-          }, "image/png");
+          }, mimeType, quality);
         }
         URL.revokeObjectURL(url);
       };
@@ -355,23 +403,42 @@ export default function PostersPage() {
                       }}
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => downloadPoster(selectedPoster, "svg")}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download SVG
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      onClick={() => downloadPoster(selectedPoster, "png")}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download PNG
-                    </Button>
-                  </div>
+                  
+                  {/* Edit Button - Prominent */}
+                  <Button
+                    onClick={() => setShowEditor(true)}
+                    className="w-full btn-shine"
+                    size="lg"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit Poster (Text, Colors, Shapes)
+                  </Button>
+                  
+                  {/* Download Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full" size="lg">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Poster
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-48">
+                      <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "png")}>
+                        <FileImage className="h-4 w-4 mr-2" />
+                        Download as PNG
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "jpg")}>
+                        <Image className="h-4 w-4 mr-2" />
+                        Download as JPG
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "svg")}>
+                        <FileCode className="h-4 w-4 mr-2" />
+                        Download as SVG
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   <Button
                     variant="destructive"
                     className="w-full"
@@ -466,6 +533,15 @@ export default function PostersPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Poster Editor Modal */}
+      {showEditor && selectedPoster && (
+        <PosterEditor
+          poster={selectedPoster}
+          onSave={handleEditorSave}
+          onClose={() => setShowEditor(false)}
+        />
+      )}
     </DashboardLayout>
   );
 }

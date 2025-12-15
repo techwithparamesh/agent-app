@@ -4182,7 +4182,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      const { title, heroText, subheadline, features, ctaButtons, htmlContent } = req.body;
+      const { title, heroText, subheadline, features, ctaButtons, colorScheme, htmlContent } = req.body;
       
       const updated = await storage.updateGeneratedPage(req.params.id, {
         title,
@@ -4190,6 +4190,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
         subheadline,
         features,
         ctaButtons,
+        colorScheme,
         htmlContent,
       });
       
@@ -4515,6 +4516,36 @@ Return ONLY the JSON object.`,
     } catch (error) {
       console.error("Error fetching poster:", error);
       res.status(500).json({ message: "Failed to fetch poster" });
+    }
+  });
+
+  // Update poster
+  app.put("/api/posters/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const poster = await storage.getGeneratedPosterById(req.params.id);
+      if (!poster) {
+        return res.status(404).json({ message: "Poster not found" });
+      }
+      if (poster.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const { title, headline, subheadline, offerText, ctaText, colorScheme, svgContent } = req.body;
+      
+      const updated = await storage.updateGeneratedPoster(req.params.id, {
+        title,
+        headline,
+        subheadline,
+        offerText,
+        ctaText,
+        colorScheme,
+        svgContent,
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating poster:", error);
+      res.status(500).json({ message: "Failed to update poster" });
     }
   });
 

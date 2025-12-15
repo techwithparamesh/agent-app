@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,10 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { UpgradeModal } from "@/components/upgrade-modal";
+import { LandingPageEditor } from "@/components/landing-page-editor";
 import type { GeneratedPage } from "@shared/schema";
 import {
   FileText,
@@ -33,6 +40,11 @@ import {
   Save,
   X,
   ExternalLink,
+  Palette,
+  Image,
+  FileImage,
+  FileCode,
+  ChevronDown,
 } from "lucide-react";
 
 export default function LandingPagesPage() {
@@ -44,6 +56,7 @@ export default function LandingPagesPage() {
   const [copied, setCopied] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showVisualEditor, setShowVisualEditor] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
     heroText: "",
@@ -154,6 +167,56 @@ export default function LandingPagesPage() {
     },
   });
 
+  const visualEditorUpdateMutation = useMutation({
+    mutationFn: async (data: { 
+      id: string; 
+      title: string; 
+      heroText: string; 
+      subheadline: string; 
+      features?: any[];
+      colorScheme?: any;
+      htmlContent?: string;
+    }) => {
+      const response = await apiRequest("PUT", `/api/landing-pages/${data.id}`, data);
+      return response.json();
+    },
+    onSuccess: (updatedPage) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/landing-pages"] });
+      setSelectedPage(updatedPage);
+      setShowVisualEditor(false);
+      toast({
+        title: "Page updated!",
+        description: "Your visual changes have been saved.",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Update failed",
+        description: "Could not save the changes. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleVisualEditorSave = (updates: any) => {
+    if (!selectedPage) return;
+    visualEditorUpdateMutation.mutate({
+      id: selectedPage.id,
+      ...updates,
+    });
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (pageId: string) => {
       await apiRequest("DELETE", `/api/landing-pages/${pageId}`);
@@ -247,6 +310,78 @@ export default function LandingPagesPage() {
       a.download = `${selectedPage.title || "landing-page"}.html`;
       a.click();
       URL.revokeObjectURL(url);
+    }
+  };
+
+  const downloadAsImage = async (format: "png" | "jpg") => {
+    if (!selectedPage?.htmlContent) return;
+
+    toast({
+      title: "Generating image...",
+      description: "Please wait while we capture the landing page.",
+    });
+
+    try {
+      // Create a hidden iframe to render the HTML
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.left = "-9999px";
+      iframe.style.width = "1440px";
+      iframe.style.height = "3000px";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+
+      // Write the HTML content to the iframe
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error("Could not access iframe document");
+      
+      iframeDoc.open();
+      iframeDoc.write(selectedPage.htmlContent);
+      iframeDoc.close();
+
+      // Wait for content to load (fonts, images, etc.)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Use html2canvas to capture the iframe content
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(iframeDoc.body, {
+        width: 1440,
+        height: iframeDoc.body.scrollHeight,
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#0f172a",
+        logging: false,
+      });
+
+      // Remove the iframe
+      document.body.removeChild(iframe);
+
+      // Convert to desired format and download
+      const mimeType = format === "png" ? "image/png" : "image/jpeg";
+      const quality = format === "jpg" ? 0.9 : undefined;
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${selectedPage.title || "landing-page"}.${format}`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast({
+            title: "Download complete!",
+            description: `Your landing page has been saved as ${format.toUpperCase()}.`,
+          });
+        }
+      }, mimeType, quality);
+    } catch (error) {
+      console.error("Error generating image:", error);
+      toast({
+        title: "Download failed",
+        description: "Could not generate image. Try downloading as HTML instead.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -374,7 +509,10 @@ export default function LandingPagesPage() {
                         </>
                       ) : (
                         <>
-                          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} title="Edit">
+                          <Button variant="outline" size="sm" onClick={() => setShowVisualEditor(true)} title="Visual Editor">
+                            <Palette className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} title="Quick Edit">
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="outline" size="sm" onClick={previewInNewTab} title="Preview in new tab">
@@ -383,9 +521,28 @@ export default function LandingPagesPage() {
                           <Button variant="outline" size="sm" onClick={copyHtml} title="Copy HTML">
                             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                           </Button>
-                          <Button variant="outline" size="sm" onClick={downloadHtml} title="Download HTML">
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" title="Download">
+                                <Download className="h-4 w-4 mr-1" />
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => downloadAsImage("png")}>
+                                <FileImage className="h-4 w-4 mr-2" />
+                                Download as PNG
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => downloadAsImage("jpg")}>
+                                <Image className="h-4 w-4 mr-2" />
+                                Download as JPG
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={downloadHtml}>
+                                <FileCode className="h-4 w-4 mr-2" />
+                                Download as HTML
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button
                             variant="outline"
                             size="sm"
@@ -689,6 +846,15 @@ export default function LandingPagesPage() {
           plan: usageStats.plan,
         } : undefined}
       />
+
+      {/* Visual Editor */}
+      {showVisualEditor && selectedPage && (
+        <LandingPageEditor
+          page={selectedPage}
+          onSave={handleVisualEditorSave}
+          onClose={() => setShowVisualEditor(false)}
+        />
+      )}
     </DashboardLayout>
   );
 }
