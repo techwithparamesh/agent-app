@@ -88,48 +88,11 @@ export const messages = mysqlTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Generated landing pages
-export const generatedPages = mysqlTable("generated_pages", {
-  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-  prompt: text("prompt").notNull(),
-  title: varchar("title", { length: 255 }),
-  heroText: text("hero_text"),
-  subheadline: text("subheadline"),
-  features: json("features").$type<any>(),
-  pricing: json("pricing").$type<any>(),
-  testimonials: json("testimonials").$type<any>(),
-  ctaButtons: json("cta_buttons").$type<any>(),
-  seoKeywords: json("seo_keywords").$type<any>(),
-  colorScheme: json("color_scheme").$type<any>(),
-  htmlContent: text("html_content"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
 
-// Generated promotional posters
-export const generatedPosters = mysqlTable("generated_posters", {
-  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
-  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-  prompt: text("prompt").notNull(),
-  title: varchar("title", { length: 255 }),
-  headline: text("headline"),
-  subheadline: text("subheadline"),
-  platform: varchar("platform", { length: 50 }), // instagram, facebook, linkedin, twitter
-  size: varchar("size", { length: 50 }), // story, post, cover, ad
-  offerText: text("offer_text"),
-  ctaText: varchar("cta_text", { length: 255 }),
-  colorScheme: json("color_scheme").$type<any>(),
-  svgContent: text("svg_content"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   agents: many(agents),
-  generatedPages: many(generatedPages),
-  generatedPosters: many(generatedPosters),
 }));
 
 export const agentsRelations = relations(agents, ({ one, many }) => ({
@@ -163,19 +126,7 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
-export const generatedPagesRelations = relations(generatedPages, ({ one }) => ({
-  user: one(users, {
-    fields: [generatedPages.userId],
-    references: [users.id],
-  }),
-}));
 
-export const generatedPostersRelations = relations(generatedPosters, ({ one }) => ({
-  user: one(users, {
-    fields: [generatedPosters.userId],
-    references: [users.id],
-  }),
-}));
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -206,17 +157,7 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
-export const insertGeneratedPageSchema = createInsertSchema(generatedPages).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-});
 
-export const insertGeneratedPosterSchema = createInsertSchema(generatedPosters).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -234,8 +175,4 @@ export type Conversation = typeof conversations.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 
-export type InsertGeneratedPage = z.infer<typeof insertGeneratedPageSchema>;
-export type GeneratedPage = typeof generatedPages.$inferSelect;
 
-export type InsertGeneratedPoster = z.infer<typeof insertGeneratedPosterSchema>;
-export type GeneratedPoster = typeof generatedPosters.$inferSelect;

@@ -11,8 +11,8 @@ import {
   Bot,
   PlusCircle,
   Scan,
-  FileText,
   MessageSquare,
+  Database,
   ArrowRight,
   Sparkles,
   Activity,
@@ -38,10 +38,10 @@ const quickActions = [
     bgColor: "bg-chart-3/10",
   },
   {
-    icon: FileText,
-    title: "Generate Landing Page",
-    description: "Create AI-powered landing pages",
-    href: "/dashboard/landing-pages",
+    icon: Database,
+    title: "Knowledge Base",
+    description: "Manage your AI agent's knowledge",
+    href: "/dashboard/knowledge",
     color: "text-chart-4",
     bgColor: "bg-chart-4/10",
   },
@@ -71,9 +71,9 @@ const testimonials = [
     initials: "R"
   },
   {
-    quote: "The landing page generator saved us weeks of work. Our conversion rate increased by 35%.",
+    quote: "The AI chatbot integration was seamless. Our customer response time improved by 75%.",
     name: "Lakshmi",
-    role: "Graphic Designer",
+    role: "Product Manager",
     initials: "L"
   },
   {

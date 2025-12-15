@@ -26,8 +26,7 @@ import EditAgent from "@/pages/dashboard/agents/edit";
 import WebsiteScanner from "@/pages/dashboard/scan";
 import KnowledgeBase from "@/pages/dashboard/knowledge";
 import Chatbot from "@/pages/dashboard/chatbot";
-import LandingPages from "@/pages/dashboard/landing-pages";
-import Posters from "@/pages/dashboard/posters";
+import Templates from "@/pages/dashboard/templates";
 import Analytics from "@/pages/dashboard/analytics";
 import Integrations from "@/pages/dashboard/integrations";
 
@@ -54,8 +53,7 @@ function Router() {
       <Route path="/dashboard/scan" component={WebsiteScanner} />
       <Route path="/dashboard/knowledge" component={KnowledgeBase} />
       <Route path="/dashboard/chatbot" component={Chatbot} />
-      <Route path="/dashboard/landing-pages" component={LandingPages} />
-      <Route path="/dashboard/posters" component={Posters} />
+      <Route path="/dashboard/templates" component={Templates} />
       <Route path="/dashboard/analytics" component={Analytics} />
       <Route path="/dashboard/integrations" component={Integrations} />
 

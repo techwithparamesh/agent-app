@@ -21,8 +21,7 @@ import {
   Scan,
   Database,
   MessageSquare,
-  FileText,
-  Image,
+  LayoutTemplate,
   Settings,
   BarChart3,
   LogOut,
@@ -49,8 +48,7 @@ const menuItems = [
     items: [
       { icon: Database, label: "Knowledge Base", href: "/dashboard/knowledge" },
       { icon: MessageSquare, label: "Chatbot", href: "/dashboard/chatbot" },
-      { icon: FileText, label: "Landing Pages", href: "/dashboard/landing-pages" },
-      { icon: Image, label: "Posters", href: "/dashboard/posters" },
+      { icon: LayoutTemplate, label: "Templates", href: "/dashboard/templates" },
     ],
   },
   {
