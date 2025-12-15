@@ -4333,28 +4333,26 @@ Generate compelling poster content that grabs attention and drives action.
 
 Return ONLY a valid JSON object (no markdown, no code blocks) with:
 {
-  "brandName": "Company/Brand name",
-  "headline": "Bold, attention-grabbing headline (max 6 words)",
-  "subheadline": "Supporting text (max 10 words)", 
-  "offerText": "The offer/discount (e.g., '50% OFF', 'FREE TRIAL', 'BUY 1 GET 1')",
-  "ctaText": "Call to action button text (max 3 words)",
-  "tagline": "Optional brand tagline",
-  "features": ["Feature 1", "Feature 2", "Feature 3"] (optional, max 3),
+  "brandName": "Brand name (max 15 chars)",
+  "headline": "BOLD HEADLINE (MAX 3-4 WORDS, 20 chars max!)",
+  "subheadline": "Short supporting text (max 6 words)", 
+  "offerText": "Offer text (e.g., '50% OFF', 'FREE', max 15 chars)",
+  "ctaText": "CTA button (2-3 words max)",
   "colorScheme": {
     "primary": "#hex (vibrant brand color)",
-    "secondary": "#hex (complementary color)",
-    "accent": "#hex (highlight/CTA color)",
-    "background": "#hex (dark or gradient base)",
+    "secondary": "#hex (complementary)",
+    "accent": "#hex (CTA/highlight color)",
+    "background": "#hex (dark base)",
     "text": "#ffffff"
   }
 }
 
-DESIGN RULES:
-1. Headlines should be SHORT and PUNCHY
-2. Use power words: FREE, NEW, LIMITED, EXCLUSIVE, SAVE
-3. Create urgency with time-limited offers
-4. Colors should be bold and high contrast
-5. Keep text minimal - this is a visual poster
+CRITICAL RULES:
+1. HEADLINE MUST BE 3-4 WORDS MAX (e.g., "MEGA SALE NOW", "GROW YOUR BIZ")
+2. Keep ALL text SHORT - this is a VISUAL poster
+3. Use power words: FREE, NEW, LIMITED, SAVE, NOW
+4. Colors must be bold, high contrast, modern
+5. Brand name should be concise
 
 Platform: ${selectedPlatform}
 Size: ${selectedSize} (${dimensions.width}x${dimensions.height})
@@ -4426,6 +4424,17 @@ Return ONLY the JSON object.`,
       // Generate unique IDs for this poster to avoid conflicts
       const uid = Date.now().toString(36);
       
+      // Truncate text to fit and calculate font sizes
+      const headline = (posterContent.headline || 'SPECIAL OFFER').substring(0, 25);
+      const subheadline = (posterContent.subheadline || 'Limited Time Only').substring(0, 40);
+      const offerText = (posterContent.offerText || '50% OFF').substring(0, 18);
+      const ctaText = (posterContent.ctaText || 'SHOP NOW').substring(0, 15);
+      const brandName = (posterContent.brandName || 'Your Brand').toUpperCase().substring(0, 20);
+      
+      // Dynamic font sizing based on text length
+      const headlineFontSize = headline.length > 18 ? (isVertical ? 48 : 36) : (isVertical ? 64 : isWide ? 48 : 52);
+      const subFontSize = subheadline.length > 30 ? (isVertical ? 26 : 20) : (isVertical ? 32 : isWide ? 24 : 28);
+      
       const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
   <defs>
     <linearGradient id="bg_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -4465,24 +4474,24 @@ Return ONLY the JSON object.`,
   <g transform="translate(${w * 0.5}, ${isVertical ? h * 0.18 : isWide ? h * 0.3 : h * 0.22})">
     <rect x="-${w * 0.35}" y="-${isVertical ? 45 : 35}" width="${w * 0.7}" height="${isVertical ? 90 : 70}" rx="${isVertical ? 45 : 35}" fill="url(#accent_${uid})" filter="url(#glow_${uid})"/>
     <rect x="-${w * 0.35}" y="-${isVertical ? 45 : 35}" width="${w * 0.7}" height="${(isVertical ? 90 : 70) / 2}" rx="${isVertical ? 45 : 35}" fill="url(#shine_${uid})"/>
-    <text x="0" y="${isVertical ? 14 : 10}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 48 : isWide ? 36 : 40}" font-weight="900" fill="#ffffff" letter-spacing="2">${posterContent.offerText || '50% OFF'}</text>
+    <text x="0" y="${isVertical ? 14 : 10}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 44 : isWide ? 32 : 36}" font-weight="900" fill="#ffffff" letter-spacing="2">${offerText}</text>
   </g>
   
   <!-- Main headline -->
-  <text x="${w * 0.5}" y="${isVertical ? h * 0.38 : isWide ? h * 0.52 : h * 0.48}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 64 : isWide ? 48 : 52}" font-weight="900" fill="${colors.text}" filter="url(#shadow_${uid})" letter-spacing="1">${posterContent.headline || 'SPECIAL OFFER'}</text>
+  <text x="${w * 0.5}" y="${isVertical ? h * 0.38 : isWide ? h * 0.52 : h * 0.48}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${headlineFontSize}" font-weight="900" fill="${colors.text}" filter="url(#shadow_${uid})" letter-spacing="1" textLength="${w * 0.85}" lengthAdjust="spacingAndGlyphs">${headline}</text>
   
   <!-- Subheadline -->
-  <text x="${w * 0.5}" y="${isVertical ? h * 0.46 : isWide ? h * 0.62 : h * 0.58}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 32 : isWide ? 24 : 28}" fill="${colors.text}" opacity="0.85" letter-spacing="0.5">${posterContent.subheadline || 'Limited Time Only'}</text>
+  <text x="${w * 0.5}" y="${isVertical ? h * 0.46 : isWide ? h * 0.62 : h * 0.58}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${subFontSize}" fill="${colors.text}" opacity="0.85" letter-spacing="0.5">${subheadline}</text>
   
   <!-- CTA Button -->
   <g transform="translate(${w * 0.5}, ${isVertical ? h * 0.75 : isWide ? h * 0.78 : h * 0.78})">
     <rect x="-${w * 0.28}" y="-${isVertical ? 40 : 32}" width="${w * 0.56}" height="${isVertical ? 80 : 64}" rx="${isVertical ? 40 : 32}" fill="${colors.accent}" filter="url(#shadow_${uid})"/>
     <rect x="-${w * 0.28}" y="-${isVertical ? 40 : 32}" width="${w * 0.56}" height="${(isVertical ? 80 : 64) / 2}" rx="${isVertical ? 40 : 32}" fill="url(#shine_${uid})" opacity="0.3"/>
-    <text x="0" y="${isVertical ? 12 : 8}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 34 : isWide ? 26 : 28}" font-weight="800" fill="#ffffff">${posterContent.ctaText || 'SHOP NOW'}</text>
+    <text x="0" y="${isVertical ? 12 : 8}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="${isVertical ? 32 : isWide ? 24 : 26}" font-weight="800" fill="#ffffff">${ctaText}</text>
   </g>
   
   <!-- Brand name -->
-  <text x="${w * 0.5}" y="${isVertical ? h * 0.92 : h * 0.93}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 26 : isWide ? 20 : 22}" font-weight="600" fill="${colors.text}" opacity="0.6" letter-spacing="2">${(posterContent.brandName || 'Your Brand').toUpperCase()}</text>
+  <text x="${w * 0.5}" y="${isVertical ? h * 0.92 : h * 0.93}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 26 : isWide ? 20 : 22}" font-weight="600" fill="${colors.text}" opacity="0.6" letter-spacing="2">${brandName}</text></text>
   
   <!-- Bottom accent line -->
   <rect x="${w * 0.3}" y="${h * 0.96}" width="${w * 0.4}" height="3" rx="1.5" fill="url(#accent_${uid})" opacity="0.5"/>
