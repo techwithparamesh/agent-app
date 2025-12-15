@@ -40,8 +40,8 @@ import {
   Zap,
   Star,
   Clock,
-  Users,
   MessageSquare,
+  Target,
 } from "lucide-react";
 
 interface Template {
@@ -422,20 +422,33 @@ const categories = [
 
 export default function TemplatesPage() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const searchString = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
 
-  // Read category from URL query parameter
+  // Read category from URL query parameter and react to URL changes
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const categoryParam = params.get("category");
     if (categoryParam) {
       setSelectedCategory(categoryParam);
+    } else {
+      // Reset to "all" when no category param (user clicked on Templates main link)
+      setSelectedCategory("all");
     }
-  }, [searchString]);
+  }, [searchString, location]);
+
+  // Update URL when category changes via dropdown
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    if (value === "all") {
+      setLocation("/dashboard/templates");
+    } else {
+      setLocation(`/dashboard/templates?category=${encodeURIComponent(value)}`);
+    }
+  };
 
   const filteredTemplates = templates.filter((template) => {
     const matchesSearch =
@@ -482,15 +495,18 @@ export default function TemplatesPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <LayoutTemplate className="h-8 w-8 text-primary" />
-              Agent Templates
+              {selectedCategory === "all" ? "Agent Templates" : `${selectedCategory} Templates`}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Start quickly with pre-built AI agent templates optimized for your industry
+              {selectedCategory === "all" 
+                ? "Start quickly with pre-built AI agent templates optimized for your industry"
+                : `Browse ${filteredTemplates.length} template${filteredTemplates.length !== 1 ? 's' : ''} in the ${selectedCategory} category`
+              }
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Bot className="h-4 w-4" />
-            <span>{templates.length} templates available</span>
+            <span>{filteredTemplates.length} of {templates.length} templates</span>
           </div>
         </div>
 
@@ -507,7 +523,7 @@ export default function TemplatesPage() {
               />
             </div>
             <div className="w-full md:w-64">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -523,7 +539,7 @@ export default function TemplatesPage() {
           </div>
         </Card>
 
-        {/* Stats Row */}
+        {/* Stats Row - Shows counts based on current filter */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="flex items-center gap-3">
@@ -531,8 +547,10 @@ export default function TemplatesPage() {
                 <LayoutTemplate className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{templates.length}</p>
-                <p className="text-xs text-muted-foreground">Templates</p>
+                <p className="text-2xl font-bold">{filteredTemplates.length}</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedCategory === "all" ? "Total Templates" : `${selectedCategory} Templates`}
+                </p>
               </div>
             </div>
           </Card>
@@ -542,7 +560,7 @@ export default function TemplatesPage() {
                 <Star className="h-5 w-5 text-green-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{templates.filter(t => t.popularity === "High").length}</p>
+                <p className="text-2xl font-bold">{filteredTemplates.filter(t => t.popularity === "High").length}</p>
                 <p className="text-xs text-muted-foreground">Popular</p>
               </div>
             </div>
@@ -550,11 +568,11 @@ export default function TemplatesPage() {
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-500" />
+                <Zap className="h-5 w-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{categories.length - 1}</p>
-                <p className="text-xs text-muted-foreground">Categories</p>
+                <p className="text-2xl font-bold">{filteredTemplates.filter(t => t.popularity === "New").length}</p>
+                <p className="text-xs text-muted-foreground">New Templates</p>
               </div>
             </div>
           </Card>
@@ -710,7 +728,7 @@ export default function TemplatesPage() {
                   {/* Use Cases */}
                   <div>
                     <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4 text-primary" />
+                      <Target className="h-4 w-4 text-primary" />
                       Best For
                     </h4>
                     <div className="flex flex-wrap gap-2">

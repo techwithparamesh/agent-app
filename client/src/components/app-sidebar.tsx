@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -68,8 +68,25 @@ const templateSubItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
-  const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
+  
+  // Persist dropdown states in localStorage so they don't reset on navigation
+  const [dashboardOpen, setDashboardOpen] = useState(() => {
+    const saved = localStorage.getItem('sidebar-dashboard-open');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [templatesOpen, setTemplatesOpen] = useState(() => {
+    const saved = localStorage.getItem('sidebar-templates-open');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Save dropdown states to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebar-dashboard-open', JSON.stringify(dashboardOpen));
+  }, [dashboardOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-templates-open', JSON.stringify(templatesOpen));
+  }, [templatesOpen]);
 
   // Fetch agents for count
   const { data: agents } = useQuery<Agent[]>({
