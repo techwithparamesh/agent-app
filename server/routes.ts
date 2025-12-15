@@ -3437,7 +3437,7 @@ Based on this content, generate a landing page that:
             priceSubtext: "Everything you need to succeed"
           },
           guarantee: "100% Satisfaction Guarantee - If you're not completely satisfied, we'll make it right or refund your money.",
-          ctaPrimary: { text: "Get Started Now →", url: `${url}/contact` },
+          ctaPrimary: { text: "Get Started Now", url: `${url}/contact` },
           ctaSecondary: { text: "View Our Work", url: `${url}/portfolio` },
           ctaButtons: [
             { text: "Get a Quote", url: `${url}/contact` },
@@ -3519,8 +3519,8 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with these fields:
     "priceSubtext": "One-time payment • Lifetime access"
   },
   "guarantee": "Your money-back guarantee or risk reversal statement",
-  "ctaPrimary": {"text": "Action-oriented CTA (e.g., 'Get Started Now →', 'Claim Your Discount')", "url": "#"},
-  "ctaSecondary": {"text": "Secondary CTA", "url": "#"},
+  "ctaPrimary": {"text": "Action-oriented CTA (e.g., 'Get Started Now', 'Claim Your Discount') - NO arrows in text", "url": "ACTUAL_WEBSITE_URL/contact or /get-started"},
+  "ctaSecondary": {"text": "Secondary CTA - NO arrows", "url": "ACTUAL_WEBSITE_URL/portfolio or /services"},
   "faq": [
     {"question": "Common objection as question", "answer": "Overcome the objection"}
   ] (3-4 FAQs that handle objections),
@@ -3665,19 +3665,23 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
       background: linear-gradient(90deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"});
       color: #000;
       text-align: center;
-      padding: 0.75rem;
+      padding: 0.75rem 1rem;
       font-weight: 700;
       font-size: 0.95rem;
       position: fixed;
-      top: 60px;
+      top: 65px;
       left: 0;
       right: 0;
       z-index: 99;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
     }
     
     /* Hero */
     .hero { 
-      padding: 180px 20px 100px; 
+      padding: 200px 20px 100px; 
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -3967,12 +3971,13 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
     }
     
     @media (max-width: 768px) {
-      .hero { padding: 160px 20px 60px; }
+      .hero { padding: 180px 20px 60px; }
       .social-proof { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
       .stat-number { font-size: 1.75rem; }
       .pricing-card { padding: 2rem; }
       .pricing-price { font-size: 3rem; }
       .testimonials-grid { grid-template-columns: 1fr; }
+      .urgency-bar { font-size: 0.85rem; padding: 0.5rem; }
     }
   </style>
 </head>
@@ -3980,7 +3985,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
   <nav class="nav">
     <div class="nav-content">
       <a href="#" class="nav-logo">${pageContent.title || "Company"}<span>.</span></a>
-      <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || "#"}" class="nav-cta animate-pulse">${pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started"}</a>
+      <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || (websiteUrl ? websiteUrl + '/contact' : '#')}" class="nav-cta animate-pulse">${(pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started").replace(/\s*→+\s*$/, '')} →</a>
     </div>
   </nav>
 
@@ -3992,8 +3997,8 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
       <h1 class="animate-fade-in animate-delay-1">${pageContent.heroHeadline || pageContent.heroText || "Transform Your Business"}</h1>
       <p class="animate-fade-in animate-delay-2">${pageContent.heroSubheadline || pageContent.subheadline || ""}</p>
       <div class="cta-buttons animate-fade-in animate-delay-3">
-        <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || "#"}" class="cta-btn cta-primary animate-glow">${pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started"} →</a>
-        ${pageContent.ctaSecondary || pageContent.ctaButtons?.[1] ? `<a href="${pageContent.ctaSecondary?.url || pageContent.ctaButtons?.[1]?.url || "#"}" class="cta-btn cta-secondary">${pageContent.ctaSecondary?.text || pageContent.ctaButtons?.[1]?.text || "Learn More"}</a>` : ''}
+        <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || (websiteUrl ? websiteUrl + '/contact' : '#')}" class="cta-btn cta-primary animate-glow">${(pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started").replace(/\s*→+\s*$/, '')} →</a>
+        ${pageContent.ctaSecondary || pageContent.ctaButtons?.[1] ? `<a href="${pageContent.ctaSecondary?.url || pageContent.ctaButtons?.[1]?.url || (websiteUrl ? websiteUrl + '/portfolio' : '#')}" class="cta-btn cta-secondary">${(pageContent.ctaSecondary?.text || pageContent.ctaButtons?.[1]?.text || "Learn More").replace(/\s*→+\s*$/, '')}</a>` : ''}
       </div>
       
       ${pageContent.socialProof ? `
@@ -4081,7 +4086,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
       <ul class="pricing-features">
         ${(pageContent.features || pageContent.benefits || []).slice(0, 5).map((f: any) => `<li>${f.title}</li>`).join("")}
       </ul>
-      <a href="${pageContent.ctaPrimary?.url || "#"}" class="pricing-cta">${pageContent.ctaPrimary?.text || 'Get Started Now'} →</a>
+      <a href="${pageContent.ctaPrimary?.url || (websiteUrl ? websiteUrl + '/contact' : '#')}" class="pricing-cta">${(pageContent.ctaPrimary?.text || 'Get Started Now').replace(/\s*→+\s*$/, '')} →</a>
     </div>
     ${pageContent.guarantee ? `
     <div class="guarantee">
@@ -4110,7 +4115,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
   <section class="final-cta">
     <h2>Ready to Get Started?</h2>
     <p>Join hundreds of satisfied customers who have transformed their business with us.</p>
-    <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || "#"}" class="cta-btn cta-primary animate-glow">${pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started Now"} →</a>
+    <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || (websiteUrl ? websiteUrl + '/contact' : '#')}" class="cta-btn cta-primary animate-glow">${(pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started Now").replace(/\s*→+\s*$/, '')} →</a>
   </section>
   
   <footer class="footer">
@@ -4209,6 +4214,325 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
     } catch (error) {
       console.error("Error deleting landing page:", error);
       res.status(500).json({ message: "Failed to delete page" });
+    }
+  });
+
+  // ========== PROMOTIONAL POSTERS ==========
+  
+  // Get all posters for user
+  app.get("/api/posters", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const posters = await storage.getGeneratedPostersByUserId(userId);
+      res.json(posters);
+    } catch (error) {
+      console.error("Error fetching posters:", error);
+      res.status(500).json({ message: "Failed to fetch posters" });
+    }
+  });
+
+  // Generate new poster
+  app.post("/api/posters/generate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { prompt, platform, size, websiteUrl } = req.body;
+
+      if (!prompt && !websiteUrl) {
+        return res.status(400).json({ message: "Either prompt or websiteUrl is required" });
+      }
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+
+      // Platform sizes
+      const platformSizes: Record<string, Record<string, { width: number; height: number }>> = {
+        instagram: {
+          post: { width: 1080, height: 1080 },
+          story: { width: 1080, height: 1920 },
+          landscape: { width: 1080, height: 566 },
+        },
+        facebook: {
+          post: { width: 1200, height: 630 },
+          cover: { width: 820, height: 312 },
+          story: { width: 1080, height: 1920 },
+        },
+        linkedin: {
+          post: { width: 1200, height: 627 },
+          cover: { width: 1584, height: 396 },
+        },
+        twitter: {
+          post: { width: 1200, height: 675 },
+          header: { width: 1500, height: 500 },
+        },
+      };
+
+      const selectedPlatform = platform || 'instagram';
+      const selectedSize = size || 'post';
+      const dimensions = platformSizes[selectedPlatform]?.[selectedSize] || { width: 1080, height: 1080 };
+
+      let posterContent: any;
+      let finalPrompt = prompt || "";
+
+      // If websiteUrl is provided, scan for brand info
+      if (websiteUrl && !prompt) {
+        try {
+          const urlObj = new URL(websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`);
+          const response = await fetch(urlObj.href, {
+            headers: { 
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          
+          if (response.ok) {
+            const html = await response.text();
+            const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+            const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+            
+            const title = titleMatch ? titleMatch[1].trim() : 'Your Brand';
+            const description = metaDescMatch ? metaDescMatch[1] : '';
+            
+            finalPrompt = `Create a promotional poster for: ${title}. ${description}. Website: ${websiteUrl}`;
+          }
+        } catch (e) {
+          finalPrompt = `Create a promotional poster for the business at ${websiteUrl}`;
+        }
+      }
+
+      // Generate poster content with AI
+      if (!apiKey) {
+        // Fallback without AI
+        posterContent = {
+          brandName: "Your Brand",
+          headline: "Special Offer!",
+          subheadline: "Limited Time Only",
+          offerText: "50% OFF",
+          ctaText: "Shop Now",
+          colorScheme: {
+            primary: "#6366f1",
+            secondary: "#8b5cf6", 
+            accent: "#f59e0b",
+            background: "#0f172a",
+            text: "#ffffff"
+          }
+        };
+      } else {
+        try {
+          const anthropic = new Anthropic({ apiKey });
+
+          const completion = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1500,
+            system: `You are an expert graphic designer creating promotional posters for social media.
+Generate compelling poster content that grabs attention and drives action.
+
+Return ONLY a valid JSON object (no markdown, no code blocks) with:
+{
+  "brandName": "Company/Brand name",
+  "headline": "Bold, attention-grabbing headline (max 6 words)",
+  "subheadline": "Supporting text (max 10 words)", 
+  "offerText": "The offer/discount (e.g., '50% OFF', 'FREE TRIAL', 'BUY 1 GET 1')",
+  "ctaText": "Call to action button text (max 3 words)",
+  "tagline": "Optional brand tagline",
+  "features": ["Feature 1", "Feature 2", "Feature 3"] (optional, max 3),
+  "colorScheme": {
+    "primary": "#hex (vibrant brand color)",
+    "secondary": "#hex (complementary color)",
+    "accent": "#hex (highlight/CTA color)",
+    "background": "#hex (dark or gradient base)",
+    "text": "#ffffff"
+  }
+}
+
+DESIGN RULES:
+1. Headlines should be SHORT and PUNCHY
+2. Use power words: FREE, NEW, LIMITED, EXCLUSIVE, SAVE
+3. Create urgency with time-limited offers
+4. Colors should be bold and high contrast
+5. Keep text minimal - this is a visual poster
+
+Platform: ${selectedPlatform}
+Size: ${selectedSize} (${dimensions.width}x${dimensions.height})
+
+Return ONLY the JSON object.`,
+            messages: [{ role: "user", content: finalPrompt }],
+          });
+
+          const responseText = completion.content[0].type === "text" ? completion.content[0].text : "{}";
+
+          try {
+            let cleanedResponse = responseText.trim();
+            if (cleanedResponse.startsWith('```json')) cleanedResponse = cleanedResponse.slice(7);
+            if (cleanedResponse.startsWith('```')) cleanedResponse = cleanedResponse.slice(3);
+            if (cleanedResponse.endsWith('```')) cleanedResponse = cleanedResponse.slice(0, -3);
+            posterContent = JSON.parse(cleanedResponse.trim());
+          } catch (parseError) {
+            posterContent = {
+              brandName: "Your Brand",
+              headline: "Special Offer!",
+              subheadline: "Don't Miss Out",
+              offerText: "50% OFF",
+              ctaText: "Shop Now",
+              colorScheme: {
+                primary: "#6366f1",
+                secondary: "#8b5cf6",
+                accent: "#f59e0b",
+                background: "#0f172a",
+                text: "#ffffff"
+              }
+            };
+          }
+        } catch (apiError) {
+          console.error("Anthropic API error for poster:", apiError);
+          posterContent = {
+            brandName: "Your Brand",
+            headline: "Amazing Offer!",
+            subheadline: "Limited Time",
+            offerText: "SAVE BIG",
+            ctaText: "Get Started",
+            colorScheme: {
+              primary: "#6366f1",
+              secondary: "#8b5cf6",
+              accent: "#f59e0b",
+              background: "#0f172a",
+              text: "#ffffff"
+            }
+          };
+        }
+      }
+
+      // Generate SVG poster
+      const colors = posterContent.colorScheme || {
+        primary: "#6366f1",
+        secondary: "#8b5cf6",
+        accent: "#f59e0b",
+        background: "#0f172a",
+        text: "#ffffff"
+      };
+
+      const isVertical = dimensions.height > dimensions.width;
+      
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dimensions.width} ${dimensions.height}" width="${dimensions.width}" height="${dimensions.height}">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${colors.background};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${colors.secondary}30;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:${colors.primary};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${colors.accent};stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bgGradient)"/>
+  
+  <!-- Decorative circles -->
+  <circle cx="${dimensions.width * 0.1}" cy="${dimensions.height * 0.2}" r="${Math.min(dimensions.width, dimensions.height) * 0.15}" fill="${colors.primary}" opacity="0.1"/>
+  <circle cx="${dimensions.width * 0.9}" cy="${dimensions.height * 0.8}" r="${Math.min(dimensions.width, dimensions.height) * 0.2}" fill="${colors.accent}" opacity="0.1"/>
+  
+  <!-- Offer badge -->
+  <g transform="translate(${dimensions.width * 0.5}, ${isVertical ? dimensions.height * 0.15 : dimensions.height * 0.2})">
+    <rect x="-${Math.min(dimensions.width * 0.3, 200)}" y="-40" width="${Math.min(dimensions.width * 0.6, 400)}" height="80" rx="40" fill="url(#accentGradient)" filter="url(#glow)"/>
+    <text x="0" y="12" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 42 : 36}" font-weight="800" fill="${colors.text}">${posterContent.offerText || '50% OFF'}</text>
+  </g>
+  
+  <!-- Main headline -->
+  <text x="${dimensions.width * 0.5}" y="${isVertical ? dimensions.height * 0.35 : dimensions.height * 0.45}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 72 : 56}" font-weight="800" fill="${colors.text}" filter="url(#shadow)">
+    ${posterContent.headline || 'SPECIAL OFFER'}
+  </text>
+  
+  <!-- Subheadline -->
+  <text x="${dimensions.width * 0.5}" y="${isVertical ? dimensions.height * 0.42 : dimensions.height * 0.55}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 36 : 28}" fill="${colors.text}" opacity="0.9">
+    ${posterContent.subheadline || 'Limited Time Only'}
+  </text>
+  
+  ${posterContent.features && posterContent.features.length > 0 ? `
+  <!-- Features -->
+  <g transform="translate(${dimensions.width * 0.5}, ${isVertical ? dimensions.height * 0.52 : dimensions.height * 0.65})">
+    ${posterContent.features.slice(0, 3).map((feature: string, i: number) => `
+    <g transform="translate(0, ${i * (isVertical ? 50 : 40)})">
+      <circle cx="${-dimensions.width * 0.25}" cy="0" r="8" fill="${colors.accent}"/>
+      <text x="${-dimensions.width * 0.22}" y="6" font-family="Arial, sans-serif" font-size="${isVertical ? 28 : 22}" fill="${colors.text}" opacity="0.85">${feature}</text>
+    </g>
+    `).join('')}
+  </g>
+  ` : ''}
+  
+  <!-- CTA Button -->
+  <g transform="translate(${dimensions.width * 0.5}, ${isVertical ? dimensions.height * 0.78 : dimensions.height * 0.82})">
+    <rect x="-${Math.min(dimensions.width * 0.25, 180)}" y="-35" width="${Math.min(dimensions.width * 0.5, 360)}" height="70" rx="35" fill="${colors.accent}" filter="url(#shadow)"/>
+    <text x="0" y="10" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 32 : 28}" font-weight="700" fill="${colors.background}">${posterContent.ctaText || 'SHOP NOW'}</text>
+  </g>
+  
+  <!-- Brand name -->
+  <text x="${dimensions.width * 0.5}" y="${isVertical ? dimensions.height * 0.92 : dimensions.height * 0.94}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${isVertical ? 28 : 24}" font-weight="600" fill="${colors.text}" opacity="0.7">
+    ${posterContent.brandName || 'Your Brand'}
+  </text>
+</svg>`;
+
+      // Save to database
+      const poster = await storage.createGeneratedPoster(userId, {
+        prompt: websiteUrl ? `Generated from website: ${websiteUrl}` : prompt,
+        title: posterContent.brandName || posterContent.headline,
+        headline: posterContent.headline,
+        subheadline: posterContent.subheadline,
+        platform: selectedPlatform,
+        size: selectedSize,
+        offerText: posterContent.offerText,
+        ctaText: posterContent.ctaText,
+        colorScheme: colors,
+        svgContent,
+      });
+
+      res.status(201).json(poster);
+    } catch (error) {
+      console.error("Error generating poster:", error);
+      res.status(500).json({ message: "Failed to generate poster" });
+    }
+  });
+
+  // Get single poster
+  app.get("/api/posters/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const poster = await storage.getGeneratedPosterById(req.params.id);
+      if (!poster) {
+        return res.status(404).json({ message: "Poster not found" });
+      }
+      if (poster.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      res.json(poster);
+    } catch (error) {
+      console.error("Error fetching poster:", error);
+      res.status(500).json({ message: "Failed to fetch poster" });
+    }
+  });
+
+  // Delete poster
+  app.delete("/api/posters/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const poster = await storage.getGeneratedPosterById(req.params.id);
+      if (!poster) {
+        return res.status(404).json({ message: "Poster not found" });
+      }
+      if (poster.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      await storage.deleteGeneratedPoster(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting poster:", error);
+      res.status(500).json({ message: "Failed to delete poster" });
     }
   });
 

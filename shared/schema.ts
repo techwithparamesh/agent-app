@@ -107,10 +107,29 @@ export const generatedPages = mysqlTable("generated_pages", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });
 
+// Generated promotional posters
+export const generatedPosters = mysqlTable("generated_posters", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  prompt: text("prompt").notNull(),
+  title: varchar("title", { length: 255 }),
+  headline: text("headline"),
+  subheadline: text("subheadline"),
+  platform: varchar("platform", { length: 50 }), // instagram, facebook, linkedin, twitter
+  size: varchar("size", { length: 50 }), // story, post, cover, ad
+  offerText: text("offer_text"),
+  ctaText: varchar("cta_text", { length: 255 }),
+  colorScheme: json("color_scheme").$type<any>(),
+  svgContent: text("svg_content"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   agents: many(agents),
   generatedPages: many(generatedPages),
+  generatedPosters: many(generatedPosters),
 }));
 
 export const agentsRelations = relations(agents, ({ one, many }) => ({
@@ -151,6 +170,13 @@ export const generatedPagesRelations = relations(generatedPages, ({ one }) => ({
   }),
 }));
 
+export const generatedPostersRelations = relations(generatedPosters, ({ one }) => ({
+  user: one(users, {
+    fields: [generatedPosters.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -186,6 +212,12 @@ export const insertGeneratedPageSchema = createInsertSchema(generatedPages).omit
   createdAt: true,
 });
 
+export const insertGeneratedPosterSchema = createInsertSchema(generatedPosters).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -204,3 +236,6 @@ export type Message = typeof messages.$inferSelect;
 
 export type InsertGeneratedPage = z.infer<typeof insertGeneratedPageSchema>;
 export type GeneratedPage = typeof generatedPages.$inferSelect;
+
+export type InsertGeneratedPoster = z.infer<typeof insertGeneratedPosterSchema>;
+export type GeneratedPoster = typeof generatedPosters.$inferSelect;

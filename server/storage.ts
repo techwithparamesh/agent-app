@@ -7,6 +7,7 @@ import {
   conversations,
   messages,
   generatedPages,
+  generatedPosters,
   type User,
   type UpsertUser,
   type Agent,
@@ -19,6 +20,8 @@ import {
   type InsertMessage,
   type GeneratedPage,
   type InsertGeneratedPage,
+  type GeneratedPoster,
+  type InsertGeneratedPoster,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -54,6 +57,12 @@ export interface IStorage {
   getGeneratedPageById(id: string): Promise<GeneratedPage | undefined>;
   createGeneratedPage(userId: string, page: InsertGeneratedPage): Promise<GeneratedPage>;
   deleteGeneratedPage(id: string): Promise<void>;
+
+  // Generated Posters
+  getGeneratedPostersByUserId(userId: string): Promise<GeneratedPoster[]>;
+  getGeneratedPosterById(id: string): Promise<GeneratedPoster | undefined>;
+  createGeneratedPoster(userId: string, poster: InsertGeneratedPoster): Promise<GeneratedPoster>;
+  deleteGeneratedPoster(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -226,6 +235,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGeneratedPage(id: string): Promise<void> {
     await db.delete(generatedPages).where(eq(generatedPages.id, id));
+  }
+
+  // Generated Posters
+  async getGeneratedPostersByUserId(userId: string): Promise<GeneratedPoster[]> {
+    return db
+      .select()
+      .from(generatedPosters)
+      .where(eq(generatedPosters.userId, userId))
+      .orderBy(desc(generatedPosters.createdAt));
+  }
+
+  async getGeneratedPosterById(id: string): Promise<GeneratedPoster | undefined> {
+    const [poster] = await db.select().from(generatedPosters).where(eq(generatedPosters.id, id));
+    return poster;
+  }
+
+  async createGeneratedPoster(userId: string, posterData: InsertGeneratedPoster): Promise<GeneratedPoster> {
+    const id = crypto.randomUUID();
+    await db
+      .insert(generatedPosters)
+      .values({ ...posterData, id, userId });
+    return this.getGeneratedPosterById(id) as Promise<GeneratedPoster>;
+  }
+
+  async deleteGeneratedPoster(id: string): Promise<void> {
+    await db.delete(generatedPosters).where(eq(generatedPosters.id, id));
+  }
+
+  async updateGeneratedPoster(id: string, updates: Partial<InsertGeneratedPoster>): Promise<GeneratedPoster | undefined> {
+    await db
+      .update(generatedPosters)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(generatedPosters.id, id));
+    return this.getGeneratedPosterById(id);
   }
 
   // Usage Tracking
