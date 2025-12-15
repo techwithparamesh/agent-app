@@ -206,19 +206,27 @@ export default function PostersPage() {
       URL.revokeObjectURL(url);
     } else {
       // Convert SVG to PNG or JPG
-      const svgBlob = new Blob([poster.svgContent], { type: "image/svg+xml" });
-      const url = URL.createObjectURL(svgBlob);
+      // Always parse viewBox for width/height
+      let width = 1080;
+      let height = 1080;
+      const viewBoxMatch = poster.svgContent.match(/viewBox=["'](\d+)[ ,]+(\d+)[ ,]+(\d+)[ ,]+(\d+)["']/i);
+      if (viewBoxMatch) {
+        width = parseInt(viewBoxMatch[3], 10);
+        height = parseInt(viewBoxMatch[4], 10);
+      }
+      const scale = 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext("2d");
+      const svg = new Blob([poster.svgContent], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(svg);
       const img = new window.Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        // Use higher resolution for better quality
-        const scale = 2;
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.scale(scale, scale);
-          ctx.drawImage(img, 0, 0);
+          ctx.setTransform(scale, 0, 0, scale, 0, 0);
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
           const mimeType = format === "png" ? "image/png" : "image/jpeg";
           const quality = format === "jpg" ? 0.92 : undefined;
           canvas.toBlob((blob) => {
@@ -232,6 +240,10 @@ export default function PostersPage() {
             }
           }, mimeType, quality);
         }
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => {
+        alert("Failed to load SVG for download. Try again.");
         URL.revokeObjectURL(url);
       };
       img.src = url;
