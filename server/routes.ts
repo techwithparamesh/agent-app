@@ -4276,30 +4276,100 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
       console.log("Poster generation request:", { prompt, websiteUrl, platform, size });
       console.log("API Key available:", !!apiKey);
 
-      // If websiteUrl is provided, scan for brand info
-      if (websiteUrl && !prompt) {
+      // If websiteUrl is provided, scan website thoroughly
+      if (websiteUrl) {
         try {
           const urlObj = new URL(websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`);
           const response = await fetch(urlObj.href, {
             headers: { 
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             },
-            signal: AbortSignal.timeout(10000),
+            signal: AbortSignal.timeout(15000),
           });
           
           if (response.ok) {
             const html = await response.text();
+            
+            // Extract comprehensive website information
             const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
             const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+            const metaKeywordsMatch = html.match(/<meta[^>]+name=["']keywords["'][^>]+content=["']([^"']+)["']/i);
+            const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+            const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
             
-            const title = titleMatch ? titleMatch[1].trim() : 'Your Brand';
-            const description = metaDescMatch ? metaDescMatch[1] : '';
+            // Extract headings for services/features
+            const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi) || [];
+            const h2Matches = html.match(/<h2[^>]*>([^<]+)<\/h2>/gi) || [];
+            const h3Matches = html.match(/<h3[^>]*>([^<]+)<\/h3>/gi) || [];
             
-            finalPrompt = `Create a promotional poster for: ${title}. ${description}. Website: ${websiteUrl}`;
+            // Clean heading text
+            const cleanHeading = (h: string) => h.replace(/<[^>]+>/g, '').trim();
+            const headings = [...h1Matches, ...h2Matches, ...h3Matches]
+              .map(cleanHeading)
+              .filter(h => h.length > 3 && h.length < 100)
+              .slice(0, 10);
+            
+            // Extract list items (often services/features)
+            const liMatches = html.match(/<li[^>]*>([^<]+)<\/li>/gi) || [];
+            const listItems = liMatches
+              .map(li => li.replace(/<[^>]+>/g, '').trim())
+              .filter(li => li.length > 5 && li.length < 80)
+              .slice(0, 10);
+            
+            // Extract any pricing or offers
+            const priceMatches = html.match(/(\$[\d,]+|\d+%\s*off|free\s+\w+|save\s+\$?\d+)/gi) || [];
+            
+            // Extract phone/contact
+            const phoneMatch = html.match(/(\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
+            
+            const title = ogTitleMatch?.[1] || titleMatch?.[1]?.trim() || 'Business';
+            const description = ogDescMatch?.[1] || metaDescMatch?.[1] || '';
+            const keywords = metaKeywordsMatch?.[1] || '';
+            
+            // Build comprehensive prompt for AI
+            finalPrompt = `
+WEBSITE ANALYSIS FOR POSTER:
+URL: ${websiteUrl}
+Brand/Company: ${title}
+Description: ${description}
+Keywords: ${keywords}
+
+KEY HEADINGS FROM WEBSITE:
+${headings.join('\n')}
+
+SERVICES/FEATURES FOUND:
+${listItems.join('\n')}
+
+OFFERS/PRICING FOUND:
+${priceMatches.join(', ') || 'No specific offers found'}
+
+USER'S ADDITIONAL REQUEST: ${prompt || 'Create a professional promotional poster'}
+
+Create a compelling promotional poster that:
+1. Highlights the main service/product from this website
+2. Uses a catchy, SHORT headline (3-4 words max)
+3. Includes a relevant offer or value proposition
+4. Matches the brand's industry and tone
+`;
           }
         } catch (e) {
-          finalPrompt = `Create a promotional poster for the business at ${websiteUrl}`;
+          console.error("Website scan error:", e);
+          finalPrompt = prompt || `Create a promotional poster for the business at ${websiteUrl}`;
         }
+      } else if (prompt) {
+        // User provided a prompt - analyze it thoroughly
+        finalPrompt = `
+USER REQUEST: ${prompt}
+
+Analyze this request carefully and create a poster that EXACTLY matches what the user wants.
+Extract:
+- The business type/industry
+- The main service or product to promote
+- Any specific offers, discounts, or CTAs mentioned
+- The desired style/theme (colors, mood)
+
+Generate poster content that precisely matches this request.
+`;
       }
 
       // Generate poster content with AI
@@ -4322,37 +4392,42 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
         };
       } else {
         try {
-          console.log("Calling Anthropic API with prompt:", finalPrompt.substring(0, 100) + "...");
+          console.log("Calling Anthropic API with prompt:", finalPrompt.substring(0, 200) + "...");
           const anthropic = new Anthropic({ apiKey });
 
           const completion = await anthropic.messages.create({
             model: "claude-sonnet-4-20250514",
             max_tokens: 1500,
-            system: `You are an expert graphic designer creating promotional posters for social media.
-Generate compelling poster content that grabs attention and drives action.
+            system: `You are an expert marketing designer creating promotional posters for social media.
+Your job is to CAREFULLY ANALYZE the user's request and create RELEVANT poster content.
+
+IMPORTANT: Read the user's input carefully. If they provide:
+- A website analysis: Extract the ACTUAL business name, services, and create relevant content
+- A specific prompt: Follow their instructions EXACTLY
 
 Return ONLY a valid JSON object (no markdown, no code blocks) with:
 {
-  "brandName": "Brand name (max 15 chars)",
-  "headline": "BOLD HEADLINE (MAX 3-4 WORDS, 20 chars max!)",
-  "subheadline": "Short supporting text (max 6 words)", 
-  "offerText": "Offer text (e.g., '50% OFF', 'FREE', max 15 chars)",
-  "ctaText": "CTA button (2-3 words max)",
+  "brandName": "ACTUAL brand/company name from input (max 18 chars)",
+  "headline": "RELEVANT headline about their business (3-4 WORDS MAX, 22 chars)",
+  "subheadline": "Specific value proposition (max 6 words)", 
+  "offerText": "Relevant offer (e.g., 'FREE TRIAL', 'BOOK NOW', max 15 chars)",
+  "ctaText": "Action button (2-3 words)",
   "colorScheme": {
-    "primary": "#hex (vibrant brand color)",
+    "primary": "#hex (match their industry - tech=blue, health=green, food=orange, etc.)",
     "secondary": "#hex (complementary)",
-    "accent": "#hex (CTA/highlight color)",
-    "background": "#hex (dark base)",
+    "accent": "#hex (CTA color - make it POP)",
+    "background": "#hex (dark/professional base)",
     "text": "#ffffff"
   }
 }
 
-CRITICAL RULES:
-1. HEADLINE MUST BE 3-4 WORDS MAX (e.g., "MEGA SALE NOW", "GROW YOUR BIZ")
-2. Keep ALL text SHORT - this is a VISUAL poster
-3. Use power words: FREE, NEW, LIMITED, SAVE, NOW
-4. Colors must be bold, high contrast, modern
-5. Brand name should be concise
+RULES:
+1. USE THE ACTUAL BRAND NAME from the website/prompt - don't make up generic names
+2. HEADLINE must relate to their ACTUAL services (AI, marketing, food, fitness, etc.)
+3. SUBHEADLINE should highlight their unique value
+4. OFFER should be relevant (tech = "Free Demo", restaurant = "Order Now", agency = "Free Consult")
+5. COLORS should match their industry and brand feel
+6. Keep text SHORT but SPECIFIC to their business
 
 Platform: ${selectedPlatform}
 Size: ${selectedSize} (${dimensions.width}x${dimensions.height})
