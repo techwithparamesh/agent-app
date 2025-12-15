@@ -3407,15 +3407,49 @@ Based on this content, generate a landing page that:
         
         return {
           title: companyName,
-          heroText: tagline,
-          subheadline: `Discover what ${companyName} can do for you. Professional services tailored to your needs.`,
+          heroHeadline: `${companyName} - ${tagline}`,
+          heroSubheadline: `Discover what ${companyName} can do for you. Professional services tailored to your needs.`,
+          urgencyBadge: "🔥 Limited Time Offer - Get 20% OFF Today!",
+          trustBadge: "★★★★★ Trusted by 500+ Happy Clients",
+          problemStatement: "Are you struggling to find reliable, professional services that actually deliver results? Tired of agencies that overpromise and underdeliver?",
+          solutionStatement: `${companyName} provides expert solutions with transparent pricing, dedicated support, and guaranteed results. We handle everything so you can focus on growing your business.`,
+          benefits: features.map((f, i) => ({
+            icon: ['🚀', '⚡', '🎯', '💎', '🔒', '📈'][i] || '✅',
+            ...f
+          })),
           features,
+          socialProof: {
+            stat1: { number: "500+", label: "Happy Clients" },
+            stat2: { number: "5★", label: "Rating" },
+            stat3: { number: "24/7", label: "Support" },
+            stat4: { number: "100%", label: "Satisfaction" }
+          },
+          testimonials: [
+            { quote: "Absolutely amazing work! They delivered exactly what we needed, on time and within budget. Highly recommend!", name: "Happy Client", role: "Business Owner", avatar: "H" },
+            { quote: "Professional, responsive, and talented team. Our project exceeded all expectations.", name: "Satisfied Customer", role: "Marketing Director", avatar: "S" }
+          ],
+          pricing: {
+            hasOffer: true,
+            originalPrice: "$999",
+            salePrice: "$799",
+            discount: "20% OFF",
+            planName: "Complete Package",
+            priceSubtext: "Everything you need to succeed"
+          },
+          guarantee: "100% Satisfaction Guarantee - If you're not completely satisfied, we'll make it right or refund your money.",
+          ctaPrimary: { text: "Get Started Now →", url: `${url}/contact` },
+          ctaSecondary: { text: "View Our Work", url: `${url}/portfolio` },
           ctaButtons: [
             { text: "Get a Quote", url: `${url}/contact` },
             { text: "View Our Work", url: `${url}/portfolio` },
           ],
+          faq: [
+            { question: "How long does a typical project take?", answer: "Most projects are completed within 2-4 weeks, depending on scope and complexity. We'll provide a detailed timeline before starting." },
+            { question: "What if I'm not satisfied with the results?", answer: "Your satisfaction is guaranteed. We offer unlimited revisions and a money-back guarantee if we can't meet your expectations." },
+            { question: "Do you provide ongoing support?", answer: "Absolutely! We offer various support packages to ensure your continued success after project completion." }
+          ],
           seoKeywords: topKeywords.length > 0 ? topKeywords : ["professional", "services", "quality", "business"],
-          colorScheme,
+          colorScheme: { primary: colorScheme.primary, secondary: colorScheme.secondary, accent: "#22c55e", background: "#0f172a" },
         };
       };
 
@@ -3447,21 +3481,63 @@ Based on this content, generate a landing page that:
 
           const completion = await anthropic.messages.create({
             model: "claude-sonnet-4-20250514",
-            max_tokens: 2048,
-            system: `You are a landing page content generator. Generate structured JSON content for a landing page based on the user's description or website content.
+            max_tokens: 3000,
+            system: `You are an expert marketing strategist and conversion copywriter. Generate high-converting promotional landing page content that SELLS.
 
-Return ONLY a valid JSON object (no markdown, no code blocks, no explanation) with these fields:
+Your goal is to create COMPELLING, PERSUASIVE content that drives action. Think like a direct response marketer.
+
+Return ONLY a valid JSON object (no markdown, no code blocks) with these fields:
 {
-  "title": "Page title (compelling and relevant)",
-  "heroText": "Main headline (impactful, captures the brand essence)",
-  "subheadline": "Supporting text (expands on the headline)",
-  "features": [{"title": "...", "description": "..."}, ...] (3-4 items showing key offerings),
-  "ctaButtons": [{"text": "...", "url": "..."}, ...] (1-2 items with action-oriented text),
-  "seoKeywords": ["keyword1", "keyword2", ...] (4-6 relevant keywords),
-  "colorScheme": {"primary": "#hex", "secondary": "#hex", "background": "#ffffff"}
+  "title": "Brand/Company name",
+  "heroHeadline": "Power headline that grabs attention and states the BIG benefit (use numbers, specifics)",
+  "heroSubheadline": "Supporting statement that expands on the promise and creates desire",
+  "urgencyBadge": "Limited time offer text (e.g., '🔥 50% OFF - Ends Tonight!', '⚡ Only 5 Spots Left')",
+  "trustBadge": "Social proof text (e.g., '★★★★★ Trusted by 10,000+ Customers', '🏆 Award-Winning Service')",
+  "problemStatement": "Describe the pain point your audience faces (make them feel understood)",
+  "solutionStatement": "How you solve their problem better than anyone else",
+  "benefits": [
+    {"icon": "emoji", "title": "Benefit headline", "description": "Specific, measurable benefit"}
+  ] (4-6 compelling benefits with emojis),
+  "features": [
+    {"title": "Feature name", "description": "What it does and why it matters"}
+  ] (3-4 key features),
+  "socialProof": {
+    "stat1": {"number": "100+", "label": "Happy Clients"},
+    "stat2": {"number": "5★", "label": "Rating"},
+    "stat3": {"number": "24/7", "label": "Support"},
+    "stat4": {"number": "99%", "label": "Satisfaction"}
+  },
+  "testimonials": [
+    {"quote": "Specific result-focused testimonial", "name": "Customer Name", "role": "Title/Company", "avatar": "initials"}
+  ] (2-3 testimonials),
+  "pricing": {
+    "hasOffer": true,
+    "originalPrice": "$999",
+    "salePrice": "$499",
+    "discount": "50% OFF",
+    "planName": "Premium Package",
+    "priceSubtext": "One-time payment • Lifetime access"
+  },
+  "guarantee": "Your money-back guarantee or risk reversal statement",
+  "ctaPrimary": {"text": "Action-oriented CTA (e.g., 'Get Started Now →', 'Claim Your Discount')", "url": "#"},
+  "ctaSecondary": {"text": "Secondary CTA", "url": "#"},
+  "faq": [
+    {"question": "Common objection as question", "answer": "Overcome the objection"}
+  ] (3-4 FAQs that handle objections),
+  "seoKeywords": ["keyword1", "keyword2", ...],
+  "colorScheme": {"primary": "#hex", "secondary": "#hex", "accent": "#hex", "background": "#0f172a"}
 }
 
-IMPORTANT: Return ONLY the JSON object. Do not wrap it in code blocks or add any text before/after.`,
+COPYWRITING RULES:
+1. Use power words: Free, New, Secret, Instant, Proven, Guaranteed, Limited, Exclusive
+2. Include specific numbers and stats (not vague claims)
+3. Focus on BENEFITS over features (what's in it for them?)
+4. Create urgency without being sleazy
+5. Address objections in FAQ
+6. Make the CTA impossible to ignore
+7. Use dark theme colors for modern SaaS look (dark background, vibrant accents)
+
+IMPORTANT: Return ONLY the JSON object. No markdown code blocks.`,
             messages: [{ role: "user", content: finalPrompt }],
           });
 
@@ -3530,180 +3606,534 @@ IMPORTANT: Return ONLY the JSON object. Do not wrap it in code blocks or add any
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="${pageContent.subheadline || ""}">
+  <meta name="description" content="${pageContent.heroSubheadline || pageContent.subheadline || ""}">
   <meta name="keywords" content="${(pageContent.seoKeywords || []).join(", ")}">
   <title>${pageContent.title || "Landing Page"}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; color: #1f2937; background: #ffffff; }
+    body { 
+      font-family: 'Inter', system-ui, sans-serif; 
+      line-height: 1.6; 
+      color: #e2e8f0; 
+      background: ${pageContent.colorScheme?.background || "#0f172a"}; 
+    }
+    
+    /* Animations */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes glow { 0%, 100% { box-shadow: 0 0 20px ${pageContent.colorScheme?.primary || "#f97316"}40; } 50% { box-shadow: 0 0 40px ${pageContent.colorScheme?.primary || "#f97316"}60; } }
+    .animate-fade-in { animation: fadeInUp 0.8s ease-out forwards; }
+    .animate-delay-1 { animation-delay: 0.1s; opacity: 0; }
+    .animate-delay-2 { animation-delay: 0.2s; opacity: 0; }
+    .animate-delay-3 { animation-delay: 0.3s; opacity: 0; }
+    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+    .animate-float { animation: float 3s ease-in-out infinite; }
+    .animate-glow { animation: glow 2s ease-in-out infinite; }
     
     /* Navigation */
-    .nav { position: fixed; top: 0; left: 0; right: 0; padding: 1rem 2rem; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); z-index: 100; border-bottom: 1px solid #e5e7eb; }
+    .nav { 
+      position: fixed; top: 0; left: 0; right: 0; 
+      padding: 1rem 2rem; 
+      background: ${pageContent.colorScheme?.background || "#0f172a"}ee; 
+      backdrop-filter: blur(20px); 
+      z-index: 100; 
+      border-bottom: 1px solid #1e293b; 
+    }
     .nav-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-    .nav-logo { font-weight: 700; font-size: 1.25rem; color: ${pageContent.colorScheme?.primary || "#6366f1"}; text-decoration: none; }
-    .nav-cta { background: ${pageContent.colorScheme?.primary || "#6366f1"}; color: white; padding: 0.5rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.875rem; transition: all 0.2s; }
-    .nav-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+    .nav-logo { font-weight: 800; font-size: 1.5rem; color: #fff; text-decoration: none; }
+    .nav-logo span { color: ${pageContent.colorScheme?.primary || "#f97316"}; }
+    .nav-cta { 
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"}); 
+      color: #000; 
+      padding: 0.75rem 1.5rem; 
+      border-radius: 8px; 
+      text-decoration: none; 
+      font-weight: 700; 
+      font-size: 0.875rem; 
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px ${pageContent.colorScheme?.primary || "#f97316"}40;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 25px ${pageContent.colorScheme?.primary || "#f97316"}60; }
+    
+    /* Urgency Bar */
+    .urgency-bar {
+      background: linear-gradient(90deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"});
+      color: #000;
+      text-align: center;
+      padding: 0.75rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      z-index: 99;
+    }
     
     /* Hero */
     .hero { 
-      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#6366f1"} 0%, ${pageContent.colorScheme?.secondary || "#8b5cf6"} 100%); 
-      color: white; 
-      padding: 140px 20px 100px; 
+      padding: 180px 20px 100px; 
       text-align: center;
       position: relative;
       overflow: hidden;
+      background: radial-gradient(ellipse at top, ${pageContent.colorScheme?.primary || "#f97316"}15 0%, transparent 50%);
     }
     .hero::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      top: -50%; left: -50%; right: -50%; bottom: -50%;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      animation: float 20s linear infinite;
     }
-    .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
-    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
-    .hero p { font-size: clamp(1rem, 2vw, 1.25rem); opacity: 0.9; max-width: 600px; margin: 0 auto 2.5rem; }
-    .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .hero-content { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; }
+    .trust-badge { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 0.5rem; 
+      background: #1e293b; 
+      padding: 0.5rem 1rem; 
+      border-radius: 50px; 
+      font-size: 0.875rem; 
+      color: ${pageContent.colorScheme?.secondary || "#eab308"};
+      margin-bottom: 1.5rem;
+      border: 1px solid #334155;
+    }
+    .hero h1 { 
+      font-size: clamp(2.5rem, 6vw, 4rem); 
+      margin-bottom: 1.5rem; 
+      font-weight: 800; 
+      letter-spacing: -0.03em; 
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero h1 span { 
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"});
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p { font-size: clamp(1.1rem, 2vw, 1.35rem); color: #94a3b8; max-width: 650px; margin: 0 auto 2.5rem; }
+    
+    /* CTA Buttons */
+    .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem; }
     .cta-btn { 
-      padding: 14px 32px; 
-      border-radius: 8px; 
+      padding: 16px 36px; 
+      border-radius: 12px; 
       text-decoration: none; 
-      font-weight: 600; 
-      font-size: 1rem;
-      transition: all 0.2s ease; 
+      font-weight: 700; 
+      font-size: 1.1rem;
+      transition: all 0.3s ease; 
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
     }
-    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
-    .cta-primary { background: white; color: ${pageContent.colorScheme?.primary || "#6366f1"}; }
-    .cta-secondary { background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3); }
-    .cta-secondary:hover { background: rgba(255,255,255,0.25); }
+    .cta-btn:hover { transform: translateY(-3px); }
+    .cta-primary { 
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"}); 
+      color: #000;
+      box-shadow: 0 8px 30px ${pageContent.colorScheme?.primary || "#f97316"}50;
+    }
+    .cta-primary:hover { box-shadow: 0 12px 40px ${pageContent.colorScheme?.primary || "#f97316"}70; }
+    .cta-secondary { background: #1e293b; color: #fff; border: 2px solid #334155; }
+    .cta-secondary:hover { border-color: ${pageContent.colorScheme?.primary || "#f97316"}; background: #334155; }
     
-    /* Features */
-    .features { padding: 100px 20px; max-width: 1200px; margin: 0 auto; }
+    /* Social Proof Stats */
+    .social-proof { 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      gap: 2rem; 
+      max-width: 800px; 
+      margin: 0 auto;
+      padding: 2rem;
+      background: #1e293b50;
+      border-radius: 16px;
+      border: 1px solid #334155;
+    }
+    .stat { text-align: center; }
+    .stat-number { font-size: 2.5rem; font-weight: 800; color: ${pageContent.colorScheme?.primary || "#f97316"}; }
+    .stat-label { font-size: 0.875rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    /* Problem/Solution Section */
+    .problem-solution { 
+      padding: 100px 20px; 
+      max-width: 1000px; 
+      margin: 0 auto;
+    }
+    .problem-box, .solution-box {
+      padding: 3rem;
+      border-radius: 20px;
+      margin-bottom: 2rem;
+    }
+    .problem-box {
+      background: linear-gradient(135deg, #7f1d1d20, #1e293b);
+      border: 1px solid #7f1d1d40;
+    }
+    .problem-box h2 { color: #fca5a5; margin-bottom: 1rem; font-size: 1.75rem; }
+    .solution-box {
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}15, #1e293b);
+      border: 1px solid ${pageContent.colorScheme?.primary || "#f97316"}30;
+    }
+    .solution-box h2 { color: ${pageContent.colorScheme?.primary || "#f97316"}; margin-bottom: 1rem; font-size: 1.75rem; }
+    .problem-box p, .solution-box p { color: #94a3b8; font-size: 1.1rem; line-height: 1.8; }
+    
+    /* Benefits */
+    .benefits { padding: 80px 20px; max-width: 1200px; margin: 0 auto; }
     .section-header { text-align: center; margin-bottom: 4rem; }
-    .section-label { 
+    .section-badge { 
       display: inline-block;
-      background: ${pageContent.colorScheme?.primary || "#6366f1"}15; 
-      color: ${pageContent.colorScheme?.primary || "#6366f1"}; 
-      padding: 0.5rem 1rem; 
-      border-radius: 20px; 
+      background: ${pageContent.colorScheme?.primary || "#f97316"}20; 
+      color: ${pageContent.colorScheme?.primary || "#f97316"}; 
+      padding: 0.5rem 1.25rem; 
+      border-radius: 50px; 
       font-size: 0.875rem; 
       font-weight: 600; 
-      margin-bottom: 1rem; 
+      margin-bottom: 1rem;
+      border: 1px solid ${pageContent.colorScheme?.primary || "#f97316"}30;
     }
-    .features h2 { font-size: 2.5rem; font-weight: 700; color: #111827; letter-spacing: -0.02em; }
-    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
-    .feature { 
-      background: #ffffff; 
+    .section-title { font-size: 2.5rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    .section-subtitle { color: #64748b; font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+    .benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .benefit { 
+      background: linear-gradient(135deg, #1e293b, #0f172a);
       padding: 2rem; 
       border-radius: 16px; 
-      border: 1px solid #e5e7eb;
+      border: 1px solid #334155;
       transition: all 0.3s ease;
     }
-    .feature:hover { 
-      border-color: ${pageContent.colorScheme?.primary || "#6366f1"}40;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-      transform: translateY(-4px);
+    .benefit:hover { 
+      border-color: ${pageContent.colorScheme?.primary || "#f97316"}50;
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      background: ${pageContent.colorScheme?.primary || "#6366f1"}15;
-      border-radius: 12px;
+    .benefit-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .benefit h3 { font-size: 1.25rem; margin-bottom: 0.75rem; color: #fff; font-weight: 700; }
+    .benefit p { color: #64748b; font-size: 0.95rem; line-height: 1.7; }
+    
+    /* Testimonials */
+    .testimonials { padding: 100px 20px; background: #0f172a; }
+    .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto; }
+    .testimonial { 
+      background: #1e293b; 
+      padding: 2rem; 
+      border-radius: 16px;
+      border: 1px solid #334155;
+      position: relative;
+    }
+    .testimonial::before {
+      content: '"';
+      position: absolute;
+      top: 1rem;
+      left: 1.5rem;
+      font-size: 4rem;
+      color: ${pageContent.colorScheme?.primary || "#f97316"}30;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .testimonial-text { font-size: 1.05rem; color: #e2e8f0; margin-bottom: 1.5rem; line-height: 1.8; font-style: italic; padding-top: 2rem; }
+    .testimonial-author { display: flex; align-items: center; gap: 1rem; }
+    .testimonial-avatar { 
+      width: 50px; height: 50px; 
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"}); 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      color: #000; 
+      font-weight: 700; 
+      font-size: 1.1rem;
+    }
+    .testimonial-name { font-weight: 700; color: #fff; }
+    .testimonial-role { font-size: 0.875rem; color: #64748b; }
+    
+    /* Pricing */
+    .pricing { padding: 100px 20px; }
+    .pricing-card {
+      max-width: 500px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border-radius: 24px;
+      padding: 3rem;
+      border: 2px solid ${pageContent.colorScheme?.primary || "#f97316"}50;
+      position: relative;
+      overflow: hidden;
+    }
+    .pricing-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"});
+    }
+    .pricing-badge {
+      position: absolute;
+      top: 1.5rem;
+      right: -2rem;
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"});
+      color: #000;
+      padding: 0.5rem 3rem;
+      font-weight: 700;
+      font-size: 0.875rem;
+      transform: rotate(45deg);
+    }
+    .pricing-name { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+    .pricing-original { font-size: 1.25rem; color: #64748b; text-decoration: line-through; }
+    .pricing-price { font-size: 4rem; font-weight: 800; color: ${pageContent.colorScheme?.primary || "#f97316"}; line-height: 1; margin: 1rem 0; }
+    .pricing-subtext { color: #64748b; font-size: 0.95rem; margin-bottom: 2rem; }
+    .pricing-features { list-style: none; margin-bottom: 2rem; }
+    .pricing-features li { 
+      padding: 0.75rem 0; 
+      border-bottom: 1px solid #334155; 
+      color: #e2e8f0;
       display: flex;
       align-items: center;
-      justify-content: center;
-      margin-bottom: 1.5rem;
+      gap: 0.75rem;
     }
-    .feature-icon svg { width: 24px; height: 24px; color: ${pageContent.colorScheme?.primary || "#6366f1"}; }
-    .feature h3 { font-size: 1.25rem; margin-bottom: 0.75rem; color: #111827; font-weight: 600; }
-    .feature p { color: #6b7280; font-size: 0.95rem; line-height: 1.7; }
-    
-    /* CTA Section */
-    .cta-section {
-      background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-      padding: 80px 20px;
+    .pricing-features li::before { content: '✓'; color: ${pageContent.colorScheme?.primary || "#f97316"}; font-weight: 700; }
+    .pricing-cta {
+      width: 100%;
+      padding: 1.25rem;
+      background: linear-gradient(135deg, ${pageContent.colorScheme?.primary || "#f97316"}, ${pageContent.colorScheme?.secondary || "#eab308"});
+      color: #000;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: block;
       text-align: center;
     }
-    .cta-section h2 { color: white; font-size: 2rem; margin-bottom: 1rem; font-weight: 700; }
-    .cta-section p { color: #9ca3af; margin-bottom: 2rem; font-size: 1.1rem; }
-    .cta-section .cta-btn { background: ${pageContent.colorScheme?.primary || "#6366f1"}; color: white; }
+    .pricing-cta:hover { transform: scale(1.02); box-shadow: 0 10px 30px ${pageContent.colorScheme?.primary || "#f97316"}50; }
+    
+    /* Guarantee */
+    .guarantee {
+      max-width: 600px;
+      margin: 3rem auto 0;
+      text-align: center;
+      padding: 1.5rem;
+      background: #1e293b50;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+    .guarantee-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .guarantee-text { color: #94a3b8; font-size: 0.95rem; }
+    
+    /* FAQ */
+    .faq { padding: 100px 20px; max-width: 800px; margin: 0 auto; }
+    .faq-item { 
+      background: #1e293b; 
+      border-radius: 12px; 
+      margin-bottom: 1rem;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+    .faq-question { 
+      padding: 1.5rem; 
+      font-weight: 600; 
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-answer { padding: 0 1.5rem 1.5rem; color: #94a3b8; line-height: 1.8; }
+    
+    /* Final CTA */
+    .final-cta {
+      padding: 100px 20px;
+      text-align: center;
+      background: linear-gradient(180deg, #0f172a, ${pageContent.colorScheme?.primary || "#f97316"}10);
+    }
+    .final-cta h2 { font-size: 2.5rem; font-weight: 800; color: #fff; margin-bottom: 1rem; }
+    .final-cta p { color: #94a3b8; font-size: 1.1rem; margin-bottom: 2rem; max-width: 500px; margin-left: auto; margin-right: auto; }
     
     /* Footer */
     .footer {
-      background: #111827;
-      color: #9ca3af;
+      background: #0f172a;
+      color: #64748b;
       padding: 3rem 2rem;
       text-align: center;
       font-size: 0.875rem;
+      border-top: 1px solid #1e293b;
     }
-    .footer a { color: ${pageContent.colorScheme?.primary || "#6366f1"}; text-decoration: none; }
     
     @media (max-width: 768px) {
-      .hero { padding: 120px 20px 80px; }
-      .features { padding: 60px 20px; }
-      .cta-section { padding: 60px 20px; }
+      .hero { padding: 160px 20px 60px; }
+      .social-proof { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .stat-number { font-size: 1.75rem; }
+      .pricing-card { padding: 2rem; }
+      .pricing-price { font-size: 3rem; }
+      .testimonials-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <nav class="nav">
     <div class="nav-content">
-      <a href="#" class="nav-logo">${pageContent.title || "Company"}</a>
-      <a href="${pageContent.ctaButtons?.[0]?.url || "#"}" class="nav-cta">${pageContent.ctaButtons?.[0]?.text || "Get Started"}</a>
+      <a href="#" class="nav-logo">${pageContent.title || "Company"}<span>.</span></a>
+      <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || "#"}" class="nav-cta animate-pulse">${pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started"}</a>
     </div>
   </nav>
 
+  ${pageContent.urgencyBadge ? `<div class="urgency-bar">${pageContent.urgencyBadge}</div>` : ''}
+
   <section class="hero">
     <div class="hero-content">
-      <h1>${pageContent.heroText || "Welcome"}</h1>
-      <p>${pageContent.subheadline || ""}</p>
-      <div class="cta-buttons">
-        ${(pageContent.ctaButtons || [])
-          .map(
-            (btn: any, i: number) =>
-              `<a href="${btn.url || "#"}" class="cta-btn ${i === 0 ? "cta-primary" : "cta-secondary"}">${btn.text}${i === 0 ? ' →' : ''}</a>`
-          )
-          .join("")}
+      ${pageContent.trustBadge ? `<div class="trust-badge animate-fade-in">${pageContent.trustBadge}</div>` : ''}
+      <h1 class="animate-fade-in animate-delay-1">${pageContent.heroHeadline || pageContent.heroText || "Transform Your Business"}</h1>
+      <p class="animate-fade-in animate-delay-2">${pageContent.heroSubheadline || pageContent.subheadline || ""}</p>
+      <div class="cta-buttons animate-fade-in animate-delay-3">
+        <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || "#"}" class="cta-btn cta-primary animate-glow">${pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started"} →</a>
+        ${pageContent.ctaSecondary || pageContent.ctaButtons?.[1] ? `<a href="${pageContent.ctaSecondary?.url || pageContent.ctaButtons?.[1]?.url || "#"}" class="cta-btn cta-secondary">${pageContent.ctaSecondary?.text || pageContent.ctaButtons?.[1]?.text || "Learn More"}</a>` : ''}
       </div>
+      
+      ${pageContent.socialProof ? `
+      <div class="social-proof animate-fade-in animate-delay-3">
+        <div class="stat"><div class="stat-number">${pageContent.socialProof.stat1?.number || "100+"}</div><div class="stat-label">${pageContent.socialProof.stat1?.label || "Clients"}</div></div>
+        <div class="stat"><div class="stat-number">${pageContent.socialProof.stat2?.number || "5★"}</div><div class="stat-label">${pageContent.socialProof.stat2?.label || "Rating"}</div></div>
+        <div class="stat"><div class="stat-number">${pageContent.socialProof.stat3?.number || "24/7"}</div><div class="stat-label">${pageContent.socialProof.stat3?.label || "Support"}</div></div>
+        <div class="stat"><div class="stat-number">${pageContent.socialProof.stat4?.number || "99%"}</div><div class="stat-label">${pageContent.socialProof.stat4?.label || "Satisfaction"}</div></div>
+      </div>
+      ` : ''}
     </div>
   </section>
   
-  <section class="features">
-    <div class="section-header">
-      <span class="section-label">What We Offer</span>
-      <h2>Our Services</h2>
+  ${pageContent.problemStatement || pageContent.solutionStatement ? `
+  <section class="problem-solution">
+    ${pageContent.problemStatement ? `
+    <div class="problem-box">
+      <h2>😤 The Problem</h2>
+      <p>${pageContent.problemStatement}</p>
     </div>
-    <div class="feature-grid">
-      ${(pageContent.features || [])
-        .map((f: any) => `
-          <div class="feature">
-            <div class="feature-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3>${f.title}</h3>
-            <p>${f.description}</p>
+    ` : ''}
+    ${pageContent.solutionStatement ? `
+    <div class="solution-box">
+      <h2>✨ The Solution</h2>
+      <p>${pageContent.solutionStatement}</p>
+    </div>
+    ` : ''}
+  </section>
+  ` : ''}
+  
+  <section class="benefits">
+    <div class="section-header">
+      <span class="section-badge">Why Choose Us</span>
+      <h2 class="section-title">Everything You Need to Succeed</h2>
+      <p class="section-subtitle">We deliver real results that matter for your business</p>
+    </div>
+    <div class="benefits-grid">
+      ${(pageContent.benefits || pageContent.features || [])
+        .map((b: any) => `
+          <div class="benefit">
+            <div class="benefit-icon">${b.icon || '✅'}</div>
+            <h3>${b.title}</h3>
+            <p>${b.description}</p>
           </div>
         `)
         .join("")}
     </div>
   </section>
   
-  <section class="cta-section">
+  ${pageContent.testimonials && pageContent.testimonials.length > 0 ? `
+  <section class="testimonials">
+    <div class="section-header">
+      <span class="section-badge">Testimonials</span>
+      <h2 class="section-title">What Our Clients Say</h2>
+    </div>
+    <div class="testimonials-grid">
+      ${pageContent.testimonials.map((t: any) => `
+        <div class="testimonial">
+          <p class="testimonial-text">${t.quote}</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">${t.avatar || t.name?.charAt(0) || 'A'}</div>
+            <div>
+              <div class="testimonial-name">${t.name}</div>
+              <div class="testimonial-role">${t.role}</div>
+            </div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  </section>
+  ` : ''}
+  
+  ${pageContent.pricing ? `
+  <section class="pricing">
+    <div class="section-header">
+      <span class="section-badge">Special Offer</span>
+      <h2 class="section-title">Limited Time Pricing</h2>
+    </div>
+    <div class="pricing-card">
+      ${pageContent.pricing.discount ? `<div class="pricing-badge">${pageContent.pricing.discount}</div>` : ''}
+      <div class="pricing-name">${pageContent.pricing.planName || 'Premium Package'}</div>
+      ${pageContent.pricing.originalPrice ? `<div class="pricing-original">${pageContent.pricing.originalPrice}</div>` : ''}
+      <div class="pricing-price">${pageContent.pricing.salePrice || pageContent.pricing.originalPrice || '$499'}</div>
+      <div class="pricing-subtext">${pageContent.pricing.priceSubtext || 'One-time payment'}</div>
+      <ul class="pricing-features">
+        ${(pageContent.features || pageContent.benefits || []).slice(0, 5).map((f: any) => `<li>${f.title}</li>`).join("")}
+      </ul>
+      <a href="${pageContent.ctaPrimary?.url || "#"}" class="pricing-cta">${pageContent.ctaPrimary?.text || 'Get Started Now'} →</a>
+    </div>
+    ${pageContent.guarantee ? `
+    <div class="guarantee">
+      <div class="guarantee-icon">🛡️</div>
+      <p class="guarantee-text">${pageContent.guarantee}</p>
+    </div>
+    ` : ''}
+  </section>
+  ` : ''}
+  
+  ${pageContent.faq && pageContent.faq.length > 0 ? `
+  <section class="faq">
+    <div class="section-header">
+      <span class="section-badge">FAQ</span>
+      <h2 class="section-title">Common Questions</h2>
+    </div>
+    ${pageContent.faq.map((f: any) => `
+      <div class="faq-item">
+        <div class="faq-question">${f.question} <span>+</span></div>
+        <div class="faq-answer">${f.answer}</div>
+      </div>
+    `).join("")}
+  </section>
+  ` : ''}
+  
+  <section class="final-cta">
     <h2>Ready to Get Started?</h2>
-    <p>Let's build something amazing together.</p>
-    <a href="${pageContent.ctaButtons?.[0]?.url || "#"}" class="cta-btn">${pageContent.ctaButtons?.[0]?.text || "Contact Us"} →</a>
+    <p>Join hundreds of satisfied customers who have transformed their business with us.</p>
+    <a href="${pageContent.ctaPrimary?.url || pageContent.ctaButtons?.[0]?.url || "#"}" class="cta-btn cta-primary animate-glow">${pageContent.ctaPrimary?.text || pageContent.ctaButtons?.[0]?.text || "Get Started Now"} →</a>
   </section>
   
   <footer class="footer">
     <p>© ${new Date().getFullYear()} ${pageContent.title || "Company"}. All rights reserved.</p>
   </footer>
+  
+  <script>
+    // Simple FAQ toggle
+    document.querySelectorAll('.faq-question').forEach(q => {
+      q.addEventListener('click', () => {
+        const answer = q.nextElementSibling;
+        const isOpen = answer.style.display === 'block';
+        document.querySelectorAll('.faq-answer').forEach(a => a.style.display = 'none');
+        document.querySelectorAll('.faq-question span').forEach(s => s.textContent = '+');
+        if (!isOpen) {
+          answer.style.display = 'block';
+          q.querySelector('span').textContent = '−';
+        }
+      });
+    });
+    // Hide answers initially
+    document.querySelectorAll('.faq-answer').forEach(a => a.style.display = 'none');
+  </script>
 </body>
 </html>`;
 
