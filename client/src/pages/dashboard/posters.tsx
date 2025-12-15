@@ -376,84 +376,104 @@ export default function PostersPage() {
           </Card>
 
           {/* Preview */}
-          <Card className="card-hover">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5 text-primary" />
-                Preview
-              </CardTitle>
-              <CardDescription>
-                {selectedPoster ? `${selectedPoster.platform} ${selectedPoster.size}` : "Select a poster to preview"}
-              </CardDescription>
+          <Card className="card-hover h-fit">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Eye className="h-4 w-4 text-primary" />
+                    Preview
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-1">
+                    {selectedPoster ? `${selectedPoster.platform} • ${selectedPoster.size}` : "Select a poster"}
+                  </CardDescription>
+                </div>
+                {/* Action toolbar */}
+                {selectedPoster?.svgContent && (
+                  <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                    {/* Edit */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-primary hover:text-primary-foreground transition-colors"
+                      onClick={() => setShowEditor(true)}
+                      title="Edit Poster"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    
+                    {/* Download dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-green-500 hover:text-white transition-colors"
+                          title="Download Poster"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "png")} className="cursor-pointer">
+                          <FileImage className="h-4 w-4 mr-2" />
+                          PNG
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "jpg")} className="cursor-pointer">
+                          <Image className="h-4 w-4 mr-2" />
+                          JPG
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "svg")} className="cursor-pointer">
+                          <FileCode className="h-4 w-4 mr-2" />
+                          SVG
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    {/* Delete */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      onClick={() => selectedPoster && deleteMutation.mutate(selectedPoster.id)}
+                      title="Delete Poster"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               {selectedPoster?.svgContent ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
+                  {/* Poster canvas - full view */}
                   <div 
-                    className="border rounded-lg overflow-hidden bg-muted flex items-center justify-center p-2"
+                    className="relative rounded-lg overflow-hidden bg-black/5 dark:bg-white/5 border border-border/50"
+                    style={{ aspectRatio: selectedPoster.size === "story" ? "9/16" : selectedPoster.size === "landscape" ? "16/9" : "1/1" }}
                   >
                     <div
                       dangerouslySetInnerHTML={{ __html: selectedPoster.svgContent }}
-                      className="w-full flex items-center justify-center"
-                      style={{
-                        maxHeight: "400px",
-                      }}
+                      className="absolute inset-0 w-full h-full poster-canvas"
                     />
                   </div>
-                  <div className="text-center text-sm text-muted-foreground">
-                    {selectedPoster.headline && <p className="font-semibold text-foreground">{selectedPoster.headline}</p>}
-                    {selectedPoster.platform} • {selectedPoster.size}
+                  {/* Info bar */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                    <span className="truncate max-w-[60%] font-medium">
+                      {selectedPoster.headline || selectedPoster.title || "Untitled"}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider opacity-70">
+                      {new Date(selectedPoster.createdAt!).toLocaleDateString()}
+                    </span>
                   </div>
-                  
-                  {/* Edit Button - Prominent */}
-                  <Button
-                    onClick={() => setShowEditor(true)}
-                    className="w-full btn-shine"
-                    size="lg"
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit Poster (Text, Colors, Shapes)
-                  </Button>
-                  
-                  {/* Download Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full" size="lg">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Poster
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-48">
-                      <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "png")}>
-                        <FileImage className="h-4 w-4 mr-2" />
-                        Download as PNG
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "jpg")}>
-                        <Image className="h-4 w-4 mr-2" />
-                        Download as JPG
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => downloadPoster(selectedPoster, "svg")}>
-                        <FileCode className="h-4 w-4 mr-2" />
-                        Download as SVG
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => selectedPoster && deleteMutation.mutate(selectedPoster.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Poster
-                  </Button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                  <Image className="h-16 w-16 mb-4 opacity-20" />
-                  <p>No poster selected</p>
-                  <p className="text-sm">Generate or select a poster to preview</p>
+                <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <Image className="h-8 w-8 opacity-30" />
+                  </div>
+                  <p className="text-sm font-medium">No poster selected</p>
+                  <p className="text-xs opacity-70 mt-1">Generate or select a poster</p>
                 </div>
               )}
             </CardContent>

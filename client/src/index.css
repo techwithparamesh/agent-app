@@ -588,3 +588,10 @@
   align-items: center;
   justify-content: center;
 }
+
+/* Poster preview canvas - ensures SVG fills completely */
+.poster-canvas svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
