@@ -114,6 +114,19 @@ export default function ChatbotPage() {
 
   const currentAgent = agents?.find((a) => a.id === currentAgentId);
 
+  // Initialize welcome message when agent loads
+  useEffect(() => {
+    if (currentAgent && messages.length === 0) {
+      const welcomeMsg = currentAgent.welcomeMessage || `Hi! 👋 I'm ${currentAgent.name}. How can I help you today?`;
+      setMessages([{
+        id: `welcome_${Date.now()}`,
+        role: "assistant",
+        content: welcomeMsg,
+        timestamp: new Date(),
+      }]);
+    }
+  }, [currentAgent]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -224,7 +237,19 @@ export default function ChatbotPage() {
 
   const handleAgentChange = (agentId: string) => {
     setCurrentAgentId(agentId);
-    setMessages([]);
+    // Add welcome message if agent has one
+    const agent = agents?.find((a) => a.id === agentId);
+    if (agent) {
+      const welcomeMsg = agent.welcomeMessage || `Hi! 👋 I'm ${agent.name}. How can I help you today?`;
+      setMessages([{
+        id: `welcome_${Date.now()}`,
+        role: "assistant",
+        content: welcomeMsg,
+        timestamp: new Date(),
+      }]);
+    } else {
+      setMessages([]);
+    }
     window.history.replaceState(null, "", `/dashboard/chatbot?agent=${agentId}`);
   };
 
@@ -308,9 +333,30 @@ export default function ChatbotPage() {
                             <h3 className="font-semibold text-lg mb-2">
                               Chat with {currentAgent?.name}
                             </h3>
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-muted-foreground text-sm mb-4">
                               Ask a question to test your AI agent.
                             </p>
+                            {/* Suggested Questions */}
+                            {currentAgent?.suggestedQuestions && (
+                              <div className="space-y-2 mt-4">
+                                <p className="text-xs text-muted-foreground uppercase tracking-wide">Try asking:</p>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                  {currentAgent.suggestedQuestions.split("\n").filter(q => q.trim()).slice(0, 4).map((q, i) => (
+                                    <Button
+                                      key={i}
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() => {
+                                        setInputValue(q.trim());
+                                      }}
+                                    >
+                                      {q.trim()}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ) : (

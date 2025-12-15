@@ -32,14 +32,17 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { insertAgentSchema } from "@shared/schema";
 import type { Agent } from "@shared/schema";
-import { Bot, ArrowLeft, Save } from "lucide-react";
+import { Bot, ArrowLeft, Save, Sparkles, CheckCircle2, MessageCircle } from "lucide-react";
 
 const formSchema = insertAgentSchema.extend({
   name: z.string().min(1, "Agent name is required").max(255),
   websiteUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   description: z.string().max(1000).optional(),
+  systemPrompt: z.string().max(5000).optional(),
   toneOfVoice: z.string().optional(),
   purpose: z.string().optional(),
+  welcomeMessage: z.string().max(500).optional(),
+  suggestedQuestions: z.string().max(2000).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -55,11 +58,13 @@ const toneOptions = [
 ];
 
 const purposeOptions = [
-  { value: "sales", label: "Sales" },
-  { value: "support", label: "Support" },
-  { value: "informational", label: "Informational" },
-  { value: "lead_generation", label: "Lead Generation" },
-  { value: "booking", label: "Booking" },
+  { value: "sales", label: "Sales - Convert visitors into customers" },
+  { value: "support", label: "Support - Help customers with issues" },
+  { value: "informational", label: "Informational - Provide information" },
+  { value: "lead_generation", label: "Lead Generation - Collect leads" },
+  { value: "booking", label: "Booking - Schedule appointments" },
+  { value: "education", label: "Education - Teaching and tutoring" },
+  { value: "hr", label: "HR - Recruiting and employee support" },
 ];
 
 export default function EditAgent() {
@@ -79,8 +84,11 @@ export default function EditAgent() {
       name: "",
       websiteUrl: "",
       description: "",
+      systemPrompt: "",
       toneOfVoice: "friendly",
       purpose: "support",
+      welcomeMessage: "",
+      suggestedQuestions: "",
       isActive: true,
     },
   });
@@ -91,8 +99,11 @@ export default function EditAgent() {
         name: agent.name,
         websiteUrl: agent.websiteUrl || "",
         description: agent.description || "",
+        systemPrompt: agent.systemPrompt || "",
         toneOfVoice: agent.toneOfVoice || "friendly",
         purpose: agent.purpose || "support",
+        welcomeMessage: agent.welcomeMessage || "",
+        suggestedQuestions: agent.suggestedQuestions || "",
         isActive: agent.isActive ?? true,
       });
     }
@@ -105,8 +116,11 @@ export default function EditAgent() {
         name: data.name,
         websiteUrl: data.websiteUrl || null,
         description: data.description || null,
+        systemPrompt: data.systemPrompt || null,
         toneOfVoice: data.toneOfVoice || null,
         purpose: data.purpose || null,
+        welcomeMessage: data.welcomeMessage || null,
+        suggestedQuestions: data.suggestedQuestions || null,
         isActive: data.isActive,
       };
       const response = await apiRequest("PATCH", `/api/agents/${agentId}`, cleanedData);
@@ -148,7 +162,7 @@ export default function EditAgent() {
   if (isLoading) {
     return (
       <DashboardLayout title="Edit Agent">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <Skeleton className="h-10 w-32 mb-6" />
           <Card>
             <CardContent className="p-8 space-y-6">
@@ -168,7 +182,7 @@ export default function EditAgent() {
   if (!agent) {
     return (
       <DashboardLayout title="Agent Not Found">
-        <div className="max-w-2xl mx-auto text-center py-12">
+        <div className="max-w-3xl mx-auto text-center py-12">
           <h2 className="text-2xl font-bold mb-4">Agent Not Found</h2>
           <Link href="/dashboard/agents">
             <Button>
@@ -183,10 +197,10 @@ export default function EditAgent() {
 
   return (
     <DashboardLayout title={`Edit ${agent.name}`}>
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <Link href={`/dashboard/agents/${agentId}`}>
-          <Button variant="ghost" className="mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+          <Button variant="ghost" className="mb-6 group">
+            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             Back to Agent
           </Button>
         </Link>
@@ -200,7 +214,7 @@ export default function EditAgent() {
               <div>
                 <CardTitle className="font-display text-2xl">Edit Agent</CardTitle>
                 <CardDescription>
-                  Update your agent's configuration
+                  Update your agent's configuration and behavior
                 </CardDescription>
               </div>
             </div>
@@ -208,6 +222,7 @@ export default function EditAgent() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Status Toggle */}
                 <FormField
                   control={form.control}
                   name="isActive"
@@ -230,107 +245,204 @@ export default function EditAgent() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Agent Name *</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-edit-agent-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Basic Info Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Basic Information
+                  </h3>
 
-                <FormField
-                  control={form.control}
-                  name="websiteUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website URL</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-edit-agent-website" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Agent Name *</FormLabel>
+                          <FormControl>
+                            <Input {...field} data-testid="input-edit-agent-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea rows={4} {...field} data-testid="textarea-edit-agent-description" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="websiteUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} data-testid="input-edit-agent-website" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                <FormField
-                  control={form.control}
-                  name="toneOfVoice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tone of Voice</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-edit-agent-tone">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <Textarea rows={3} {...field} data-testid="textarea-edit-agent-description" />
                         </FormControl>
-                        <SelectContent>
-                          {toneOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Describe what this agent does
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <FormField
-                  control={form.control}
-                  name="purpose"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Purpose</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                {/* Behavior Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Agent Behavior
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="toneOfVoice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tone of Voice</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-edit-agent-tone">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {toneOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="purpose"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Purpose</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-edit-agent-purpose">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {purposeOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="systemPrompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>System Prompt</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-edit-agent-purpose">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <Textarea
+                            placeholder="Define how your AI agent should behave, respond, and what knowledge it should have..."
+                            rows={5}
+                            className="font-mono text-sm"
+                            {...field}
+                          />
                         </FormControl>
-                        <SelectContent>
-                          {purposeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Advanced: Define the AI's personality, knowledge, and behavior guidelines
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <div className="flex justify-end gap-4 pt-4">
+                {/* Chat Experience Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Chat Experience
+                  </h3>
+
+                  <FormField
+                    control={form.control}
+                    name="welcomeMessage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Welcome Message</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Hi! 👋 How can I help you today?"
+                            rows={2}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The first message users see when they open the chat
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="suggestedQuestions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Suggested Questions</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="What services do you offer?&#10;How do I contact support?&#10;What are your business hours?"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Quick questions shown to users (one per line)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                   <Link href={`/dashboard/agents/${agentId}`}>
-                    <Button type="button" variant="outline">
+                    <Button type="button" variant="outline" className="w-full sm:w-auto">
                       Cancel
                     </Button>
                   </Link>
                   <Button
                     type="submit"
                     disabled={updateMutation.isPending}
+                    className="w-full sm:w-auto"
                     data-testid="button-save-agent"
                   >
                     {updateMutation.isPending ? (

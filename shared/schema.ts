@@ -50,8 +50,11 @@ export const agents = mysqlTable("agents", {
   name: varchar("name", { length: 255 }).notNull(),
   websiteUrl: varchar("website_url", { length: 2048 }),
   description: text("description"),
+  systemPrompt: text("system_prompt"), // AI behavior instructions
   toneOfVoice: varchar("tone_of_voice", { length: 100 }),
   purpose: varchar("purpose", { length: 50 }),
+  welcomeMessage: text("welcome_message"), // Initial greeting
+  suggestedQuestions: text("suggested_questions"), // Newline-separated questions
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),

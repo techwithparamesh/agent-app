@@ -17,6 +17,9 @@ import {
   Calendar,
   Mic,
   Target,
+  Sparkles,
+  HelpCircle,
+  MessageCircle,
 } from "lucide-react";
 
 export default function AgentDetails() {
@@ -167,6 +170,62 @@ export default function AgentDetails() {
                 <Badge variant="outline" className="capitalize">
                   {agent.purpose?.replace("_", " ") || "Not set"}
                 </Badge>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* System Prompt */}
+          {agent.systemPrompt && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  System Prompt
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-3 rounded-lg bg-muted/50 text-sm font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                  {agent.systemPrompt}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Welcome Message & Suggested Questions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MessageCircle className="h-4 w-4 text-primary" />
+                  Welcome Message
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  {agent.welcomeMessage || "Hi! 👋 How can I help you today?"}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <HelpCircle className="h-4 w-4 text-primary" />
+                  Suggested Questions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {agent.suggestedQuestions ? (
+                  <div className="space-y-1.5">
+                    {agent.suggestedQuestions.split("\n").filter(q => q.trim()).map((q, i) => (
+                      <Badge key={i} variant="secondary" className="mr-1 mb-1">
+                        {q.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No suggested questions set</p>
+                )}
               </CardContent>
             </Card>
           </div>

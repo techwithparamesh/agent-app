@@ -13,8 +13,11 @@ const updateAgentSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   websiteUrl: z.string().url().optional().nullable(),
   description: z.string().max(1000).optional().nullable(),
+  systemPrompt: z.string().max(5000).optional().nullable(),
   toneOfVoice: z.string().max(100).optional().nullable(),
   purpose: z.string().max(50).optional().nullable(),
+  welcomeMessage: z.string().max(500).optional().nullable(),
+  suggestedQuestions: z.string().max(2000).optional().nullable(),
   isActive: z.boolean().optional(),
 });
 
@@ -2775,12 +2778,11 @@ export async function registerRoutes(
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
 
-      const systemPrompt = `You are ${agent.name}, an AI assistant for a website.
+      // Use custom systemPrompt if available, otherwise generate one
+      const basePrompt = agent.systemPrompt || `You are ${agent.name}, an AI assistant for a website.
 ${agent.description ? `Description: ${agent.description}` : ""}
 Tone: ${agent.toneOfVoice || "friendly and professional"}
 Purpose: ${agent.purpose || "support"}
-
-${knowledgeContext ? `Here is relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}\n\n` : ""}
 
 Instructions:
 - Be helpful, friendly, and concise
@@ -2788,6 +2790,10 @@ Instructions:
 - If you don't have specific information, offer to help in other ways
 - Keep responses brief but informative (2-3 sentences when possible)
 - Don't mention that you're an AI unless directly asked`;
+
+      const systemPrompt = `${basePrompt}
+
+${knowledgeContext ? `Here is relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
@@ -2897,12 +2903,11 @@ Instructions:
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
 
-      const systemPrompt = `You are ${agent.name}, an AI assistant.
+      // Use custom systemPrompt if available, otherwise generate one
+      const basePrompt = agent.systemPrompt || `You are ${agent.name}, an AI assistant.
 ${agent.description ? `Description: ${agent.description}` : ""}
 Tone: ${agent.toneOfVoice || "friendly and professional"}
 Purpose: ${agent.purpose || "support"}
-
-${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}\n\n` : ""}
 
 IMPORTANT INSTRUCTIONS:
 - Use ONLY the information provided above to answer questions
@@ -2910,6 +2915,10 @@ IMPORTANT INSTRUCTIONS:
 - If the user asks about contact info, pricing, services, or other specifics - find and provide the exact details from the knowledge base
 - If you don't have the specific information requested, be honest about it
 - Keep responses clear and concise`;
+
+      const systemPrompt = `${basePrompt}
+
+${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
