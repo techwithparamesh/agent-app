@@ -56,6 +56,11 @@ export const agents = mysqlTable("agents", {
   welcomeMessage: text("welcome_message"), // Initial greeting
   suggestedQuestions: text("suggested_questions"), // Newline-separated questions
   isActive: boolean("is_active").default(true),
+  // Scan status tracking
+  scanStatus: varchar("scan_status", { length: 50 }).default("idle"), // idle, scanning, complete, error
+  scanProgress: int("scan_progress").default(0),
+  scanMessage: text("scan_message"),
+  lastScannedAt: timestamp("last_scanned_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });

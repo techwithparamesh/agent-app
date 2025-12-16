@@ -83,6 +83,19 @@ export default function WebsiteScanner() {
     staleTime: 0, // Consider data stale immediately
   });
 
+  // Check if any agent has an ongoing scan (restore state if user navigates back)
+  useEffect(() => {
+    if (agents && preselectedAgent) {
+      const agent = agents.find(a => a.id === preselectedAgent);
+      if (agent && (agent as any).scanStatus === 'scanning') {
+        // Restore the scanning state
+        setScanStatus("scanning");
+        setScanProgress((agent as any).scanProgress || 0);
+        setScanMessage((agent as any).scanMessage || "Scan in progress...");
+      }
+    }
+  }, [agents, preselectedAgent]);
+
   const form = useForm<ScanFormValues>({
     resolver: zodResolver(scanFormSchema),
     defaultValues: {

@@ -343,6 +343,13 @@ export async function registerRoutes(
         return;
       }
       
+      // Update agent scan status to scanning
+      await storage.updateAgent(agentId as string, {
+        scanStatus: 'scanning',
+        scanProgress: 2,
+        scanMessage: 'Starting scan...',
+      });
+      
       sendProgress({ type: 'status', message: 'Starting scan...', progress: 2 });
       
       // If rescan is true, delete all existing knowledge entries
@@ -1595,6 +1602,14 @@ export async function registerRoutes(
       
       console.log(`Scan complete. Pages scanned: ${scannedPages.length}, Entries created: ${entriesCreated}`);
       
+      // Update agent scan status to complete
+      await storage.updateAgent(agentId as string, {
+        scanStatus: 'complete',
+        scanProgress: 100,
+        scanMessage: `Scan complete! Created ${entriesCreated} knowledge entries.`,
+        lastScannedAt: new Date(),
+      });
+      
       sendProgress({ 
         type: 'complete', 
         message: `Scan complete! Created ${entriesCreated} knowledge entries.`,
@@ -1609,6 +1624,16 @@ export async function registerRoutes(
       
     } catch (error: any) {
       console.error("Scan stream error:", error);
+      
+      // Update agent scan status to error
+      if (agentId) {
+        await storage.updateAgent(agentId as string, {
+          scanStatus: 'error',
+          scanProgress: 0,
+          scanMessage: error.message || 'Scan failed',
+        });
+      }
+      
       sendProgress({ type: 'error', message: error.message || 'Scan failed' });
       res.end();
     }

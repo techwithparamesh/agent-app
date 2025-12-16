@@ -56,9 +56,11 @@ export default function KnowledgeBasePage() {
     staleTime: 0,
   });
 
-  const { data: knowledgeEntries, isLoading: entriesLoading } = useQuery<KnowledgeBase[]>({
+  const { data: knowledgeEntries, isLoading: entriesLoading, refetch: refetchEntries } = useQuery<KnowledgeBase[]>({
     queryKey: ["/api/agents", currentAgentId, "knowledge"],
     enabled: !!currentAgentId,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const deleteMutation = useMutation({
