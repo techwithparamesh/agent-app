@@ -52,6 +52,9 @@ import {
   Calendar,
   Receipt,
   Package,
+  Globe,
+  Smartphone,
+  Zap,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -76,6 +79,7 @@ const templateSubItems = [
   { icon: GraduationCap, label: "Education", category: "Education" },
   { icon: Home, label: "Real Estate", category: "Real Estate" },
   { icon: Briefcase, label: "HR", category: "Human Resources" },
+  { icon: MessageSquare, label: "WhatsApp", category: "WhatsApp" },
 ];
 
 export function AppSidebar() {
@@ -214,7 +218,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* AI Agents Section */}
+        {/* AI Agents Section - Restructured for clarity */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wide text-muted-foreground px-4">
             AI Agents
@@ -238,6 +242,52 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Create Agent Section - Two Clear Paths */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wide text-muted-foreground px-4">
+            Create Agent
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* Website Agent Path */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/agents/website"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/agents/website">
+                    <Globe className="h-5 w-5 text-blue-500" />
+                    <div className="flex flex-col items-start">
+                      <span>Website Agent</span>
+                      <span className="text-[10px] text-muted-foreground">Scan & train from your site</span>
+                    </div>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              {/* WhatsApp Business Agent Path */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/agents/whatsapp"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/agents/whatsapp">
+                    <Smartphone className="h-5 w-5 text-green-500" />
+                    <div className="flex flex-col items-start">
+                      <span>WhatsApp Agent</span>
+                      <span className="text-[10px] text-muted-foreground">No website needed</span>
+                    </div>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Quick Create */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -245,20 +295,8 @@ export function AppSidebar() {
                   className="gap-3"
                 >
                   <Link href="/dashboard/agents/new">
-                    <PlusCircle className="h-5 w-5" />
-                    <span>Create Agent</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/dashboard/scan"}
-                  className="gap-3"
-                >
-                  <Link href="/dashboard/scan">
-                    <Scan className="h-5 w-5" />
-                    <span>Scan Website</span>
+                    <Zap className="h-5 w-5 text-yellow-500" />
+                    <span>Quick Create</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

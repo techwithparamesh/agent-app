@@ -809,6 +809,7 @@ const categories = [
   { value: "Automotive", label: "Automotive" },
   { value: "Business", label: "Business & B2B" },
   { value: "Human Resources", label: "Human Resources" },
+  { value: "WhatsApp", label: "WhatsApp" },
 ];
 
 export default function TemplatesPage() {

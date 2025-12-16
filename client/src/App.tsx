@@ -23,6 +23,8 @@ import AgentsList from "@/pages/dashboard/agents/index";
 import CreateAgent from "@/pages/dashboard/agents/new";
 import AgentDetails from "@/pages/dashboard/agents/[id]";
 import EditAgent from "@/pages/dashboard/agents/edit";
+import WebsiteAgent from "@/pages/dashboard/agents/website";
+import WhatsAppAgent from "@/pages/dashboard/agents/whatsapp";
 import WebsiteScanner from "@/pages/dashboard/scan";
 import KnowledgeBase from "@/pages/dashboard/knowledge";
 import Chatbot from "@/pages/dashboard/chatbot";
@@ -49,6 +51,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/agents" component={AgentsList} />
       <Route path="/dashboard/agents/new" component={CreateAgent} />
+      <Route path="/dashboard/agents/website" component={WebsiteAgent} />
+      <Route path="/dashboard/agents/whatsapp" component={WhatsAppAgent} />
       <Route path="/dashboard/agents/:id/edit" component={EditAgent} />
       <Route path="/dashboard/agents/:id" component={AgentDetails} />
       <Route path="/dashboard/scan" component={WebsiteScanner} />
