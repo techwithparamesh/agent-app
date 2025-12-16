@@ -330,13 +330,18 @@ export default function EditAgent() {
   const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
-  const { data: agent, isLoading } = useQuery<Agent>({
+  const { data: agent, isLoading, error } = useQuery<Agent>({
     queryKey: ["/api/agents", agentId],
     enabled: !!agentId,
   });
 
   const isWhatsAppAgent = agent?.agentType === 'whatsapp';
-  const currentCategory = businessCategories.find(c => c.id === agent?.businessCategory) || businessCategories[businessCategories.length - 1];
+  
+  // Get category with guaranteed fallback
+  const generalCategory = businessCategories.find(c => c.id === 'general') || businessCategories[0];
+  const currentCategory = (agent?.businessCategory 
+    ? businessCategories.find(c => c.id === agent.businessCategory) 
+    : generalCategory) || generalCategory;
 
   // Website agent form
   const websiteForm = useForm<WebsiteFormValues>({
@@ -565,6 +570,23 @@ export default function EditAgent() {
               ))}
             </CardContent>
           </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout title="Error">
+        <div className="max-w-3xl mx-auto text-center py-12">
+          <h2 className="text-2xl font-bold mb-4 text-red-500">Error Loading Agent</h2>
+          <p className="text-muted-foreground mb-4">{(error as Error).message}</p>
+          <Link href="/dashboard/agents">
+            <Button>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Agents
+            </Button>
+          </Link>
         </div>
       </DashboardLayout>
     );
