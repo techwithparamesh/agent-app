@@ -49,6 +49,9 @@ import {
   UtensilsCrossed,
   Car,
   Home,
+  Calendar,
+  Receipt,
+  Package,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -60,17 +63,19 @@ const dashboardSubItems = [
   { icon: TrendingUp, label: "Response Rate", href: "/dashboard/analytics", metric: "rate" },
 ];
 
-// Template category submenu items (all 9 categories)
+// Template category submenu items - organized by priority
 const templateSubItems = [
-  { icon: ShoppingCart, label: "Retail", category: "Retail" },
+  { icon: Calendar, label: "Appointments", category: "Appointments" },
+  { icon: TrendingUp, label: "Sales & Leads", category: "Sales" },
+  { icon: Receipt, label: "Billing", category: "Billing" },
+  { icon: Package, label: "Orders", category: "Orders" },
   { icon: HeadphonesIcon, label: "Support", category: "Support" },
-  { icon: GraduationCap, label: "Education", category: "Education" },
-  { icon: Home, label: "Real Estate", category: "Real Estate" },
   { icon: Stethoscope, label: "Healthcare", category: "Healthcare" },
   { icon: UtensilsCrossed, label: "Hospitality", category: "Hospitality" },
   { icon: Car, label: "Automotive", category: "Automotive" },
-  { icon: Building2, label: "Business", category: "Business" },
-  { icon: Briefcase, label: "Human Resources", category: "Human Resources" },
+  { icon: GraduationCap, label: "Education", category: "Education" },
+  { icon: Home, label: "Real Estate", category: "Real Estate" },
+  { icon: Briefcase, label: "HR", category: "Human Resources" },
 ];
 
 export function AppSidebar() {

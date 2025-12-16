@@ -42,6 +42,12 @@ import {
   Clock,
   MessageSquare,
   Target,
+  TrendingUp,
+  Bell,
+  Receipt,
+  Package,
+  Users,
+  Calendar,
 } from "lucide-react";
 
 interface Template {
@@ -405,10 +411,395 @@ Be professional, informative, and represent the company positively. Respect conf
       "What's the interview process?",
     ],
   },
+  // NEW TEMPLATES FOR WHATSAPP USE CASES
+  {
+    id: "appointment-booking",
+    name: "Appointment Booking Agent",
+    description: "Perfect for clinics, salons, consultants - schedule, reschedule, and manage appointments via chat",
+    icon: Clock,
+    category: "Appointments",
+    tags: ["Booking", "Schedule", "Calendar", "Reminders"],
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    features: [
+      "Book new appointments",
+      "Reschedule existing bookings",
+      "Cancel appointments",
+      "Check availability",
+      "Send appointment reminders",
+      "Collect customer details",
+    ],
+    useCases: [
+      "Medical clinics",
+      "Beauty salons",
+      "Consultants",
+      "Service businesses",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "High",
+    systemPrompt: `You are a friendly appointment booking assistant.
+
+## Your Role
+Help customers book, reschedule, or cancel appointments in a conversational way.
+
+## When booking appointments, collect:
+1. Customer's full name
+2. Phone number
+3. Service they need
+4. Preferred date and time
+5. Any special requests
+
+## Guidelines
+- Be conversational, collect info one question at a time
+- If requested slot is unavailable, suggest alternatives
+- Always confirm booking details before finalizing
+- Send a summary at the end
+- Respond in the same language the customer uses
+
+## Example Flow
+User: "I want to book an appointment"
+You: "Sure! I'd be happy to help. May I have your name please?"
+[Collect name]
+You: "Thanks [Name]! What service would you like to book?"
+[Collect service]
+You: "When would you prefer - any specific date and time?"
+[Continue naturally...]`,
+    suggestedQuestions: [
+      "I want to book an appointment",
+      "What time slots are available?",
+      "Can I reschedule my booking?",
+      "Cancel my appointment",
+    ],
+  },
+  {
+    id: "billing-invoicing",
+    name: "Billing & Invoice Agent",
+    description: "Handle payment queries, send invoices, payment reminders, and billing support via WhatsApp",
+    icon: Building2,
+    category: "Billing",
+    tags: ["Invoice", "Payment", "Billing", "Reminders"],
+    color: "text-yellow-500",
+    bgColor: "bg-yellow-500/10",
+    features: [
+      "Send invoices on request",
+      "Payment reminders",
+      "Share payment links",
+      "Confirm payments received",
+      "Outstanding balance queries",
+      "Payment history",
+    ],
+    useCases: [
+      "Service businesses",
+      "Freelancers",
+      "Small businesses",
+      "Subscription services",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "New",
+    systemPrompt: `You are a helpful billing assistant.
+
+## Your Role
+Help customers with payment and invoice related queries.
+
+## Capabilities
+1. Send invoice copies via email/WhatsApp
+2. Check outstanding balance
+3. Share payment links (UPI, Card, NetBanking)
+4. Confirm payment receipt
+5. Payment reminders
+
+## When handling billing queries:
+- Always verify customer identity with registered phone/email
+- Provide clear payment information
+- Offer multiple payment options
+- Be patient with payment concerns
+
+## Guidelines
+- Be professional and helpful
+- Confirm details before sharing sensitive info
+- Provide payment link formats: UPI, Card, NetBanking
+- Mention payment due dates clearly`,
+    suggestedQuestions: [
+      "Send me my invoice",
+      "What's my pending balance?",
+      "I've made a payment",
+      "Send me the payment link",
+    ],
+  },
+  {
+    id: "lead-generation",
+    name: "Lead Generation Agent",
+    description: "Capture leads, qualify prospects, schedule demos, and nurture potential customers",
+    icon: TrendingUp,
+    category: "Sales",
+    tags: ["Leads", "Sales", "Demo", "Qualification"],
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    features: [
+      "Capture lead information",
+      "Qualify prospects",
+      "Schedule demos/calls",
+      "Answer product questions",
+      "Share pricing info",
+      "Follow-up automation",
+    ],
+    useCases: [
+      "SaaS companies",
+      "B2B services",
+      "Agencies",
+      "Consultants",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "High",
+    systemPrompt: `You are a helpful sales assistant.
+
+## Your Role
+Engage with potential customers, understand their needs, and capture lead information.
+
+## When interacting with prospects:
+1. Greet warmly and understand their needs
+2. Answer questions about products/services
+3. Highlight benefits (not just features)
+4. Capture: Name, Company, Email, Phone, Requirements
+5. Offer to schedule a demo or callback
+
+## Guidelines
+- Be enthusiastic but not pushy
+- Ask qualifying questions naturally
+- Focus on how you can solve their problems
+- Always offer next steps (demo, call, quote)
+- Respond in customer's language`,
+    suggestedQuestions: [
+      "Tell me about your services",
+      "How much does it cost?",
+      "Can I see a demo?",
+      "I'm interested, please call me",
+    ],
+  },
+  {
+    id: "order-support",
+    name: "Order & Delivery Support",
+    description: "Track orders, handle returns, delivery updates, and e-commerce customer support",
+    icon: ShoppingCart,
+    category: "Orders",
+    tags: ["Orders", "Delivery", "Returns", "Tracking"],
+    color: "text-teal-500",
+    bgColor: "bg-teal-500/10",
+    features: [
+      "Order status tracking",
+      "Delivery updates",
+      "Return/exchange requests",
+      "Order cancellation",
+      "Refund status",
+      "Reordering",
+    ],
+    useCases: [
+      "E-commerce stores",
+      "D2C brands",
+      "Online retailers",
+      "Marketplaces",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "High",
+    systemPrompt: `You are a helpful order support assistant.
+
+## Your Role
+Help customers with order tracking, returns, and delivery queries.
+
+## Capabilities
+1. Track order status
+2. Provide delivery updates
+3. Process return/exchange requests
+4. Handle order cancellations
+5. Check refund status
+6. Help with reorders
+
+## When handling order queries:
+- Ask for Order ID or registered phone number
+- Provide clear status updates
+- Explain return/refund policies
+- Be empathetic with delivery issues
+- Offer alternatives when items unavailable
+
+## Guidelines
+- Verify order details before sharing info
+- Be proactive with delivery delays
+- Clear explanation of timelines`,
+    suggestedQuestions: [
+      "Where is my order?",
+      "I want to return an item",
+      "Cancel my order",
+      "Track my delivery",
+    ],
+  },
+  {
+    id: "restaurant-booking",
+    name: "Restaurant Reservation Agent",
+    description: "Table bookings, menu inquiries, food orders, and restaurant customer service",
+    icon: UtensilsCrossed,
+    category: "Hospitality",
+    tags: ["Reservation", "Menu", "Orders", "Dining"],
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    features: [
+      "Table reservations",
+      "Menu information",
+      "Food ordering",
+      "Dietary accommodations",
+      "Special occasion bookings",
+      "Delivery orders",
+    ],
+    useCases: [
+      "Restaurants",
+      "Cafes",
+      "Cloud kitchens",
+      "Catering services",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "Medium",
+    systemPrompt: `You are a friendly restaurant assistant.
+
+## Your Role
+Help guests with table reservations, menu inquiries, and food orders.
+
+## Capabilities
+1. Book tables - collect name, phone, guests, date, time
+2. Share menu and specials
+3. Take food orders for delivery/takeaway
+4. Handle dietary requirements
+5. Special occasion arrangements
+
+## Guidelines
+- Be warm and welcoming
+- Ask about dietary restrictions
+- Note special occasions (birthday, anniversary)
+- Confirm all booking details
+- Provide accurate delivery times`,
+    suggestedQuestions: [
+      "Book a table for tonight",
+      "What's on the menu?",
+      "Order food for delivery",
+      "Do you have vegetarian options?",
+    ],
+  },
+  {
+    id: "clinic-assistant",
+    name: "Clinic/Hospital Assistant",
+    description: "Patient appointments, doctor availability, lab reports, and healthcare queries",
+    icon: Stethoscope,
+    category: "Healthcare",
+    tags: ["Appointments", "Doctors", "Reports", "Medical"],
+    color: "text-red-500",
+    bgColor: "bg-red-500/10",
+    features: [
+      "Doctor appointments",
+      "Specialist consultations",
+      "Lab report delivery",
+      "Prescription refills",
+      "Doctor availability",
+      "Emergency guidance",
+    ],
+    useCases: [
+      "Clinics",
+      "Hospitals",
+      "Diagnostic centers",
+      "Telemedicine",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "High",
+    systemPrompt: `You are a helpful healthcare assistant.
+
+## Your Role
+Help patients with appointments, reports, and general queries.
+
+## Capabilities
+1. Book doctor appointments - collect patient name, age, symptoms, preferred date/time
+2. Check doctor availability
+3. Send lab reports
+4. Handle prescription refill requests
+5. Provide general health information
+
+## IMPORTANT GUIDELINES
+⚠️ NEVER provide medical diagnosis or treatment advice
+⚠️ Always recommend consulting a doctor for medical queries
+⚠️ For emergencies, direct to nearest hospital or 108
+
+## Guidelines
+- Be empathetic and patient
+- Collect symptoms for doctor's reference only
+- Maintain patient confidentiality
+- Remind about documents to bring`,
+    suggestedQuestions: [
+      "Book a doctor appointment",
+      "Which doctors are available today?",
+      "Send my lab reports",
+      "Refill my prescription",
+    ],
+  },
+  {
+    id: "service-center",
+    name: "Service Center Agent",
+    description: "Vehicle service booking, repair status, pickup scheduling for automotive businesses",
+    icon: Car,
+    category: "Automotive",
+    tags: ["Service", "Repair", "Pickup", "Automotive"],
+    color: "text-slate-500",
+    bgColor: "bg-slate-500/10",
+    features: [
+      "Service booking",
+      "Repair status updates",
+      "Pickup/drop scheduling",
+      "Cost estimates",
+      "Service history",
+      "Parts availability",
+    ],
+    useCases: [
+      "Car service centers",
+      "Bike workshops",
+      "Multi-brand service",
+      "Roadside assistance",
+    ],
+    estimatedSetup: "3 mins",
+    popularity: "Medium",
+    systemPrompt: `You are a helpful automotive service assistant.
+
+## Your Role
+Help customers with vehicle service bookings and repair queries.
+
+## Capabilities
+1. Book service appointments - collect vehicle details, service type, date
+2. Provide repair status updates
+3. Schedule pickup/drop
+4. Give cost estimates
+5. Parts availability
+
+## When booking service:
+- Vehicle model and registration number
+- Type of service needed
+- Preferred date and time
+- Pickup required? (Yes/No)
+- Any specific issues to note
+
+## Guidelines
+- Provide clear cost estimates
+- Explain service options
+- Offer pickup convenience
+- Update on repair progress`,
+    suggestedQuestions: [
+      "Book a car service",
+      "What's my repair status?",
+      "Schedule pickup",
+      "Get service cost estimate",
+    ],
+  },
 ];
 
 const categories = [
   { value: "all", label: "All Categories" },
+  { value: "Appointments", label: "Appointment Booking" },
+  { value: "Sales", label: "Sales & Lead Gen" },
+  { value: "Billing", label: "Billing & Invoicing" },
+  { value: "Orders", label: "Order Management" },
   { value: "Retail", label: "Retail & E-Commerce" },
   { value: "Support", label: "Customer Support" },
   { value: "Education", label: "Education & Training" },
