@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -647,26 +646,23 @@ export default function EditAgent() {
               <Form {...whatsappForm}>
                 <form onSubmit={whatsappForm.handleSubmit(onWhatsAppSubmit)} className="space-y-6">
                   {/* Status Toggle */}
-                  <FormField
-                    control={whatsappForm.control}
-                    name="isActive"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border border-border p-4">
-                        <div>
-                          <FormLabel>Active Status</FormLabel>
-                          <FormDescription>
-                            Disable to pause this agent
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="text-sm font-medium">Active Status</p>
+                      <p className="text-sm text-muted-foreground">
+                        Disable to pause this agent
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={whatsappForm.watch("isActive") ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => whatsappForm.setValue("isActive", !whatsappForm.watch("isActive"))}
+                      className={whatsappForm.watch("isActive") ? "bg-green-600 hover:bg-green-700" : ""}
+                    >
+                      {whatsappForm.watch("isActive") ? "Active" : "Inactive"}
+                    </Button>
+                  </div>
 
                   {/* Basic Info Section */}
                   <div className="space-y-4">
@@ -1056,27 +1052,24 @@ export default function EditAgent() {
             <Form {...websiteForm}>
               <form onSubmit={websiteForm.handleSubmit(onWebsiteSubmit)} className="space-y-6">
                 {/* Status Toggle */}
-                <FormField
-                  control={websiteForm.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border border-border p-4">
-                      <div>
-                        <FormLabel>Active Status</FormLabel>
-                        <FormDescription>
-                          Disable to pause this agent
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="switch-agent-active"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div>
+                    <p className="text-sm font-medium">Active Status</p>
+                    <p className="text-sm text-muted-foreground">
+                      Disable to pause this agent
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={websiteForm.watch("isActive") ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => websiteForm.setValue("isActive", !websiteForm.watch("isActive"))}
+                    className={websiteForm.watch("isActive") ? "bg-green-600 hover:bg-green-700" : ""}
+                    data-testid="switch-agent-active"
+                  >
+                    {websiteForm.watch("isActive") ? "Active" : "Inactive"}
+                  </Button>
+                </div>
 
                 {/* Basic Info Section */}
                 <div className="space-y-4">
