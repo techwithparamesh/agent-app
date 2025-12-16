@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Form,
@@ -33,131 +32,116 @@ import {
   Bot,
   Database,
   Sparkles,
-  AlertCircle,
-  ExternalLink,
 } from "lucide-react";
 import { Link } from "wouter";
 
-// Step-based form schema
-const step1Schema = z.object({
+// Form schema - collect URL and name together
+const formSchema = z.object({
   websiteUrl: z.string().url("Please enter a valid website URL"),
-});
-
-const step2Schema = z.object({
   name: z.string().min(1, "Agent name is required").max(255),
   description: z.string().max(1000).optional(),
-});
-
-const step3Schema = z.object({
-  systemPrompt: z.string().max(5000).optional(),
   welcomeMessage: z.string().max(500).optional(),
   suggestedQuestions: z.string().optional(),
 });
 
-type Step1Values = z.infer<typeof step1Schema>;
-type Step2Values = z.infer<typeof step2Schema>;
-type Step3Values = z.infer<typeof step3Schema>;
-
-interface ScanResult {
-  success: boolean;
-  pagesScanned: number;
-  contentExtracted: string[];
-  businessInfo?: {
-    name?: string;
-    description?: string;
-    services?: string[];
-  };
-}
+type FormValues = z.infer<typeof formSchema>;
 
 export default function WebsiteAgentPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
+  const [createdAgentId, setCreatedAgentId] = useState<number | null>(null);
+  const [scanComplete, setScanComplete] = useState(false);
+  const [pagesScanned, setPagesScanned] = useState(0);
 
-  // Form for step 1 (URL)
-  const step1Form = useForm<Step1Values>({
-    resolver: zodResolver(step1Schema),
-    defaultValues: { websiteUrl: "" },
-  });
-
-  // Form for step 2 (Agent details)
-  const step2Form = useForm<Step2Values>({
-    resolver: zodResolver(step2Schema),
-    defaultValues: { name: "", description: "" },
-  });
-
-  // Form for step 3 (Customization)
-  const step3Form = useForm<Step3Values>({
-    resolver: zodResolver(step3Schema),
-    defaultValues: { systemPrompt: "", welcomeMessage: "", suggestedQuestions: "" },
-  });
-
-  // Scan website mutation
-  const scanMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const response = await apiRequest("POST", "/api/scan", { url });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setScanResult({
-        success: true,
-        pagesScanned: data.pagesScanned || 1,
-        contentExtracted: data.pages || [],
-        businessInfo: data.businessInfo,
-      });
-      
-      // Auto-fill agent name if detected
-      if (data.businessInfo?.name) {
-        step2Form.setValue("name", `${data.businessInfo.name} Assistant`);
-      }
-      if (data.businessInfo?.description) {
-        step2Form.setValue("description", data.businessInfo.description);
-      }
-      
-      setIsScanning(false);
-      setCurrentStep(2);
-      toast({
-        title: "Website scanned successfully!",
-        description: `Extracted content from ${data.pagesScanned || 1} pages`,
-      });
-    },
-    onError: (error: Error) => {
-      setIsScanning(false);
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Session expired",
-          description: "Please log in again",
-          variant: "destructive",
-        });
-        setLocation("/login");
-      } else {
-        toast({
-          title: "Scan failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      websiteUrl: "",
+      name: "",
+      description: "",
+      welcomeMessage: "Hi! I'm here to help you with any questions about our website. How can I assist you today?",
+      suggestedQuestions: "",
     },
   });
 
   // Create agent mutation
   const createAgentMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/agents", data);
+    mutationFn: async (data: Partial<FormValues>) => {
+      const response = await apiRequest("POST", "/api/agents", {
+        name: data.name,
+        websiteUrl: data.websiteUrl,
+        description: data.description || `AI assistant for ${data.name}`,
+        welcomeMessage: data.welcomeMessage,
+        suggestedQuestions: data.suggestedQuestions,
+        agentType: "website",
+      });
       return response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agents"] });
-      toast({
-        title: "Agent created successfully!",
-        description: "Your website agent is ready to use",
-      });
-      setLocation(`/dashboard/agents/${data.id}`);
+  });
+
+  // Scan website mutation
+  const scanMutation = useMutation({
+    mutationFn: async ({ agentId, url }: { agentId: number; url: string }) => {
+      const response = await apiRequest("POST", "/api/scan", { agentId, url });
+      return response.json();
     },
-    onError: (error: Error) => {
+  });
+
+  // Handle step 1: Create agent and start scanning
+  const handleStep1Submit = async (values: FormValues) => {
+    setIsProcessing(true);
+    setScanProgress(0);
+
+    try {
+      // Step 1: Create the agent first
+      setScanProgress(10);
+      const agent = await createAgentMutation.mutateAsync(values);
+      setCreatedAgentId(agent.id);
+      setScanProgress(20);
+
+      // Step 2: Start scanning the website
+      const progressInterval = setInterval(() => {
+        setScanProgress((prev) => {
+          if (prev >= 85) {
+            clearInterval(progressInterval);
+            return 85;
+          }
+          return prev + 5;
+        });
+      }, 1000);
+
+      try {
+        const scanResult = await scanMutation.mutateAsync({
+          agentId: agent.id,
+          url: values.websiteUrl,
+        });
+        
+        clearInterval(progressInterval);
+        setScanProgress(100);
+        setPagesScanned(scanResult.pagesScanned || 1);
+        setScanComplete(true);
+        setCurrentStep(2);
+
+        toast({
+          title: "Website scanned successfully!",
+          description: `Extracted content from ${scanResult.pagesScanned || 1} pages`,
+        });
+      } catch (scanError: any) {
+        clearInterval(progressInterval);
+        // Even if scan fails, agent is created - let user continue
+        setScanProgress(100);
+        setCurrentStep(2);
+        toast({
+          title: "Scan completed with warnings",
+          description: "Agent created. You can add knowledge manually or try scanning again later.",
+          variant: "default",
+        });
+      }
+    } catch (error: any) {
+      setIsProcessing(false);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Session expired",
@@ -172,81 +156,64 @@ export default function WebsiteAgentPage() {
           variant: "destructive",
         });
       }
-    },
-  });
-
-  // Handle step 1 submission (scan website)
-  const handleStep1Submit = async (values: Step1Values) => {
-    setIsScanning(true);
-    setScanProgress(0);
-    
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setScanProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 500);
-
-    try {
-      await scanMutation.mutateAsync(values.websiteUrl);
-      setScanProgress(100);
-    } finally {
-      clearInterval(progressInterval);
     }
   };
 
-  // Handle step 2 submission
-  const handleStep2Submit = (values: Step2Values) => {
-    setCurrentStep(3);
+  // Handle final step: Update agent with customizations and go to agent page
+  const handleFinalize = async () => {
+    if (!createdAgentId) return;
+
+    try {
+      // Update agent with any customizations
+      await apiRequest("PATCH", `/api/agents/${createdAgentId}`, {
+        welcomeMessage: form.getValues("welcomeMessage"),
+        suggestedQuestions: form.getValues("suggestedQuestions"),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/agents"] });
+      
+      toast({
+        title: "Agent ready!",
+        description: "Your website agent is set up and ready to use",
+      });
+      
+      setLocation(`/dashboard/agents/${createdAgentId}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  // Handle final submission
-  const handleFinalSubmit = async (values: Step3Values) => {
-    const agentData = {
-      name: step2Form.getValues("name"),
-      description: step2Form.getValues("description"),
-      websiteUrl: step1Form.getValues("websiteUrl"),
-      systemPrompt: values.systemPrompt || generateDefaultPrompt(),
-      welcomeMessage: values.welcomeMessage || "Hi! I'm here to help you with any questions about our website. How can I assist you today?",
-      suggestedQuestions: values.suggestedQuestions,
-      agentType: "website",
-    };
-
-    await createAgentMutation.mutateAsync(agentData);
-  };
-
-  const generateDefaultPrompt = () => {
-    const businessName = step2Form.getValues("name").replace(" Assistant", "");
-    return `You are a helpful assistant for ${businessName}. 
+  // Auto-generate agent name from URL
+  const handleUrlChange = (url: string) => {
+    form.setValue("websiteUrl", url);
     
-Your role is to answer questions about the business based on the website content that has been scanned and stored in your knowledge base.
-
-## Guidelines:
-- Be friendly and professional
-- Only answer questions based on the information from the website
-- If you don't know something, say so and offer to help in other ways
-- Guide users to take appropriate actions (contact, book, purchase, etc.)
-
-## Important:
-- Never make up information not present in the knowledge base
-- Always be helpful and suggest relevant next steps`;
+    // Try to extract domain name for agent name suggestion
+    if (url && !form.getValues("name")) {
+      try {
+        const domain = new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
+        const siteName = domain.replace(/^www\./, "").split(".")[0];
+        const capitalizedName = siteName.charAt(0).toUpperCase() + siteName.slice(1);
+        form.setValue("name", `${capitalizedName} Assistant`);
+      } catch {
+        // Invalid URL, ignore
+      }
+    }
   };
 
   const steps = [
-    { number: 1, title: "Scan Website", description: "Enter your website URL" },
-    { number: 2, title: "Agent Details", description: "Name and describe your agent" },
-    { number: 3, title: "Customize", description: "Fine-tune behavior" },
+    { number: 1, title: "Setup & Scan", description: "Enter details and scan" },
+    { number: 2, title: "Customize", description: "Fine-tune your agent" },
   ];
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Link href="/dashboard/agents">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
@@ -257,14 +224,14 @@ Your role is to answer questions about the business based on the website content
               <Globe className="h-6 w-6 text-blue-500" />
               Create Website Agent
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Scan your website and create an AI agent trained on your content
             </p>
           </div>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-center gap-4 mb-8">
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center">
               <div className="flex flex-col items-center">
@@ -283,39 +250,32 @@ Your role is to answer questions about the business based on the website content
                     step.number
                   )}
                 </div>
-                <div className="text-center mt-2">
-                  <p className="text-sm font-medium">{step.title}</p>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
-                </div>
+                <p className="text-xs mt-1 text-muted-foreground">{step.title}</p>
               </div>
               {index < steps.length - 1 && (
-                <div
-                  className={`h-0.5 w-20 mx-4 ${
-                    currentStep > step.number ? "bg-green-500" : "bg-muted"
-                  }`}
-                />
+                <div className={`h-0.5 w-16 mx-3 ${currentStep > step.number ? "bg-green-500" : "bg-muted"}`} />
               )}
             </div>
           ))}
         </div>
 
-        {/* Step 1: Scan Website */}
-        {currentStep === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Scan className="h-5 w-5" />
-                Enter Your Website URL
-              </CardTitle>
-              <CardDescription>
-                We'll scan your website and extract content to train your AI agent
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...step1Form}>
-                <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleStep1Submit)}>
+            {/* Step 1: Setup & Scan */}
+            {currentStep === 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Scan className="h-5 w-5" />
+                    Website Details
+                  </CardTitle>
+                  <CardDescription>
+                    Enter your website URL and we'll scan it to train your AI agent
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <FormField
-                    control={step1Form.control}
+                    control={form.control}
                     name="websiteUrl"
                     render={({ field }) => (
                       <FormItem>
@@ -327,183 +287,143 @@ Your role is to answer questions about the business based on the website content
                               placeholder="https://yourwebsite.com"
                               className="pl-10"
                               {...field}
-                              disabled={isScanning}
+                              onChange={(e) => handleUrlChange(e.target.value)}
+                              disabled={isProcessing}
                             />
                           </div>
                         </FormControl>
                         <FormDescription>
-                          Enter the main URL of your website. We'll scan multiple pages automatically.
+                          We'll crawl and extract content from your website
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {isScanning && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Scanning website...
-                      </div>
-                      <Progress value={scanProgress} className="h-2" />
-                    </div>
-                  )}
-
-                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <h4 className="font-medium flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                      <Database className="h-4 w-4" />
-                      What happens during scanning?
-                    </h4>
-                    <ul className="text-sm text-blue-600 dark:text-blue-400 mt-2 space-y-1">
-                      <li>• We crawl your website pages</li>
-                      <li>• Extract text content, FAQs, product info</li>
-                      <li>• Store it in your agent's knowledge base</li>
-                      <li>• Your agent can then answer questions about your business</li>
-                    </ul>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isScanning}>
-                      {isScanning ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Scanning...
-                        </>
-                      ) : (
-                        <>
-                          Scan Website
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Agent Details */}
-        {currentStep === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Agent Details
-              </CardTitle>
-              <CardDescription>
-                {scanResult && (
-                  <span className="flex items-center gap-2 text-green-600">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Successfully scanned {scanResult.pagesScanned} pages from your website
-                  </span>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...step2Form}>
-                <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-6">
                   <FormField
-                    control={step2Form.control}
+                    control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Agent Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="My Website Assistant" {...field} />
+                          <div className="relative">
+                            <Bot className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="My Website Assistant"
+                              className="pl-10"
+                              {...field}
+                              disabled={isProcessing}
+                            />
+                          </div>
                         </FormControl>
-                        <FormDescription>
-                          This name will be shown to your website visitors
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   <FormField
-                    control={step2Form.control}
+                    control={form.control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>Description (Optional)</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Helps visitors find information about our products and services..."
-                            rows={3}
+                            placeholder="Helps visitors find information about products and services..."
+                            rows={2}
                             {...field}
+                            disabled={isProcessing}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Brief description of what this agent does
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {scanResult?.businessInfo?.services && (
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <h4 className="font-medium text-sm mb-2">Detected Services:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {scanResult.businessInfo.services.map((service, index) => (
-                          <Badge key={index} variant="secondary">
-                            {service}
-                          </Badge>
-                        ))}
+                  {isProcessing && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span>
+                          {scanProgress < 20
+                            ? "Creating agent..."
+                            : scanProgress < 100
+                            ? "Scanning website..."
+                            : "Finalizing..."}
+                        </span>
                       </div>
+                      <Progress value={scanProgress} className="h-2" />
                     </div>
                   )}
 
-                  <div className="flex justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep(1)}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button type="submit">
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                  {/* Info Box */}
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="font-medium flex items-center gap-2 text-blue-700 dark:text-blue-300 text-sm">
+                      <Database className="h-4 w-4" />
+                      What happens next?
+                    </h4>
+                    <ul className="text-sm text-blue-600 dark:text-blue-400 mt-2 space-y-1">
+                      <li>• We'll crawl your website pages</li>
+                      <li>• Extract text, FAQs, product info</li>
+                      <li>• Train your agent on this content</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={isProcessing}>
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          Create & Scan
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Step 3: Customize */}
-        {currentStep === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                Customize Your Agent
-              </CardTitle>
-              <CardDescription>
-                Fine-tune how your agent behaves and responds (optional)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...step3Form}>
-                <form onSubmit={step3Form.handleSubmit(handleFinalSubmit)} className="space-y-6">
+            {/* Step 2: Customize */}
+            {currentStep === 2 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Customize Your Agent
+                  </CardTitle>
+                  <CardDescription>
+                    {scanComplete ? (
+                      <span className="flex items-center gap-2 text-green-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Scanned {pagesScanned} pages successfully
+                      </span>
+                    ) : (
+                      "Agent created - customize the experience"
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <FormField
-                    control={step3Form.control}
+                    control={form.control}
                     name="welcomeMessage"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Welcome Message</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Hi! I'm here to help you with any questions about our website. How can I assist you today?"
+                            placeholder="Hi! How can I help you today?"
                             rows={2}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          The first message visitors see when they open the chat
+                          First message visitors see when opening the chat
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -511,7 +431,7 @@ Your role is to answer questions about the business based on the website content
                   />
 
                   <FormField
-                    control={step3Form.control}
+                    control={form.control}
                     name="suggestedQuestions"
                     render={({ field }) => (
                       <FormItem>
@@ -524,62 +444,35 @@ Your role is to answer questions about the business based on the website content
                           />
                         </FormControl>
                         <FormDescription>
-                          One question per line. These will be shown as quick buttons.
+                          One question per line - shown as quick buttons
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={step3Form.control}
-                    name="systemPrompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>System Prompt (Advanced)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Custom instructions for your agent..."
-                            rows={4}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Leave blank to use our optimized default prompt
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex justify-between">
+                  <div className="flex justify-between pt-4">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentStep(2)}
+                      onClick={() => {
+                        if (createdAgentId) {
+                          setLocation(`/dashboard/agents/${createdAgentId}`);
+                        }
+                      }}
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
+                      Skip for now
                     </Button>
-                    <Button type="submit" disabled={createAgentMutation.isPending}>
-                      {createAgentMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Create Agent
-                        </>
-                      )}
+                    <Button type="button" onClick={handleFinalize}>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Finish Setup
                     </Button>
                   </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
+          </form>
+        </Form>
       </div>
     </DashboardLayout>
   );

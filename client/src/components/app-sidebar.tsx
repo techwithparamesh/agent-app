@@ -262,10 +262,7 @@ export function AppSidebar() {
                 >
                   <Link href="/dashboard/agents/website">
                     <Globe className="h-5 w-5 text-blue-500" />
-                    <div className="flex flex-col items-start">
-                      <span>Website Agent</span>
-                      <span className="text-[10px] text-muted-foreground">Scan & train from your site</span>
-                    </div>
+                    <span>Website Agent</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -279,10 +276,7 @@ export function AppSidebar() {
                 >
                   <Link href="/dashboard/agents/whatsapp">
                     <Smartphone className="h-5 w-5 text-green-500" />
-                    <div className="flex flex-col items-start">
-                      <span>WhatsApp Agent</span>
-                      <span className="text-[10px] text-muted-foreground">No website needed</span>
-                    </div>
+                    <span>WhatsApp Agent</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
