@@ -360,6 +360,23 @@ export default function ChatbotPage() {
                           </div>
                         </div>
                       ) : (
+                        /* Show suggested questions above chat too */
+                        <>
+                        {messages.length === 1 && currentAgent?.suggestedQuestions && (
+                          <div className="flex flex-wrap gap-2 justify-center mb-4 px-4">
+                            {currentAgent.suggestedQuestions.split("\n").filter(q => q.trim()).slice(0, 4).map((q, i) => (
+                              <Button
+                                key={i}
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => setInputValue(q.trim())}
+                              >
+                                {q.trim()}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
                         <div className="space-y-4">
                           {messages.map((message) => (
                             <div
@@ -413,6 +430,7 @@ export default function ChatbotPage() {
                           )}
                           <div ref={messagesEndRef} />
                         </div>
+                        </>
                       )}
                     </ScrollArea>
 

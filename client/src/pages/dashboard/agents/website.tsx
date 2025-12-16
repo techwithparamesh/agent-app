@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -35,11 +42,31 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 
+// Tone and purpose options
+const toneOptions = [
+  { value: "professional", label: "Professional" },
+  { value: "friendly", label: "Friendly" },
+  { value: "casual", label: "Casual" },
+  { value: "formal", label: "Formal" },
+  { value: "enthusiastic", label: "Enthusiastic" },
+  { value: "empathetic", label: "Empathetic" },
+];
+
+const purposeOptions = [
+  { value: "sales", label: "Sales - Convert visitors" },
+  { value: "support", label: "Support - Help customers" },
+  { value: "informational", label: "Informational - Provide info" },
+  { value: "lead_generation", label: "Lead Gen - Collect leads" },
+  { value: "booking", label: "Booking - Schedule appointments" },
+];
+
 // Form schema - collect URL and name together
 const formSchema = z.object({
   websiteUrl: z.string().url("Please enter a valid website URL"),
   name: z.string().min(1, "Agent name is required").max(255),
   description: z.string().max(1000).optional(),
+  toneOfVoice: z.string().optional(),
+  purpose: z.string().optional(),
   welcomeMessage: z.string().max(500).optional(),
   suggestedQuestions: z.string().optional(),
 });
@@ -62,6 +89,8 @@ export default function WebsiteAgentPage() {
       websiteUrl: "",
       name: "",
       description: "",
+      toneOfVoice: "friendly",
+      purpose: "support",
       welcomeMessage: "Hi! I'm here to help you with any questions about our website. How can I assist you today?",
       suggestedQuestions: "",
     },
@@ -74,6 +103,8 @@ export default function WebsiteAgentPage() {
         name: data.name,
         websiteUrl: data.websiteUrl,
         description: data.description || `AI assistant for ${data.name}`,
+        toneOfVoice: data.toneOfVoice,
+        purpose: data.purpose,
         welcomeMessage: data.welcomeMessage,
         suggestedQuestions: data.suggestedQuestions,
         agentType: "website",
@@ -82,44 +113,77 @@ export default function WebsiteAgentPage() {
     },
   });
 
-  // Scan website mutation
-  const scanMutation = useMutation({
-    mutationFn: async ({ agentId, url }: { agentId: number; url: string }) => {
-      const response = await apiRequest("POST", "/api/scan", { agentId, url });
-      return response.json();
-    },
-  });
+  // State for scan status message
+  const [scanStatusMessage, setScanStatusMessage] = useState("");
+
+  // Scan website using SSE for real-time progress
+  const scanWithProgress = async (agentId: number, url: string): Promise<{ pagesScanned: number }> => {
+    return new Promise((resolve, reject) => {
+      const encodedUrl = encodeURIComponent(url);
+      const eventSource = new EventSource(
+        `/api/scan/stream?agentId=${agentId}&url=${encodedUrl}`,
+        { withCredentials: true }
+      );
+
+      let pagesScanned = 0;
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'status') {
+            setScanProgress(data.progress || 0);
+            setScanStatusMessage(data.message || 'Scanning...');
+          } else if (data.type === 'page') {
+            pagesScanned++;
+            setScanStatusMessage(`Scanned: ${data.title || data.url}`);
+          } else if (data.type === 'complete') {
+            setScanProgress(100);
+            setScanStatusMessage('Scan complete!');
+            setPagesScanned(data.pagesScanned || pagesScanned);
+            eventSource.close();
+            resolve({ pagesScanned: data.pagesScanned || pagesScanned });
+          } else if (data.type === 'error') {
+            eventSource.close();
+            reject(new Error(data.message || 'Scan failed'));
+          }
+        } catch (e) {
+          console.error('SSE parse error:', e);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        eventSource.close();
+        // Don't reject on error - the scan might still have succeeded
+        resolve({ pagesScanned });
+      };
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        eventSource.close();
+        resolve({ pagesScanned });
+      }, 300000);
+    });
+  };
 
   // Handle step 1: Create agent and start scanning
   const handleStep1Submit = async (values: FormValues) => {
     setIsProcessing(true);
     setScanProgress(0);
+    setScanStatusMessage("Creating agent...");
 
     try {
       // Step 1: Create the agent first
-      setScanProgress(10);
+      setScanProgress(5);
       const agent = await createAgentMutation.mutateAsync(values);
       setCreatedAgentId(agent.id);
-      setScanProgress(20);
+      setScanProgress(10);
+      setScanStatusMessage("Agent created. Starting scan...");
 
-      // Step 2: Start scanning the website
-      const progressInterval = setInterval(() => {
-        setScanProgress((prev) => {
-          if (prev >= 85) {
-            clearInterval(progressInterval);
-            return 85;
-          }
-          return prev + 5;
-        });
-      }, 1000);
-
+      // Step 2: Start scanning the website with real-time progress
       try {
-        const scanResult = await scanMutation.mutateAsync({
-          agentId: agent.id,
-          url: values.websiteUrl,
-        });
+        const scanResult = await scanWithProgress(agent.id, values.websiteUrl);
         
-        clearInterval(progressInterval);
         setScanProgress(100);
         setPagesScanned(scanResult.pagesScanned || 1);
         setScanComplete(true);
@@ -130,7 +194,6 @@ export default function WebsiteAgentPage() {
           description: `Extracted content from ${scanResult.pagesScanned || 1} pages`,
         });
       } catch (scanError: any) {
-        clearInterval(progressInterval);
         // Even if scan fails, agent is created - let user continue
         setScanProgress(100);
         setCurrentStep(2);
@@ -166,6 +229,8 @@ export default function WebsiteAgentPage() {
     try {
       // Update agent with any customizations
       await apiRequest("PATCH", `/api/agents/${createdAgentId}`, {
+        toneOfVoice: form.getValues("toneOfVoice"),
+        purpose: form.getValues("purpose"),
         welcomeMessage: form.getValues("welcomeMessage"),
         suggestedQuestions: form.getValues("suggestedQuestions"),
       });
@@ -341,16 +406,70 @@ export default function WebsiteAgentPage() {
                     )}
                   />
 
+                  {/* Tone and Purpose */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="toneOfVoice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tone of Voice</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isProcessing}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select tone" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {toneOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="purpose"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Purpose</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isProcessing}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select purpose" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {purposeOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   {isProcessing && (
                     <div className="space-y-3 pt-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <span>
-                          {scanProgress < 20
-                            ? "Creating agent..."
-                            : scanProgress < 100
-                            ? "Scanning website..."
-                            : "Finalizing..."}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="truncate max-w-[300px]">
+                            {scanStatusMessage || "Processing..."}
+                          </span>
+                        </div>
+                        <span className="text-muted-foreground font-medium">
+                          {Math.round(scanProgress)}%
                         </span>
                       </div>
                       <Progress value={scanProgress} className="h-2" />

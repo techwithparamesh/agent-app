@@ -198,14 +198,9 @@ export function AppSidebar() {
                       {dashboardSubItems.map((item) => (
                         <SidebarMenuSubItem key={item.href + item.metric}>
                           <SidebarMenuSubButton asChild>
-                            <Link href={item.href} className="flex items-center justify-between w-full">
-                              <div className="flex items-center gap-2">
-                                <item.icon className="h-4 w-4" />
-                                <span>{item.label}</span>
-                              </div>
-                              <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                {getMetricValue(item.metric)}
-                              </span>
+                            <Link href={item.href} className="flex items-center gap-2">
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.label}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
