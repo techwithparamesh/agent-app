@@ -332,6 +332,8 @@ export default function WhatsAppAgentPage() {
     mutationFn: async (data: FormValues) => {
       const systemPrompt = generateSystemPrompt(data);
       const category = businessCategories.find((c) => c.id === data.businessCategory);
+      // Remove customFields from payload, only merge into businessInfo
+      const { customFields, ...rest } = data;
       const agentData = {
         name: `${data.businessName} WhatsApp Assistant`,
         description: data.description || `AI assistant for ${data.businessName}`,
@@ -351,7 +353,7 @@ export default function WhatsAppAgentPage() {
           workingHours: data.workingHours,
           description: data.description,
           category: category?.name,
-          ...data.customFields,
+          ...(customFields || {}),
         },
       };
       console.log("Creating WhatsApp agent with data:", agentData);
