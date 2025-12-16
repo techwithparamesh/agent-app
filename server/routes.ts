@@ -7,6 +7,7 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import puppeteer from "puppeteer";
+import whatsappRoutes from "./whatsapp/routes";
 
 // Schema for updating agents - only allow safe fields
 const updateAgentSchema = z.object({
@@ -40,6 +41,10 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Setup auth middleware
   await setupAuth(app);
+
+  // ========== WHATSAPP WEBHOOK ROUTES ==========
+  // Mount WhatsApp routes (before auth middleware for webhook verification)
+  app.use("/api/whatsapp", whatsappRoutes);
 
   // ========== AUTH ROUTES ==========
   
