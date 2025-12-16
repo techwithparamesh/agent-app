@@ -91,6 +91,11 @@ const businessCategories = [
       { id: "directions", label: "Location & Directions", icon: MapPin, default: true },
       { id: "doctors", label: "Doctor Information", icon: Users, default: true },
     ],
+    customFields: [
+      { id: "specialties", label: "Specialties / Services", placeholder: "e.g., General Medicine, Pediatrics, Dental, Physiotherapy" },
+      { id: "doctors", label: "Doctor Names", placeholder: "e.g., Dr. John Smith, Dr. Sarah Johnson" },
+      { id: "insurance", label: "Insurance Accepted", placeholder: "e.g., Star Health, ICICI Lombard, Mediassist" },
+    ],
   },
   {
     id: "salon",
@@ -107,6 +112,11 @@ const businessCategories = [
       { id: "offers", label: "Offers & Packages", icon: Star, default: true },
       { id: "feedback", label: "Feedback Collection", icon: MessageSquare, default: false },
       { id: "billing", label: "Payment & Billing", icon: Receipt, default: true },
+    ],
+    customFields: [
+      { id: "services", label: "Services Offered", placeholder: "e.g., Haircut, Facial, Manicure, Pedicure, Massage" },
+      { id: "stylists", label: "Stylist Names", placeholder: "e.g., Priya, Rahul, Anita" },
+      { id: "pricing", label: "Price Range", placeholder: "e.g., ₹200 - ₹5000" },
     ],
   },
   {
@@ -125,6 +135,11 @@ const businessCategories = [
       { id: "feedback", label: "Feedback & Reviews", icon: MessageSquare, default: false },
       { id: "billing", label: "Bill Payment", icon: Receipt, default: true },
     ],
+    customFields: [
+      { id: "cuisine", label: "Cuisine Type", placeholder: "e.g., Indian, Chinese, Italian, Multi-cuisine" },
+      { id: "specialties", label: "Signature Dishes", placeholder: "e.g., Butter Chicken, Biryani, Pizza" },
+      { id: "delivery", label: "Delivery Options", placeholder: "e.g., Swiggy, Zomato, Direct delivery" },
+    ],
   },
   {
     id: "automotive",
@@ -141,6 +156,11 @@ const businessCategories = [
       { id: "pickup", label: "Pickup/Drop Scheduling", icon: MapPin, default: false },
       { id: "history", label: "Service History", icon: FileText, default: false },
       { id: "billing", label: "Payment & Invoices", icon: CreditCard, default: true },
+    ],
+    customFields: [
+      { id: "services", label: "Services Offered", placeholder: "e.g., General Service, Oil Change, Brake Repair, AC Service" },
+      { id: "brands", label: "Vehicle Brands Serviced", placeholder: "e.g., All brands, Maruti, Honda, Hyundai" },
+      { id: "pricing", label: "Starting Price", placeholder: "e.g., Service from ₹2999" },
     ],
   },
   {
@@ -159,6 +179,11 @@ const businessCategories = [
       { id: "progress", label: "Progress Reports", icon: TrendingUp, default: false },
       { id: "support", label: "Doubt Clearing", icon: HeadphonesIcon, default: true },
     ],
+    customFields: [
+      { id: "courses", label: "Courses / Subjects", placeholder: "e.g., Mathematics, Science, English, Coding" },
+      { id: "levels", label: "Class Levels", placeholder: "e.g., Class 6-12, Competitive Exams, Professional" },
+      { id: "mode", label: "Teaching Mode", placeholder: "e.g., Online, Offline, Hybrid" },
+    ],
   },
   {
     id: "realestate",
@@ -175,6 +200,11 @@ const businessCategories = [
       { id: "documents", label: "Document Collection", icon: FileText, default: false },
       { id: "updates", label: "Construction Updates", icon: Building2, default: false },
     ],
+    customFields: [
+      { id: "properties", label: "Property Types", placeholder: "e.g., Apartments, Villas, Plots, Commercial" },
+      { id: "locations", label: "Areas Covered", placeholder: "e.g., Downtown, Suburbs, City Name" },
+      { id: "priceRange", label: "Price Range", placeholder: "e.g., ₹50L - ₹2Cr" },
+    ],
   },
   {
     id: "professional",
@@ -190,6 +220,11 @@ const businessCategories = [
       { id: "billing", label: "Invoice & Billing", icon: Receipt, default: true },
       { id: "status", label: "Case/Project Status", icon: Clock, default: false },
       { id: "support", label: "General Queries", icon: HeadphonesIcon, default: true },
+    ],
+    customFields: [
+      { id: "services", label: "Services Offered", placeholder: "e.g., Tax Filing, Legal Consultation, Business Advisory" },
+      { id: "expertise", label: "Areas of Expertise", placeholder: "e.g., Corporate Law, GST, Financial Planning" },
+      { id: "consultationFee", label: "Consultation Fee", placeholder: "e.g., ₹500 for 30 mins" },
     ],
   },
   {
@@ -208,6 +243,11 @@ const businessCategories = [
       { id: "support", label: "Product Support", icon: HeadphonesIcon, default: true },
       { id: "offers", label: "Offers & Discounts", icon: Star, default: true },
     ],
+    customFields: [
+      { id: "products", label: "Product Categories", placeholder: "e.g., Electronics, Clothing, Home Decor" },
+      { id: "deliveryAreas", label: "Delivery Areas", placeholder: "e.g., All India, City-specific, International" },
+      { id: "paymentModes", label: "Payment Options", placeholder: "e.g., UPI, COD, Credit Card, EMI" },
+    ],
   },
   {
     id: "general",
@@ -224,6 +264,10 @@ const businessCategories = [
       { id: "support", label: "Customer Support", icon: HeadphonesIcon, default: true },
       { id: "feedback", label: "Feedback Collection", icon: Star, default: false },
     ],
+    customFields: [
+      { id: "services", label: "Main Services", placeholder: "Describe your main services or products" },
+      { id: "specialties", label: "Specialties", placeholder: "What makes your business unique?" },
+    ],
   },
 ];
 
@@ -238,6 +282,8 @@ const formSchema = z.object({
   description: z.string().max(500).optional(),
   capabilities: z.array(z.string()).min(1, "Select at least one capability"),
   customPrompt: z.string().optional(),
+  // Dynamic category-specific fields
+  customFields: z.record(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -260,6 +306,7 @@ export default function WhatsAppAgentPage() {
       description: "",
       capabilities: [],
       customPrompt: "",
+      customFields: {},
     },
   });
 
@@ -299,6 +346,8 @@ export default function WhatsAppAgentPage() {
           email: data.email,
           address: data.address,
           workingHours: data.workingHours,
+          description: data.description,
+          ...data.customFields,
         },
       };
       const response = await apiRequest("POST", "/api/agents", agentData);
@@ -337,6 +386,18 @@ export default function WhatsAppAgentPage() {
       .map((capId) => category?.capabilities.find((c) => c.id === capId)?.label)
       .filter(Boolean);
 
+    // Build custom fields section
+    let customFieldsSection = "";
+    if (category?.customFields && data.customFields) {
+      const filledFields = category.customFields
+        .filter((cf) => data.customFields?.[cf.id])
+        .map((cf) => `- ${cf.label}: ${data.customFields?.[cf.id]}`);
+      
+      if (filledFields.length > 0) {
+        customFieldsSection = `\n## ${category.name} Information\n${filledFields.join("\n")}`;
+      }
+    }
+
     return `You are a helpful WhatsApp assistant for ${data.businessName}${category ? `, a ${category.name.toLowerCase()} business` : ""}.
 
 ## Business Information
@@ -345,6 +406,8 @@ ${data.phone ? `- Phone: ${data.phone}` : ""}
 ${data.email ? `- Email: ${data.email}` : ""}
 ${data.address ? `- Address: ${data.address}` : ""}
 ${data.workingHours ? `- Working Hours: ${data.workingHours}` : ""}
+${data.description ? `- About: ${data.description}` : ""}
+${customFieldsSection}
 
 ## Your Capabilities
 You can help customers with:
@@ -645,6 +708,35 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
                     )}
                   />
 
+                  {/* Category-specific fields */}
+                  {selectedCategory?.customFields && selectedCategory.customFields.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t">
+                      <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                        <selectedCategory.icon className={`h-4 w-4 ${selectedCategory.color}`} />
+                        {selectedCategory.name} Specific Information
+                      </h4>
+                      {selectedCategory.customFields.map((customField) => (
+                        <FormField
+                          key={customField.id}
+                          control={form.control}
+                          name={`customFields.${customField.id}` as any}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{customField.label}</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder={customField.placeholder} 
+                                  {...field}
+                                  value={field.value || ""}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex justify-between">
                     <Button
                       type="button"
@@ -656,8 +748,12 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => setCurrentStep(3)}
-                      disabled={!form.getValues("businessName")}
+                      onClick={async () => {
+                        const isValid = await form.trigger("businessName");
+                        if (isValid) {
+                          setCurrentStep(3);
+                        }
+                      }}
                     >
                       Continue
                       <ArrowRight className="ml-2 h-4 w-4" />
