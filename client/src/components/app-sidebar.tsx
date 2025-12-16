@@ -320,7 +320,7 @@ export function AppSidebar() {
                 >
                   <Link href="/dashboard/chatbot">
                     <MessageSquare className="h-5 w-5" />
-                    <span>Chatbot</span>
+                    <span>Test Agents</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

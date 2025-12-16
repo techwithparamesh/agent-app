@@ -33,6 +33,8 @@ import {
   Copy,
   Check,
   Zap,
+  Globe,
+  Smartphone,
 } from "lucide-react";
 
 interface ChatMessage {
@@ -266,7 +268,7 @@ export default function ChatbotPage() {
   };
 
   return (
-    <DashboardLayout title="Chatbot">
+    <DashboardLayout title="Test Agents">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat Area */}
@@ -283,7 +285,11 @@ export default function ChatbotPage() {
                         {agents?.map((agent) => (
                           <SelectItem key={agent.id} value={agent.id}>
                             <div className="flex items-center gap-2">
-                              <Bot className="h-4 w-4" />
+                              {(agent as any).agentType === 'whatsapp' ? (
+                                <Smartphone className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Globe className="h-4 w-4 text-blue-500" />
+                              )}
                               {agent.name}
                             </div>
                           </SelectItem>
@@ -317,7 +323,7 @@ export default function ChatbotPage() {
                       </div>
                       <h3 className="font-semibold text-lg mb-2">Select an Agent</h3>
                       <p className="text-muted-foreground">
-                        Choose an agent to start testing the chatbot.
+                        Choose an agent to start testing.
                       </p>
                     </div>
                   </div>

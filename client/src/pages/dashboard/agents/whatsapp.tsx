@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -331,12 +331,15 @@ export default function WhatsAppAgentPage() {
   const createAgentMutation = useMutation({
     mutationFn: async (data: FormValues) => {
       const systemPrompt = generateSystemPrompt(data);
+      const category = businessCategories.find((c) => c.id === data.businessCategory);
       const agentData = {
         name: `${data.businessName} WhatsApp Assistant`,
         description: data.description || `AI assistant for ${data.businessName}`,
         systemPrompt,
         welcomeMessage: generateWelcomeMessage(data),
         suggestedQuestions: generateSuggestedQuestions(data).join("\n"),
+        purpose: "customer_support", // Default purpose for WhatsApp agents
+        toneOfVoice: "professional", // Default tone
         agentType: "whatsapp",
         businessCategory: data.businessCategory,
         capabilities: data.capabilities,
@@ -347,10 +350,17 @@ export default function WhatsAppAgentPage() {
           address: data.address,
           workingHours: data.workingHours,
           description: data.description,
+          category: category?.name,
           ...data.customFields,
         },
       };
+      console.log("Creating WhatsApp agent with data:", agentData);
       const response = await apiRequest("POST", "/api/agents", agentData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Agent creation failed:", errorData);
+        throw new Error(errorData.message || "Failed to create agent");
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -466,8 +476,21 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
   };
 
   const handleSubmit = async (values: FormValues) => {
-    await createAgentMutation.mutateAsync(values);
+    console.log("Form submitted with values:", values);
+    try {
+      await createAgentMutation.mutateAsync(values);
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
   };
+
+  // Log form errors for debugging
+  const formErrors = form.formState.errors;
+  useEffect(() => {
+    if (Object.keys(formErrors).length > 0) {
+      console.log("Form validation errors:", formErrors);
+    }
+  }, [formErrors]);
 
   const steps = [
     { number: 1, title: "Business Type", description: "Select your category" },
@@ -902,7 +925,37 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button type="submit" disabled={createAgentMutation.isPending}>
+                    <Button 
+                      type="button" 
+                      disabled={createAgentMutation.isPending}
+                      onClick={async () => {
+                        // First validate the form
+                        const isValid = await form.trigger();
+                        console.log("Form validation result:", isValid, form.formState.errors);
+                        
+                        if (!isValid) {
+                          const errors = form.formState.errors;
+                          const errorMessages = Object.entries(errors)
+                            .map(([key, error]) => `${key}: ${(error as any)?.message || 'invalid'}`)
+                            .join(", ");
+                          toast({
+                            title: "Please fix the errors",
+                            description: errorMessages || "Some required fields are missing",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        // Get form values and submit
+                        const values = form.getValues();
+                        console.log("Submitting form with values:", values);
+                        try {
+                          await createAgentMutation.mutateAsync(values);
+                        } catch (error) {
+                          console.error("Mutation error:", error);
+                        }
+                      }}
+                    >
                       {createAgentMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
