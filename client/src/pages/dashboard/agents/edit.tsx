@@ -422,7 +422,8 @@ export default function EditAgent() {
         });
       }
     }
-  }, [agent, websiteForm, whatsappForm]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent]);
 
   // Website agent update mutation
   const updateWebsiteMutation = useMutation({
