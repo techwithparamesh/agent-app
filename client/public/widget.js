@@ -322,11 +322,111 @@
       text-decoration: none;
     }
 
-    @media (max-width: 480px) {
+    /* Tablet styles */
+    @media (max-width: 768px) {
       .af-widget-chat {
-        width: calc(100vw - 40px);
-        height: calc(100vh - 120px);
-        ${position.includes('right') ? 'right: -10px;' : 'left: -10px;'}
+        width: 340px;
+        height: 480px;
+      }
+    }
+
+    /* Mobile styles */
+    @media (max-width: 480px) {
+      .af-widget-container {
+        ${position.includes('bottom') ? 'bottom: 12px;' : 'top: 12px;'}
+        ${position.includes('right') ? 'right: 12px;' : 'left: 12px;'}
+      }
+
+      .af-widget-button {
+        width: 52px;
+        height: 52px;
+      }
+
+      .af-widget-button svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .af-widget-chat {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        z-index: 9999999;
+      }
+
+      .af-widget-header {
+        padding: 14px 16px;
+        border-radius: 0;
+      }
+
+      .af-widget-header-avatar {
+        width: 36px;
+        height: 36px;
+      }
+
+      .af-widget-header-info h3 {
+        font-size: 15px;
+      }
+
+      .af-widget-header-info p {
+        font-size: 11px;
+      }
+
+      .af-widget-messages {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .af-widget-message {
+        max-width: 88%;
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 14px;
+      }
+
+      .af-widget-input-area {
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .af-widget-input {
+        padding: 10px 14px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+
+      .af-widget-send {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+      }
+
+      .af-widget-send svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .af-widget-powered {
+        padding: 6px;
+        font-size: 10px;
+      }
+    }
+
+    /* Extra small mobile */
+    @media (max-width: 360px) {
+      .af-widget-message {
+        max-width: 90%;
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .af-widget-input {
+        padding: 8px 12px;
       }
     }
   `;
