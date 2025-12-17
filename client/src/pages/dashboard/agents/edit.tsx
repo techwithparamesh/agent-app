@@ -916,6 +916,7 @@ export default function EditAgent() {
                       </div>
                     </div>
 
+
                     <FormField
                       control={whatsappForm.control}
                       name="welcomeMessage"
@@ -931,6 +932,27 @@ export default function EditAgent() {
                           </FormControl>
                           <FormDescription>
                             The first message users see when they message on WhatsApp
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={whatsappForm.control}
+                      name="suggestedQuestions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Suggested Questions</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder={"I want to book an appointment\nCheck my pending payment"}
+                              rows={2}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enter one question per line. These will be shown as quick suggestions to users.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
