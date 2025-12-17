@@ -22,14 +22,14 @@ const updateAgentSchema = z.object({
   isActive: z.boolean().optional(),
   // Widget customization
   widgetConfig: z.object({
-    displayName: z.string().max(100).optional(),
-    primaryColor: z.string().max(20).optional(),
-    position: z.enum(['bottom-right', 'bottom-left', 'top-right', 'top-left']).optional(),
-    avatarUrl: z.string().url().optional().or(z.literal('')),
-    showBranding: z.boolean().optional(),
-    autoOpen: z.boolean().optional(),
-    responseFormat: z.enum(['structured', 'conversational']).optional(),
-  }).optional(),
+    displayName: z.string().max(100).optional().nullable(),
+    primaryColor: z.string().max(20).optional().nullable(),
+    position: z.string().max(20).optional().nullable(),
+    avatarUrl: z.string().optional().nullable(),
+    showBranding: z.boolean().optional().nullable(),
+    autoOpen: z.boolean().optional().nullable(),
+    responseFormat: z.string().optional().nullable(),
+  }).optional().nullable(),
 });
 
 // Auth schemas
@@ -256,6 +256,7 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", JSON.stringify(error.errors));
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Error updating agent:", error);
