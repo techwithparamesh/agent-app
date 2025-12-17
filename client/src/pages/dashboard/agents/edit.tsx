@@ -288,6 +288,13 @@ const websiteFormSchema = z.object({
   welcomeMessage: z.string().max(500).optional(),
   suggestedQuestions: z.string().max(2000).optional(),
   isActive: z.boolean().optional(),
+  // Widget customization
+  widgetDisplayName: z.string().max(100).optional(),
+  widgetPrimaryColor: z.string().max(20).optional(),
+  widgetPosition: z.string().optional(),
+  widgetAvatarUrl: z.string().optional(),
+  widgetShowBranding: z.boolean().optional(),
+  widgetAutoOpen: z.boolean().optional(),
 });
 
 // Form schema for WhatsApp agents
@@ -347,6 +354,12 @@ export default function EditAgent() {
       welcomeMessage: "",
       suggestedQuestions: "",
       isActive: true,
+      widgetDisplayName: "",
+      widgetPrimaryColor: "#6366f1",
+      widgetPosition: "bottom-right",
+      widgetAvatarUrl: "",
+      widgetShowBranding: true,
+      widgetAutoOpen: false,
     },
   });
 
@@ -405,6 +418,7 @@ export default function EditAgent() {
         }
         setCustomFieldValues(customFields);
       } else {
+        const agentWidgetConfig = (agent as any).widgetConfig || {};
         websiteForm.reset({
           name: agent.name,
           websiteUrl: agent.websiteUrl || "",
@@ -415,6 +429,12 @@ export default function EditAgent() {
           welcomeMessage: agent.welcomeMessage || "",
           suggestedQuestions: agent.suggestedQuestions || "",
           isActive: agent.isActive ?? true,
+          widgetDisplayName: agentWidgetConfig.displayName || "",
+          widgetPrimaryColor: agentWidgetConfig.primaryColor || "#6366f1",
+          widgetPosition: agentWidgetConfig.position || "bottom-right",
+          widgetAvatarUrl: agentWidgetConfig.avatarUrl || "",
+          widgetShowBranding: agentWidgetConfig.showBranding !== false,
+          widgetAutoOpen: agentWidgetConfig.autoOpen === true,
         });
       }
     }
@@ -434,6 +454,14 @@ export default function EditAgent() {
         welcomeMessage: data.welcomeMessage || null,
         suggestedQuestions: data.suggestedQuestions || null,
         isActive: data.isActive,
+        widgetConfig: {
+          displayName: data.widgetDisplayName || null,
+          primaryColor: data.widgetPrimaryColor || "#6366f1",
+          position: data.widgetPosition || "bottom-right",
+          avatarUrl: data.widgetAvatarUrl || null,
+          showBranding: data.widgetShowBranding !== false,
+          autoOpen: data.widgetAutoOpen === true,
+        },
       };
       const response = await apiRequest("PATCH", `/api/agents/${agentId}`, cleanedData);
       return response.json();
@@ -1234,6 +1262,112 @@ export default function EditAgent() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                {/* Widget Appearance Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Widget Appearance
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Customize how the chat widget looks on your website
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={websiteForm.control}
+                      name="widgetDisplayName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Display Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="AI Assistant"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Name shown in the chat header
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Primary Color</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={websiteForm.watch("widgetPrimaryColor") || "#6366f1"}
+                          onChange={(e) => websiteForm.setValue("widgetPrimaryColor", e.target.value)}
+                          className="w-14 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          value={websiteForm.watch("widgetPrimaryColor") || "#6366f1"}
+                          onChange={(e) => websiteForm.setValue("widgetPrimaryColor", e.target.value)}
+                          placeholder="#6366f1"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Widget Position</label>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={websiteForm.watch("widgetPosition") || "bottom-right"}
+                        onChange={(e) => websiteForm.setValue("widgetPosition", e.target.value)}
+                      >
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="top-left">Top Left</option>
+                      </select>
+                    </div>
+
+                    <FormField
+                      control={websiteForm.control}
+                      name="widgetAvatarUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Avatar URL (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://example.com/avatar.png"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={websiteForm.watch("widgetShowBranding") !== false}
+                        onChange={(e) => websiteForm.setValue("widgetShowBranding", e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary"
+                      />
+                      <span className="text-sm">Show "Powered by AgentForge"</span>
+                    </label>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={websiteForm.watch("widgetAutoOpen") === true}
+                        onChange={(e) => websiteForm.setValue("widgetAutoOpen", e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary"
+                      />
+                      <span className="text-sm">Auto-open chat on page load</span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}

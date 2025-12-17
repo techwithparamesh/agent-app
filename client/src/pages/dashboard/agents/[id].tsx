@@ -38,6 +38,9 @@ import {
   AlertCircle,
   CheckCircle2,
   ExternalLink,
+  Palette,
+  Code,
+  Eye,
 } from "lucide-react";
 
 interface WhatsAppConfig {
@@ -57,6 +60,16 @@ export default function AgentDetails() {
   const agentId = params?.id;
   const { toast } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Widget customization state
+  const [widgetConfig, setWidgetConfig] = useState({
+    displayName: '',
+    primaryColor: '#6366f1',
+    position: 'bottom-right' as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left',
+    avatarUrl: '',
+    showBranding: true,
+    autoOpen: false,
+  });
 
   // WhatsApp config form state
   const [whatsappForm, setWhatsappForm] = useState({
@@ -103,6 +116,53 @@ export default function AgentDetails() {
       });
     }
   }, [whatsappConfig]);
+
+  // Initialize widget config from agent data
+  useEffect(() => {
+    if (agent) {
+      const agentWidgetConfig = (agent as any).widgetConfig || {};
+      setWidgetConfig({
+        displayName: agentWidgetConfig.displayName || agent.name || '',
+        primaryColor: agentWidgetConfig.primaryColor || '#6366f1',
+        position: agentWidgetConfig.position || 'bottom-right',
+        avatarUrl: agentWidgetConfig.avatarUrl || '',
+        showBranding: agentWidgetConfig.showBranding !== false,
+        autoOpen: agentWidgetConfig.autoOpen === true,
+      });
+    }
+  }, [agent]);
+
+  // Generate embed code
+  const generateEmbedCode = () => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    let code = `<script src="${baseUrl}/widget.js"`;
+    code += `\n  data-agent-id="${agentId}"`;
+    
+    if (widgetConfig.displayName && widgetConfig.displayName !== 'AI Assistant') {
+      code += `\n  data-agent-name="${widgetConfig.displayName}"`;
+    }
+    if (widgetConfig.primaryColor && widgetConfig.primaryColor !== '#6366f1') {
+      code += `\n  data-primary-color="${widgetConfig.primaryColor}"`;
+    }
+    if (widgetConfig.position && widgetConfig.position !== 'bottom-right') {
+      code += `\n  data-position="${widgetConfig.position}"`;
+    }
+    if (widgetConfig.avatarUrl) {
+      code += `\n  data-avatar-url="${widgetConfig.avatarUrl}"`;
+    }
+    if (!widgetConfig.showBranding) {
+      code += `\n  data-show-branding="false"`;
+    }
+    if (widgetConfig.autoOpen) {
+      code += `\n  data-auto-open="true"`;
+    }
+    if (agent?.welcomeMessage) {
+      code += `\n  data-greeting="${agent.welcomeMessage.replace(/"/g, '&quot;')}"`;
+    }
+    
+    code += `>\n</script>`;
+    return code;
+  };
 
   // Save WhatsApp config mutation
   const saveWhatsappConfigMutation = useMutation({
@@ -726,172 +786,392 @@ export default function AgentDetails() {
               </TabsContent>
             </Tabs>
           ) : (
-            /* Original layout for Website Agents */
-            <>
-              {/* Agent Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Mic className="h-4 w-4 text-primary" />
-                      Tone of Voice
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Badge variant="outline" className="capitalize">
-                      {agent.toneOfVoice || "Not set"}
-                    </Badge>
-                  </CardContent>
-                </Card>
+            /* Layout for Website Agents with Tabs */
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="widget">
+                  <Code className="h-4 w-4 mr-2" />
+                  Widget Setup
+                </TabsTrigger>
+                <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
+              </TabsList>
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Target className="h-4 w-4 text-primary" />
-                      Purpose
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Badge variant="outline" className="capitalize">
-                      {agent.purpose?.replace("_", " ") || "Not set"}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              </div>
+              <TabsContent value="overview" className="space-y-6">
+                {/* Agent Configuration */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Mic className="h-4 w-4 text-primary" />
+                        Tone of Voice
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Badge variant="outline" className="capitalize">
+                        {agent.toneOfVoice || "Not set"}
+                      </Badge>
+                    </CardContent>
+                  </Card>
 
-              {/* System Prompt */}
-              {agent.systemPrompt && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      System Prompt
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-3 rounded-lg bg-muted/50 text-sm font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
-                      {agent.systemPrompt}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Target className="h-4 w-4 text-primary" />
+                        Purpose
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Badge variant="outline" className="capitalize">
+                        {agent.purpose?.replace("_", " ") || "Not set"}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              {/* Welcome Message & Suggested Questions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <MessageCircle className="h-4 w-4 text-primary" />
-                      Welcome Message
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {agent.welcomeMessage || "Hi! 👋 How can I help you today?"}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <HelpCircle className="h-4 w-4 text-primary" />
-                      Suggested Questions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {agent.suggestedQuestions ? (
-                      <div className="space-y-1.5">
-                        {agent.suggestedQuestions.split("\n").filter(q => q.trim()).map((q, i) => (
-                          <Badge key={i} variant="secondary" className="mr-1 mb-1">
-                            {q.trim()}
-                          </Badge>
-                        ))}
+                {/* System Prompt */}
+                {agent.systemPrompt && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        System Prompt
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="p-3 rounded-lg bg-muted/50 text-sm font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                        {agent.systemPrompt}
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No suggested questions set</p>
-                    )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Welcome Message & Suggested Questions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <MessageCircle className="h-4 w-4 text-primary" />
+                        Welcome Message
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {agent.welcomeMessage || "Hi! 👋 How can I help you today?"}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <HelpCircle className="h-4 w-4 text-primary" />
+                        Suggested Questions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {agent.suggestedQuestions ? (
+                        <div className="space-y-1.5">
+                          {agent.suggestedQuestions.split("\n").filter(q => q.trim()).map((q, i) => (
+                            <Badge key={i} variant="secondary" className="mr-1 mb-1">
+                              {q.trim()}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No suggested questions set</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="widget" className="space-y-6">
+                {/* Widget Customization */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Palette className="h-5 w-5 text-primary" />
+                      Widget Appearance
+                    </CardTitle>
+                    <CardDescription>
+                      Customize how the chat widget looks on your website
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName">Agent Display Name</Label>
+                        <Input
+                          id="displayName"
+                          placeholder="AI Assistant"
+                          value={widgetConfig.displayName}
+                          onChange={(e) => setWidgetConfig({ ...widgetConfig, displayName: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Name shown in the chat header
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="primaryColor">Primary Color</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="primaryColor"
+                            type="color"
+                            value={widgetConfig.primaryColor}
+                            onChange={(e) => setWidgetConfig({ ...widgetConfig, primaryColor: e.target.value })}
+                            className="w-14 h-10 p-1 cursor-pointer"
+                          />
+                          <Input
+                            value={widgetConfig.primaryColor}
+                            onChange={(e) => setWidgetConfig({ ...widgetConfig, primaryColor: e.target.value })}
+                            placeholder="#6366f1"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="position">Widget Position</Label>
+                        <select
+                          id="position"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={widgetConfig.position}
+                          onChange={(e) => setWidgetConfig({ ...widgetConfig, position: e.target.value as any })}
+                        >
+                          <option value="bottom-right">Bottom Right</option>
+                          <option value="bottom-left">Bottom Left</option>
+                          <option value="top-right">Top Right</option>
+                          <option value="top-left">Top Left</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="avatarUrl">Avatar URL (Optional)</Label>
+                        <Input
+                          id="avatarUrl"
+                          placeholder="https://example.com/avatar.png"
+                          value={widgetConfig.avatarUrl}
+                          onChange={(e) => setWidgetConfig({ ...widgetConfig, avatarUrl: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={widgetConfig.showBranding}
+                          onChange={(e) => setWidgetConfig({ ...widgetConfig, showBranding: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary"
+                        />
+                        <span className="text-sm">Show "Powered by AgentForge"</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={widgetConfig.autoOpen}
+                          onChange={(e) => setWidgetConfig({ ...widgetConfig, autoOpen: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary"
+                        />
+                        <span className="text-sm">Auto-open chat on page load</span>
+                      </label>
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
 
-              {/* Knowledge Base */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
+                {/* Widget Preview */}
+                <Card>
+                  <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Database className="h-5 w-5 text-primary" />
-                      Knowledge Base
+                      <Eye className="h-5 w-5 text-primary" />
+                      Preview
                     </CardTitle>
-                    <Link href={`/dashboard/scan?agent=${agent.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Scan className="mr-2 h-4 w-4" />
-                        Scan Website
-                      </Button>
-                    </Link>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {kbLoading ? (
-                    <div className="space-y-3">
-                      {[...Array(3)].map((_, i) => (
-                        <Skeleton key={i} className="h-16 w-full" />
-                      ))}
-                    </div>
-                  ) : knowledgeBase && knowledgeBase.length > 0 ? (
-                    <div className="space-y-3">
-                      {knowledgeBase.slice(0, 5).map((entry) => (
-                        <div
-                          key={entry.id}
-                          className="p-4 rounded-lg border border-border bg-muted/30"
+                  </CardHeader>
+                  <CardContent>
+                    <div className="border rounded-lg p-4 bg-slate-100 dark:bg-slate-900 min-h-[200px] relative overflow-hidden">
+                      {/* Mini widget preview */}
+                      <div 
+                        className={`absolute ${widgetConfig.position.includes('bottom') ? 'bottom-4' : 'top-4'} ${widgetConfig.position.includes('right') ? 'right-4' : 'left-4'}`}
+                      >
+                        <div 
+                          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                          style={{ backgroundColor: widgetConfig.primaryColor }}
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium truncate">
-                                {entry.title || "Untitled"}
-                              </h4>
-                              {entry.section && (
-                                <p className="text-sm text-muted-foreground">
-                                  {entry.section}
-                                </p>
-                              )}
-                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                {entry.content.substring(0, 150)}...
-                              </p>
+                          <MessageSquare className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Preview chat window */}
+                      <div 
+                        className={`absolute ${widgetConfig.position.includes('bottom') ? 'bottom-20' : 'top-20'} ${widgetConfig.position.includes('right') ? 'right-4' : 'left-4'} w-64 rounded-lg shadow-xl overflow-hidden bg-white dark:bg-slate-800`}
+                      >
+                        <div 
+                          className="p-3 text-white flex items-center gap-2"
+                          style={{ backgroundColor: widgetConfig.primaryColor }}
+                        >
+                          {widgetConfig.avatarUrl ? (
+                            <img src={widgetConfig.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                              <Globe className="h-4 w-4" />
                             </div>
-                            <Badge variant="secondary" className="flex-shrink-0">
-                              {entry.contentType || "text"}
-                            </Badge>
+                          )}
+                          <div>
+                            <p className="font-medium text-sm">{widgetConfig.displayName || 'AI Assistant'}</p>
+                            <p className="text-xs opacity-80">Always here to help</p>
                           </div>
                         </div>
-                      ))}
-                      {knowledgeBase.length > 5 && (
-                        <Link href={`/dashboard/knowledge?agent=${agent.id}`}>
-                          <Button variant="ghost" className="w-full">
-                            View all {knowledgeBase.length} entries
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                        <Database className="h-6 w-6 text-muted-foreground" />
+                        <div className="p-3 bg-gray-50 dark:bg-slate-700/50 text-xs">
+                          <div className="bg-white dark:bg-slate-600 p-2 rounded-lg shadow-sm">
+                            {agent.welcomeMessage || "Hi! How can I help you today?"}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-muted-foreground mb-4">
-                        No knowledge base entries yet
-                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Embed Code */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="h-5 w-5 text-primary" />
+                      Embed Code
+                    </CardTitle>
+                    <CardDescription>
+                      Copy and paste this code into your website's HTML, just before the closing &lt;/body&gt; tag
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="relative">
+                      <pre className="p-4 rounded-lg bg-slate-900 text-green-400 text-sm overflow-x-auto font-mono">
+                        {generateEmbedCode()}
+                      </pre>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(generateEmbedCode());
+                          setCopied("embedCode");
+                          setTimeout(() => setCopied(null), 2000);
+                          toast({
+                            title: "Copied!",
+                            description: "Embed code copied to clipboard",
+                          });
+                        }}
+                      >
+                        {copied === "embedCode" ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1 text-green-500" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy Code
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">💡 Installation Tips</h4>
+                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                        <li>• Works with any website: HTML, WordPress, Shopify, React, etc.</li>
+                        <li>• Place the script just before &lt;/body&gt; for best performance</li>
+                        <li>• The widget loads asynchronously and won't slow down your site</li>
+                        <li>• Test the widget using the "Test Chatbot" button above</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="knowledge" className="space-y-6">
+                {/* Knowledge Base */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Database className="h-5 w-5 text-primary" />
+                        Knowledge Base
+                      </CardTitle>
                       <Link href={`/dashboard/scan?agent=${agent.id}`}>
-                        <Button>
+                        <Button variant="outline" size="sm">
                           <Scan className="mr-2 h-4 w-4" />
-                          Scan Website to Add Content
+                          Scan Website
                         </Button>
                       </Link>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </>
+                  </CardHeader>
+                  <CardContent>
+                    {kbLoading ? (
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                          <Skeleton key={i} className="h-16 w-full" />
+                        ))}
+                      </div>
+                    ) : knowledgeBase && knowledgeBase.length > 0 ? (
+                      <div className="space-y-3">
+                        {knowledgeBase.slice(0, 5).map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="p-4 rounded-lg border border-border bg-muted/30"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium truncate">
+                                  {entry.title || "Untitled"}
+                                </h4>
+                                {entry.section && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {entry.section}
+                                  </p>
+                                )}
+                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                  {entry.content.substring(0, 150)}...
+                                </p>
+                              </div>
+                              <Badge variant="secondary" className="flex-shrink-0">
+                                {entry.contentType || "text"}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                        {knowledgeBase.length > 5 && (
+                          <Link href={`/dashboard/knowledge?agent=${agent.id}`}>
+                            <Button variant="ghost" className="w-full">
+                              View all {knowledgeBase.length} entries
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                          <Database className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-muted-foreground mb-4">
+                          No knowledge base entries yet
+                        </p>
+                        <Link href={`/dashboard/scan?agent=${agent.id}`}>
+                          <Button>
+                            <Scan className="mr-2 h-4 w-4" />
+                            Scan Website to Add Content
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>

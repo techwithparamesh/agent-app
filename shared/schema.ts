@@ -76,6 +76,16 @@ export const agents = mysqlTable("agents", {
     workingHours?: string;
   }>(),
   language: varchar("language", { length: 10 }).default("en"),
+  // Widget Customization fields
+  widgetConfig: json("widget_config").$type<{
+    displayName?: string;
+    primaryColor?: string;
+    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    avatarUrl?: string;
+    showBranding?: boolean;
+    autoOpen?: boolean;
+    responseFormat?: 'structured' | 'conversational';
+  }>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });

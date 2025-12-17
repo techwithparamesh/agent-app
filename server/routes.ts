@@ -20,6 +20,16 @@ const updateAgentSchema = z.object({
   welcomeMessage: z.string().max(500).optional().nullable(),
   suggestedQuestions: z.string().max(2000).optional().nullable(),
   isActive: z.boolean().optional(),
+  // Widget customization
+  widgetConfig: z.object({
+    displayName: z.string().max(100).optional(),
+    primaryColor: z.string().max(20).optional(),
+    position: z.enum(['bottom-right', 'bottom-left', 'top-right', 'top-left']).optional(),
+    avatarUrl: z.string().url().optional().or(z.literal('')),
+    showBranding: z.boolean().optional(),
+    autoOpen: z.boolean().optional(),
+    responseFormat: z.enum(['structured', 'conversational']).optional(),
+  }).optional(),
 });
 
 // Auth schemas
@@ -2809,17 +2819,32 @@ export async function registerRoutes(
         .join("\n\n---\n\n");
 
       // Use custom systemPrompt if available, otherwise generate one
-      const basePrompt = agent.systemPrompt || `You are ${agent.name}, an AI assistant for a website.
-${agent.description ? `Description: ${agent.description}` : ""}
+      const basePrompt = agent.systemPrompt || `You are ${agent.name}, a helpful AI assistant.
+${agent.description ? `About: ${agent.description}` : ""}
 Tone: ${agent.toneOfVoice || "friendly and professional"}
-Purpose: ${agent.purpose || "support"}
 
-Instructions:
-- Be helpful, friendly, and concise
-- Use the knowledge base information to answer questions accurately
-- If you don't have specific information, offer to help in other ways
-- Keep responses brief but informative (2-3 sentences when possible)
-- Don't mention that you're an AI unless directly asked`;
+CRITICAL RESPONSE RULES:
+1. Keep responses SHORT - maximum 3-4 sentences for simple questions
+2. Use bullet points for listing items (use - for each item)
+3. NO headers (avoid # or ##) unless absolutely necessary
+4. NO long paragraphs - break into short bullet points
+5. Answer the specific question directly first
+6. Be conversational, not formal
+
+Example good response for "What services do you offer?":
+We offer:
+- Web Development
+- Digital Marketing  
+- SEO Services
+- Mobile App Development
+
+Let me know which one interests you!
+
+Example BAD response (too long, too formal):
+## Our Services
+We are a comprehensive digital agency offering a wide range of services including web development where we create custom WordPress sites...
+
+Remember: SHORT, CLEAR, BULLET POINTS when listing things.`;
 
       const systemPrompt = `${basePrompt}
 
@@ -2844,7 +2869,7 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
 
       const completion = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 512,
+        max_tokens: 256,
         system: systemPrompt,
         messages: [{ role: "user", content: message }],
       });
