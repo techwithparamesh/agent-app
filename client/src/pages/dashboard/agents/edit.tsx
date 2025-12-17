@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   Form,
@@ -862,9 +861,11 @@ export default function EditAgent() {
                             }`}
                             onClick={() => toggleCapability(cap.id)}
                           >
-                            <Checkbox
+                            <input
+                              type="checkbox"
                               checked={isSelected}
-                              onCheckedChange={() => toggleCapability(cap.id)}
+                              onChange={() => toggleCapability(cap.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary cursor-pointer"
                             />
                             <CapIcon className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
                             <span className="text-sm font-medium">{cap.label}</span>
