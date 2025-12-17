@@ -39,6 +39,8 @@ import {
   Bot,
   Database,
   Sparkles,
+  Palette,
+  Save,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -69,6 +71,9 @@ const formSchema = z.object({
   purpose: z.string().optional(),
   welcomeMessage: z.string().max(500).optional(),
   suggestedQuestions: z.string().optional(),
+  // Widget customization
+  widgetDisplayName: z.string().max(100).optional(),
+  widgetPrimaryColor: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -93,6 +98,8 @@ export default function WebsiteAgentPage() {
       purpose: "support",
       welcomeMessage: "Hi! I'm here to help you with any questions about our website. How can I assist you today?",
       suggestedQuestions: "",
+      widgetDisplayName: "",
+      widgetPrimaryColor: "#6366f1",
     },
   });
 
@@ -227,12 +234,19 @@ export default function WebsiteAgentPage() {
     if (!createdAgentId) return;
 
     try {
-      // Update agent with any customizations
+      // Update agent with any customizations including widget config
       await apiRequest("PATCH", `/api/agents/${createdAgentId}`, {
         toneOfVoice: form.getValues("toneOfVoice"),
         purpose: form.getValues("purpose"),
         welcomeMessage: form.getValues("welcomeMessage"),
         suggestedQuestions: form.getValues("suggestedQuestions"),
+        widgetConfig: {
+          displayName: form.getValues("widgetDisplayName") || form.getValues("name"),
+          primaryColor: form.getValues("widgetPrimaryColor") || "#6366f1",
+          position: "bottom-right",
+          showBranding: true,
+          autoOpen: false,
+        },
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/agents"] });
@@ -382,6 +396,9 @@ export default function WebsiteAgentPage() {
                             />
                           </div>
                         </FormControl>
+                        <FormDescription>
+                          Internal name for your dashboard only
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -527,50 +544,106 @@ export default function WebsiteAgentPage() {
                     )}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="welcomeMessage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Welcome Message</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Hi! How can I help you today?"
-                            rows={2}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          First message visitors see when opening the chat
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardContent className="space-y-6">
+                  {/* Chat Experience */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Chat Experience
+                    </h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="welcomeMessage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Welcome Message</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Hi! How can I help you today?"
+                              rows={2}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            First message visitors see when opening the chat
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="suggestedQuestions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Suggested Questions</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="What services do you offer?&#10;How can I contact you?&#10;What are your hours?"
-                            rows={3}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          One question per line - shown as quick buttons
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="suggestedQuestions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Suggested Questions</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="What services do you offer?&#10;How can I contact you?&#10;What are your hours?"
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            One question per line - shown as quick buttons
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <div className="flex justify-between pt-4">
+                  {/* Widget Appearance */}
+                  <div className="space-y-4 pt-4 border-t">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Widget Appearance
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="widgetDisplayName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Display Name (Visitors See This)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={form.getValues("name") || "AI Assistant"}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Appears in the chat widget header
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Primary Color</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={form.watch("widgetPrimaryColor") || "#6366f1"}
+                            onChange={(e) => form.setValue("widgetPrimaryColor", e.target.value)}
+                            className="w-14 h-10 p-1 cursor-pointer"
+                          />
+                          <Input
+                            value={form.watch("widgetPrimaryColor") || "#6366f1"}
+                            onChange={(e) => form.setValue("widgetPrimaryColor", e.target.value)}
+                            placeholder="#6366f1"
+                            className="flex-1"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Widget theme color</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-4 border-t">
                     <Button
                       type="button"
                       variant="outline"
@@ -583,8 +656,8 @@ export default function WebsiteAgentPage() {
                       Skip for now
                     </Button>
                     <Button type="button" onClick={handleFinalize}>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Finish Setup
+                      <Save className="mr-2 h-4 w-4" />
+                      Save & Finish
                     </Button>
                   </div>
                 </CardContent>

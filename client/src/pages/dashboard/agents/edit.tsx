@@ -696,10 +696,13 @@ export default function EditAgent() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Agent Name *</FormLabel>
+                          <FormLabel>Agent Name (Internal) *</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
+                          <FormDescription>
+                            For your dashboard - customers won't see this
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1112,6 +1115,9 @@ export default function EditAgent() {
                           <FormControl>
                             <Input {...field} data-testid="input-edit-agent-name" />
                           </FormControl>
+                          <FormDescription>
+                            Internal name for your dashboard only
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1280,7 +1286,7 @@ export default function EditAgent() {
                       name="widgetDisplayName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Display Name</FormLabel>
+                          <FormLabel>Display Name (Visitors See This)</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="AI Assistant"
@@ -1288,7 +1294,7 @@ export default function EditAgent() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Name shown in the chat header
+                            Shown in the chat widget header to visitors
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
