@@ -1,11 +1,20 @@
 import { db } from "./db";
-import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, count, sql, inArray, gte, lte } from "drizzle-orm";
 import {
   users,
   agents,
   knowledgeBase,
   conversations,
   messages,
+  whatsappBusinessAccounts,
+  phoneNumbers,
+  messageTemplates,
+  usageRecords,
+  messageBillingEvents,
+  subscriptionPlans,
+  userSubscriptions,
+  invoices,
+  webhookEvents,
   type User,
   type UpsertUser,
   type Agent,
@@ -16,6 +25,24 @@ import {
   type InsertConversation,
   type Message,
   type InsertMessage,
+  type WhatsappBusinessAccount,
+  type InsertWhatsappBusinessAccount,
+  type PhoneNumber,
+  type InsertPhoneNumber,
+  type MessageTemplate,
+  type InsertMessageTemplate,
+  type UsageRecord,
+  type InsertUsageRecord,
+  type MessageBillingEvent,
+  type InsertMessageBillingEvent,
+  type SubscriptionPlan,
+  type InsertSubscriptionPlan,
+  type UserSubscription,
+  type InsertUserSubscription,
+  type Invoice,
+  type InsertInvoice,
+  type WebhookEvent,
+  type InsertWebhookEvent,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -431,6 +458,289 @@ export class DatabaseStorage implements IStorage {
     const id = crypto.randomUUID();
     await db.insert(conversations).values({ id, agentId, sessionId });
     return this.getConversationById(id) as Promise<Conversation>;
+  }
+
+  // ========== BSP/SAAS WHATSAPP BUSINESS ACCOUNTS ==========
+  
+  async createWhatsappBusinessAccount(data: InsertWhatsappBusinessAccount): Promise<WhatsappBusinessAccount> {
+    const id = crypto.randomUUID();
+    await db.insert(whatsappBusinessAccounts).values({ ...data, id });
+    return this.getWhatsappBusinessAccountById(id) as Promise<WhatsappBusinessAccount>;
+  }
+
+  async getWhatsappBusinessAccountById(id: string): Promise<WhatsappBusinessAccount | undefined> {
+    const [account] = await db.select().from(whatsappBusinessAccounts).where(eq(whatsappBusinessAccounts.id, id));
+    return account;
+  }
+
+  async getWhatsappBusinessAccountsByUserId(userId: string): Promise<WhatsappBusinessAccount[]> {
+    return db
+      .select()
+      .from(whatsappBusinessAccounts)
+      .where(eq(whatsappBusinessAccounts.userId, userId))
+      .orderBy(desc(whatsappBusinessAccounts.createdAt));
+  }
+
+  async updateWhatsappBusinessAccount(id: string, data: Partial<InsertWhatsappBusinessAccount>): Promise<WhatsappBusinessAccount | undefined> {
+    await db.update(whatsappBusinessAccounts).set(data).where(eq(whatsappBusinessAccounts.id, id));
+    return this.getWhatsappBusinessAccountById(id);
+  }
+
+  async deleteWhatsappBusinessAccount(id: string): Promise<void> {
+    await db.delete(whatsappBusinessAccounts).where(eq(whatsappBusinessAccounts.id, id));
+  }
+
+  // ========== PHONE NUMBERS ==========
+  
+  async createPhoneNumber(data: InsertPhoneNumber): Promise<PhoneNumber> {
+    const id = crypto.randomUUID();
+    await db.insert(phoneNumbers).values({ ...data, id });
+    return this.getPhoneNumberById(id) as Promise<PhoneNumber>;
+  }
+
+  async getPhoneNumberById(id: string): Promise<PhoneNumber | undefined> {
+    const [phone] = await db.select().from(phoneNumbers).where(eq(phoneNumbers.id, id));
+    return phone;
+  }
+
+  async getPhoneNumberByNumber(phoneNumber: string): Promise<PhoneNumber | undefined> {
+    const [phone] = await db.select().from(phoneNumbers).where(eq(phoneNumbers.phoneNumber, phoneNumber));
+    return phone;
+  }
+
+  async getPhoneNumbersByUserId(userId: string): Promise<PhoneNumber[]> {
+    return db
+      .select()
+      .from(phoneNumbers)
+      .where(eq(phoneNumbers.userId, userId))
+      .orderBy(desc(phoneNumbers.createdAt));
+  }
+
+  async getPhoneNumbersByWabaId(wabaId: string): Promise<PhoneNumber[]> {
+    return db
+      .select()
+      .from(phoneNumbers)
+      .where(eq(phoneNumbers.wabaId, wabaId))
+      .orderBy(desc(phoneNumbers.createdAt));
+  }
+
+  async updatePhoneNumber(id: string, data: Partial<InsertPhoneNumber>): Promise<PhoneNumber | undefined> {
+    await db.update(phoneNumbers).set(data).where(eq(phoneNumbers.id, id));
+    return this.getPhoneNumberById(id);
+  }
+
+  async deletePhoneNumber(id: string): Promise<void> {
+    await db.delete(phoneNumbers).where(eq(phoneNumbers.id, id));
+  }
+
+  // ========== MESSAGE TEMPLATES ==========
+  
+  async createMessageTemplate(data: InsertMessageTemplate): Promise<MessageTemplate> {
+    const id = crypto.randomUUID();
+    await db.insert(messageTemplates).values({ ...data, id });
+    return this.getMessageTemplateById(id) as Promise<MessageTemplate>;
+  }
+
+  async getMessageTemplateById(id: string): Promise<MessageTemplate | undefined> {
+    const [template] = await db.select().from(messageTemplates).where(eq(messageTemplates.id, id));
+    return template;
+  }
+
+  async getMessageTemplatesByWabaId(wabaId: string): Promise<MessageTemplate[]> {
+    return db
+      .select()
+      .from(messageTemplates)
+      .where(eq(messageTemplates.wabaId, wabaId))
+      .orderBy(desc(messageTemplates.createdAt));
+  }
+
+  async updateMessageTemplate(id: string, data: Partial<InsertMessageTemplate>): Promise<MessageTemplate | undefined> {
+    await db.update(messageTemplates).set(data).where(eq(messageTemplates.id, id));
+    return this.getMessageTemplateById(id);
+  }
+
+  async deleteMessageTemplate(id: string): Promise<void> {
+    await db.delete(messageTemplates).where(eq(messageTemplates.id, id));
+  }
+
+  // ========== USAGE RECORDS & BILLING ==========
+  
+  async createUsageRecord(data: InsertUsageRecord): Promise<UsageRecord> {
+    const id = crypto.randomUUID();
+    await db.insert(usageRecords).values({ ...data, id });
+    return this.getUsageRecordById(id) as Promise<UsageRecord>;
+  }
+
+  async getUsageRecordById(id: string): Promise<UsageRecord | undefined> {
+    const [record] = await db.select().from(usageRecords).where(eq(usageRecords.id, id));
+    return record;
+  }
+
+  async getCurrentUsageRecord(userId: string): Promise<UsageRecord | undefined> {
+    const now = new Date();
+    const [record] = await db
+      .select()
+      .from(usageRecords)
+      .where(and(
+        eq(usageRecords.userId, userId),
+        eq(usageRecords.status, 'active'),
+        lte(usageRecords.billingPeriodStart, now),
+        gte(usageRecords.billingPeriodEnd, now)
+      ))
+      .limit(1);
+    return record;
+  }
+
+  async getUsageRecordsByUserId(userId: string): Promise<UsageRecord[]> {
+    return db
+      .select()
+      .from(usageRecords)
+      .where(eq(usageRecords.userId, userId))
+      .orderBy(desc(usageRecords.billingPeriodStart));
+  }
+
+  async updateUsageRecord(id: string, data: Partial<InsertUsageRecord>): Promise<UsageRecord | undefined> {
+    await db.update(usageRecords).set(data).where(eq(usageRecords.id, id));
+    return this.getUsageRecordById(id);
+  }
+
+  async incrementUsageCounters(usageRecordId: string, counters: {
+    messagesInbound?: number;
+    messagesOutbound?: number;
+    templateMessages?: number;
+    sessionMessages?: number;
+  }): Promise<void> {
+    const record = await this.getUsageRecordById(usageRecordId);
+    if (!record) return;
+
+    await db.update(usageRecords).set({
+      messagesInbound: (record.messagesInbound || 0) + (counters.messagesInbound || 0),
+      messagesOutbound: (record.messagesOutbound || 0) + (counters.messagesOutbound || 0),
+      templateMessages: (record.templateMessages || 0) + (counters.templateMessages || 0),
+      sessionMessages: (record.sessionMessages || 0) + (counters.sessionMessages || 0),
+    }).where(eq(usageRecords.id, usageRecordId));
+  }
+
+  // ========== MESSAGE BILLING EVENTS ==========
+  
+  async createMessageBillingEvent(data: InsertMessageBillingEvent): Promise<MessageBillingEvent> {
+    const id = crypto.randomUUID();
+    await db.insert(messageBillingEvents).values({ ...data, id });
+    const [event] = await db.select().from(messageBillingEvents).where(eq(messageBillingEvents.id, id));
+    return event;
+  }
+
+  async getBillingEventsByUsageRecordId(usageRecordId: string): Promise<MessageBillingEvent[]> {
+    return db
+      .select()
+      .from(messageBillingEvents)
+      .where(eq(messageBillingEvents.usageRecordId, usageRecordId))
+      .orderBy(desc(messageBillingEvents.createdAt));
+  }
+
+  // ========== SUBSCRIPTION PLANS ==========
+  
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return db
+      .select()
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.isActive, true))
+      .orderBy(subscriptionPlans.sortOrder);
+  }
+
+  async getSubscriptionPlanById(id: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
+  async getSubscriptionPlanBySlug(slug: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.slug, slug));
+    return plan;
+  }
+
+  // ========== USER SUBSCRIPTIONS ==========
+  
+  async createUserSubscription(data: InsertUserSubscription): Promise<UserSubscription> {
+    const id = crypto.randomUUID();
+    await db.insert(userSubscriptions).values({ ...data, id });
+    return this.getUserSubscriptionById(id) as Promise<UserSubscription>;
+  }
+
+  async getUserSubscriptionById(id: string): Promise<UserSubscription | undefined> {
+    const [sub] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.id, id));
+    return sub;
+  }
+
+  async getUserSubscriptionByUserId(userId: string): Promise<UserSubscription | undefined> {
+    const [sub] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId));
+    return sub;
+  }
+
+  async updateUserSubscription(id: string, data: Partial<InsertUserSubscription>): Promise<UserSubscription | undefined> {
+    await db.update(userSubscriptions).set(data).where(eq(userSubscriptions.id, id));
+    return this.getUserSubscriptionById(id);
+  }
+
+  async incrementSubscriptionMessagesUsed(userId: string, count: number = 1): Promise<void> {
+    const sub = await this.getUserSubscriptionByUserId(userId);
+    if (!sub) return;
+    await db.update(userSubscriptions).set({
+      messagesUsed: (sub.messagesUsed || 0) + count,
+    }).where(eq(userSubscriptions.id, sub.id));
+  }
+
+  // ========== INVOICES ==========
+  
+  async createInvoice(data: InsertInvoice): Promise<Invoice> {
+    const id = crypto.randomUUID();
+    await db.insert(invoices).values({ ...data, id });
+    return this.getInvoiceById(id) as Promise<Invoice>;
+  }
+
+  async getInvoiceById(id: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice;
+  }
+
+  async getInvoicesByUserId(userId: string): Promise<Invoice[]> {
+    return db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.userId, userId))
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice | undefined> {
+    await db.update(invoices).set(data).where(eq(invoices.id, id));
+    return this.getInvoiceById(id);
+  }
+
+  // ========== WEBHOOK EVENTS ==========
+  
+  async createWebhookEvent(data: InsertWebhookEvent): Promise<WebhookEvent> {
+    const id = crypto.randomUUID();
+    await db.insert(webhookEvents).values({ ...data, id });
+    const [event] = await db.select().from(webhookEvents).where(eq(webhookEvents.id, id));
+    return event;
+  }
+
+  async getWebhookEventById(id: string): Promise<WebhookEvent | undefined> {
+    const [event] = await db.select().from(webhookEvents).where(eq(webhookEvents.id, id));
+    return event;
+  }
+
+  async updateWebhookEvent(id: string, data: Partial<InsertWebhookEvent>): Promise<WebhookEvent | undefined> {
+    await db.update(webhookEvents).set(data).where(eq(webhookEvents.id, id));
+    return this.getWebhookEventById(id);
+  }
+
+  async getFailedWebhookEvents(limit: number = 100): Promise<WebhookEvent[]> {
+    return db
+      .select()
+      .from(webhookEvents)
+      .where(eq(webhookEvents.status, 'failed'))
+      .orderBy(desc(webhookEvents.createdAt))
+      .limit(limit);
   }
 }
 

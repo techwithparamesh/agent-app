@@ -8,6 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import puppeteer from "puppeteer";
 import whatsappRoutes from "./whatsapp/routes";
+import bspRoutes from "./bsp/routes";
 
 // Schema for updating agents - only allow safe fields
 const updateAgentSchema = z.object({
@@ -55,6 +56,10 @@ export async function registerRoutes(
   // ========== WHATSAPP WEBHOOK ROUTES ==========
   // Mount WhatsApp routes (before auth middleware for webhook verification)
   app.use("/api/whatsapp", whatsappRoutes);
+
+  // ========== BSP/SAAS ROUTES ==========
+  // Mount BSP routes for WhatsApp Business Account management
+  app.use("/api/bsp", isAuthenticated, bspRoutes);
 
   // ========== AUTH ROUTES ==========
   
