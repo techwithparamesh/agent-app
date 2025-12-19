@@ -486,6 +486,7 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   name: varchar("name", { length: 100 }).notNull(),
   slug: varchar("slug", { length: 50 }).notNull().unique(), // free, starter, pro, enterprise
+  description: varchar("description", { length: 255 }), // Plan description
   
   // Pricing
   monthlyPrice: int("monthly_price").default(0), // In cents
@@ -493,10 +494,10 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
   currency: varchar("currency", { length: 3 }).default("USD"),
   
   // Limits
-  messageLimit: int("message_limit"), // null = unlimited
-  agentLimit: int("agent_limit").default(1),
-  phoneNumberLimit: int("phone_number_limit").default(1),
-  teamMemberLimit: int("team_member_limit").default(1),
+  messageLimit: int("message_limit"), // null = unlimited, -1 = unlimited
+  agentLimit: int("agent_limit").default(1), // -1 = unlimited
+  phoneNumberLimit: int("phone_number_limit").default(1), // -1 = unlimited
+  teamMemberLimit: int("team_member_limit").default(1), // -1 = unlimited
   storageLimit: int("storage_limit"), // In MB
   
   // Features
@@ -506,8 +507,11 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
     apiAccess: boolean;
     prioritySupport: boolean;
     webhooks: boolean;
-    integrations: string[];
+    integrations: boolean;
     aiCapabilities: string[];
+    whatsappIncluded: boolean;
+    landingPages: boolean;
+    websiteScanning: string; // 'basic', 'advanced', 'enterprise'
   }>(),
   
   // Per-message pricing (for usage above limit)

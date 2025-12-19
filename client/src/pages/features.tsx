@@ -19,6 +19,10 @@ import {
   Puzzle,
   ArrowRight,
   Check,
+  Phone,
+  Send,
+  Users,
+  Clock,
 } from "lucide-react";
 
 const mainFeatures = [
@@ -31,6 +35,19 @@ const mainFeatures = [
       "Multiple purpose presets (Sales, Support, Info)",
       "Easy configuration interface",
       "Instant deployment",
+    ],
+  },
+  {
+    icon: Phone,
+    title: "WhatsApp Business Integration",
+    description: "Connect your AI agents to WhatsApp Business API and automate customer conversations at scale.",
+    benefits: [
+      "Official WhatsApp Business API access",
+      "Automated 24/7 customer support",
+      "Message templates for outbound",
+      "Multi-number support per business",
+      "Appointment booking & reminders",
+      "Usage-based billing included",
     ],
   },
   {
@@ -97,6 +114,9 @@ const additionalFeatures = [
   { icon: Shield, title: "Enterprise Security", description: "SOC 2 compliant, encrypted data" },
   { icon: Settings, title: "Custom Branding", description: "Match your brand colors and style" },
   { icon: Puzzle, title: "Integrations", description: "Connect with your favorite tools" },
+  { icon: Send, title: "Message Templates", description: "Pre-approved WhatsApp templates for outbound" },
+  { icon: Users, title: "Multi-Agent Support", description: "Route customers to the right AI agent" },
+  { icon: Clock, title: "24/7 Automation", description: "Never miss a customer message" },
 ];
 
 export default function Features() {

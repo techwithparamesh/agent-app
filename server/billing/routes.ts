@@ -99,7 +99,8 @@ router.get('/subscription', async (req: Request, res: Response) => {
 router.get('/plans', async (req: Request, res: Response) => {
   try {
     const plans = await storage.getAllSubscriptionPlans();
-    res.json(plans);
+    // Return in the format expected by usePlans hook
+    res.json({ plans });
   } catch (error: any) {
     console.error('[Billing] Plans error:', error);
     res.status(500).json({ message: 'Failed to fetch plans' });
