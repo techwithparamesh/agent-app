@@ -281,6 +281,81 @@ export async function registerRoutes(
     }
   });
 
+  // ========== CONVERSATIONS ==========
+  // Get all conversations for user (optionally filtered by agent)
+  app.get("/api/conversations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const agentId = req.query.agentId as string | undefined;
+      const conversations = await storage.getConversationsByUserId(userId, agentId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  // Get messages for a specific conversation
+  app.get("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const conversation = await storage.getConversationById(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      // Verify user owns the agent
+      const agent = await storage.getAgentById(conversation.agentId);
+      if (!agent || agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const messages = await storage.getMessagesByConversationId(req.params.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  // Delete a specific conversation
+  app.delete("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const conversation = await storage.getConversationById(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      // Verify user owns the agent
+      const agent = await storage.getAgentById(conversation.agentId);
+      if (!agent || agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      await storage.deleteConversation(req.params.id);
+      res.json({ success: true, message: "Conversation deleted" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ message: "Failed to delete conversation" });
+    }
+  });
+
+  // Delete all conversations for an agent
+  app.delete("/api/conversations/agent/:agentId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const agent = await storage.getAgentById(req.params.agentId);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      if (agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const deletedCount = await storage.deleteConversationsByAgentId(req.params.agentId);
+      res.json({ success: true, message: `Deleted ${deletedCount} conversations` });
+    } catch (error) {
+      console.error("Error deleting conversations:", error);
+      res.status(500).json({ message: "Failed to delete conversations" });
+    }
+  });
+
   // ========== KNOWLEDGE BASE ==========
   app.get("/api/agents/:agentId/knowledge", isAuthenticated, async (req: any, res) => {
     try {

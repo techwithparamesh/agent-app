@@ -257,7 +257,42 @@ export default function ChatbotPage() {
 
   const getEmbedCode = () => {
     if (!currentAgentId) return "";
-    return `<script src="${window.location.origin}/widget.js" data-agent-id="${currentAgentId}"></script>`;
+    const baseUrl = window.location.origin;
+    let code = `<script src="${baseUrl}/widget.js"`;
+    code += `\n  data-agent-id="${currentAgentId}"`;
+    
+    // Add agent name if available
+    if (currentAgent?.name) {
+      code += `\n  data-agent-name="${currentAgent.name}"`;
+    }
+    
+    // Add widget config from agent if available
+    const widgetConfig = (currentAgent as any)?.widgetConfig;
+    if (widgetConfig) {
+      if (widgetConfig.primaryColor && widgetConfig.primaryColor !== '#6366f1') {
+        code += `\n  data-primary-color="${widgetConfig.primaryColor}"`;
+      }
+      if (widgetConfig.position && widgetConfig.position !== 'bottom-right') {
+        code += `\n  data-position="${widgetConfig.position}"`;
+      }
+      if (widgetConfig.avatarUrl) {
+        code += `\n  data-avatar-url="${widgetConfig.avatarUrl}"`;
+      }
+      if (widgetConfig.showBranding === false) {
+        code += `\n  data-show-branding="false"`;
+      }
+      if (widgetConfig.autoOpen) {
+        code += `\n  data-auto-open="true"`;
+      }
+    }
+    
+    // Add welcome message/greeting
+    if (currentAgent?.welcomeMessage) {
+      code += `\n  data-greeting="${currentAgent.welcomeMessage.replace(/"/g, '&quot;')}"`;
+    }
+    
+    code += `>\n</script>`;
+    return code;
   };
 
   const copyEmbedCode = () => {

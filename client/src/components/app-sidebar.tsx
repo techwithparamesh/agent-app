@@ -61,7 +61,7 @@ import type { Agent } from "@shared/schema";
 // Dashboard submenu items
 const dashboardSubItems = [
   { icon: Activity, label: "Active Agents", href: "/dashboard/agents", metric: "agents" },
-  { icon: MessageSquare, label: "Conversations", href: "/dashboard/chatbot", metric: "conversations" },
+  { icon: MessageSquare, label: "Conversations", href: "/dashboard/conversations", metric: "conversations" },
   { icon: Users, label: "Visitors Engaged", href: "/dashboard/analytics", metric: "visitors" },
   { icon: TrendingUp, label: "Response Rate", href: "/dashboard/analytics", metric: "rate" },
 ];

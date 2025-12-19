@@ -28,6 +28,7 @@ import WhatsAppAgent from "@/pages/dashboard/agents/whatsapp";
 import WebsiteScanner from "@/pages/dashboard/scan";
 import KnowledgeBase from "@/pages/dashboard/knowledge";
 import Chatbot from "@/pages/dashboard/chatbot";
+import Conversations from "@/pages/dashboard/conversations";
 import Templates from "@/pages/dashboard/templates";
 import CreateTemplate from "@/pages/dashboard/templates/new";
 import Analytics from "@/pages/dashboard/analytics";
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/dashboard/scan" component={WebsiteScanner} />
       <Route path="/dashboard/knowledge" component={KnowledgeBase} />
       <Route path="/dashboard/chatbot" component={Chatbot} />
+      <Route path="/dashboard/conversations" component={Conversations} />
       <Route path="/dashboard/templates/new" component={CreateTemplate} />
       <Route path="/dashboard/templates" component={Templates} />
       <Route path="/dashboard/analytics" component={Analytics} />

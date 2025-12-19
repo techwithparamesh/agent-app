@@ -177,6 +177,68 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(conversations.createdAt));
   }
 
+  // Get conversations by user ID (across all their agents)
+  async getConversationsByUserId(userId: string, agentId?: string): Promise<Conversation[]> {
+    // Get all agents for this user
+    const userAgents = await db
+      .select({ id: agents.id })
+      .from(agents)
+      .where(eq(agents.userId, userId));
+    
+    if (userAgents.length === 0) {
+      return [];
+    }
+
+    const agentIds = userAgents.map(a => a.id);
+
+    // If a specific agentId is provided, filter by it
+    if (agentId && agentIds.includes(agentId)) {
+      return db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.agentId, agentId))
+        .orderBy(desc(conversations.createdAt));
+    }
+
+    // Otherwise get all conversations for all user's agents
+    return db
+      .select()
+      .from(conversations)
+      .where(inArray(conversations.agentId, agentIds))
+      .orderBy(desc(conversations.createdAt));
+  }
+
+  // Delete a single conversation and its messages
+  async deleteConversation(conversationId: string): Promise<void> {
+    // Delete messages first (foreign key constraint)
+    await db.delete(messages).where(eq(messages.conversationId, conversationId));
+    // Delete the conversation
+    await db.delete(conversations).where(eq(conversations.id, conversationId));
+  }
+
+  // Delete all conversations for an agent
+  async deleteConversationsByAgentId(agentId: string): Promise<number> {
+    // Get all conversation IDs for this agent
+    const agentConversations = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(eq(conversations.agentId, agentId));
+    
+    if (agentConversations.length === 0) {
+      return 0;
+    }
+
+    const convIds = agentConversations.map(c => c.id);
+    
+    // Delete messages first
+    await db.delete(messages).where(inArray(messages.conversationId, convIds));
+    
+    // Delete conversations
+    await db.delete(conversations).where(eq(conversations.agentId, agentId));
+    
+    return agentConversations.length;
+  }
+
   // Messages
   async addMessage(message: InsertMessage): Promise<Message> {
     const id = crypto.randomUUID();
