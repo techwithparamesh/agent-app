@@ -3,6 +3,16 @@
  * Embed this script on your website to add an AI chatbot
  * 
  * Usage: <script src="https://your-domain.com/widget.js" data-agent-id="your-agent-id"></script>
+ * 
+ * Configuration options (data attributes):
+ * - data-agent-id: Required. Your agent ID
+ * - data-position: Widget position (bottom-right, bottom-left, top-right, top-left)
+ * - data-primary-color: Main color for the widget (hex code)
+ * - data-agent-name: Display name for the agent
+ * - data-greeting: Initial greeting message
+ * - data-avatar-url: URL for agent avatar image
+ * - data-show-branding: Show "Powered by AgentForge" (true/false)
+ * - data-auto-open: Auto-open chat on page load (true/false)
  */
 
 (function() {
@@ -13,7 +23,11 @@
   const agentId = scriptTag?.getAttribute('data-agent-id');
   const position = scriptTag?.getAttribute('data-position') || 'bottom-right';
   const primaryColor = scriptTag?.getAttribute('data-primary-color') || '#6366f1';
+  const agentName = scriptTag?.getAttribute('data-agent-name') || 'AI Assistant';
   const greeting = scriptTag?.getAttribute('data-greeting') || 'Hi! How can I help you today?';
+  const avatarUrl = scriptTag?.getAttribute('data-avatar-url') || '';
+  const showBranding = scriptTag?.getAttribute('data-show-branding') !== 'false';
+  const autoOpen = scriptTag?.getAttribute('data-auto-open') === 'true';
   
   if (!agentId) {
     console.error('AgentForge Widget: Missing data-agent-id attribute');
@@ -23,6 +37,47 @@
   // Get the API base URL from the script src
   const scriptSrc = scriptTag?.src || '';
   const baseUrl = scriptSrc.replace('/widget.js', '');
+
+  // Simple markdown parser for structured responses
+  function parseMarkdown(text) {
+    if (!text) return '';
+    
+    let html = text
+      // Escape HTML first
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Bold: **text** or __text__
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.+?)__/g, '<strong>$1</strong>')
+      // Italic: *text* or _text_
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      // Headers: # Header
+      .replace(/^### (.+)$/gm, '<h4 style="font-size:14px;font-weight:600;margin:8px 0 4px;">$1</h4>')
+      .replace(/^## (.+)$/gm, '<h3 style="font-size:15px;font-weight:600;margin:10px 0 6px;">$1</h3>')
+      .replace(/^# (.+)$/gm, '<h2 style="font-size:16px;font-weight:700;margin:12px 0 8px;">$1</h2>')
+      // Bullet points: - item or * item
+      .replace(/^[\-\*] (.+)$/gm, '<li style="margin-left:16px;margin-bottom:4px;">$1</li>')
+      // Numbered lists: 1. item
+      .replace(/^\d+\. (.+)$/gm, '<li style="margin-left:16px;margin-bottom:4px;list-style-type:decimal;">$1</li>')
+      // Wrap consecutive list items in ul
+      .replace(/(<li[^>]*>.*<\/li>\n?)+/g, function(match) {
+        return '<ul style="margin:8px 0;padding-left:8px;list-style-position:inside;">' + match + '</ul>';
+      })
+      // Code inline: `code`
+      .replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px;">$1</code>')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
+      .replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph if not starting with block element
+    if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<ol')) {
+      html = '<p style="margin:0;">' + html + '</p>';
+    }
+    
+    return html;
+  }
 
   // Styles for the widget
   const styles = `
@@ -267,14 +322,128 @@
       text-decoration: none;
     }
 
-    @media (max-width: 480px) {
+    /* Tablet styles */
+    @media (max-width: 768px) {
       .af-widget-chat {
-        width: calc(100vw - 40px);
-        height: calc(100vh - 120px);
-        ${position.includes('right') ? 'right: -10px;' : 'left: -10px;'}
+        width: 340px;
+        height: 480px;
+      }
+    }
+
+    /* Mobile styles */
+    @media (max-width: 480px) {
+      .af-widget-container {
+        ${position.includes('bottom') ? 'bottom: 12px;' : 'top: 12px;'}
+        ${position.includes('right') ? 'right: 12px;' : 'left: 12px;'}
+      }
+
+      .af-widget-button {
+        width: 52px;
+        height: 52px;
+      }
+
+      .af-widget-button svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .af-widget-chat {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        z-index: 9999999;
+      }
+
+      .af-widget-header {
+        padding: 14px 16px;
+        border-radius: 0;
+      }
+
+      .af-widget-header-avatar {
+        width: 36px;
+        height: 36px;
+      }
+
+      .af-widget-header-info h3 {
+        font-size: 15px;
+      }
+
+      .af-widget-header-info p {
+        font-size: 11px;
+      }
+
+      .af-widget-messages {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .af-widget-message {
+        max-width: 88%;
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 14px;
+      }
+
+      .af-widget-input-area {
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .af-widget-input {
+        padding: 10px 14px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+
+      .af-widget-send {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+      }
+
+      .af-widget-send svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .af-widget-powered {
+        padding: 6px;
+        font-size: 10px;
+      }
+    }
+
+    /* Extra small mobile */
+    @media (max-width: 360px) {
+      .af-widget-message {
+        max-width: 90%;
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .af-widget-input {
+        padding: 8px 12px;
       }
     }
   `;
+
+  // Create avatar HTML - use custom image or default SVG
+  const avatarHTML = avatarUrl 
+    ? `<img src="${avatarUrl}" alt="${agentName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>`;
+
+  // Branding HTML
+  const brandingHTML = showBranding 
+    ? `<div class="af-widget-powered">
+          Powered by <a href="${baseUrl}" target="_blank">AgentForge</a>
+        </div>`
+    : '';
 
   // Create widget HTML
   const widgetHTML = `
@@ -288,12 +457,10 @@
       <div class="af-widget-chat" id="af-chat">
         <div class="af-widget-header">
           <div class="af-widget-header-avatar">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-            </svg>
+            ${avatarHTML}
           </div>
           <div class="af-widget-header-info">
-            <h3>AI Assistant</h3>
+            <h3>${agentName}</h3>
             <p>Always here to help</p>
           </div>
           <button class="af-widget-close" id="af-close" aria-label="Close chat">
@@ -313,9 +480,7 @@
             </svg>
           </button>
         </div>
-        <div class="af-widget-powered">
-          Powered by <a href="${baseUrl}" target="_blank">AgentForge</a>
-        </div>
+        ${brandingHTML}
       </div>
     </div>
   `;
@@ -353,6 +518,11 @@
   toggleBtn.addEventListener('click', toggleChat);
   closeBtn.addEventListener('click', toggleChat);
 
+  // Auto-open if configured
+  if (autoOpen) {
+    setTimeout(toggleChat, 1500);
+  }
+
   // Helper function to convert URLs to clickable links
   function linkify(text) {
     const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
@@ -363,14 +533,15 @@
     });
   }
 
-  // Add message to chat
+  // Add message to chat with markdown support
   function addMessage(content, role) {
     const messageEl = document.createElement('div');
     messageEl.className = `af-widget-message ${role}`;
     
-    // For assistant messages, convert URLs to clickable links
     if (role === 'assistant') {
-      messageEl.innerHTML = linkify(content);
+      // Parse markdown and convert URLs to clickable links
+      const parsedContent = parseMarkdown(content);
+      messageEl.innerHTML = linkify(parsedContent);
     } else {
       messageEl.textContent = content;
     }
