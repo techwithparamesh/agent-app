@@ -82,125 +82,129 @@
   // Styles for the widget
   const styles = `
     .af-widget-container {
-      position: fixed;
-      ${position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
-      ${position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
-      z-index: 999999;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      position: fixed !important;
+      ${position.includes('bottom') ? 'bottom: 20px !important;' : 'top: 20px !important;'}
+      ${position.includes('right') ? 'right: 20px !important;' : 'left: 20px !important;'}
+      z-index: 999999 !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
     }
 
     .af-widget-button {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: ${primaryColor};
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s, box-shadow 0.2s;
+      width: 60px !important;
+      height: 60px !important;
+      border-radius: 50% !important;
+      background: ${primaryColor} !important;
+      border: none !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+      transition: transform 0.2s, box-shadow 0.2s !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
     .af-widget-button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+      transform: scale(1.05) !important;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2) !important;
     }
 
     .af-widget-button svg {
-      width: 28px;
-      height: 28px;
-      fill: white;
+      width: 28px !important;
+      height: 28px !important;
+      fill: white !important;
     }
 
     .af-widget-chat {
-      position: absolute;
-      ${position.includes('bottom') ? 'bottom: 70px;' : 'top: 70px;'}
-      ${position.includes('right') ? 'right: 0;' : 'left: 0;'}
-      width: 380px;
-      height: 520px;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
+      position: absolute !important;
+      ${position.includes('bottom') ? 'bottom: 70px !important;' : 'top: 70px !important;'}
+      ${position.includes('right') ? 'right: 0 !important;' : 'left: 0 !important;'}
+      width: 380px !important;
+      height: 520px !important;
+      background: #ffffff !important;
+      border-radius: 16px !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+      display: none !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
     }
 
     .af-widget-chat.open {
-      display: flex;
+      display: flex !important;
     }
 
     .af-widget-header {
-      background: ${primaryColor};
-      color: white;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      background: ${primaryColor} !important;
+      color: white !important;
+      padding: 16px 20px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
     }
 
     .af-widget-header-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 50% !important;
+      background: rgba(255, 255, 255, 0.2) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
 
     .af-widget-header-avatar svg {
-      width: 24px;
-      height: 24px;
-      fill: white;
+      width: 24px !important;
+      height: 24px !important;
+      fill: white !important;
     }
 
     .af-widget-header-info h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
+      margin: 0 !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      color: white !important;
     }
 
     .af-widget-header-info p {
-      margin: 2px 0 0;
-      font-size: 12px;
-      opacity: 0.85;
+      margin: 2px 0 0 !important;
+      font-size: 12px !important;
+      opacity: 0.85 !important;
+      color: white !important;
     }
 
     .af-widget-close {
-      margin-left: auto;
-      background: none;
-      border: none;
-      color: white;
-      cursor: pointer;
-      padding: 4px;
-      opacity: 0.8;
-      transition: opacity 0.2s;
+      margin-left: auto !important;
+      background: none !important;
+      border: none !important;
+      color: white !important;
+      cursor: pointer !important;
+      padding: 4px !important;
+      opacity: 0.8 !important;
+      transition: opacity 0.2s !important;
     }
 
     .af-widget-close:hover {
-      opacity: 1;
+      opacity: 1 !important;
     }
 
     .af-widget-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background: #f9fafb;
+      flex: 1 !important;
+      overflow-y: auto !important;
+      padding: 16px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+      background: #f9fafb !important;
     }
 
     .af-widget-message {
-      max-width: 85%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 14px;
-      line-height: 1.5;
-      animation: af-fadeIn 0.2s ease;
+      max-width: 85% !important;
+      padding: 12px 16px !important;
+      border-radius: 16px !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      animation: af-fadeIn 0.2s ease !important;
     }
 
     @keyframes af-fadeIn {
@@ -209,50 +213,50 @@
     }
 
     .af-widget-message.user {
-      align-self: flex-end;
-      background: ${primaryColor};
-      color: white;
-      border-bottom-right-radius: 4px;
+      align-self: flex-end !important;
+      background: ${primaryColor} !important;
+      color: white !important;
+      border-bottom-right-radius: 4px !important;
     }
 
     .af-widget-message.assistant {
-      align-self: flex-start;
-      background: white;
-      color: #1f2937;
-      border-bottom-left-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      align-self: flex-start !important;
+      background: white !important;
+      color: #1f2937 !important;
+      border-bottom-left-radius: 4px !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
     }
 
     .af-widget-message.assistant a {
-      color: ${primaryColor};
-      text-decoration: underline;
-      word-break: break-all;
+      color: ${primaryColor} !important;
+      text-decoration: underline !important;
+      word-break: break-all !important;
     }
 
     .af-widget-message.assistant a:hover {
-      opacity: 0.8;
+      opacity: 0.8 !important;
     }
 
     .af-widget-typing {
-      display: flex;
-      gap: 4px;
-      padding: 12px 16px;
-      background: white;
-      border-radius: 16px;
-      align-self: flex-start;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      display: flex !important;
+      gap: 4px !important;
+      padding: 12px 16px !important;
+      background: white !important;
+      border-radius: 16px !important;
+      align-self: flex-start !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
     }
 
     .af-widget-typing span {
-      width: 8px;
-      height: 8px;
-      background: #9ca3af;
-      border-radius: 50%;
-      animation: af-typing 1.4s infinite ease-in-out;
+      width: 8px !important;
+      height: 8px !important;
+      background: #9ca3af !important;
+      border-radius: 50% !important;
+      animation: af-typing 1.4s infinite ease-in-out !important;
     }
 
-    .af-widget-typing span:nth-child(2) { animation-delay: 0.2s; }
-    .af-widget-typing span:nth-child(3) { animation-delay: 0.4s; }
+    .af-widget-typing span:nth-child(2) { animation-delay: 0.2s !important; }
+    .af-widget-typing span:nth-child(3) { animation-delay: 0.4s !important; }
 
     @keyframes af-typing {
       0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
@@ -260,173 +264,181 @@
     }
 
     .af-widget-input-area {
-      padding: 16px;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      gap: 8px;
+      padding: 16px !important;
+      background: white !important;
+      border-top: 1px solid #e5e7eb !important;
+      display: flex !important;
+      gap: 8px !important;
     }
 
     .af-widget-input {
-      flex: 1;
-      padding: 12px 16px;
-      border: 1px solid #e5e7eb;
-      border-radius: 24px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
+      flex: 1 !important;
+      padding: 12px 16px !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 24px !important;
+      font-size: 14px !important;
+      outline: none !important;
+      transition: border-color 0.2s !important;
+      background: white !important;
+      color: #1f2937 !important;
     }
 
     .af-widget-input:focus {
-      border-color: ${primaryColor};
+      border-color: ${primaryColor} !important;
+    }
+
+    .af-widget-input::placeholder {
+      color: #9ca3af !important;
     }
 
     .af-widget-send {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: ${primaryColor};
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 50% !important;
+      background: ${primaryColor} !important;
+      border: none !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: background 0.2s !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
     .af-widget-send:hover {
-      background: ${primaryColor}dd;
+      background: ${primaryColor}dd !important;
     }
 
     .af-widget-send:disabled {
-      background: #9ca3af;
-      cursor: not-allowed;
+      background: #9ca3af !important;
+      cursor: not-allowed !important;
     }
 
     .af-widget-send svg {
-      width: 20px;
-      height: 20px;
-      fill: white;
+      width: 20px !important;
+      height: 20px !important;
+      fill: white !important;
     }
 
     .af-widget-powered {
-      text-align: center;
-      padding: 8px;
-      font-size: 11px;
-      color: #9ca3af;
-      background: white;
+      text-align: center !important;
+      padding: 8px !important;
+      font-size: 11px !important;
+      color: #9ca3af !important;
+      background: white !important;
     }
 
     .af-widget-powered a {
-      color: ${primaryColor};
-      text-decoration: none;
+      color: ${primaryColor} !important;
+      text-decoration: none !important;
     }
 
     /* Tablet styles */
     @media (max-width: 768px) {
       .af-widget-chat {
-        width: 340px;
-        height: 480px;
+        width: 340px !important;
+        height: 480px !important;
       }
     }
 
     /* Mobile styles */
     @media (max-width: 480px) {
       .af-widget-container {
-        ${position.includes('bottom') ? 'bottom: 12px;' : 'top: 12px;'}
-        ${position.includes('right') ? 'right: 12px;' : 'left: 12px;'}
+        ${position.includes('bottom') ? 'bottom: 12px !important;' : 'top: 12px !important;'}
+        ${position.includes('right') ? 'right: 12px !important;' : 'left: 12px !important;'}
       }
 
       .af-widget-button {
-        width: 52px;
-        height: 52px;
+        width: 52px !important;
+        height: 52px !important;
       }
 
       .af-widget-button svg {
-        width: 24px;
-        height: 24px;
+        width: 24px !important;
+        height: 24px !important;
       }
 
       .af-widget-chat {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
-        max-height: 100vh;
-        border-radius: 0;
-        z-index: 9999999;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        z-index: 9999999 !important;
       }
 
       .af-widget-header {
-        padding: 14px 16px;
-        border-radius: 0;
+        padding: 14px 16px !important;
+        border-radius: 0 !important;
       }
 
       .af-widget-header-avatar {
-        width: 36px;
-        height: 36px;
+        width: 36px !important;
+        height: 36px !important;
       }
 
       .af-widget-header-info h3 {
-        font-size: 15px;
+        font-size: 15px !important;
       }
 
       .af-widget-header-info p {
-        font-size: 11px;
+        font-size: 11px !important;
       }
 
       .af-widget-messages {
-        padding: 12px;
-        gap: 10px;
+        padding: 12px !important;
+        gap: 10px !important;
       }
 
       .af-widget-message {
-        max-width: 88%;
-        padding: 10px 14px;
-        font-size: 14px;
-        border-radius: 14px;
+        max-width: 88% !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        border-radius: 14px !important;
       }
 
       .af-widget-input-area {
-        padding: 12px;
-        gap: 8px;
+        padding: 12px !important;
+        gap: 8px !important;
       }
 
       .af-widget-input {
-        padding: 10px 14px;
-        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 10px 14px !important;
+        font-size: 16px !important; /* Prevents zoom on iOS */
       }
 
       .af-widget-send {
-        width: 40px;
-        height: 40px;
-        flex-shrink: 0;
+        width: 40px !important;
+        height: 40px !important;
+        flex-shrink: 0 !important;
       }
 
       .af-widget-send svg {
-        width: 18px;
-        height: 18px;
+        width: 18px !important;
+        height: 18px !important;
       }
 
       .af-widget-powered {
-        padding: 6px;
-        font-size: 10px;
+        padding: 6px !important;
+        font-size: 10px !important;
       }
     }
 
     /* Extra small mobile */
     @media (max-width: 360px) {
       .af-widget-message {
-        max-width: 90%;
-        padding: 8px 12px;
-        font-size: 13px;
+        max-width: 90% !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
       }
 
       .af-widget-input {
-        padding: 8px 12px;
+        padding: 8px 12px !important;
       }
     }
   `;
