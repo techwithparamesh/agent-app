@@ -79,8 +79,20 @@ export async function registerRoutes(
   // Mount BSP routes for WhatsApp Business Account management
   app.use("/api/bsp", isAuthenticated, bspRoutes);
 
+  // ========== PUBLIC BILLING ROUTES ==========
+  // Plans endpoint is public (for pricing page)
+  app.get("/api/billing/plans", async (req, res) => {
+    try {
+      const plans = await storage.getAllSubscriptionPlans();
+      res.json({ plans });
+    } catch (error: any) {
+      console.error('[Billing] Plans error:', error);
+      res.status(500).json({ message: 'Failed to fetch plans' });
+    }
+  });
+
   // ========== BILLING ROUTES ==========
-  // Mount billing routes for subscription management
+  // Mount billing routes for subscription management (authenticated)
   app.use("/api/billing", isAuthenticated, billingRoutes);
 
   // ========== AUTH ROUTES ==========

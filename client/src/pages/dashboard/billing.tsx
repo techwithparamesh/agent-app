@@ -43,21 +43,29 @@ interface SubscriptionPlan {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   monthlyPrice: number;
   yearlyPrice: number;
   currency: string;
   messageLimit: number | null;
   agentLimit: number;
   phoneNumberLimit: number;
+  teamMemberLimit?: number;
+  storageLimit?: number;
   features: {
     customBranding: boolean;
     analytics: boolean;
     apiAccess: boolean;
     prioritySupport: boolean;
     webhooks: boolean;
-    integrations: string[];
+    integrations: boolean;
     aiCapabilities: string[];
-  };
+    whatsappIncluded?: boolean;
+    landingPages?: boolean;
+    websiteScanning?: string;
+  } | null;
+  perMessageCost?: number | null;
+  isActive?: boolean;
 }
 
 interface Invoice {
@@ -91,17 +99,20 @@ export default function BillingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
   // Fetch subscription status
-  const { data: subscriptionStatus, isLoading: loadingStatus } = useQuery<SubscriptionStatus>({
+  const { data: subscriptionStatus, isLoading: loadingStatus, error: statusError } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/billing/subscription"],
   });
 
-  // Fetch plans
-  const { data: plans, isLoading: loadingPlans } = useQuery<SubscriptionPlan[]>({
+  // Fetch plans - API returns { plans: [...] }
+  const { data: plansResponse, isLoading: loadingPlans, error: plansError } = useQuery<{ plans: SubscriptionPlan[] }>({
     queryKey: ["/api/billing/plans"],
   });
+  
+  // Extract plans array from response
+  const plans = plansResponse?.plans || [];
 
   // Fetch invoices
-  const { data: invoices, isLoading: loadingInvoices } = useQuery<Invoice[]>({
+  const { data: invoices, isLoading: loadingInvoices, error: invoicesError } = useQuery<Invoice[]>({
     queryKey: ["/api/billing/invoices"],
   });
 
@@ -292,7 +303,7 @@ export default function BillingPage() {
                 </Card>
               ))}
             </div>
-          ) : plans ? (
+          ) : plans && plans.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {plans.map((plan) => {
                 const price = billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
@@ -375,7 +386,20 @@ export default function BillingPage() {
                 );
               })}
             </div>
-          ) : null}
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Unable to Load Plans</h3>
+                <p className="text-muted-foreground text-center">
+                  {plansError ? "There was an error loading the pricing plans." : "No pricing plans available."}
+                </p>
+                <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Separator />
