@@ -34,6 +34,11 @@ import CreateTemplate from "@/pages/dashboard/templates/new";
 import Analytics from "@/pages/dashboard/analytics";
 import Integrations from "@/pages/dashboard/integrations";
 
+// WhatsApp Business & Billing Pages
+import WhatsAppAccounts from "@/pages/dashboard/whatsapp-accounts";
+import PhoneNumbers from "@/pages/dashboard/phone-numbers";
+import Billing from "@/pages/dashboard/billing";
+
 function Router() {
   return (
     <Switch>
@@ -64,6 +69,11 @@ function Router() {
       <Route path="/dashboard/templates" component={Templates} />
       <Route path="/dashboard/analytics" component={Analytics} />
       <Route path="/dashboard/integrations" component={Integrations} />
+      
+      {/* WhatsApp Business & Billing Routes */}
+      <Route path="/dashboard/whatsapp/accounts" component={WhatsAppAccounts} />
+      <Route path="/dashboard/whatsapp/accounts/:wabaId/numbers" component={PhoneNumbers} />
+      <Route path="/dashboard/billing" component={Billing} />
 
       {/* 404 Fallback */}
       <Route component={NotFound} />

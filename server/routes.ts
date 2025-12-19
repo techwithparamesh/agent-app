@@ -9,6 +9,9 @@ import bcrypt from "bcryptjs";
 import puppeteer from "puppeteer";
 import whatsappRoutes from "./whatsapp/routes";
 import bspRoutes from "./bsp/routes";
+import billingRoutes from "./billing/routes";
+import { stripeService } from "./billing/stripe";
+import express from "express";
 
 // Schema for updating agents - only allow safe fields
 const updateAgentSchema = z.object({
@@ -57,9 +60,28 @@ export async function registerRoutes(
   // Mount WhatsApp routes (before auth middleware for webhook verification)
   app.use("/api/whatsapp", whatsappRoutes);
 
+  // ========== STRIPE WEBHOOK (raw body needed) ==========
+  app.post("/api/billing/webhook", 
+    express.raw({ type: 'application/json' }), 
+    async (req: any, res) => {
+      try {
+        const signature = req.headers['stripe-signature'] as string;
+        await stripeService.handleWebhook(req.body, signature);
+        res.sendStatus(200);
+      } catch (error: any) {
+        console.error('[Stripe Webhook] Error:', error);
+        res.status(400).send(`Webhook Error: ${error.message}`);
+      }
+    }
+  );
+
   // ========== BSP/SAAS ROUTES ==========
   // Mount BSP routes for WhatsApp Business Account management
   app.use("/api/bsp", isAuthenticated, bspRoutes);
+
+  // ========== BILLING ROUTES ==========
+  // Mount billing routes for subscription management
+  app.use("/api/billing", isAuthenticated, billingRoutes);
 
   // ========== AUTH ROUTES ==========
   

@@ -55,6 +55,8 @@ import {
   Globe,
   Smartphone,
   Zap,
+  CreditCard,
+  Phone,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -386,6 +388,29 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* WhatsApp Business Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs uppercase tracking-wide text-muted-foreground px-4">
+            WhatsApp Business
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.startsWith("/dashboard/whatsapp/accounts")}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/whatsapp/accounts">
+                    <Phone className="h-5 w-5 text-green-500" />
+                    <span>WhatsApp Accounts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Settings Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wide text-muted-foreground px-4">
@@ -414,6 +439,18 @@ export function AppSidebar() {
                   <Link href="/dashboard/integrations">
                     <LinkIcon className="h-5 w-5" />
                     <span>Integrations</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/billing"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/billing">
+                    <CreditCard className="h-5 w-5" />
+                    <span>Billing & Plans</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

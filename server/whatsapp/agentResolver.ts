@@ -2,6 +2,7 @@
  * Agent Resolver Service
  * Resolves agent configuration from incoming WhatsApp phone number
  * Ensures tenant isolation (agent_id scoped data only)
+ * Supports both legacy agentWhatsappConfig and new phone_numbers table
  */
 
 import { db } from '../db';
@@ -9,14 +10,18 @@ import { eq, and } from 'drizzle-orm';
 import {
   agents,
   agentWhatsappConfig,
+  phoneNumbers,
+  whatsappBusinessAccounts,
   type Agent,
   type AgentWhatsappConfig,
+  type PhoneNumber,
 } from '@shared/schema';
 import type { AgentConfig } from './types';
 
 export interface ResolvedAgent {
   agent: Agent;
-  whatsappConfig: AgentWhatsappConfig;
+  whatsappConfig: AgentWhatsappConfig | null;
+  phoneNumber?: PhoneNumber;
   config: AgentConfig;
 }
 
@@ -26,6 +31,7 @@ export class AgentResolver {
 
   /**
    * Resolve agent by WhatsApp phone number ID
+   * First checks new phone_numbers table, falls back to legacy agentWhatsappConfig
    */
   async resolveByPhoneNumberId(phoneNumberId: string): Promise<ResolvedAgent | null> {
     // Check cache first
@@ -35,7 +41,39 @@ export class AgentResolver {
     }
 
     try {
-      // Find WhatsApp config by phone number ID
+      // First, try to find in new phone_numbers table
+      const [phoneNumber] = await db
+        .select()
+        .from(phoneNumbers)
+        .where(
+          and(
+            eq(phoneNumbers.phoneNumberId, phoneNumberId),
+            eq(phoneNumbers.isActive, true)
+          )
+        )
+        .limit(1);
+
+      if (phoneNumber && phoneNumber.agentId) {
+        // Get the associated agent
+        const [agent] = await db
+          .select()
+          .from(agents)
+          .where(
+            and(
+              eq(agents.id, phoneNumber.agentId),
+              eq(agents.isActive, true)
+            )
+          )
+          .limit(1);
+
+        if (agent) {
+          const resolved = this.buildResolvedAgentFromPhoneNumber(agent, phoneNumber);
+          this.setCache(phoneNumberId, resolved);
+          return resolved;
+        }
+      }
+
+      // Fallback to legacy agentWhatsappConfig
       const [config] = await db
         .select()
         .from(agentWhatsappConfig)
@@ -82,7 +120,7 @@ export class AgentResolver {
   }
 
   /**
-   * Resolve agent by WhatsApp phone number
+   * Resolve agent by WhatsApp phone number (E.164 format)
    */
   async resolveByPhoneNumber(phoneNumber: string): Promise<ResolvedAgent | null> {
     // Normalize phone number
@@ -96,6 +134,38 @@ export class AgentResolver {
     }
 
     try {
+      // First, try to find in new phone_numbers table
+      const [phone] = await db
+        .select()
+        .from(phoneNumbers)
+        .where(
+          and(
+            eq(phoneNumbers.phoneNumber, normalizedPhone),
+            eq(phoneNumbers.isActive, true)
+          )
+        )
+        .limit(1);
+
+      if (phone && phone.agentId) {
+        const [agent] = await db
+          .select()
+          .from(agents)
+          .where(
+            and(
+              eq(agents.id, phone.agentId),
+              eq(agents.isActive, true)
+            )
+          )
+          .limit(1);
+
+        if (agent) {
+          const resolved = this.buildResolvedAgentFromPhoneNumber(agent, phone);
+          this.setCache(cacheKey, resolved);
+          return resolved;
+        }
+      }
+
+      // Fallback to legacy agentWhatsappConfig
       const [config] = await db
         .select()
         .from(agentWhatsappConfig)
@@ -205,7 +275,40 @@ export class AgentResolver {
 
     return {
       agent,
-      whatsappConfig: config!,
+      whatsappConfig: config,
+      config: agentConfig,
+    };
+  }
+
+  /**
+   * Build resolved agent from new phone_numbers table
+   */
+  private buildResolvedAgentFromPhoneNumber(agent: Agent, phone: PhoneNumber): ResolvedAgent {
+    const agentConfig: AgentConfig = {
+      id: agent.id,
+      userId: agent.userId,
+      name: agent.name,
+      systemPrompt: agent.systemPrompt || this.getDefaultSystemPrompt(agent),
+      welcomeMessage: agent.welcomeMessage || `Hello! I'm the AI assistant for ${agent.name}. How can I help you today?`,
+      toneOfVoice: agent.toneOfVoice || 'professional',
+      language: agent.language || 'en',
+      capabilities: (agent.capabilities as string[]) || [],
+      businessCategory: agent.businessCategory || undefined,
+      businessInfo: agent.businessInfo as AgentConfig['businessInfo'] || undefined,
+    };
+
+    // Use phone_numbers table data
+    agentConfig.whatsappConfig = {
+      phoneNumberId: phone.phoneNumberId || '',
+      accessToken: phone.accessToken || '',
+      businessId: phone.wabaId || '',
+      verifyToken: '', // Not stored in phone_numbers, use webhook secret if needed
+    };
+
+    return {
+      agent,
+      whatsappConfig: null, // Using new phone_numbers table instead
+      phoneNumber: phone,
       config: agentConfig,
     };
   }
