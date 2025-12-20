@@ -512,13 +512,31 @@ const integrationCatalog = {
     color: "bg-gray-600",
     integrations: [
       { 
+        id: 'custom_integration', 
+        name: '✨ Build Custom Integration', 
+        icon: '🛠️',
+        description: 'Create a custom integration from scratch with your own logic',
+        category: 'developer',
+        popular: true,
+        isCustom: true,
+        fields: ['webhookUrl', 'method', 'headers', 'bodyTemplate'],
+      },
+      { 
         id: 'webhook', 
-        name: 'Webhook', 
+        name: 'Webhook (Incoming)', 
         icon: '🔗',
-        description: 'Send data to any HTTP endpoint',
+        description: 'Receive data from external services via webhook',
         category: 'developer',
         popular: true,
         fields: ['webhookUrl', 'method', 'headers'],
+      },
+      { 
+        id: 'webhook_outgoing', 
+        name: 'Webhook (Outgoing)', 
+        icon: '📤',
+        description: 'Send data to any HTTP endpoint when triggered',
+        category: 'developer',
+        fields: ['webhookUrl', 'method', 'headers', 'bodyTemplate'],
       },
       { 
         id: 'custom_api', 
@@ -3647,6 +3665,93 @@ const comprehensiveIntegrations: Record<string, IntegrationConfig> = {
     ],
     aiInstructions: 'Create well-formatted issues with proper markdown. Use appropriate labels for categorization.',
   },
+
+  // Custom Integration - Build from scratch
+  custom_integration: {
+    triggers: [
+      { id: 'webhook_received', name: 'Webhook Received', icon: '🎣', description: 'When webhook data is received', dataFields: ['payload', 'headers', 'method', 'query_params', 'timestamp'] },
+      { id: 'scheduled_trigger', name: 'Scheduled Trigger', icon: '⏰', description: 'Run on a schedule', dataFields: ['trigger_time', 'schedule_id', 'execution_count'] },
+      { id: 'manual_trigger', name: 'Manual Trigger', icon: '▶️', description: 'Manually start workflow', dataFields: ['triggered_by', 'timestamp', 'manual_input'] },
+      { id: 'api_polling', name: 'API Polling', icon: '🔄', description: 'Poll API for changes', dataFields: ['response_data', 'status_code', 'polling_interval', 'last_check'] },
+      { id: 'file_upload', name: 'File Upload', icon: '📁', description: 'When file is uploaded', dataFields: ['file_name', 'file_size', 'file_type', 'file_url'] },
+      { id: 'data_changed', name: 'Data Changed', icon: '📊', description: 'When monitored data changes', dataFields: ['old_value', 'new_value', 'field_name', 'change_type'] },
+    ],
+    actions: [
+      { id: 'http_request', name: 'HTTP Request', icon: '🌐', description: 'Make custom HTTP request', fields: [
+        { key: 'url', label: 'Request URL', type: 'text', placeholder: 'https://api.example.com/endpoint', required: true },
+        { key: 'method', label: 'HTTP Method', type: 'select', options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'], required: true },
+        { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{\n  "Authorization": "Bearer {{api_key}}",\n  "Content-Type": "application/json"\n}' },
+        { key: 'body', label: 'Request Body', type: 'textarea', placeholder: '{\n  "data": "{{variable}}"\n}' },
+        { key: 'timeout', label: 'Timeout (ms)', type: 'number', placeholder: '30000', helpText: 'Request timeout in milliseconds' },
+        { key: 'retry', label: 'Retry on Failure', type: 'select', options: ['0', '1', '2', '3'], default: '1' },
+      ]},
+      { id: 'transform_data', name: 'Transform Data', icon: '🔄', description: 'Transform and map data', fields: [
+        { key: 'inputPath', label: 'Input Data Path', type: 'text', placeholder: '$.response.data', helpText: 'JSONPath to source data' },
+        { key: 'transformation', label: 'Transformation Script', type: 'textarea', placeholder: '// Transform input data\nreturn input.map(item => ({\n  id: item.id,\n  name: item.fullName,\n  email: item.contact.email\n}));' },
+        { key: 'outputVariable', label: 'Output Variable', type: 'text', placeholder: 'transformed_data', required: true },
+      ]},
+      { id: 'run_code', name: 'Run Code', icon: '💻', description: 'Execute custom JavaScript', fields: [
+        { key: 'code', label: 'JavaScript Code', type: 'textarea', placeholder: '// Access variables with context.variables\nconst result = context.variables.input_data;\n\n// Process data\nconst processed = result.filter(item => item.active);\n\n// Return result\nreturn { success: true, data: processed };', required: true },
+        { key: 'timeout', label: 'Execution Timeout', type: 'number', placeholder: '5000', helpText: 'Max execution time (ms)' },
+      ]},
+      { id: 'set_variable', name: 'Set Variable', icon: '📝', description: 'Set workflow variable', fields: [
+        { key: 'variableName', label: 'Variable Name', type: 'text', placeholder: 'my_variable', required: true },
+        { key: 'value', label: 'Value', type: 'textarea', placeholder: '{{computed_value}}', required: true },
+        { key: 'scope', label: 'Scope', type: 'select', options: ['workflow', 'step', 'global'], default: 'workflow' },
+      ]},
+      { id: 'conditional_branch', name: 'Conditional Branch', icon: '🔀', description: 'Branch based on condition', fields: [
+        { key: 'condition', label: 'Condition', type: 'textarea', placeholder: '{{status}} === "active" && {{count}} > 0', required: true },
+        { key: 'trueAction', label: 'If True', type: 'text', placeholder: 'Continue to next step' },
+        { key: 'falseAction', label: 'If False', type: 'text', placeholder: 'Skip to end' },
+      ]},
+      { id: 'loop', name: 'Loop/Iterator', icon: '🔁', description: 'Loop through array data', fields: [
+        { key: 'arrayPath', label: 'Array to Loop', type: 'text', placeholder: '{{items}}', required: true },
+        { key: 'itemVariable', label: 'Item Variable Name', type: 'text', placeholder: 'current_item', required: true },
+        { key: 'indexVariable', label: 'Index Variable Name', type: 'text', placeholder: 'index' },
+        { key: 'maxIterations', label: 'Max Iterations', type: 'number', placeholder: '100', helpText: 'Safety limit' },
+      ]},
+      { id: 'delay', name: 'Delay', icon: '⏱️', description: 'Wait before continuing', fields: [
+        { key: 'duration', label: 'Duration (seconds)', type: 'number', placeholder: '5', required: true },
+        { key: 'unit', label: 'Time Unit', type: 'select', options: ['seconds', 'minutes', 'hours'], default: 'seconds' },
+      ]},
+      { id: 'aggregate', name: 'Aggregate Data', icon: '📊', description: 'Combine and aggregate data', fields: [
+        { key: 'operation', label: 'Operation', type: 'select', options: ['sum', 'average', 'count', 'min', 'max', 'concat', 'unique'], required: true },
+        { key: 'inputArray', label: 'Input Array', type: 'text', placeholder: '{{data_array}}', required: true },
+        { key: 'field', label: 'Field to Aggregate', type: 'text', placeholder: 'amount', helpText: 'For object arrays' },
+        { key: 'outputVariable', label: 'Output Variable', type: 'text', placeholder: 'aggregated_result', required: true },
+      ]},
+      { id: 'error_handler', name: 'Error Handler', icon: '⚠️', description: 'Handle errors gracefully', fields: [
+        { key: 'onError', label: 'On Error Action', type: 'select', options: ['retry', 'skip', 'stop', 'fallback'], required: true },
+        { key: 'retryCount', label: 'Retry Count', type: 'number', placeholder: '3' },
+        { key: 'fallbackValue', label: 'Fallback Value', type: 'textarea', placeholder: '{"status": "error", "message": "Operation failed"}' },
+        { key: 'notifyOnError', label: 'Notify on Error', type: 'select', options: ['yes', 'no'], default: 'no' },
+      ]},
+      { id: 'log_output', name: 'Log Output', icon: '📋', description: 'Log data for debugging', fields: [
+        { key: 'message', label: 'Log Message', type: 'textarea', placeholder: 'Processing {{item_count}} items at {{timestamp}}', required: true },
+        { key: 'level', label: 'Log Level', type: 'select', options: ['info', 'debug', 'warn', 'error'], default: 'info' },
+        { key: 'includeContext', label: 'Include Context', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+    ],
+    aiInstructions: 'Use custom integration for advanced workflows. Validate JSON in headers/body fields. Use proper error handling.',
+  },
+
+  // Webhook Outgoing
+  webhook_outgoing: {
+    triggers: [
+      { id: 'any_trigger', name: 'Any Event', icon: '🎯', description: 'Trigger from any source', dataFields: ['event_type', 'event_data', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'send_webhook', name: 'Send Webhook', icon: '📤', description: 'Send data to external URL', fields: [
+        { key: 'url', label: 'Webhook URL', type: 'text', placeholder: 'https://hooks.example.com/webhook', required: true },
+        { key: 'method', label: 'HTTP Method', type: 'select', options: ['POST', 'PUT', 'PATCH'], required: true },
+        { key: 'payload', label: 'Payload (JSON)', type: 'textarea', placeholder: '{\n  "event": "{{event_type}}",\n  "data": {{data}}\n}', required: true },
+        { key: 'headers', label: 'Custom Headers (JSON)', type: 'textarea', placeholder: '{\n  "X-Custom-Header": "value"\n}' },
+        { key: 'auth_type', label: 'Authentication', type: 'select', options: ['none', 'basic', 'bearer', 'api_key'] },
+        { key: 'auth_value', label: 'Auth Value', type: 'password', placeholder: 'Token or credentials' },
+      ]},
+    ],
+    aiInstructions: 'Ensure webhook URL is valid. Use proper JSON formatting for payload.',
+  },
 };
 
 // Extract actions from comprehensive integrations for the form
@@ -4563,22 +4668,48 @@ function IntegrationConfigForm({
 
   // === MULTI-STEP WORKFLOW HELPERS ===
   
+  // Generic actions that apply to all apps (for apps without specific actions defined)
+  const genericActions = [
+    { id: 'send_data', name: 'Send Data', icon: '📤', description: 'Send data to this app via API/webhook' },
+    { id: 'create_record', name: 'Create Record', icon: '➕', description: 'Create a new record/entry' },
+    { id: 'update_record', name: 'Update Record', icon: '✏️', description: 'Update an existing record' },
+    { id: 'delete_record', name: 'Delete Record', icon: '🗑️', description: 'Delete a record' },
+    { id: 'fetch_data', name: 'Fetch Data', icon: '📥', description: 'Retrieve data from this app' },
+    { id: 'trigger_webhook', name: 'Trigger Webhook', icon: '🔗', description: 'Call a webhook endpoint' },
+  ];
+  
   // Get all available apps for adding steps (from comprehensiveIntegrations)
-  const availableApps = Object.entries(comprehensiveIntegrations).map(([id, data]) => ({
-    id,
-    name: data.name,
-    icon: data.icon,
-    category: data.category,
-    actions: integrationActions[id] || [],
-  })).filter(app => app.actions.length > 0);
+  // Include ALL apps, not just those with predefined actions
+  const availableApps = Object.entries(comprehensiveIntegrations).map(([id, data]) => {
+    const specificActions = integrationActions[id] || [];
+    return {
+      id,
+      name: data.name,
+      icon: data.icon,
+      category: data.category,
+      // Use specific actions if available, otherwise provide generic actions
+      actions: specificActions.length > 0 ? specificActions : genericActions.map(a => ({
+        ...a,
+        description: `${a.description} for ${data.name}`
+      })),
+      hasSpecificActions: specificActions.length > 0,
+    };
+  });
 
   // Add a new workflow step
   const addWorkflowStep = (appId: string, actionId: string) => {
     const app = comprehensiveIntegrations[appId];
-    const appActions = integrationActions[appId] || [];
-    const action = appActions.find((a: any) => a.id === actionId);
+    const appData = availableApps.find(a => a.id === appId);
+    const action = appData?.actions.find((a: any) => a.id === actionId);
     
-    if (!app || !action) return;
+    if (!app || !action) {
+      toast({
+        title: "Error",
+        description: "Could not add step. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const newStep: WorkflowStep = {
       id: `step_${Date.now()}`,
@@ -4681,6 +4812,18 @@ function IntegrationConfigForm({
     if (Object.keys(template.prefilledConfig).length > 0) {
       setConfig(template.prefilledConfig);
     }
+  };
+
+  // Clear selected template and reset to defaults
+  const clearTemplate = () => {
+    setSelectedTemplate(null);
+    setName(integrationType.name);
+    setDescription('');
+    setSelectedAction('');
+    setSelectedTriggers([]);
+    setAiInstructions('');
+    setActionConfig({});
+    setSetupMode('custom');
   };
 
   // Field configurations for different integration types
@@ -4883,11 +5026,28 @@ function IntegrationConfigForm({
       { key: 'apiKey', label: 'Personal Access Token', type: 'password', placeholder: 'Your Calendly token', required: true },
     ],
     
-    // Developer
+    // Developer Tools
+    custom_integration: [
+      { key: 'integrationName', label: 'Integration Name', type: 'text', placeholder: 'My Custom Integration', required: true, helpText: 'A friendly name for your custom integration' },
+      { key: 'webhookUrl', label: 'Endpoint URL', type: 'text', placeholder: 'https://your-api.com/endpoint', required: true, helpText: 'The URL to send/receive data' },
+      { key: 'method', label: 'HTTP Method', type: 'select', placeholder: 'POST', options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], required: true },
+      { key: 'authType', label: 'Authentication Type', type: 'select', placeholder: 'None', options: ['None', 'API Key', 'Bearer Token', 'Basic Auth', 'OAuth2', 'Custom Header'] },
+      { key: 'authValue', label: 'Auth Value', type: 'password', placeholder: 'Your API key or token', helpText: 'The authentication value (API key, token, etc.)' },
+      { key: 'headers', label: 'Custom Headers (JSON)', type: 'textarea', placeholder: '{\n  "Content-Type": "application/json",\n  "X-Custom-Header": "value"\n}', helpText: 'Additional headers to send with requests' },
+      { key: 'bodyTemplate', label: 'Request Body Template', type: 'textarea', placeholder: '{\n  "message": "{{message}}",\n  "customer": "{{customer_name}}",\n  "timestamp": "{{timestamp}}"\n}', helpText: 'JSON template for request body. Use {{variables}} for dynamic data' },
+      { key: 'responseMapping', label: 'Response Mapping (optional)', type: 'textarea', placeholder: '{\n  "success": "data.status == success",\n  "id": "data.id"\n}', helpText: 'Map response fields for use in subsequent steps' },
+    ],
     webhook: [
       { key: 'webhookUrl', label: 'Webhook URL', type: 'text', placeholder: 'https://your-api.com/webhook', required: true },
       { key: 'method', label: 'HTTP Method', type: 'select', placeholder: 'POST', options: ['POST', 'PUT', 'PATCH'] },
       { key: 'headers', label: 'Custom Headers (JSON)', type: 'textarea', placeholder: '{"Authorization": "Bearer xxx"}' },
+    ],
+    webhook_outgoing: [
+      { key: 'webhookUrl', label: 'Destination URL', type: 'text', placeholder: 'https://external-service.com/webhook', required: true, helpText: 'URL to send data to when triggered' },
+      { key: 'method', label: 'HTTP Method', type: 'select', placeholder: 'POST', options: ['POST', 'PUT', 'PATCH'], required: true },
+      { key: 'authHeader', label: 'Authorization Header', type: 'password', placeholder: 'Bearer your-token-here', helpText: 'Optional auth header value' },
+      { key: 'headers', label: 'Custom Headers (JSON)', type: 'textarea', placeholder: '{"Content-Type": "application/json"}' },
+      { key: 'bodyTemplate', label: 'Body Template (JSON)', type: 'textarea', placeholder: '{\n  "event": "{{trigger_event}}",\n  "data": {\n    "message": "{{message}}",\n    "from": "{{customer_name}}"\n  }\n}', required: true, helpText: 'Use {{variables}} for dynamic content' },
     ],
     custom_api: [
       { key: 'apiUrl', label: 'API URL', type: 'text', placeholder: 'https://api.example.com/endpoint', required: true },
@@ -4898,6 +5058,8 @@ function IntegrationConfigForm({
     graphql: [
       { key: 'endpoint', label: 'GraphQL Endpoint', type: 'text', placeholder: 'https://api.example.com/graphql', required: true },
       { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{"Authorization": "Bearer xxx"}' },
+      { key: 'query', label: 'GraphQL Query', type: 'textarea', placeholder: 'mutation CreateItem($input: ItemInput!) {\n  createItem(input: $input) {\n    id\n    name\n  }\n}', helpText: 'Your GraphQL query or mutation' },
+      { key: 'variables', label: 'Variables Template (JSON)', type: 'textarea', placeholder: '{\n  "input": {\n    "name": "{{customer_name}}",\n    "message": "{{message}}"\n  }\n}', helpText: 'Variables for the query. Use {{variables}} for dynamic data' },
     ],
     github: [
       { key: 'accessToken', label: 'Personal Access Token', type: 'password', placeholder: 'ghp_xxx', required: true },
@@ -4998,10 +5160,26 @@ function IntegrationConfigForm({
           {/* Quick Setup Templates (if available) */}
           {availableTemplates.length > 0 && (
             <>
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium">Quick Setup Templates</span>
-                <Badge variant="secondary" className="text-xs">One-click setup</Badge>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-medium">Quick Setup Templates</span>
+                  <Badge variant="secondary" className="text-xs">One-click setup</Badge>
+                </div>
+                {selectedTemplate && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearTemplate();
+                    }}
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Clear Selection
+                  </Button>
+                )}
               </div>
               
               <div className="grid grid-cols-1 gap-2 mb-4">
@@ -5012,8 +5190,13 @@ function IntegrationConfigForm({
                       selectedTemplate?.id === template.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''
                     }`}
                     onClick={() => {
-                      applyTemplate(template);
-                      setSetupMode('quick');
+                      if (selectedTemplate?.id === template.id) {
+                        // Toggle off if already selected
+                        clearTemplate();
+                      } else {
+                        applyTemplate(template);
+                        setSetupMode('quick');
+                      }
                     }}
                   >
                     <CardContent className="p-3 flex items-center gap-3">
@@ -5022,8 +5205,10 @@ function IntegrationConfigForm({
                         <p className="font-medium text-sm">{template.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{template.description}</p>
                       </div>
-                      {selectedTemplate?.id === template.id && (
+                      {selectedTemplate?.id === template.id ? (
                         <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
                       )}
                     </CardContent>
                   </Card>
@@ -5899,12 +6084,15 @@ function IntegrationConfigForm({
                             }, {} as Record<string, typeof availableApps>)
                           ).map(([category, apps]) => (
                             <div key={category}>
-                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">{category}</div>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">{category}</div>
                               {apps.map(app => (
                                 <SelectItem key={app.id} value={app.id}>
                                   <span className="flex items-center gap-2">
-                                    <span>{app.icon}</span>
-                                    {app.name}
+                                    <span className="text-base">{app.icon}</span>
+                                    <span>{app.name}</span>
+                                    {!app.hasSpecificActions && (
+                                      <span className="text-[10px] text-muted-foreground">(Generic)</span>
+                                    )}
                                   </span>
                                 </SelectItem>
                               ))}
@@ -5918,24 +6106,40 @@ function IntegrationConfigForm({
                     {addStepAppId && (
                       <div className="space-y-2">
                         <Label className="text-xs">Select Action</Label>
-                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
-                          {(integrationActions[addStepAppId] || []).map((action: any) => (
-                            <Card
-                              key={action.id}
-                              className={`cursor-pointer transition-all ${
-                                addStepActionId === action.id
-                                  ? 'border-primary ring-2 ring-primary/20'
-                                  : 'hover:border-primary/50'
-                              }`}
-                              onClick={() => setAddStepActionId(action.id)}
-                            >
-                              <CardContent className="p-2 flex items-center gap-2">
-                                <span className="text-lg">{action.icon}</span>
-                                <p className="text-xs font-medium truncate">{action.name}</p>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
+                        {(() => {
+                          const selectedApp = availableApps.find(a => a.id === addStepAppId);
+                          const appActions = selectedApp?.actions || [];
+                          
+                          return appActions.length === 0 ? (
+                            <div className="text-center py-4 text-sm text-muted-foreground">
+                              No actions available for this app
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                              {appActions.map((action: any) => (
+                                <Card
+                                  key={action.id}
+                                  className={`cursor-pointer transition-all ${
+                                    addStepActionId === action.id
+                                      ? 'border-primary ring-2 ring-primary/20'
+                                      : 'hover:border-primary/50'
+                                  }`}
+                                  onClick={() => setAddStepActionId(action.id)}
+                                >
+                                  <CardContent className="p-2 flex items-center gap-2">
+                                    <span className="text-lg">{action.icon}</span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-medium truncate">{action.name}</p>
+                                      {action.description && (
+                                        <p className="text-[10px] text-muted-foreground truncate">{action.description}</p>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 
