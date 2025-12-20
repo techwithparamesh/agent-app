@@ -1503,6 +1503,18 @@ const integrationActions: Record<string, Array<{
       { key: 'document', label: 'Document (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}"}' },
     ]},
   ],
+  dropbox: [
+    { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload file to Dropbox', templates: [
+      { key: 'path', label: 'File Path', type: 'text', placeholder: '/leads/{{customer_name}}_{{date}}.txt' },
+      { key: 'content', label: 'File Content', type: 'textarea', placeholder: 'Customer: {{customer_name}}\nEmail: {{customer_email}}\nPhone: {{customer_phone}}' },
+    ]},
+  ],
+  aws_s3: [
+    { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload to S3 bucket', templates: [
+      { key: 'key', label: 'File Key (path)', type: 'text', placeholder: 'leads/{{customer_email}}_{{timestamp}}.json' },
+      { key: 'content', label: 'File Content', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}"}' },
+    ]},
+  ],
   // Productivity Actions
   trello: [
     { id: 'create_card', name: 'Create Card', icon: '📋', description: 'Create Trello card', templates: [
@@ -1573,6 +1585,58 @@ const integrationActions: Record<string, Array<{
     { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Create customer', templates: [
       { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
       { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+    ]},
+  ],
+  paypal: [
+    { id: 'create_invoice', name: 'Create Invoice', icon: '📄', description: 'Create PayPal invoice', templates: [
+      { key: 'recipientEmail', label: 'Recipient Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'amount', label: 'Amount', type: 'text', placeholder: '{{amount}}' },
+      { key: 'currency', label: 'Currency', type: 'text', placeholder: 'USD', default: 'USD' },
+      { key: 'description', label: 'Description', type: 'text', placeholder: '{{service}}' },
+    ]},
+  ],
+  // Google Missing Actions
+  google_docs: [
+    { id: 'create_document', name: 'Create Document', icon: '📝', description: 'Create new Google Doc', templates: [
+      { key: 'title', label: 'Document Title', type: 'text', placeholder: 'Lead - {{customer_name}} - {{date}}' },
+      { key: 'content', label: 'Document Content', type: 'textarea', placeholder: 'Customer Details\n\nName: {{customer_name}}\nEmail: {{customer_email}}\nPhone: {{customer_phone}}\nMessage: {{message}}' },
+    ]},
+  ],
+  google_forms: [
+    { id: 'log_response', name: 'Log Form Response', icon: '📋', description: 'Log form submission data', templates: [
+      { key: 'logFormat', label: 'Log Format', type: 'textarea', placeholder: 'Form submitted by {{customer_name}} at {{timestamp}}' },
+    ]},
+  ],
+  // Automation Missing Actions
+  ifttt: [
+    { id: 'trigger_applet', name: 'Trigger Applet', icon: '🔀', description: 'Trigger IFTTT applet', templates: [
+      { key: 'value1', label: 'Value 1', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'value2', label: 'Value 2', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'value3', label: 'Value 3', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+  ],
+  power_automate: [
+    { id: 'trigger_flow', name: 'Trigger Flow', icon: '⚙️', description: 'Trigger Power Automate flow', templates: [
+      { key: 'payload', label: 'Data Payload (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}", "event": "{{trigger_event}}"}' },
+    ]},
+  ],
+  // Developer Missing Actions
+  custom_api: [
+    { id: 'send_request', name: 'Send API Request', icon: '🌐', description: 'Send HTTP request', templates: [
+      { key: 'body', label: 'Request Body (JSON)', type: 'textarea', placeholder: '{"customer": {"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}"}, "event": "{{trigger_event}}"}' },
+    ]},
+  ],
+  graphql: [
+    { id: 'execute_mutation', name: 'Execute Mutation', icon: '◼️', description: 'Run GraphQL mutation', templates: [
+      { key: 'query', label: 'GraphQL Mutation', type: 'textarea', placeholder: 'mutation CreateLead($input: LeadInput!) {\n  createLead(input: $input) {\n    id\n    name\n  }\n}' },
+      { key: 'variables', label: 'Variables (JSON)', type: 'textarea', placeholder: '{"input": {"name": "{{customer_name}}", "email": "{{customer_email}}"}}' },
+    ]},
+  ],
+  github: [
+    { id: 'create_issue', name: 'Create Issue', icon: '🐛', description: 'Create GitHub issue', templates: [
+      { key: 'title', label: 'Issue Title', type: 'text', placeholder: 'New Lead: {{customer_name}}' },
+      { key: 'body', label: 'Issue Body', type: 'textarea', placeholder: '## New Lead\n\n- **Name:** {{customer_name}}\n- **Email:** {{customer_email}}\n- **Phone:** {{customer_phone}}\n- **Message:** {{message}}' },
+      { key: 'labels', label: 'Labels (comma separated)', type: 'text', placeholder: 'lead, new' },
     ]},
   ],
 };
