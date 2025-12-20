@@ -4445,6 +4445,7 @@ function IntegrationConfigForm({
   onCancel: () => void;
   isLoading: boolean;
 }) {
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [setupMode, setSetupMode] = useState<'quick' | 'custom'>('quick');
   const [selectedTemplate, setSelectedTemplate] = useState<QuickSetupTemplate | null>(null);
@@ -5239,21 +5240,32 @@ function IntegrationConfigForm({
                     <div className="mt-4 p-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-lg border border-primary/10">
                       <p className="text-xs font-medium mb-2 flex items-center gap-1">
                         <Sparkles className="h-3 w-3 text-purple-500" />
-                        Available Variables (copy & paste):
+                        Available Variables (click to copy):
                       </p>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {templateVariables.map((v) => (
-                          <Badge 
+                          <button 
                             key={v.var} 
-                            variant="secondary" 
-                            className="text-xs font-mono cursor-pointer hover:bg-primary/20 active:scale-95 transition-all select-none" 
-                            title={`Click to copy: ${v.desc}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
+                            type="button"
+                            className="inline-flex items-center rounded-md border border-transparent bg-secondary text-secondary-foreground px-2.5 py-1 text-xs font-mono cursor-pointer hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all select-none focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1" 
+                            title={v.desc}
+                            onClick={() => {
                               navigator.clipboard.writeText(v.var).then(() => {
                                 toast({
-                                  title: "Copied!",
+                                  title: "✓ Copied!",
+                                  description: `${v.var} copied to clipboard. Paste it in any field above.`,
+                                  duration: 2000,
+                                });
+                              }).catch(() => {
+                                // Fallback for older browsers
+                                const textArea = document.createElement('textarea');
+                                textArea.value = v.var;
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(textArea);
+                                toast({
+                                  title: "✓ Copied!",
                                   description: `${v.var} copied to clipboard`,
                                   duration: 2000,
                                 });
@@ -5261,7 +5273,7 @@ function IntegrationConfigForm({
                             }}
                           >
                             {v.var}
-                          </Badge>
+                          </button>
                         ))}
                       </div>
                     </div>
