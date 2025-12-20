@@ -1,4 +1,5 @@
 import { useState, useMemo, Component, ErrorInfo, ReactNode } from "react";
+import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +50,8 @@ import {
   Link,
   Settings,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
   ExternalLink,
   RefreshCw,
   Clock,
@@ -61,6 +64,7 @@ import {
   Sparkles,
   GitBranch,
   X,
+  Layers,
 } from "lucide-react";
 
 // ============= INTEGRATION CATALOG (n8n-style) =============
@@ -4458,6 +4462,29 @@ function IntegrationConfigForm({
   const [selectedAction, setSelectedAction] = useState<string>('');
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
+
+  // Multi-Step Workflow State
+  type WorkflowStep = {
+    id: string;
+    appId: string;
+    appName: string;
+    appIcon: string;
+    actionId: string;
+    actionName: string;
+    actionIcon: string;
+    config: Record<string, string>;
+    // For conditional steps
+    condition?: {
+      field: string;
+      operator: string;
+      value: string;
+    };
+  };
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
+  const [isAddingStep, setIsAddingStep] = useState(false);
+  const [addStepAppId, setAddStepAppId] = useState<string>('');
+  const [addStepActionId, setAddStepActionId] = useState<string>('');
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [aiInstructions, setAiInstructions] = useState<string>('');
   
   // Conditional Branching State
@@ -4534,6 +4561,83 @@ function IntegrationConfigForm({
     setConditions(conditions.map(c => c.id === id ? { ...c, ...updates } : c));
   };
 
+  // === MULTI-STEP WORKFLOW HELPERS ===
+  
+  // Get all available apps for adding steps (from comprehensiveIntegrations)
+  const availableApps = Object.entries(comprehensiveIntegrations).map(([id, data]) => ({
+    id,
+    name: data.name,
+    icon: data.icon,
+    category: data.category,
+    actions: integrationActions[id] || [],
+  })).filter(app => app.actions.length > 0);
+
+  // Add a new workflow step
+  const addWorkflowStep = (appId: string, actionId: string) => {
+    const app = comprehensiveIntegrations[appId];
+    const appActions = integrationActions[appId] || [];
+    const action = appActions.find((a: any) => a.id === actionId);
+    
+    if (!app || !action) return;
+
+    const newStep: WorkflowStep = {
+      id: `step_${Date.now()}`,
+      appId,
+      appName: app.name,
+      appIcon: app.icon,
+      actionId,
+      actionName: action.name,
+      actionIcon: action.icon,
+      config: {},
+    };
+
+    setWorkflowSteps([...workflowSteps, newStep]);
+    setIsAddingStep(false);
+    setAddStepAppId('');
+    setAddStepActionId('');
+    
+    toast({
+      title: "Step Added",
+      description: `${app.icon} ${action.name} added to workflow`,
+      duration: 2000,
+    });
+  };
+
+  // Remove a workflow step
+  const removeWorkflowStep = (stepId: string) => {
+    setWorkflowSteps(workflowSteps.filter(s => s.id !== stepId));
+    if (editingStepId === stepId) {
+      setEditingStepId(null);
+    }
+  };
+
+  // Update a workflow step's config
+  const updateWorkflowStepConfig = (stepId: string, config: Record<string, string>) => {
+    setWorkflowSteps(workflowSteps.map(s => 
+      s.id === stepId ? { ...s, config } : s
+    ));
+  };
+
+  // Move step up/down
+  const moveWorkflowStep = (stepId: string, direction: 'up' | 'down') => {
+    const index = workflowSteps.findIndex(s => s.id === stepId);
+    if (index === -1) return;
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= workflowSteps.length) return;
+    
+    const newSteps = [...workflowSteps];
+    [newSteps[index], newSteps[newIndex]] = [newSteps[newIndex], newSteps[index]];
+    setWorkflowSteps(newSteps);
+  };
+
+  // Get step action fields for configuration
+  const getStepActionFields = (appId: string, actionId: string) => {
+    const appActions = integrationActions[appId] || [];
+    const action = appActions.find((a: any) => a.id === actionId);
+    return action?.fields || action?.templates || [];
+  };
+
   // AI Model options
   const aiModelOptions = [
     { value: 'openai-gpt-4o', label: 'OpenAI GPT-4o', provider: 'OpenAI' },
@@ -4555,6 +4659,12 @@ function IntegrationConfigForm({
   ];
 
   const actions = integrationActions[integrationType.id] || [];
+  
+  // Get integration-specific triggers from comprehensiveIntegrations
+  const integrationTriggers = comprehensiveIntegrations[integrationType.id]?.triggers || [];
+  
+  // Fallback to generic triggers if no specific ones defined
+  const availableTriggers = integrationTriggers.length > 0 ? integrationTriggers : triggerEvents;
   
   // Get templates for this integration
   const availableTemplates = quickSetupTemplates.filter(t => t.integrationId === integrationType.id);
@@ -4809,7 +4919,7 @@ function IntegrationConfigForm({
       agentId: agentId || null,
       config: { 
         ...config, 
-        // Simple flow (no conditions)
+        // Simple flow (no conditions) - first action
         action: useConditionalLogic ? undefined : selectedAction, 
         actionTemplates: useConditionalLogic ? undefined : actionConfig,
         // Conditional flow
@@ -4819,6 +4929,8 @@ function IntegrationConfigForm({
         falseAction: useConditionalLogic ? falseAction : undefined,
         trueActionConfig: useConditionalLogic ? trueActionConfig : undefined,
         falseActionConfig: useConditionalLogic ? falseActionConfig : undefined,
+        // Multi-step workflow (additional steps after first action)
+        workflowSteps: workflowSteps.length > 0 ? workflowSteps : undefined,
         // Common
         aiInstructions,
         aiModel,
@@ -4838,11 +4950,14 @@ function IntegrationConfigForm({
     return true;
   });
   
-  // Step 3 validation - either simple action OR conditional logic with both actions
-  const isStep3Valid = useConditionalLogic 
+  // Step 3 validation - triggers (require triggers only if integration has triggers available)
+  const isStep3Valid = availableTriggers.length === 0 || selectedTriggers.length > 0;
+  
+  // Step 4 validation - either simple action OR conditional logic with both actions
+  // Workflow steps are optional additions
+  const isStep4Valid = useConditionalLogic 
     ? (conditions.length > 0 && trueAction !== '' && conditions.every(c => c.value.trim() !== '' || c.operator === 'is_empty' || c.operator === 'is_not_empty'))
     : selectedAction !== '';
-  const isStep4Valid = selectedTriggers.length > 0;
 
   return (
     <div className="space-y-6">
@@ -4851,8 +4966,8 @@ function IntegrationConfigForm({
         {[
           { num: 1, label: 'Setup' },
           { num: 2, label: 'Connect' },
-          { num: 3, label: 'Logic' },
-          { num: 4, label: 'Triggers' },
+          { num: 3, label: 'Triggers' },
+          { num: 4, label: 'Action' },
         ].map((s, i) => (
           <div key={s.num} className="flex items-center flex-shrink-0">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -5089,14 +5204,97 @@ function IntegrationConfigForm({
           <DialogFooter>
             <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
             <Button onClick={() => setStep(3)} disabled={!isStep2Valid}>
+              Next: Triggers <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </div>
+      )}
+
+      {/* Step 3: Trigger Events - WHEN should this run? */}
+      {step === 3 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Bell className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-semibold">When should this run?</h3>
+              <p className="text-sm text-muted-foreground">Select events that trigger this integration</p>
+            </div>
+          </div>
+
+          {/* Trigger Selection Grid */}
+          <Card>
+            <CardContent className="p-4">
+              {availableTriggers.length === 0 ? (
+                <div className="text-center py-6">
+                  <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="font-medium text-muted-foreground">No triggers available</p>
+                  <p className="text-sm text-muted-foreground">This integration is action-only (outbound)</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {availableTriggers.map((event) => (
+                    <label
+                      key={event.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedTriggers.includes(event.id)
+                          ? 'border-primary bg-primary/5'
+                          : 'border-transparent bg-muted/50 hover:bg-muted'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={selectedTriggers.includes(event.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTriggers([...selectedTriggers, event.id]);
+                          } else {
+                            setSelectedTriggers(selectedTriggers.filter(e => e !== event.id));
+                          }
+                        }}
+                      />
+                      <span className="text-lg">{event.icon}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{event.name}</p>
+                        <p className="text-xs text-muted-foreground">{event.description || event.category}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AI Instructions */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                <Label className="font-medium">AI Behavior Instructions</Label>
+                <Badge variant="outline" className="text-xs">Optional</Badge>
+              </div>
+              <Textarea
+                value={aiInstructions}
+                onChange={(e) => setAiInstructions(e.target.value)}
+                placeholder={integrationType.aiInstructions || `Describe how the AI should handle ${integrationType.name} events...\n\nExamples:\n• "Reply to all support messages with helpful responses"\n• "Summarize incoming data and categorize it"\n• "Auto-respond to common questions"`}
+                rows={4}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Tell the AI how to behave when these events are triggered.
+              </p>
+            </CardContent>
+          </Card>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+            <Button onClick={() => setStep(4)} disabled={!isStep3Valid}>
               Next: Choose Action <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </DialogFooter>
         </div>
       )}
 
-      {/* Step 3: Action Logic - Simple or Conditional */}
-      {step === 3 && (
+      {/* Step 4: Action Logic - WHAT should happen? */}
+      {step === 4 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <Zap className="h-5 w-5 text-primary" />
@@ -5568,81 +5766,319 @@ function IntegrationConfigForm({
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-            <Button onClick={() => setStep(4)} disabled={!isStep3Valid}>
-              Next: Triggers <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </DialogFooter>
-        </div>
-      )}
-
-      {/* Step 4: Trigger Events */}
-      {step === 4 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Bell className="h-5 w-5 text-primary" />
-            <div>
-              <h3 className="font-semibold">When should this run?</h3>
-              <p className="text-sm text-muted-foreground">Select events that trigger this integration</p>
-            </div>
-          </div>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {triggerEvents.map((event) => (
-                  <label
-                    key={event.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedTriggers.includes(event.id)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-transparent bg-muted/50 hover:bg-muted'
-                    }`}
-                  >
-                    <Checkbox
-                      checked={selectedTriggers.includes(event.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedTriggers([...selectedTriggers, event.id]);
-                        } else {
-                          setSelectedTriggers(selectedTriggers.filter(e => e !== event.id));
-                        }
-                      }}
-                    />
-                    <span className="text-lg">{event.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{event.name}</p>
-                      <p className="text-xs text-muted-foreground">{event.category}</p>
+          {/* ============ MULTI-STEP WORKFLOW BUILDER ============ */}
+          <Card className="border-dashed border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                Multi-Step Workflow
+                <Badge variant="outline" className="text-xs ml-2">Optional</Badge>
+              </CardTitle>
+              <CardDescription>
+                Chain multiple apps together. Data flows from one step to the next.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Visual Workflow Chain */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Trigger */}
+                <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                  <span className="text-lg">{integrationType.icon}</span>
+                  <div>
+                    <p className="text-xs font-medium">Trigger</p>
+                    <p className="text-[10px] text-muted-foreground">{integrationType.name}</p>
+                  </div>
+                </div>
+                
+                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                
+                {/* First Action (from main selection) */}
+                {(selectedAction || (useConditionalLogic && trueAction)) && (
+                  <>
+                    <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/30">
+                      <span className="text-lg">{integrationType.icon}</span>
+                      <div>
+                        <p className="text-xs font-medium">Step 1</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {useConditionalLogic 
+                            ? (actions.find(a => a.id === trueAction)?.name || 'Conditional')
+                            : (currentAction?.name || 'Action')}
+                        </p>
+                      </div>
                     </div>
-                  </label>
+                    {workflowSteps.length > 0 && <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                  </>
+                )}
+                
+                {/* Additional Workflow Steps */}
+                {workflowSteps.map((wfStep, index) => (
+                  <React.Fragment key={wfStep.id}>
+                    <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded-lg border border-purple-500/30 relative group">
+                      <span className="text-lg">{wfStep.appIcon}</span>
+                      <div>
+                        <p className="text-xs font-medium">Step {index + 2}</p>
+                        <p className="text-[10px] text-muted-foreground">{wfStep.actionName}</p>
+                      </div>
+                      {/* Quick actions on hover */}
+                      <div className="absolute -top-2 -right-2 hidden group-hover:flex gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-5 w-5 rounded-full"
+                          onClick={() => setEditingStepId(wfStep.id)}
+                        >
+                          <Settings className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-5 w-5 rounded-full"
+                          onClick={() => removeWorkflowStep(wfStep.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    {index < workflowSteps.length - 1 && (
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    )}
+                  </React.Fragment>
                 ))}
+                
+                {/* Add Step Button */}
+                {!isAddingStep && (
+                  <>
+                    {(selectedAction || trueAction || workflowSteps.length > 0) && (
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-dashed h-auto py-2"
+                      onClick={() => setIsAddingStep(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add App
+                    </Button>
+                  </>
+                )}
               </div>
+
+              {/* Add Step Modal */}
+              {isAddingStep && (
+                <Card className="border-primary/50 bg-background">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm">Add Another App</CardTitle>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                        setIsAddingStep(false);
+                        setAddStepAppId('');
+                        setAddStepActionId('');
+                      }}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* App Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">Select App</Label>
+                      <Select value={addStepAppId} onValueChange={(v) => {
+                        setAddStepAppId(v);
+                        setAddStepActionId('');
+                      }}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Choose an app..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {Object.entries(
+                            availableApps.reduce((acc, app) => {
+                              if (!acc[app.category]) acc[app.category] = [];
+                              acc[app.category].push(app);
+                              return acc;
+                            }, {} as Record<string, typeof availableApps>)
+                          ).map(([category, apps]) => (
+                            <div key={category}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">{category}</div>
+                              {apps.map(app => (
+                                <SelectItem key={app.id} value={app.id}>
+                                  <span className="flex items-center gap-2">
+                                    <span>{app.icon}</span>
+                                    {app.name}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </div>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Action Selection */}
+                    {addStepAppId && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Select Action</Label>
+                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                          {(integrationActions[addStepAppId] || []).map((action: any) => (
+                            <Card
+                              key={action.id}
+                              className={`cursor-pointer transition-all ${
+                                addStepActionId === action.id
+                                  ? 'border-primary ring-2 ring-primary/20'
+                                  : 'hover:border-primary/50'
+                              }`}
+                              onClick={() => setAddStepActionId(action.id)}
+                            >
+                              <CardContent className="p-2 flex items-center gap-2">
+                                <span className="text-lg">{action.icon}</span>
+                                <p className="text-xs font-medium truncate">{action.name}</p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Add Button */}
+                    {addStepAppId && addStepActionId && (
+                      <Button 
+                        className="w-full" 
+                        size="sm"
+                        onClick={() => addWorkflowStep(addStepAppId, addStepActionId)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to Workflow
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Edit Step Configuration */}
+              {editingStepId && (() => {
+                const editingStep = workflowSteps.find(s => s.id === editingStepId);
+                if (!editingStep) return null;
+                const stepFields = getStepActionFields(editingStep.appId, editingStep.actionId);
+                
+                return (
+                  <Card className="border-purple-500/50 bg-purple-500/5">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <span>{editingStep.appIcon}</span>
+                          Configure: {editingStep.actionName}
+                        </CardTitle>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStepId(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {stepFields.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No configuration needed for this action.</p>
+                      ) : (
+                        stepFields.map((field: any) => (
+                          <div key={field.key} className="space-y-1">
+                            <Label className="text-xs flex items-center gap-1">
+                              {field.label}
+                              {field.required && <span className="text-red-500">*</span>}
+                            </Label>
+                            {field.type === 'textarea' ? (
+                              <Textarea
+                                value={editingStep.config[field.key] || ''}
+                                onChange={(e) => updateWorkflowStepConfig(editingStep.id, {
+                                  ...editingStep.config,
+                                  [field.key]: e.target.value
+                                })}
+                                placeholder={field.placeholder}
+                                rows={2}
+                                className="text-sm"
+                              />
+                            ) : field.type === 'select' ? (
+                              <Select 
+                                value={editingStep.config[field.key] || ''} 
+                                onValueChange={(v) => updateWorkflowStepConfig(editingStep.id, {
+                                  ...editingStep.config,
+                                  [field.key]: v
+                                })}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder={field.placeholder || 'Select...'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(field.options || []).map((opt: string) => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Input
+                                type={field.type || 'text'}
+                                value={editingStep.config[field.key] || ''}
+                                onChange={(e) => updateWorkflowStepConfig(editingStep.id, {
+                                  ...editingStep.config,
+                                  [field.key]: e.target.value
+                                })}
+                                placeholder={field.placeholder}
+                                className="h-8 text-sm"
+                              />
+                            )}
+                          </div>
+                        ))
+                      )}
+                      
+                      {/* Variable hints */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          💡 Use variables like <code className="bg-muted px-1 rounded">{'{{message}}'}</code>, <code className="bg-muted px-1 rounded">{'{{customer_name}}'}</code> to pass data from previous steps.
+                        </p>
+                      </div>
+                      
+                      {/* Reorder buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => moveWorkflowStep(editingStep.id, 'up')}
+                          disabled={workflowSteps.findIndex(s => s.id === editingStep.id) === 0}
+                        >
+                          <ArrowUp className="h-3 w-3 mr-1" /> Move Up
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => moveWorkflowStep(editingStep.id, 'down')}
+                          disabled={workflowSteps.findIndex(s => s.id === editingStep.id) === workflowSteps.length - 1}
+                        >
+                          <ArrowDown className="h-3 w-3 mr-1" /> Move Down
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Workflow Summary when steps exist */}
+              {workflowSteps.length > 0 && (
+                <div className="pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <Sparkles className="h-3 w-3 inline mr-1" />
+                    <strong>{workflowSteps.length + 1} step workflow:</strong> When triggered, data will flow through each app in sequence.
+                  </p>
+                  <div className="text-xs font-mono bg-muted/50 p-2 rounded">
+                    {integrationType.icon} Trigger → 
+                    {selectedAction && ` ${currentAction?.icon || '⚡'} ${currentAction?.name || 'Action 1'}`}
+                    {useConditionalLogic && ` 🔀 Conditional`}
+                    {workflowSteps.map((s, i) => ` → ${s.appIcon} ${s.actionName}`)}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* AI Instructions */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                <Label className="font-medium">AI Behavior Instructions</Label>
-                <Badge variant="outline" className="text-xs">Optional</Badge>
-              </div>
-              <Textarea
-                value={aiInstructions}
-                onChange={(e) => setAiInstructions(e.target.value)}
-                placeholder={integrationType.aiInstructions || `Describe how the AI should handle ${integrationType.name} events...\n\nExamples:\n• "Reply to all support emails with helpful responses"\n• "Summarize new messages and send to Slack"\n• "Auto-tag and categorize incoming data"`}
-                rows={4}
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                Tell the AI how to behave when this integration is triggered. This shapes the AI's responses and actions.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Summary */}
+          {/* Integration Summary */}
           <Card className="bg-gradient-to-r from-primary/5 to-purple-500/5 border-primary/20">
             <CardContent className="p-4">
               <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -5660,26 +6096,31 @@ function IntegrationConfigForm({
                     {integrationType.icon} {integrationType.name}
                   </span>
                 </div>
-                {currentAction && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Action:</span>
-                    <span className="font-medium">{currentAction.name}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Triggers:</span>
-                  <span className="font-medium">{selectedTriggers.length} event{selectedTriggers.length !== 1 ? 's' : ''}</span>
+                  <span className="font-medium">{selectedTriggers.length} selected</span>
                 </div>
-                {selectedTemplate && (
+                {!useConditionalLogic && currentAction && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Template:</span>
-                    <Badge variant="secondary" className="text-xs">{selectedTemplate.name}</Badge>
+                    <span className="text-muted-foreground">Action:</span>
+                    <span className="font-medium flex items-center gap-1">
+                      {currentAction.icon} {currentAction.name}
+                    </span>
                   </div>
                 )}
-                {aiInstructions && (
-                  <div className="pt-2 border-t">
-                    <span className="text-muted-foreground text-xs">AI Instructions:</span>
-                    <p className="text-xs mt-1 italic">{aiInstructions.substring(0, 100)}{aiInstructions.length > 100 ? '...' : ''}</p>
+                {useConditionalLogic && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Logic:</span>
+                    <Badge variant="secondary" className="text-xs">Conditional IF/ELSE</Badge>
+                  </div>
+                )}
+                {workflowSteps.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Workflow:</span>
+                    <Badge variant="outline" className="text-xs bg-purple-500/10">
+                      <Layers className="h-3 w-3 mr-1" />
+                      {workflowSteps.length + 1} steps ({workflowSteps.length} additional apps)
+                    </Badge>
                   </div>
                 )}
               </div>
