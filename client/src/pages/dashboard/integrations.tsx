@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Component, ErrorInfo, ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -597,7 +597,59 @@ interface Agent {
   name: string;
 }
 
-export default function IntegrationsPage() {
+// Error Boundary for catching render errors
+class IntegrationErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('IntegrationsPage Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <DashboardLayout>
+          <div className="p-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Something went wrong</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p>Failed to load the integrations page. This might be due to missing database tables.</p>
+                <p className="mt-2 text-xs font-mono bg-destructive/10 p-2 rounded">
+                  {this.state.error?.message}
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    this.setState({ hasError: false, error: null });
+                    window.location.reload();
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </DashboardLayout>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function IntegrationsPageContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
@@ -1026,10 +1078,12 @@ export default function IntegrationsPage() {
 
             {/* All Categories */}
             {activeCategory === 'all' && !searchQuery ? (
-              Object.entries(integrationCatalog).map(([key, category]) => (
+              Object.entries(integrationCatalog).map(([key, category]) => {
+                const CategoryIcon = category.icon;
+                return (
                 <div key={key}>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <category.icon className={`h-5 w-5`} />
+                    <CategoryIcon className="h-5 w-5" />
                     {category.label}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1058,7 +1112,8 @@ export default function IntegrationsPage() {
                     ))}
                   </div>
                 </div>
-              ))
+              );
+              })
             ) : (
               /* Filtered Results */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1654,5 +1709,14 @@ function IntegrationConfigForm({
         </Button>
       </DialogFooter>
     </div>
+  );
+}
+
+// Export wrapped component with error boundary
+export default function IntegrationsPage() {
+  return (
+    <IntegrationErrorBoundary>
+      <IntegrationsPageContent />
+    </IntegrationErrorBoundary>
   );
 }
