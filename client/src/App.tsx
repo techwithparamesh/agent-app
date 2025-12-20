@@ -1,43 +1,51 @@
 import { Switch, Route } from "wouter";
+import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 
-// Marketing Pages
-import Home from "@/pages/home";
-import About from "@/pages/about";
-import Features from "@/pages/features";
-import Pricing from "@/pages/pricing";
-import Contact from "@/pages/contact";
-import NotFound from "@/pages/not-found";
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
-// Auth Pages
-import Login from "@/pages/login";
-import Signup from "@/pages/signup";
+// Marketing Pages - lazy loaded
+const Home = lazy(() => import("@/pages/home"));
+const About = lazy(() => import("@/pages/about"));
+const Features = lazy(() => import("@/pages/features"));
+const Pricing = lazy(() => import("@/pages/pricing"));
+const Contact = lazy(() => import("@/pages/contact"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
-// Dashboard Pages
-import Dashboard from "@/pages/dashboard/index";
-import AgentsList from "@/pages/dashboard/agents/index";
-import CreateAgent from "@/pages/dashboard/agents/new";
-import AgentDetails from "@/pages/dashboard/agents/[id]";
-import EditAgent from "@/pages/dashboard/agents/edit";
-import WebsiteAgent from "@/pages/dashboard/agents/website";
-import WhatsAppAgent from "@/pages/dashboard/agents/whatsapp";
-import WebsiteScanner from "@/pages/dashboard/scan";
-import KnowledgeBase from "@/pages/dashboard/knowledge";
-import Chatbot from "@/pages/dashboard/chatbot";
-import Conversations from "@/pages/dashboard/conversations";
-import Templates from "@/pages/dashboard/templates";
-import CreateTemplate from "@/pages/dashboard/templates/new";
-import Analytics from "@/pages/dashboard/analytics";
-import Integrations from "@/pages/dashboard/integrations";
+// Auth Pages - lazy loaded
+const Login = lazy(() => import("@/pages/login"));
+const Signup = lazy(() => import("@/pages/signup"));
 
-// WhatsApp Business & Billing Pages
-import WhatsAppAccounts from "@/pages/dashboard/whatsapp-accounts";
-import PhoneNumbers from "@/pages/dashboard/phone-numbers";
-import Billing from "@/pages/dashboard/billing";
+// Dashboard Pages - lazy loaded
+const Dashboard = lazy(() => import("@/pages/dashboard/index"));
+const AgentsList = lazy(() => import("@/pages/dashboard/agents/index"));
+const CreateAgent = lazy(() => import("@/pages/dashboard/agents/new"));
+const AgentDetails = lazy(() => import("@/pages/dashboard/agents/[id]"));
+const EditAgent = lazy(() => import("@/pages/dashboard/agents/edit"));
+const WebsiteAgent = lazy(() => import("@/pages/dashboard/agents/website"));
+const WhatsAppAgent = lazy(() => import("@/pages/dashboard/agents/whatsapp"));
+const WebsiteScanner = lazy(() => import("@/pages/dashboard/scan"));
+const KnowledgeBase = lazy(() => import("@/pages/dashboard/knowledge"));
+const Chatbot = lazy(() => import("@/pages/dashboard/chatbot"));
+const Conversations = lazy(() => import("@/pages/dashboard/conversations"));
+const Templates = lazy(() => import("@/pages/dashboard/templates"));
+const CreateTemplate = lazy(() => import("@/pages/dashboard/templates/new"));
+const Analytics = lazy(() => import("@/pages/dashboard/analytics"));
+const Integrations = lazy(() => import("@/pages/dashboard/integrations"));
+
+// WhatsApp Business & Billing Pages - lazy loaded
+const WhatsAppAccounts = lazy(() => import("@/pages/dashboard/whatsapp-accounts"));
+const PhoneNumbers = lazy(() => import("@/pages/dashboard/phone-numbers"));
+const Billing = lazy(() => import("@/pages/dashboard/billing"));
 
 function Router() {
   return (
@@ -86,7 +94,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="agentforge-theme">
         <TooltipProvider>
-          <Router />
+          <Suspense fallback={<PageLoader />}>
+            <Router />
+          </Suspense>
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>

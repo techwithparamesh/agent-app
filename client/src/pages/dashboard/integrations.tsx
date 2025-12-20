@@ -2499,33 +2499,6 @@ const comprehensiveIntegrations: Record<string, IntegrationConfig> = {
   },
 
   // ==================== MICROSOFT SERVICES ====================
-  microsoft_teams: {
-    triggers: [
-      { id: 'message_received', name: 'Message Received', icon: '📩', description: 'When message is posted', dataFields: ['channel_id', 'team_id', 'sender', 'message_text', 'timestamp'] },
-      { id: 'mention', name: 'Bot Mentioned', icon: '🔔', description: 'When bot is @mentioned', dataFields: ['channel_id', 'user', 'message_text'] },
-      { id: 'meeting_started', name: 'Meeting Started', icon: '📹', description: 'When Teams meeting starts', dataFields: ['meeting_id', 'organizer', 'participants', 'start_time'] },
-    ],
-    actions: [
-      { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to Teams channel', fields: [
-        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
-        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
-        { key: 'message', label: 'Message', type: 'textarea', placeholder: '**New Lead:** {{customer_name}}\n{{ai_response}}', required: true },
-      ]},
-      { id: 'send_card', name: 'Send Adaptive Card', icon: '🎨', description: 'Send rich card message', fields: [
-        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
-        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
-        { key: 'cardJson', label: 'Adaptive Card JSON', type: 'textarea', placeholder: '{"type": "AdaptiveCard", ...}' },
-      ]},
-      { id: 'create_meeting', name: 'Schedule Meeting', icon: '📅', description: 'Create Teams meeting', fields: [
-        { key: 'subject', label: 'Meeting Subject', type: 'text', placeholder: 'Call with {{customer_name}}', required: true },
-        { key: 'startDateTime', label: 'Start Time', type: 'text', placeholder: '2024-01-15T10:00:00', required: true },
-        { key: 'duration', label: 'Duration (minutes)', type: 'number', placeholder: '30', default: '30' },
-        { key: 'attendees', label: 'Attendee Emails', type: 'text', placeholder: '{{customer_email}}' },
-      ]},
-    ],
-    aiInstructions: 'Use Teams markdown formatting. Be professional and concise.',
-  },
-
   outlook_calendar: {
     triggers: [
       { id: 'event_created', name: 'Event Created', icon: '📅', description: 'When new event is created', dataFields: ['event_id', 'subject', 'start', 'end', 'organizer', 'attendees'] },
