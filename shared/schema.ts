@@ -633,6 +633,97 @@ export const webhookEvents = mysqlTable("webhook_events", {
   eventIdx: index("idx_webhook_event").on(table.eventId),
 }));
 
+// ========== INTEGRATIONS SYSTEM ==========
+
+// External Integrations (Google Sheets, Webhooks, Zapier, etc.)
+export const integrations = mysqlTable("integrations", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  agentId: varchar("agent_id", { length: 36 }).references(() => agents.id, { onDelete: "cascade" }),
+  
+  // Integration Type
+  type: varchar("type", { length: 50 }).notNull(), // google_sheets, webhook, zapier, make, email, whatsapp_cloud, custom_api
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // Configuration
+  config: json("config").$type<{
+    // Google Sheets
+    spreadsheetId?: string;
+    sheetName?: string;
+    headerRow?: number;
+    credentials?: string; // Encrypted service account JSON
+    
+    // Webhook
+    webhookUrl?: string;
+    webhookHeaders?: Record<string, string>;
+    webhookMethod?: 'POST' | 'PUT' | 'PATCH';
+    
+    // Email
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpUser?: string;
+    smtpPass?: string; // Encrypted
+    fromEmail?: string;
+    toEmails?: string[];
+    
+    // Custom API
+    apiUrl?: string;
+    apiKey?: string;
+    apiHeaders?: Record<string, string>;
+    
+    // Field mappings
+    fieldMappings?: Array<{
+      sourceField: string;
+      targetField: string;
+      transform?: string;
+    }>;
+  }>(),
+  
+  // Triggers - when to fire this integration
+  triggers: json("triggers").$type<Array<{
+    event: 'appointment_booked' | 'appointment_cancelled' | 'lead_captured' | 'message_received' | 
+           'order_placed' | 'payment_received' | 'complaint_raised' | 'feedback_received' | 'custom';
+    conditions?: Record<string, any>;
+  }>>(),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  lastError: text("last_error"),
+  errorCount: int("error_count").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  userIdx: index("idx_integration_user").on(table.userId),
+  agentIdx: index("idx_integration_agent").on(table.agentId),
+  typeIdx: index("idx_integration_type").on(table.type),
+}));
+
+// Integration Execution Logs
+export const integrationLogs = mysqlTable("integration_logs", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  integrationId: varchar("integration_id", { length: 36 }).notNull().references(() => integrations.id, { onDelete: "cascade" }),
+  
+  // Execution Details
+  triggerEvent: varchar("trigger_event", { length: 50 }).notNull(),
+  inputData: json("input_data").$type<Record<string, any>>(),
+  outputData: json("output_data").$type<Record<string, any>>(),
+  
+  // Status
+  status: varchar("status", { length: 50 }).notNull(), // pending, success, failed, retrying
+  errorMessage: text("error_message"),
+  executionTimeMs: int("execution_time_ms"),
+  retryCount: int("retry_count").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  integrationIdx: index("idx_log_integration").on(table.integrationId),
+  statusIdx: index("idx_log_status").on(table.status),
+  createdIdx: index("idx_log_created").on(table.createdAt),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   agents: many(agents),

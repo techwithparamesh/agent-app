@@ -10,6 +10,7 @@ import puppeteer from "puppeteer";
 import whatsappRoutes from "./whatsapp/routes";
 import bspRoutes from "./bsp/routes";
 import billingRoutes from "./billing/routes";
+import { integrationRoutes } from "./integrations/routes";
 import { stripeService } from "./billing/stripe";
 import express from "express";
 
@@ -94,6 +95,10 @@ export async function registerRoutes(
   // ========== BILLING ROUTES ==========
   // Mount billing routes for subscription management (authenticated)
   app.use("/api/billing", isAuthenticated, billingRoutes);
+
+  // ========== INTEGRATION ROUTES ==========
+  // Mount integration routes for Google Sheets, Webhooks, etc.
+  app.use("/api/integrations", isAuthenticated, integrationRoutes);
 
   // ========== AUTH ROUTES ==========
   

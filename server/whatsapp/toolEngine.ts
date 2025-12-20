@@ -14,6 +14,7 @@ import {
   agents,
   knowledgeBase,
 } from '@shared/schema';
+import { integrationService, type TriggerEvent } from '../integrations';
 import type {
   ToolName,
   ToolInput,
@@ -300,6 +301,19 @@ export class ToolExecutionEngine {
       notes: `Booked appointment for ${date} at ${time}`,
     });
 
+    // Trigger integrations (Google Sheets, Webhooks, Email, etc.)
+    this.triggerIntegration('appointment_booked', agentId, {
+      appointmentId,
+      customerName,
+      customerPhone: normalizedPhone,
+      customerEmail,
+      date,
+      time,
+      endTime,
+      serviceType,
+      status: 'confirmed',
+    });
+
     return {
       success: true,
       message: 'Appointment booked successfully!',
@@ -369,6 +383,16 @@ export class ToolExecutionEngine {
         },
       })
       .where(eq(appointments.id, appointment.id));
+
+    // Trigger integrations for cancellation
+    this.triggerIntegration('appointment_cancelled', agentId, {
+      appointmentId: appointment.id,
+      customerName: appointment.customerName,
+      customerPhone: appointment.customerPhone,
+      date: appointment.appointmentDate,
+      time: appointment.appointmentTime,
+      serviceType: appointment.serviceType,
+    });
 
     return {
       success: true,
@@ -545,6 +569,18 @@ export class ToolExecutionEngine {
       interest,
       notes,
       customFields,
+    });
+
+    // Trigger integrations for new lead capture
+    this.triggerIntegration('lead_captured', agentId, {
+      leadId,
+      name,
+      phone: normalizedPhone,
+      email,
+      interest,
+      notes,
+      customFields,
+      source: 'whatsapp',
     });
 
     return {
@@ -890,6 +926,31 @@ export class ToolExecutionEngine {
    */
   private normalizePhone(phone: string): string {
     return phone.replace(/[^\d+]/g, '');
+  }
+
+  /**
+   * Trigger integration event (non-blocking)
+   */
+  private triggerIntegration(event: TriggerEvent, agentId: string, data: Record<string, any>): void {
+    // Get userId from agent (non-blocking)
+    db.select({ userId: agents.userId })
+      .from(agents)
+      .where(eq(agents.id, agentId))
+      .limit(1)
+      .then(([agent]) => {
+        if (agent) {
+          integrationService.triggerEvent({
+            event,
+            agentId,
+            userId: agent.userId,
+            data,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      })
+      .catch(err => {
+        console.error('[ToolEngine] Error triggering integration:', err);
+      });
   }
 }
 
