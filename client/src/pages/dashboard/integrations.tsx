@@ -59,6 +59,8 @@ import {
   Edit,
   Power,
   Sparkles,
+  GitBranch,
+  X,
 } from "lucide-react";
 
 // ============= INTEGRATION CATALOG (n8n-style) =============
@@ -4456,6 +4458,80 @@ function IntegrationConfigForm({
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
   const [aiInstructions, setAiInstructions] = useState<string>('');
+  
+  // Conditional Branching State
+  const [useConditionalLogic, setUseConditionalLogic] = useState(false);
+  const [conditions, setConditions] = useState<Array<{
+    id: string;
+    field: string;
+    operator: string;
+    value: string;
+    logicOperator: 'AND' | 'OR';
+  }>>([]);
+  const [trueAction, setTrueAction] = useState<string>('');
+  const [falseAction, setFalseAction] = useState<string>('');
+  const [trueActionConfig, setTrueActionConfig] = useState<Record<string, string>>({});
+  const [falseActionConfig, setFalseActionConfig] = useState<Record<string, string>>({});
+
+  // Condition operators
+  const conditionOperators = [
+    { value: 'equals', label: 'Equals', icon: '=' },
+    { value: 'not_equals', label: 'Not Equals', icon: '≠' },
+    { value: 'contains', label: 'Contains', icon: '∈' },
+    { value: 'not_contains', label: 'Does Not Contain', icon: '∉' },
+    { value: 'starts_with', label: 'Starts With', icon: '^' },
+    { value: 'ends_with', label: 'Ends With', icon: '$' },
+    { value: 'is_empty', label: 'Is Empty', icon: '∅' },
+    { value: 'is_not_empty', label: 'Is Not Empty', icon: '≠∅' },
+    { value: 'greater_than', label: 'Greater Than', icon: '>' },
+    { value: 'less_than', label: 'Less Than', icon: '<' },
+    { value: 'greater_equal', label: 'Greater or Equal', icon: '≥' },
+    { value: 'less_equal', label: 'Less or Equal', icon: '≤' },
+    { value: 'regex_match', label: 'Matches Regex', icon: '.*' },
+    { value: 'ai_sentiment_positive', label: 'AI: Sentiment is Positive', icon: '😊' },
+    { value: 'ai_sentiment_negative', label: 'AI: Sentiment is Negative', icon: '😠' },
+    { value: 'ai_intent_matches', label: 'AI: Intent Matches', icon: '🎯' },
+    { value: 'ai_custom', label: 'AI: Custom Condition', icon: '🤖' },
+  ];
+
+  // Available condition fields (from trigger data)
+  const conditionFields = [
+    { value: '{{message}}', label: 'Message Text', category: 'Message' },
+    { value: '{{customer_name}}', label: 'Customer Name', category: 'Customer' },
+    { value: '{{customer_email}}', label: 'Customer Email', category: 'Customer' },
+    { value: '{{customer_phone}}', label: 'Customer Phone', category: 'Customer' },
+    { value: '{{trigger_event}}', label: 'Trigger Event', category: 'System' },
+    { value: '{{timestamp}}', label: 'Timestamp', category: 'System' },
+    { value: '{{amount}}', label: 'Amount', category: 'Data' },
+    { value: '{{order_id}}', label: 'Order ID', category: 'Data' },
+    { value: '{{status}}', label: 'Status', category: 'Data' },
+    { value: '{{priority}}', label: 'Priority', category: 'Data' },
+    { value: '{{category}}', label: 'Category', category: 'Data' },
+    { value: '{{ai_response}}', label: 'AI Response', category: 'AI' },
+    { value: '{{ai_summary}}', label: 'AI Summary', category: 'AI' },
+    { value: 'custom', label: 'Custom Field...', category: 'Custom' },
+  ];
+
+  // Add new condition
+  const addCondition = () => {
+    setConditions([...conditions, {
+      id: `cond_${Date.now()}`,
+      field: '{{message}}',
+      operator: 'contains',
+      value: '',
+      logicOperator: 'AND',
+    }]);
+  };
+
+  // Remove condition
+  const removeCondition = (id: string) => {
+    setConditions(conditions.filter(c => c.id !== id));
+  };
+
+  // Update condition
+  const updateCondition = (id: string, updates: Partial<typeof conditions[0]>) => {
+    setConditions(conditions.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
 
   // AI Model options
   const aiModelOptions = [
@@ -4721,6 +4797,8 @@ function IntegrationConfigForm({
 
   const fields = fieldConfigs[integrationType.id] || [];
   const currentAction = actions.find(a => a.id === selectedAction);
+  const trueActionDetails = actions.find(a => a.id === trueAction);
+  const falseActionDetails = actions.find(a => a.id === falseAction);
 
   const handleSubmit = () => {
     onSubmit({
@@ -4730,8 +4808,17 @@ function IntegrationConfigForm({
       agentId: agentId || null,
       config: { 
         ...config, 
-        action: selectedAction, 
-        actionTemplates: actionConfig, 
+        // Simple flow (no conditions)
+        action: useConditionalLogic ? undefined : selectedAction, 
+        actionTemplates: useConditionalLogic ? undefined : actionConfig,
+        // Conditional flow
+        useConditionalLogic,
+        conditions: useConditionalLogic ? conditions : undefined,
+        trueAction: useConditionalLogic ? trueAction : undefined,
+        falseAction: useConditionalLogic ? falseAction : undefined,
+        trueActionConfig: useConditionalLogic ? trueActionConfig : undefined,
+        falseActionConfig: useConditionalLogic ? falseActionConfig : undefined,
+        // Common
         aiInstructions,
         aiModel,
         aiApiKey: aiApiKey || undefined,
@@ -4750,20 +4837,23 @@ function IntegrationConfigForm({
     return true;
   });
   
-  const isStep3Valid = selectedAction !== '';
+  // Step 3 validation - either simple action OR conditional logic with both actions
+  const isStep3Valid = useConditionalLogic 
+    ? (conditions.length > 0 && trueAction !== '' && conditions.every(c => c.value.trim() !== '' || c.operator === 'is_empty' || c.operator === 'is_not_empty'))
+    : selectedAction !== '';
   const isStep4Valid = selectedTriggers.length > 0;
 
   return (
     <div className="space-y-6">
       {/* Progress Steps */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 overflow-x-auto">
         {[
           { num: 1, label: 'Setup' },
           { num: 2, label: 'Connect' },
-          { num: 3, label: 'Action' },
+          { num: 3, label: 'Logic' },
           { num: 4, label: 'Triggers' },
         ].map((s, i) => (
-          <div key={s.num} className="flex items-center">
+          <div key={s.num} className="flex items-center flex-shrink-0">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
               step === s.num ? 'bg-primary text-primary-foreground' :
               step > s.num ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
@@ -4773,7 +4863,7 @@ function IntegrationConfigForm({
             <span className={`ml-2 text-sm hidden sm:inline ${step === s.num ? 'font-medium' : 'text-muted-foreground'}`}>
               {s.label}
             </span>
-            {i < 3 && <div className={`w-8 sm:w-16 h-0.5 mx-2 ${step > s.num ? 'bg-green-500' : 'bg-muted'}`} />}
+            {i < 3 && <div className={`w-6 sm:w-12 h-0.5 mx-2 ${step > s.num ? 'bg-green-500' : 'bg-muted'}`} />}
           </div>
         ))}
       </div>
@@ -5004,180 +5094,471 @@ function IntegrationConfigForm({
         </div>
       )}
 
-      {/* Step 3: Choose Action & Configure Templates */}
+      {/* Step 3: Action Logic - Simple or Conditional */}
       {step === 3 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <Zap className="h-5 w-5 text-primary" />
             <div>
               <h3 className="font-semibold">What should happen?</h3>
-              <p className="text-sm text-muted-foreground">Choose an action and customize the data</p>
+              <p className="text-sm text-muted-foreground">Choose simple action or add conditional logic</p>
             </div>
           </div>
 
-          {/* Action Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {actions.length === 0 ? (
-              <div className="col-span-2 text-center py-6">
-                <p className="text-sm text-muted-foreground">Default action: Send data to webhook</p>
+          {/* Toggle: Simple vs Conditional */}
+          <Card className="border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${useConditionalLogic ? 'bg-purple-500/10' : 'bg-primary/10'}`}>
+                    {useConditionalLogic ? <GitBranch className="h-5 w-5 text-purple-500" /> : <ArrowRight className="h-5 w-5 text-primary" />}
+                  </div>
+                  <div>
+                    <p className="font-medium">{useConditionalLogic ? 'Conditional Logic (IF/ELSE)' : 'Simple Flow'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {useConditionalLogic 
+                        ? 'Different actions based on conditions' 
+                        : 'Always perform the same action'}
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={useConditionalLogic} 
+                  onCheckedChange={setUseConditionalLogic}
+                />
               </div>
-            ) : (
-              actions.map((action) => (
-                <Card
-                  key={action.id}
-                  className={`cursor-pointer transition-all ${
-                    selectedAction === action.id
-                      ? 'border-primary ring-2 ring-primary/20'
-                      : 'hover:border-primary/50'
-                  }`}
-                  onClick={() => {
-                    setSelectedAction(action.id);
-                    setActionConfig({});
-                  }}
-                >
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <span className="text-2xl">{action.icon}</span>
-                    <div>
-                      <p className="font-medium text-sm">{action.name}</p>
-                      <p className="text-xs text-muted-foreground">{action.description}</p>
+            </CardContent>
+          </Card>
+
+          {/* SIMPLE FLOW - Original Action Selection */}
+          {!useConditionalLogic && (
+            <>
+              {/* Action Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {actions.length === 0 ? (
+                  <div className="col-span-2 text-center py-6">
+                    <p className="text-sm text-muted-foreground">Default action: Send data to webhook</p>
+                  </div>
+                ) : (
+                  actions.map((action) => (
+                    <Card
+                      key={action.id}
+                      className={`cursor-pointer transition-all ${
+                        selectedAction === action.id
+                          ? 'border-primary ring-2 ring-primary/20'
+                          : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => {
+                        setSelectedAction(action.id);
+                        setActionConfig({});
+                      }}
+                    >
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <span className="text-2xl">{action.icon}</span>
+                        <div>
+                          <p className="font-medium text-sm">{action.name}</p>
+                          <p className="text-xs text-muted-foreground">{action.description}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+
+              {/* Action Configuration Fields */}
+              {currentAction && (currentAction.fields || currentAction.templates) && (
+                <Card className="mt-4 border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-primary" />
+                      Configure: {currentAction.name}
+                    </CardTitle>
+                    <CardDescription>
+                      Fill in the fields below. Use variables like {'{{customer_name}}'} for dynamic data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(currentAction.fields || currentAction.templates || []).map((field: any) => (
+                      <div key={field.key} className="space-y-1">
+                        <Label className="flex items-center gap-1">
+                          {field.label}
+                          {field.required && <span className="text-red-500">*</span>}
+                        </Label>
+                        
+                        {field.type === 'textarea' && (
+                          <Textarea
+                            value={actionConfig[field.key] || field.default || ''}
+                            onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            rows={3}
+                            className="font-mono text-sm"
+                          />
+                        )}
+                        
+                        {field.type === 'select' && (
+                          <Select 
+                            value={actionConfig[field.key] || field.default || ''} 
+                            onValueChange={(v) => setActionConfig({ ...actionConfig, [field.key]: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={field.placeholder || 'Select...'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(field.options || []).map((opt: string) => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        
+                        {field.type === 'number' && (
+                          <Input
+                            type="number"
+                            value={actionConfig[field.key] || field.default || ''}
+                            onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                          />
+                        )}
+                        
+                        {(!field.type || field.type === 'text' || field.type === 'password' || field.type === 'email') && (
+                          <Input
+                            type={field.type || 'text'}
+                            value={actionConfig[field.key] || field.default || ''}
+                            onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                          />
+                        )}
+                        
+                        {field.helpText && (
+                          <p className="text-xs text-muted-foreground">{field.helpText}</p>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Variable Reference */}
+                    <div className="mt-4 p-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-lg border border-primary/10">
+                      <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-purple-500" />
+                        Available Variables (copy & paste):
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {templateVariables.map((v) => (
+                          <Badge 
+                            key={v.var} 
+                            variant="secondary" 
+                            className="text-xs font-mono cursor-pointer hover:bg-primary/20 active:scale-95 transition-all select-none" 
+                            title={`Click to copy: ${v.desc}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(v.var).then(() => {
+                                toast({
+                                  title: "Copied!",
+                                  description: `${v.var} copied to clipboard`,
+                                  duration: 2000,
+                                });
+                              });
+                            }}
+                          >
+                            {v.var}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
+              )}
+            </>
+          )}
 
-          {/* Action Configuration Fields */}
-          {currentAction && (currentAction.fields || currentAction.templates) && (
-            <Card className="mt-4 border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-primary" />
-                  Configure: {currentAction.name}
-                </CardTitle>
-                <CardDescription>
-                  Fill in the fields below. Use variables like {'{{customer_name}}'} for dynamic data
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {(currentAction.fields || currentAction.templates || []).map((field: any) => (
-                  <div key={field.key} className="space-y-1">
-                    <Label className="flex items-center gap-1">
-                      {field.label}
-                      {field.required && <span className="text-red-500">*</span>}
-                    </Label>
-                    
-                    {/* Textarea */}
-                    {field.type === 'textarea' && (
-                      <Textarea
-                        value={actionConfig[field.key] || field.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                        rows={3}
-                        className="font-mono text-sm"
-                      />
-                    )}
-                    
-                    {/* Select Dropdown */}
-                    {field.type === 'select' && (
-                      <Select 
-                        value={actionConfig[field.key] || field.default || ''} 
-                        onValueChange={(v) => setActionConfig({ ...actionConfig, [field.key]: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={field.placeholder || 'Select...'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(field.options || []).map((opt: string) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    
-                    {/* Number Input */}
-                    {field.type === 'number' && (
-                      <Input
-                        type="number"
-                        value={actionConfig[field.key] || field.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-                    
-                    {/* Password Input */}
-                    {field.type === 'password' && (
-                      <Input
-                        type="password"
-                        value={actionConfig[field.key] || field.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-                    
-                    {/* Email Input */}
-                    {field.type === 'email' && (
-                      <Input
-                        type="email"
-                        value={actionConfig[field.key] || field.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-                    
-                    {/* Default Text Input */}
-                    {(!field.type || field.type === 'text') && (
-                      <Input
-                        type="text"
-                        value={actionConfig[field.key] || field.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-                    
-                    {field.helpText && (
-                      <p className="text-xs text-muted-foreground">{field.helpText}</p>
-                    )}
+          {/* CONDITIONAL FLOW - IF/ELSE Builder */}
+          {useConditionalLogic && (
+            <div className="space-y-4">
+              {/* Visual Flow Diagram */}
+              <Card className="bg-gradient-to-r from-purple-500/5 to-blue-500/5 border-purple-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <Badge variant="outline" className="bg-background">Trigger</Badge>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30">IF Condition</Badge>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500 text-xs">✓ TRUE</span>
+                        <ArrowRight className="h-3 w-3 text-green-500" />
+                        <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-xs">Action A</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-500 text-xs">✗ FALSE</span>
+                        <ArrowRight className="h-3 w-3 text-red-500" />
+                        <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-xs">Action B</Badge>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                </CardContent>
+              </Card>
 
-                {/* Variable Reference */}
-                <div className="mt-4 p-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-lg border border-primary/10">
-                  <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-purple-500" />
-                    Available Variables (copy & paste):
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {templateVariables.map((v) => (
-                      <Badge 
-                        key={v.var} 
-                        variant="secondary" 
-                        className="text-xs font-mono cursor-pointer hover:bg-primary/20 active:scale-95 transition-all select-none" 
-                        title={`Click to copy: ${v.desc}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(v.var).then(() => {
-                            toast({
-                              title: "Copied!",
-                              description: `${v.var} copied to clipboard`,
-                              duration: 2000,
-                            });
-                          });
+              {/* Condition Builder */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <GitBranch className="h-4 w-4 text-purple-500" />
+                    IF Conditions
+                  </CardTitle>
+                  <CardDescription>Define when the TRUE path should execute</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {conditions.length === 0 ? (
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                      <GitBranch className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground mb-3">No conditions added yet</p>
+                      <Button variant="outline" size="sm" onClick={addCondition}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Condition
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {conditions.map((condition, index) => (
+                        <div key={condition.id} className="space-y-2">
+                          {index > 0 && (
+                            <div className="flex items-center gap-2 py-1">
+                              <Select 
+                                value={condition.logicOperator} 
+                                onValueChange={(v) => updateCondition(condition.id, { logicOperator: v as 'AND' | 'OR' })}
+                              >
+                                <SelectTrigger className="w-24 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="AND">AND</SelectItem>
+                                  <SelectItem value="OR">OR</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <div className="flex-1 border-t" />
+                            </div>
+                          )}
+                          
+                          <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {/* Field Selection */}
+                              <Select 
+                                value={condition.field} 
+                                onValueChange={(v) => updateCondition(condition.id, { field: v })}
+                              >
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Select field" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {['Message', 'Customer', 'System', 'Data', 'AI', 'Custom'].map(cat => (
+                                    <div key={cat}>
+                                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{cat}</div>
+                                      {conditionFields.filter(f => f.category === cat).map(f => (
+                                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              
+                              {/* Operator Selection */}
+                              <Select 
+                                value={condition.operator} 
+                                onValueChange={(v) => updateCondition(condition.id, { operator: v })}
+                              >
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Operator" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {conditionOperators.map(op => (
+                                    <SelectItem key={op.value} value={op.value}>
+                                      <span className="flex items-center gap-2">
+                                        <span className="text-muted-foreground">{op.icon}</span>
+                                        {op.label}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              
+                              {/* Value Input */}
+                              {!['is_empty', 'is_not_empty'].includes(condition.operator) && (
+                                <Input
+                                  value={condition.value}
+                                  onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
+                                  placeholder={condition.operator.startsWith('ai_') ? 'AI will evaluate...' : 'Value to compare'}
+                                  className="h-9"
+                                />
+                              )}
+                            </div>
+                            
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-muted-foreground hover:text-red-500"
+                              onClick={() => removeCondition(condition.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <Button variant="outline" size="sm" onClick={addCondition} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" /> Add Another Condition
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* TRUE Action */}
+              <Card className="border-green-500/30">
+                <CardHeader className="pb-3 bg-green-500/5">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    IF TRUE → Do This
+                  </CardTitle>
+                  <CardDescription>Action to perform when conditions are met</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {actions.map((action) => (
+                      <Card
+                        key={action.id}
+                        className={`cursor-pointer transition-all ${
+                          trueAction === action.id
+                            ? 'border-green-500 ring-2 ring-green-500/20'
+                            : 'hover:border-green-500/50'
+                        }`}
+                        onClick={() => {
+                          setTrueAction(action.id);
+                          setTrueActionConfig({});
                         }}
                       >
-                        {v.var}
-                      </Badge>
+                        <CardContent className="p-2 flex items-center gap-2">
+                          <span className="text-xl">{action.icon}</span>
+                          <p className="text-xs font-medium truncate">{action.name}</p>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  
+                  {/* TRUE Action Config */}
+                  {trueActionDetails?.fields && trueAction && (
+                    <div className="pt-3 border-t space-y-3">
+                      {trueActionDetails.fields.slice(0, 3).map((field: any) => (
+                        <div key={field.key}>
+                          <Label className="text-xs">{field.label}</Label>
+                          <Input
+                            value={trueActionConfig[field.key] || ''}
+                            onChange={(e) => setTrueActionConfig({ ...trueActionConfig, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* FALSE Action */}
+              <Card className="border-red-500/30">
+                <CardHeader className="pb-3 bg-red-500/5">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    IF FALSE → Do This (Optional)
+                  </CardTitle>
+                  <CardDescription>Action when conditions are NOT met (leave empty to skip)</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <Card
+                      className={`cursor-pointer transition-all ${
+                        falseAction === ''
+                          ? 'border-muted-foreground ring-2 ring-muted/20'
+                          : 'hover:border-muted-foreground/50'
+                      }`}
+                      onClick={() => {
+                        setFalseAction('');
+                        setFalseActionConfig({});
+                      }}
+                    >
+                      <CardContent className="p-2 flex items-center gap-2">
+                        <span className="text-xl">⏭️</span>
+                        <p className="text-xs font-medium">Skip / Do Nothing</p>
+                      </CardContent>
+                    </Card>
+                    {actions.map((action) => (
+                      <Card
+                        key={action.id}
+                        className={`cursor-pointer transition-all ${
+                          falseAction === action.id
+                            ? 'border-red-500 ring-2 ring-red-500/20'
+                            : 'hover:border-red-500/50'
+                        }`}
+                        onClick={() => {
+                          setFalseAction(action.id);
+                          setFalseActionConfig({});
+                        }}
+                      >
+                        <CardContent className="p-2 flex items-center gap-2">
+                          <span className="text-xl">{action.icon}</span>
+                          <p className="text-xs font-medium truncate">{action.name}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  {/* FALSE Action Config */}
+                  {falseActionDetails?.fields && falseAction && (
+                    <div className="pt-3 border-t space-y-3">
+                      {falseActionDetails.fields.slice(0, 3).map((field: any) => (
+                        <div key={field.key}>
+                          <Label className="text-xs">{field.label}</Label>
+                          <Input
+                            value={falseActionConfig[field.key] || ''}
+                            onChange={(e) => setFalseActionConfig({ ...falseActionConfig, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Condition Summary */}
+              {conditions.length > 0 && trueAction && (
+                <Card className="bg-gradient-to-r from-purple-500/5 to-blue-500/5">
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium mb-2">📋 Logic Summary:</p>
+                    <div className="text-xs text-muted-foreground font-mono bg-background/50 p-3 rounded border">
+                      <span className="text-purple-500">IF</span>{' '}
+                      {conditions.map((c, i) => (
+                        <span key={c.id}>
+                          {i > 0 && <span className="text-blue-500"> {c.logicOperator} </span>}
+                          <span className="text-foreground">{c.field}</span>{' '}
+                          <span className="text-orange-500">{conditionOperators.find(o => o.value === c.operator)?.icon}</span>{' '}
+                          {!['is_empty', 'is_not_empty'].includes(c.operator) && (
+                            <span className="text-green-500">"{c.value}"</span>
+                          )}
+                        </span>
+                      ))}
+                      <br />
+                      <span className="text-green-500">THEN</span> → {actions.find(a => a.id === trueAction)?.name || 'Select action'}
+                      <br />
+                      <span className="text-red-500">ELSE</span> → {falseAction ? actions.find(a => a.id === falseAction)?.name : 'Skip'}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-            <Button onClick={() => setStep(4)} disabled={actions.length > 0 && !selectedAction}>
+            <Button onClick={() => setStep(4)} disabled={!isStep3Valid}>
               Next: Triggers <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </DialogFooter>
