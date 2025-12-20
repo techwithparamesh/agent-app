@@ -1291,6 +1291,307 @@ function IntegrationsPageContent() {
   );
 }
 
+// ============= INTEGRATION ACTIONS & TEMPLATES =============
+const integrationActions: Record<string, Array<{
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  templates: Array<{ key: string; label: string; type: string; placeholder: string; helpText?: string; default?: string }>;
+}>> = {
+  // Communication Actions
+  whatsapp: [
+    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Send a text message', templates: [
+      { key: 'toNumber', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', helpText: 'Use {{customer_phone}} for dynamic' },
+      { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Hello {{customer_name}}, your appointment is confirmed!' },
+    ]},
+    { id: 'send_template', name: 'Send Template', icon: '📋', description: 'Send approved template message', templates: [
+      { key: 'toNumber', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}' },
+      { key: 'templateName', label: 'Template Name', type: 'text', placeholder: 'appointment_reminder' },
+      { key: 'templateParams', label: 'Template Parameters (JSON)', type: 'textarea', placeholder: '["{{customer_name}}", "{{date}}", "{{time}}"]' },
+    ]},
+  ],
+  telegram: [
+    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Send text to chat/channel', templates: [
+      { key: 'message', label: 'Message', type: 'textarea', placeholder: '🎯 New Lead!\nName: {{customer_name}}\nPhone: {{customer_phone}}' },
+    ]},
+    { id: 'send_document', name: 'Send Document', icon: '📎', description: 'Send a file', templates: [
+      { key: 'documentUrl', label: 'Document URL', type: 'text', placeholder: '{{document_url}}' },
+      { key: 'caption', label: 'Caption', type: 'text', placeholder: 'Here is your invoice' },
+    ]},
+  ],
+  slack: [
+    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', templates: [
+      { key: 'message', label: 'Message', type: 'textarea', placeholder: ':bell: New appointment booked!\n*Customer:* {{customer_name}}\n*Date:* {{date}}' },
+    ]},
+  ],
+  discord: [
+    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', templates: [
+      { key: 'message', label: 'Message', type: 'textarea', placeholder: '**New Lead Alert!**\nName: {{customer_name}}\nEmail: {{customer_email}}' },
+    ]},
+  ],
+  sms_twilio: [
+    { id: 'send_sms', name: 'Send SMS', icon: '📱', description: 'Send text message', templates: [
+      { key: 'toNumber', label: 'To Phone', type: 'text', placeholder: '{{customer_phone}}' },
+      { key: 'message', label: 'Message (160 chars)', type: 'textarea', placeholder: 'Hi {{customer_name}}, reminder: appointment tomorrow at {{time}}' },
+    ]},
+  ],
+  microsoft_teams: [
+    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', templates: [
+      { key: 'message', label: 'Message', type: 'textarea', placeholder: 'New lead captured: {{customer_name}} - {{customer_email}}' },
+    ]},
+  ],
+  // Email Actions
+  gmail: [
+    { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send an email', templates: [
+      { key: 'to', label: 'To Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Appointment Confirmation - {{date}}' },
+      { key: 'body', label: 'Email Body (HTML supported)', type: 'textarea', placeholder: '<h2>Hello {{customer_name}}</h2><p>Your appointment is confirmed for {{date}} at {{time}}.</p>' },
+    ]},
+  ],
+  outlook: [
+    { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send an email', templates: [
+      { key: 'to', label: 'To Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Booking Confirmed' },
+      { key: 'body', label: 'Email Body', type: 'textarea', placeholder: 'Dear {{customer_name}}, your booking is confirmed.' },
+    ]},
+  ],
+  smtp: [
+    { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send via SMTP', templates: [
+      { key: 'to', label: 'To Email(s)', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'New Lead: {{customer_name}}' },
+      { key: 'body', label: 'Email Body', type: 'textarea', placeholder: 'Name: {{customer_name}}\nPhone: {{customer_phone}}\nMessage: {{message}}' },
+    ]},
+  ],
+  sendgrid: [
+    { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send transactional email', templates: [
+      { key: 'to', label: 'To Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Welcome {{customer_name}}!' },
+      { key: 'body', label: 'Email Body', type: 'textarea', placeholder: 'Thank you for your interest...' },
+    ]},
+    { id: 'add_contact', name: 'Add Contact', icon: '👤', description: 'Add to contact list', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+    ]},
+  ],
+  mailchimp: [
+    { id: 'add_subscriber', name: 'Add Subscriber', icon: '👤', description: 'Add to mailing list', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'tags', label: 'Tags (comma separated)', type: 'text', placeholder: 'lead, website' },
+    ]},
+  ],
+  // Google Actions
+  google_sheets: [
+    { id: 'add_row', name: 'Add Row', icon: '➕', description: 'Append data as new row', templates: [
+      { key: 'values', label: 'Row Values (comma separated)', type: 'textarea', placeholder: '{{customer_name}}, {{customer_email}}, {{customer_phone}}, {{date}}, {{message}}', helpText: 'Values will be added as columns A, B, C...' },
+    ]},
+    { id: 'update_row', name: 'Update Row', icon: '✏️', description: 'Update existing row', templates: [
+      { key: 'searchColumn', label: 'Search Column', type: 'text', placeholder: 'A', helpText: 'Column to search in' },
+      { key: 'searchValue', label: 'Search Value', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'updateColumn', label: 'Update Column', type: 'text', placeholder: 'D' },
+      { key: 'updateValue', label: 'New Value', type: 'text', placeholder: '{{status}}' },
+    ]},
+  ],
+  google_drive: [
+    { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload a file', templates: [
+      { key: 'fileName', label: 'File Name', type: 'text', placeholder: 'lead_{{customer_name}}_{{date}}.pdf' },
+      { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{document_url}}' },
+    ]},
+  ],
+  google_calendar: [
+    { id: 'create_event', name: 'Create Event', icon: '📅', description: 'Create calendar event', templates: [
+      { key: 'title', label: 'Event Title', type: 'text', placeholder: 'Appointment with {{customer_name}}' },
+      { key: 'startTime', label: 'Start Time', type: 'text', placeholder: '{{appointment_datetime}}', helpText: 'ISO format: 2024-12-20T10:00:00' },
+      { key: 'duration', label: 'Duration (minutes)', type: 'text', placeholder: '30', default: '30' },
+      { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Customer: {{customer_name}}\nPhone: {{customer_phone}}' },
+    ]},
+  ],
+  // CRM Actions
+  hubspot: [
+    { id: 'create_contact', name: 'Create Contact', icon: '👤', description: 'Create new contact', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+    { id: 'create_deal', name: 'Create Deal', icon: '💰', description: 'Create new deal', templates: [
+      { key: 'dealName', label: 'Deal Name', type: 'text', placeholder: '{{customer_name}} - {{service}}' },
+      { key: 'amount', label: 'Amount', type: 'text', placeholder: '{{amount}}' },
+      { key: 'stage', label: 'Stage', type: 'text', placeholder: 'appointmentscheduled' },
+    ]},
+  ],
+  salesforce: [
+    { id: 'create_lead', name: 'Create Lead', icon: '🎯', description: 'Create new lead', templates: [
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+      { key: 'company', label: 'Company', type: 'text', placeholder: '{{company}}', default: 'Individual' },
+    ]},
+  ],
+  pipedrive: [
+    { id: 'create_person', name: 'Create Person', icon: '👤', description: 'Create contact', templates: [
+      { key: 'name', label: 'Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+    { id: 'create_deal', name: 'Create Deal', icon: '💰', description: 'Create deal', templates: [
+      { key: 'title', label: 'Deal Title', type: 'text', placeholder: '{{customer_name}} - Inquiry' },
+      { key: 'value', label: 'Value', type: 'text', placeholder: '{{amount}}' },
+    ]},
+  ],
+  zoho_crm: [
+    { id: 'create_lead', name: 'Create Lead', icon: '🎯', description: 'Create new lead', templates: [
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+  ],
+  freshsales: [
+    { id: 'create_contact', name: 'Create Contact', icon: '👤', description: 'Create contact', templates: [
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+  ],
+  // Automation/Webhook Actions  
+  zapier: [
+    { id: 'trigger_zap', name: 'Trigger Zap', icon: '⚡', description: 'Send data to Zapier', templates: [
+      { key: 'customData', label: 'Custom Data (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}"}', helpText: 'This data will be sent to your Zap' },
+    ]},
+  ],
+  make: [
+    { id: 'trigger_scenario', name: 'Trigger Scenario', icon: '⚡', description: 'Send data to Make', templates: [
+      { key: 'customData', label: 'Custom Data (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "event": "{{trigger_event}}"}' },
+    ]},
+  ],
+  n8n: [
+    { id: 'trigger_workflow', name: 'Trigger Workflow', icon: '⚡', description: 'Send data to n8n', templates: [
+      { key: 'customData', label: 'Custom Data (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}"}' },
+    ]},
+  ],
+  webhook: [
+    { id: 'send_webhook', name: 'Send Webhook', icon: '🔗', description: 'Send HTTP request', templates: [
+      { key: 'payload', label: 'JSON Payload', type: 'textarea', placeholder: '{"event": "{{trigger_event}}", "customer": {"name": "{{customer_name}}", "email": "{{customer_email}}"}}' },
+    ]},
+  ],
+  // Storage Actions
+  airtable: [
+    { id: 'create_record', name: 'Create Record', icon: '➕', description: 'Add new record', templates: [
+      { key: 'fields', label: 'Fields (JSON)', type: 'textarea', placeholder: '{"Name": "{{customer_name}}", "Email": "{{customer_email}}", "Phone": "{{customer_phone}}", "Date": "{{date}}"}' },
+    ]},
+  ],
+  notion: [
+    { id: 'create_page', name: 'Create Page', icon: '📄', description: 'Create database entry', templates: [
+      { key: 'title', label: 'Title', type: 'text', placeholder: '{{customer_name}} - {{date}}' },
+      { key: 'properties', label: 'Properties (JSON)', type: 'textarea', placeholder: '{"Email": "{{customer_email}}", "Phone": "{{customer_phone}}", "Status": "New"}' },
+    ]},
+  ],
+  firebase: [
+    { id: 'add_document', name: 'Add Document', icon: '➕', description: 'Add to Firestore', templates: [
+      { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads' },
+      { key: 'data', label: 'Document Data (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "createdAt": "{{timestamp}}"}' },
+    ]},
+  ],
+  supabase: [
+    { id: 'insert_row', name: 'Insert Row', icon: '➕', description: 'Insert into table', templates: [
+      { key: 'table', label: 'Table Name', type: 'text', placeholder: 'leads' },
+      { key: 'data', label: 'Row Data (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}"}' },
+    ]},
+  ],
+  mongodb: [
+    { id: 'insert_document', name: 'Insert Document', icon: '➕', description: 'Insert document', templates: [
+      { key: 'document', label: 'Document (JSON)', type: 'textarea', placeholder: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}"}' },
+    ]},
+  ],
+  // Productivity Actions
+  trello: [
+    { id: 'create_card', name: 'Create Card', icon: '📋', description: 'Create Trello card', templates: [
+      { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID' },
+      { key: 'name', label: 'Card Name', type: 'text', placeholder: '{{customer_name}} - Follow up' },
+      { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Email: {{customer_email}}\nPhone: {{customer_phone}}\nMessage: {{message}}' },
+    ]},
+  ],
+  asana: [
+    { id: 'create_task', name: 'Create Task', icon: '✅', description: 'Create Asana task', templates: [
+      { key: 'projectId', label: 'Project ID', type: 'text', placeholder: 'Your project GID' },
+      { key: 'name', label: 'Task Name', type: 'text', placeholder: 'Follow up: {{customer_name}}' },
+      { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Contact: {{customer_email}}, {{customer_phone}}' },
+    ]},
+  ],
+  jira: [
+    { id: 'create_issue', name: 'Create Issue', icon: '🎫', description: 'Create Jira issue', templates: [
+      { key: 'issueType', label: 'Issue Type', type: 'text', placeholder: 'Task', default: 'Task' },
+      { key: 'summary', label: 'Summary', type: 'text', placeholder: '{{customer_name}} - {{subject}}' },
+      { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Customer: {{customer_name}}\nEmail: {{customer_email}}\nDetails: {{message}}' },
+    ]},
+  ],
+  monday: [
+    { id: 'create_item', name: 'Create Item', icon: '➕', description: 'Create Monday item', templates: [
+      { key: 'itemName', label: 'Item Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'columnValues', label: 'Column Values (JSON)', type: 'textarea', placeholder: '{"email": "{{customer_email}}", "phone": "{{customer_phone}}"}' },
+    ]},
+  ],
+  clickup: [
+    { id: 'create_task', name: 'Create Task', icon: '✅', description: 'Create ClickUp task', templates: [
+      { key: 'name', label: 'Task Name', type: 'text', placeholder: 'Follow up with {{customer_name}}' },
+      { key: 'description', label: 'Description', type: 'textarea', placeholder: '{{customer_email}} - {{customer_phone}}' },
+    ]},
+  ],
+  calendly: [
+    { id: 'get_event', name: 'Log Event', icon: '📅', description: 'Log Calendly events', templates: [
+      { key: 'eventType', label: 'Event Type', type: 'text', placeholder: 'All events' },
+    ]},
+  ],
+  // E-commerce Actions
+  stripe: [
+    { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Create Stripe customer', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'name', label: 'Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+    { id: 'create_invoice', name: 'Create Invoice', icon: '📄', description: 'Create invoice', templates: [
+      { key: 'customerId', label: 'Customer ID', type: 'text', placeholder: '{{stripe_customer_id}}' },
+      { key: 'amount', label: 'Amount (cents)', type: 'text', placeholder: '{{amount}}' },
+      { key: 'description', label: 'Description', type: 'text', placeholder: '{{service}}' },
+    ]},
+  ],
+  razorpay: [
+    { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Create customer', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'name', label: 'Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'contact', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+  ],
+  shopify: [
+    { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Create customer', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+      { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+    ]},
+  ],
+  woocommerce: [
+    { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Create customer', templates: [
+      { key: 'email', label: 'Email', type: 'text', placeholder: '{{customer_email}}' },
+      { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+    ]},
+  ],
+};
+
+// Available template variables with descriptions
+const templateVariables = [
+  { var: '{{customer_name}}', desc: 'Customer full name' },
+  { var: '{{customer_email}}', desc: 'Customer email' },
+  { var: '{{customer_phone}}', desc: 'Customer phone' },
+  { var: '{{date}}', desc: 'Current/appointment date' },
+  { var: '{{time}}', desc: 'Appointment time' },
+  { var: '{{message}}', desc: 'Customer message' },
+  { var: '{{agent_name}}', desc: 'AI Agent name' },
+  { var: '{{trigger_event}}', desc: 'Event that triggered this' },
+  { var: '{{amount}}', desc: 'Order/payment amount' },
+  { var: '{{order_id}}', desc: 'Order ID' },
+  { var: '{{timestamp}}', desc: 'Current timestamp' },
+];
+
 // Dynamic Integration Configuration Form
 function IntegrationConfigForm({
   integrationType,
@@ -1305,11 +1606,16 @@ function IntegrationConfigForm({
   onCancel: () => void;
   isLoading: boolean;
 }) {
+  const [step, setStep] = useState(1);
   const [name, setName] = useState(integrationType.name);
   const [description, setDescription] = useState('');
   const [agentId, setAgentId] = useState<string>('');
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
+  const [selectedAction, setSelectedAction] = useState<string>('');
   const [config, setConfig] = useState<Record<string, string>>({});
+  const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
+
+  const actions = integrationActions[integrationType.id] || [];
 
   // Field configurations for different integration types
   const fieldConfigs: Record<string, Array<{ key: string; label: string; type: string; placeholder: string; required?: boolean; helpText?: string }>> = {
@@ -1535,6 +1841,7 @@ function IntegrationConfigForm({
   };
 
   const fields = fieldConfigs[integrationType.id] || [];
+  const currentAction = actions.find(a => a.id === selectedAction);
 
   const handleSubmit = () => {
     onSubmit({
@@ -1542,172 +1849,325 @@ function IntegrationConfigForm({
       name,
       description,
       agentId: agentId || null,
-      config,
+      config: { ...config, action: selectedAction, actionTemplates: actionConfig },
       triggers: selectedTriggers.map(event => ({ event })),
     });
   };
 
-  const isValid = name && selectedTriggers.length > 0;
+  const isStep1Valid = name.trim() !== '';
+  const isStep2Valid = Object.keys(config).length > 0 || fields.length === 0;
+  const isStep3Valid = selectedAction !== '';
+  const isStep4Valid = selectedTriggers.length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Basic Info */}
-      <div className="space-y-4">
-        <div>
-          <Label>Integration Name *</Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={`My ${integrationType.name} Integration`}
-          />
-        </div>
-
-        <div>
-          <Label>Description</Label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What does this integration do?"
-            rows={2}
-          />
-        </div>
-
-        <div>
-          <Label>Link to Agent</Label>
-          <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="All agents (global)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Agents (Global)</SelectItem>
-              {agents.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id}>
-                  {agent.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground mt-1">
-            Leave empty to apply to all your agents
-          </p>
-        </div>
+      {/* Progress Steps */}
+      <div className="flex items-center justify-between mb-6">
+        {[
+          { num: 1, label: 'Basics' },
+          { num: 2, label: 'Connect' },
+          { num: 3, label: 'Action' },
+          { num: 4, label: 'Triggers' },
+        ].map((s, i) => (
+          <div key={s.num} className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              step === s.num ? 'bg-primary text-primary-foreground' :
+              step > s.num ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
+            }`}>
+              {step > s.num ? '✓' : s.num}
+            </div>
+            <span className={`ml-2 text-sm hidden sm:inline ${step === s.num ? 'font-medium' : 'text-muted-foreground'}`}>
+              {s.label}
+            </span>
+            {i < 3 && <div className={`w-8 sm:w-16 h-0.5 mx-2 ${step > s.num ? 'bg-green-500' : 'bg-muted'}`} />}
+          </div>
+        ))}
       </div>
 
-      <Separator />
+      {/* Step 1: Basic Info */}
+      {step === 1 && (
+        <div className="space-y-4">
+          <div className="text-center mb-6">
+            <div className={`w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl ${integrationType.categoryColor} text-white`}>
+              {integrationType.icon}
+            </div>
+            <h3 className="text-lg font-semibold">{integrationType.name}</h3>
+            <p className="text-sm text-muted-foreground">{integrationType.description}</p>
+          </div>
 
-      {/* Configuration Fields */}
-      <div>
-        <h4 className="font-semibold mb-4 flex items-center gap-2">
-          <Settings className="h-4 w-4" />
-          {integrationType.name} Configuration
-        </h4>
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            {fields.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                This integration uses webhook-based configuration. No additional setup required.
-              </p>
-            ) : (
-              fields.map((field: any) => (
-                <div key={field.key}>
-                  <Label>
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </Label>
-                  {field.type === 'textarea' ? (
-                    <Textarea
-                      value={config[field.key] || ''}
-                      onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                      rows={3}
-                      className="font-mono text-sm"
-                    />
-                  ) : field.type === 'select' ? (
-                    <Select 
-                      value={config[field.key] || field.options?.[0]} 
-                      onValueChange={(v) => setConfig({ ...config, [field.key]: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={field.placeholder} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options?.map((opt: string) => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      type={field.type}
-                      value={config[field.key] || ''}
-                      onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                    />
-                  )}
-                  {field.helpText && (
-                    <p className="text-xs text-muted-foreground mt-1">{field.helpText}</p>
-                  )}
+          <div>
+            <Label>Integration Name *</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={`My ${integrationType.name} Integration`}
+            />
+          </div>
+
+          <div>
+            <Label>Description (optional)</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What will this integration do?"
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <Label>Link to Agent</Label>
+            <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="All agents (global)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Agents (Global)</SelectItem>
+                {agents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={onCancel}>Cancel</Button>
+            <Button onClick={() => setStep(2)} disabled={!isStep1Valid}>
+              Next: Connect <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </div>
+      )}
+
+      {/* Step 2: Connection Settings */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Settings className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-semibold">Connect {integrationType.name}</h3>
+              <p className="text-sm text-muted-foreground">Enter your API credentials</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              {fields.length === 0 ? (
+                <div className="text-center py-6">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                  <p className="font-medium">No credentials required!</p>
+                  <p className="text-sm text-muted-foreground">This integration is ready to use.</p>
                 </div>
+              ) : (
+                fields.map((field: any) => (
+                  <div key={field.key}>
+                    <Label>
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    {field.type === 'textarea' ? (
+                      <Textarea
+                        value={config[field.key] || ''}
+                        onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
+                        rows={3}
+                        className="font-mono text-sm"
+                      />
+                    ) : (
+                      <Input
+                        type={field.type === 'password' ? 'password' : 'text'}
+                        value={config[field.key] || ''}
+                        onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                    {field.helpText && (
+                      <p className="text-xs text-muted-foreground mt-1">{field.helpText}</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+            <Button onClick={() => setStep(3)}>
+              Next: Choose Action <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </div>
+      )}
+
+      {/* Step 3: Choose Action & Configure Templates */}
+      {step === 3 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Zap className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-semibold">What should happen?</h3>
+              <p className="text-sm text-muted-foreground">Choose an action and customize the data</p>
+            </div>
+          </div>
+
+          {/* Action Selection */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {actions.length === 0 ? (
+              <div className="col-span-2 text-center py-6">
+                <p className="text-sm text-muted-foreground">Default action: Send data to webhook</p>
+              </div>
+            ) : (
+              actions.map((action) => (
+                <Card
+                  key={action.id}
+                  className={`cursor-pointer transition-all ${
+                    selectedAction === action.id
+                      ? 'border-primary ring-2 ring-primary/20'
+                      : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => {
+                    setSelectedAction(action.id);
+                    setActionConfig({});
+                  }}
+                >
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <span className="text-2xl">{action.icon}</span>
+                    <div>
+                      <p className="font-medium text-sm">{action.name}</p>
+                      <p className="text-xs text-muted-foreground">{action.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      <Separator />
-
-      {/* Trigger Events */}
-      <div>
-        <h4 className="font-semibold mb-4 flex items-center gap-2">
-          <Zap className="h-4 w-4" />
-          Trigger Events *
-        </h4>
-        <p className="text-sm text-muted-foreground mb-3">
-          Select when this integration should be triggered
-        </p>
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {triggerEvents.map((event) => (
-                <label
-                  key={event.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedTriggers.includes(event.id)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-transparent bg-muted/50 hover:bg-muted'
-                  }`}
-                >
-                  <Checkbox
-                    checked={selectedTriggers.includes(event.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedTriggers([...selectedTriggers, event.id]);
-                      } else {
-                        setSelectedTriggers(selectedTriggers.filter(e => e !== event.id));
-                      }
-                    }}
-                  />
-                  <span className="text-lg">{event.icon}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{event.name}</p>
-                    <p className="text-xs text-muted-foreground">{event.category}</p>
+          {/* Action Template Configuration */}
+          {currentAction && (
+            <Card className="mt-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Configure {currentAction.name}
+                </CardTitle>
+                <CardDescription>
+                  Use variables like {'{{customer_name}}'} for dynamic data
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {currentAction.templates.map((template) => (
+                  <div key={template.key}>
+                    <Label>{template.label}</Label>
+                    {template.type === 'textarea' ? (
+                      <Textarea
+                        value={actionConfig[template.key] || template.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [template.key]: e.target.value })}
+                        placeholder={template.placeholder}
+                        rows={3}
+                        className="font-mono text-sm"
+                      />
+                    ) : (
+                      <Input
+                        value={actionConfig[template.key] || template.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [template.key]: e.target.value })}
+                        placeholder={template.placeholder}
+                      />
+                    )}
+                    {template.helpText && (
+                      <p className="text-xs text-muted-foreground mt-1">{template.helpText}</p>
+                    )}
                   </div>
-                </label>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                ))}
 
-      <DialogFooter className="gap-2">
-        <Button variant="outline" onClick={onCancel}>
-          Back
-        </Button>
-        <Button onClick={handleSubmit} disabled={isLoading || !isValid}>
-          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Create Integration
-        </Button>
-      </DialogFooter>
+                {/* Variable Reference */}
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs font-medium mb-2">📌 Available Variables:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {templateVariables.slice(0, 6).map((v) => (
+                      <Badge key={v.var} variant="secondary" className="text-xs font-mono cursor-help" title={v.desc}>
+                        {v.var}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+            <Button onClick={() => setStep(4)} disabled={actions.length > 0 && !selectedAction}>
+              Next: Triggers <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </div>
+      )}
+
+      {/* Step 4: Trigger Events */}
+      {step === 4 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Bell className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-semibold">When should this run?</h3>
+              <p className="text-sm text-muted-foreground">Select events that trigger this integration</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {triggerEvents.map((event) => (
+                  <label
+                    key={event.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedTriggers.includes(event.id)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-transparent bg-muted/50 hover:bg-muted'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={selectedTriggers.includes(event.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedTriggers([...selectedTriggers, event.id]);
+                        } else {
+                          setSelectedTriggers(selectedTriggers.filter(e => e !== event.id));
+                        }
+                      }}
+                    />
+                    <span className="text-lg">{event.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{event.name}</p>
+                      <p className="text-xs text-muted-foreground">{event.category}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Summary */}
+          <Card className="bg-muted/30">
+            <CardContent className="p-4">
+              <h4 className="font-medium mb-2">📋 Summary</h4>
+              <div className="text-sm space-y-1">
+                <p><span className="text-muted-foreground">Integration:</span> {name}</p>
+                <p><span className="text-muted-foreground">App:</span> {integrationType.name}</p>
+                {currentAction && <p><span className="text-muted-foreground">Action:</span> {currentAction.name}</p>}
+                <p><span className="text-muted-foreground">Triggers:</span> {selectedTriggers.length} selected</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
+            <Button onClick={handleSubmit} disabled={isLoading || !isStep4Valid}>
+              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create Integration
+            </Button>
+          </DialogFooter>
+        </div>
+      )}
     </div>
   );
 }
