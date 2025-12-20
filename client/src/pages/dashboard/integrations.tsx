@@ -4449,11 +4449,33 @@ function IntegrationConfigForm({
   const [name, setName] = useState(integrationType.name);
   const [description, setDescription] = useState('');
   const [agentId, setAgentId] = useState<string>('');
+  const [aiModel, setAiModel] = useState<string>('openai-gpt-4o');
+  const [aiApiKey, setAiApiKey] = useState<string>('');
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
   const [selectedAction, setSelectedAction] = useState<string>('');
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
   const [aiInstructions, setAiInstructions] = useState<string>('');
+
+  // AI Model options
+  const aiModelOptions = [
+    { value: 'openai-gpt-4o', label: 'OpenAI GPT-4o', provider: 'OpenAI' },
+    { value: 'openai-gpt-4o-mini', label: 'OpenAI GPT-4o Mini', provider: 'OpenAI' },
+    { value: 'openai-gpt-4-turbo', label: 'OpenAI GPT-4 Turbo', provider: 'OpenAI' },
+    { value: 'openai-gpt-3.5-turbo', label: 'OpenAI GPT-3.5 Turbo', provider: 'OpenAI' },
+    { value: 'anthropic-claude-3-opus', label: 'Claude 3 Opus', provider: 'Anthropic' },
+    { value: 'anthropic-claude-3-sonnet', label: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+    { value: 'anthropic-claude-3-haiku', label: 'Claude 3 Haiku', provider: 'Anthropic' },
+    { value: 'google-gemini-pro', label: 'Gemini Pro', provider: 'Google' },
+    { value: 'google-gemini-1.5-pro', label: 'Gemini 1.5 Pro', provider: 'Google' },
+    { value: 'google-gemini-1.5-flash', label: 'Gemini 1.5 Flash', provider: 'Google' },
+    { value: 'mistral-large', label: 'Mistral Large', provider: 'Mistral' },
+    { value: 'mistral-medium', label: 'Mistral Medium', provider: 'Mistral' },
+    { value: 'groq-llama-3', label: 'Llama 3 (Groq)', provider: 'Groq' },
+    { value: 'groq-mixtral', label: 'Mixtral (Groq)', provider: 'Groq' },
+    { value: 'cohere-command-r-plus', label: 'Command R+', provider: 'Cohere' },
+    { value: 'custom', label: 'Custom API Endpoint', provider: 'Custom' },
+  ];
 
   const actions = integrationActions[integrationType.id] || [];
   
@@ -4706,13 +4728,28 @@ function IntegrationConfigForm({
       name,
       description,
       agentId: agentId || null,
-      config: { ...config, action: selectedAction, actionTemplates: actionConfig, aiInstructions },
+      config: { 
+        ...config, 
+        action: selectedAction, 
+        actionTemplates: actionConfig, 
+        aiInstructions,
+        aiModel,
+        aiApiKey: aiApiKey || undefined,
+      },
       triggers: selectedTriggers.map(event => ({ event })),
     });
   };
 
-  const isStep1Valid = name.trim() !== '';
-  const isStep2Valid = Object.keys(config).length > 0 || fields.length === 0;
+  const isStep1Valid = name.trim() !== '' && aiModel !== '' && (aiModel === 'custom' ? aiApiKey.trim() !== '' : true);
+  
+  // Check if all required fields in Step 2 are filled
+  const isStep2Valid = fields.length === 0 || fields.every((field: any) => {
+    if (field.required) {
+      return config[field.key] && config[field.key].trim() !== '';
+    }
+    return true;
+  });
+  
   const isStep3Valid = selectedAction !== '';
   const isStep4Valid = selectedTriggers.length > 0;
 
@@ -4837,6 +4874,54 @@ function IntegrationConfigForm({
               </Select>
               <p className="text-xs text-muted-foreground mt-1">Which AI agent should use this integration?</p>
             </div>
+
+            {/* AI Model Selection */}
+            <div className="pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                <Bot className="h-4 w-4" />
+                AI Model *
+              </Label>
+              <Select value={aiModel} onValueChange={setAiModel}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select AI model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['OpenAI', 'Anthropic', 'Google', 'Mistral', 'Groq', 'Cohere', 'Custom'].map((provider) => (
+                    <div key={provider}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                        {provider}
+                      </div>
+                      {aiModelOptions
+                        .filter(m => m.provider === provider)
+                        .map(model => (
+                          <SelectItem key={model.value} value={model.value}>
+                            {model.label}
+                          </SelectItem>
+                        ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Choose which AI model powers this integration</p>
+            </div>
+
+            {/* AI API Key - only show if not using default or custom */}
+            <div>
+              <Label>
+                AI API Key {aiModel !== 'custom' ? '(optional - uses system default)' : '*'}
+              </Label>
+              <Input
+                type="password"
+                value={aiApiKey}
+                onChange={(e) => setAiApiKey(e.target.value)}
+                placeholder={aiModel === 'custom' ? 'Your API key (required)' : 'Leave empty to use system key'}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {aiModel === 'custom' 
+                  ? 'Enter your custom API endpoint key'
+                  : 'Provide your own API key or leave empty to use the shared system key'}
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -4868,9 +4953,11 @@ function IntegrationConfigForm({
                   <p className="text-sm text-muted-foreground">This integration is ready to use.</p>
                 </div>
               ) : (
-                fields.map((field: any) => (
+                fields.map((field: any) => {
+                  const isMissing = field.required && (!config[field.key] || config[field.key].trim() === '');
+                  return (
                   <div key={field.key}>
-                    <Label>
+                    <Label className={isMissing ? 'text-red-500' : ''}>
                       {field.label}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
@@ -4880,7 +4967,7 @@ function IntegrationConfigForm({
                         onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
                         placeholder={field.placeholder}
                         rows={3}
-                        className="font-mono text-sm"
+                        className={`font-mono text-sm ${isMissing ? 'border-red-500 focus:ring-red-500' : ''}`}
                       />
                     ) : (
                       <Input
@@ -4888,20 +4975,29 @@ function IntegrationConfigForm({
                         value={config[field.key] || ''}
                         onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
                         placeholder={field.placeholder}
+                        className={isMissing ? 'border-red-500 focus:ring-red-500' : ''}
                       />
                     )}
                     {field.helpText && (
                       <p className="text-xs text-muted-foreground mt-1">{field.helpText}</p>
                     )}
                   </div>
-                ))
+                )})
+              )}
+              
+              {/* Validation message */}
+              {!isStep2Valid && fields.some((f: any) => f.required) && (
+                <div className="flex items-center gap-2 text-sm text-red-500 pt-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Please fill in all required fields marked with *
+                </div>
               )}
             </CardContent>
           </Card>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-            <Button onClick={() => setStep(3)}>
+            <Button onClick={() => setStep(3)} disabled={!isStep2Valid}>
               Next: Choose Action <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </DialogFooter>
@@ -5056,9 +5152,19 @@ function IntegrationConfigForm({
                       <Badge 
                         key={v.var} 
                         variant="secondary" 
-                        className="text-xs font-mono cursor-pointer hover:bg-primary/20 transition-colors" 
-                        title={v.desc}
-                        onClick={() => navigator.clipboard.writeText(v.var)}
+                        className="text-xs font-mono cursor-pointer hover:bg-primary/20 active:scale-95 transition-all select-none" 
+                        title={`Click to copy: ${v.desc}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(v.var).then(() => {
+                            toast({
+                              title: "Copied!",
+                              description: `${v.var} copied to clipboard`,
+                              duration: 2000,
+                            });
+                          });
+                        }}
                       >
                         {v.var}
                       </Badge>
