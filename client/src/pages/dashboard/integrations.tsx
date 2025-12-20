@@ -58,6 +58,7 @@ import {
   Copy,
   Edit,
   Power,
+  Sparkles,
 } from "lucide-react";
 
 // ============= INTEGRATION CATALOG (n8n-style) =============
@@ -1291,64 +1292,2392 @@ function IntegrationsPageContent() {
   );
 }
 
-// ============= INTEGRATION ACTIONS & TEMPLATES =============
-const integrationActions: Record<string, Array<{
+// ============= COMPREHENSIVE INTEGRATION SYSTEM =============
+// Each integration has: TRIGGERS (inbound), ACTIONS (outbound), and AI Instructions
+
+interface IntegrationTrigger {
   id: string;
   name: string;
   icon: string;
   description: string;
-  templates: Array<{ key: string; label: string; type: string; placeholder: string; helpText?: string; default?: string }>;
-}>> = {
-  // Communication Actions
-  whatsapp: [
-    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Send a text message', templates: [
-      { key: 'toNumber', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', helpText: 'Use {{customer_phone}} for dynamic' },
-      { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Hello {{customer_name}}, your appointment is confirmed!' },
-    ]},
-    { id: 'send_template', name: 'Send Template', icon: '📋', description: 'Send approved template message', templates: [
-      { key: 'toNumber', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}' },
-      { key: 'templateName', label: 'Template Name', type: 'text', placeholder: 'appointment_reminder' },
-      { key: 'templateParams', label: 'Template Parameters (JSON)', type: 'textarea', placeholder: '["{{customer_name}}", "{{date}}", "{{time}}"]' },
-    ]},
-  ],
-  telegram: [
-    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Send text to chat/channel', templates: [
-      { key: 'message', label: 'Message', type: 'textarea', placeholder: '🎯 New Lead!\nName: {{customer_name}}\nPhone: {{customer_phone}}' },
-    ]},
-    { id: 'send_document', name: 'Send Document', icon: '📎', description: 'Send a file', templates: [
-      { key: 'documentUrl', label: 'Document URL', type: 'text', placeholder: '{{document_url}}' },
-      { key: 'caption', label: 'Caption', type: 'text', placeholder: 'Here is your invoice' },
-    ]},
-  ],
-  slack: [
-    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', templates: [
-      { key: 'message', label: 'Message', type: 'textarea', placeholder: ':bell: New appointment booked!\n*Customer:* {{customer_name}}\n*Date:* {{date}}' },
-    ]},
-  ],
-  discord: [
-    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', templates: [
-      { key: 'message', label: 'Message', type: 'textarea', placeholder: '**New Lead Alert!**\nName: {{customer_name}}\nEmail: {{customer_email}}' },
-    ]},
-  ],
-  sms_twilio: [
-    { id: 'send_sms', name: 'Send SMS', icon: '📱', description: 'Send text message', templates: [
-      { key: 'toNumber', label: 'To Phone', type: 'text', placeholder: '{{customer_phone}}' },
-      { key: 'message', label: 'Message (160 chars)', type: 'textarea', placeholder: 'Hi {{customer_name}}, reminder: appointment tomorrow at {{time}}' },
-    ]},
-  ],
-  microsoft_teams: [
-    { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', templates: [
-      { key: 'message', label: 'Message', type: 'textarea', placeholder: 'New lead captured: {{customer_name}} - {{customer_email}}' },
-    ]},
-  ],
-  // Email Actions
-  gmail: [
-    { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send an email', templates: [
-      { key: 'to', label: 'To Email', type: 'text', placeholder: '{{customer_email}}' },
-      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Appointment Confirmation - {{date}}' },
-      { key: 'body', label: 'Email Body (HTML supported)', type: 'textarea', placeholder: '<h2>Hello {{customer_name}}</h2><p>Your appointment is confirmed for {{date}} at {{time}}.</p>' },
-    ]},
-  ],
+  dataFields: string[]; // What data comes with this trigger
+}
+
+interface IntegrationAction {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  fields: Array<{ 
+    key: string; 
+    label: string; 
+    type: 'text' | 'textarea' | 'email' | 'number' | 'select'; 
+    placeholder: string; 
+    helpText?: string; 
+    default?: string;
+    options?: string[];
+    required?: boolean;
+  }>;
+}
+
+interface IntegrationConfig {
+  triggers: IntegrationTrigger[];
+  actions: IntegrationAction[];
+  aiInstructions?: string; // Default AI behavior
+}
+
+const comprehensiveIntegrations: Record<string, IntegrationConfig> = {
+  // ==================== COMMUNICATION ====================
+  whatsapp: {
+    triggers: [
+      { id: 'message_received', name: 'Message Received', icon: '📩', description: 'When a WhatsApp message is received', dataFields: ['sender_phone', 'sender_name', 'message_text', 'message_type', 'timestamp', 'message_id', 'wa_id'] },
+      { id: 'image_received', name: 'Image Received', icon: '🖼️', description: 'When image is received', dataFields: ['sender_phone', 'image_url', 'caption', 'media_id'] },
+      { id: 'document_received', name: 'Document Received', icon: '📎', description: 'When document is received', dataFields: ['sender_phone', 'document_url', 'filename', 'media_id'] },
+      { id: 'audio_received', name: 'Voice Note Received', icon: '🎤', description: 'When voice note is received', dataFields: ['sender_phone', 'audio_url', 'duration', 'media_id'] },
+      { id: 'location_received', name: 'Location Received', icon: '📍', description: 'When location is shared', dataFields: ['sender_phone', 'latitude', 'longitude', 'address'] },
+      { id: 'button_clicked', name: 'Button Clicked', icon: '🔘', description: 'When quick reply/button is clicked', dataFields: ['sender_phone', 'button_id', 'button_text', 'context'] },
+      { id: 'list_item_selected', name: 'List Item Selected', icon: '📋', description: 'When list item is selected', dataFields: ['sender_phone', 'list_id', 'item_title', 'item_description'] },
+      { id: 'message_read', name: 'Message Read', icon: '👁️', description: 'When your message is read', dataFields: ['recipient_phone', 'message_id', 'read_at'] },
+      { id: 'message_delivered', name: 'Message Delivered', icon: '✅', description: 'When message is delivered', dataFields: ['recipient_phone', 'message_id', 'delivered_at'] },
+      { id: 'message_failed', name: 'Message Failed', icon: '❌', description: 'When message fails to send', dataFields: ['recipient_phone', 'message_id', 'error_code', 'error_message'] },
+    ],
+    actions: [
+      { id: 'send_message', name: 'Send Text Message', icon: '💬', description: 'Send a text message', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true, helpText: 'Include country code e.g., +919876543210' },
+        { key: 'message', label: 'Message Text', type: 'textarea', placeholder: 'Hello {{customer_name}}!\n\n{{ai_response}}\n\nThank you!', required: true },
+        { key: 'previewUrl', label: 'Show Link Preview?', type: 'select', options: ['yes', 'no'], default: 'no' },
+      ]},
+      { id: 'reply_message', name: 'Reply to Message', icon: '↩️', description: 'Reply in context to a message', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'replyToMessageId', label: 'Reply to Message ID', type: 'text', placeholder: '{{message_id}}', required: true, helpText: 'Quote the original message' },
+        { key: 'message', label: 'Reply Text', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'send_template', name: 'Send Template Message', icon: '📋', description: 'Send pre-approved template', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'templateName', label: 'Template Name', type: 'text', placeholder: 'appointment_confirmation', required: true, helpText: 'Must be approved in Business Manager' },
+        { key: 'languageCode', label: 'Language Code', type: 'text', placeholder: 'en', default: 'en' },
+        { key: 'param1', label: 'Parameter 1 ({{1}})', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'param2', label: 'Parameter 2 ({{2}})', type: 'text', placeholder: '{{date}}' },
+        { key: 'param3', label: 'Parameter 3 ({{3}})', type: 'text', placeholder: '{{time}}' },
+        { key: 'param4', label: 'Parameter 4 ({{4}})', type: 'text', placeholder: '{{location}}' },
+      ]},
+      { id: 'send_image', name: 'Send Image', icon: '🖼️', description: 'Send an image with caption', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'imageUrl', label: 'Image URL', type: 'text', placeholder: 'https://example.com/image.jpg', required: true, helpText: 'Must be publicly accessible URL' },
+        { key: 'caption', label: 'Caption', type: 'textarea', placeholder: 'Here is your requested image!\n{{ai_description}}' },
+      ]},
+      { id: 'send_document', name: 'Send Document', icon: '📎', description: 'Send a PDF or document', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'documentUrl', label: 'Document URL', type: 'text', placeholder: 'https://example.com/file.pdf', required: true },
+        { key: 'filename', label: 'File Name', type: 'text', placeholder: 'Invoice_{{order_id}}.pdf', required: true },
+        { key: 'caption', label: 'Caption', type: 'textarea', placeholder: 'Please find attached your invoice.' },
+      ]},
+      { id: 'send_video', name: 'Send Video', icon: '🎬', description: 'Send a video with caption', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'videoUrl', label: 'Video URL', type: 'text', placeholder: 'https://example.com/video.mp4', required: true },
+        { key: 'caption', label: 'Caption', type: 'textarea', placeholder: 'Check out this video!' },
+      ]},
+      { id: 'send_audio', name: 'Send Audio', icon: '🎵', description: 'Send audio file', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'audioUrl', label: 'Audio URL', type: 'text', placeholder: 'https://example.com/audio.mp3', required: true },
+      ]},
+      { id: 'send_location', name: 'Send Location', icon: '📍', description: 'Share a location', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'latitude', label: 'Latitude', type: 'text', placeholder: '{{latitude}} or 12.9716', required: true },
+        { key: 'longitude', label: 'Longitude', type: 'text', placeholder: '{{longitude}} or 77.5946', required: true },
+        { key: 'name', label: 'Location Name', type: 'text', placeholder: '{{business_name}}' },
+        { key: 'address', label: 'Address', type: 'text', placeholder: '{{full_address}}' },
+      ]},
+      { id: 'send_buttons', name: 'Send Quick Reply Buttons', icon: '🔘', description: 'Send message with up to 3 buttons', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'bodyText', label: 'Message Body', type: 'textarea', placeholder: 'How would you like to proceed?', required: true },
+        { key: 'headerText', label: 'Header (optional)', type: 'text', placeholder: 'Please choose' },
+        { key: 'footerText', label: 'Footer (optional)', type: 'text', placeholder: 'Reply within 24 hours' },
+        { key: 'button1', label: 'Button 1 Text', type: 'text', placeholder: 'Yes ✅', required: true },
+        { key: 'button2', label: 'Button 2 Text', type: 'text', placeholder: 'No ❌' },
+        { key: 'button3', label: 'Button 3 Text', type: 'text', placeholder: 'Maybe Later' },
+      ]},
+      { id: 'send_list', name: 'Send List Menu', icon: '📋', description: 'Send interactive list (max 10 items)', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'bodyText', label: 'Message Body', type: 'textarea', placeholder: 'Please select an option from the menu below:', required: true },
+        { key: 'buttonText', label: 'Menu Button Text', type: 'text', placeholder: 'View Options', required: true },
+        { key: 'sections', label: 'Sections (JSON)', type: 'textarea', placeholder: '[\n  {\n    "title": "Services",\n    "rows": [\n      {"id": "svc1", "title": "Consultation", "description": "30 min call"},\n      {"id": "svc2", "title": "Support", "description": "Technical help"}\n    ]\n  }\n]', required: true },
+      ]},
+      { id: 'send_contact', name: 'Send Contact Card', icon: '👤', description: 'Share a contact', fields: [
+        { key: 'to', label: 'To Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'contactName', label: 'Contact Name', type: 'text', placeholder: '{{agent_name}}', required: true },
+        { key: 'contactPhone', label: 'Contact Phone', type: 'text', placeholder: '+919876543210', required: true },
+        { key: 'contactEmail', label: 'Contact Email', type: 'text', placeholder: 'support@company.com' },
+        { key: 'organization', label: 'Organization', type: 'text', placeholder: '{{company_name}}' },
+      ]},
+      { id: 'mark_read', name: 'Mark as Read', icon: '✅', description: 'Mark message as read (blue ticks)', fields: [
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+      ]},
+      { id: 'react_to_message', name: 'React to Message', icon: '👍', description: 'Add emoji reaction', fields: [
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'emoji', label: 'Emoji', type: 'text', placeholder: '👍', required: true, helpText: 'Any emoji: 👍 ❤️ 😂 😮 😢 🙏' },
+      ]},
+      { id: 'get_media', name: 'Download Media', icon: '⬇️', description: 'Download received media file', fields: [
+        { key: 'mediaId', label: 'Media ID', type: 'text', placeholder: '{{media_id}}', required: true },
+        { key: 'saveTo', label: 'Save to', type: 'select', options: ['google_drive', 'local', 's3'], default: 'google_drive' },
+        { key: 'filename', label: 'Save As', type: 'text', placeholder: '{{sender_phone}}_{{timestamp}}.jpg' },
+      ]},
+    ],
+    aiInstructions: 'Respond professionally to customer inquiries. Be helpful and concise. Use emojis sparingly. Maintain context from previous messages.',
+  },
+
+  telegram: {
+    triggers: [
+      { id: 'message_received', name: 'Message Received', icon: '📩', description: 'When a Telegram message is received', dataFields: ['chat_id', 'sender_name', 'username', 'message_text', 'message_type', 'message_id'] },
+      { id: 'photo_received', name: 'Photo Received', icon: '🖼️', description: 'When photo is received', dataFields: ['chat_id', 'photo_id', 'caption', 'sender_name'] },
+      { id: 'document_received', name: 'Document Received', icon: '📎', description: 'When document is received', dataFields: ['chat_id', 'file_id', 'file_name', 'mime_type'] },
+      { id: 'voice_received', name: 'Voice Message Received', icon: '🎤', description: 'When voice message is received', dataFields: ['chat_id', 'voice_id', 'duration', 'sender_name'] },
+      { id: 'command_received', name: 'Command Received', icon: '⌨️', description: 'When a /command is received', dataFields: ['chat_id', 'command', 'arguments', 'sender_name'] },
+      { id: 'callback_query', name: 'Button Clicked', icon: '🔘', description: 'When inline button is clicked', dataFields: ['chat_id', 'callback_data', 'message_id', 'user_id'] },
+      { id: 'new_member', name: 'New Member Joined', icon: '👋', description: 'When new member joins group', dataFields: ['chat_id', 'user_id', 'username', 'first_name'] },
+      { id: 'member_left', name: 'Member Left', icon: '🚪', description: 'When member leaves group', dataFields: ['chat_id', 'user_id', 'username'] },
+    ],
+    actions: [
+      { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Send text message', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}} or @channelname', required: true, helpText: 'User chat ID or @channel username' },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: '*Hello* {{customer_name}}!\n\n{{ai_response}}\n\n_Powered by AI_', required: true },
+        { key: 'parseMode', label: 'Format', type: 'select', options: ['Markdown', 'MarkdownV2', 'HTML', 'None'], default: 'Markdown' },
+        { key: 'disablePreview', label: 'Disable Link Preview', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'reply_message', name: 'Reply to Message', icon: '↩️', description: 'Reply to a specific message', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'replyToMessageId', label: 'Reply to Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'message', label: 'Reply Text', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+        { key: 'parseMode', label: 'Format', type: 'select', options: ['Markdown', 'HTML', 'None'], default: 'Markdown' },
+      ]},
+      { id: 'send_photo', name: 'Send Photo', icon: '🖼️', description: 'Send an image', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'photoUrl', label: 'Photo URL', type: 'text', placeholder: 'https://example.com/image.jpg', required: true },
+        { key: 'caption', label: 'Caption', type: 'textarea', placeholder: '📸 {{image_description}}' },
+        { key: 'parseMode', label: 'Caption Format', type: 'select', options: ['Markdown', 'HTML', 'None'], default: 'Markdown' },
+      ]},
+      { id: 'send_document', name: 'Send Document', icon: '📎', description: 'Send a file', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'documentUrl', label: 'Document URL', type: 'text', placeholder: 'https://example.com/file.pdf', required: true },
+        { key: 'filename', label: 'File Name', type: 'text', placeholder: '{{customer_name}}_invoice.pdf' },
+        { key: 'caption', label: 'Caption', type: 'textarea', placeholder: '📄 Here is your document' },
+      ]},
+      { id: 'send_video', name: 'Send Video', icon: '🎬', description: 'Send a video', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'videoUrl', label: 'Video URL', type: 'text', placeholder: 'https://example.com/video.mp4', required: true },
+        { key: 'caption', label: 'Caption', type: 'textarea', placeholder: '🎬 Check out this video!' },
+      ]},
+      { id: 'send_audio', name: 'Send Audio', icon: '🎵', description: 'Send audio file', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'audioUrl', label: 'Audio URL', type: 'text', placeholder: 'https://example.com/audio.mp3', required: true },
+        { key: 'title', label: 'Track Title', type: 'text', placeholder: '{{audio_title}}' },
+        { key: 'performer', label: 'Performer', type: 'text', placeholder: '{{artist_name}}' },
+      ]},
+      { id: 'send_location', name: 'Send Location', icon: '📍', description: 'Share a location', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'latitude', label: 'Latitude', type: 'text', placeholder: '{{latitude}}', required: true },
+        { key: 'longitude', label: 'Longitude', type: 'text', placeholder: '{{longitude}}', required: true },
+      ]},
+      { id: 'send_venue', name: 'Send Venue', icon: '🏢', description: 'Share a venue/place', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'latitude', label: 'Latitude', type: 'text', placeholder: '{{latitude}}', required: true },
+        { key: 'longitude', label: 'Longitude', type: 'text', placeholder: '{{longitude}}', required: true },
+        { key: 'title', label: 'Venue Name', type: 'text', placeholder: '{{business_name}}', required: true },
+        { key: 'address', label: 'Address', type: 'text', placeholder: '{{full_address}}', required: true },
+      ]},
+      { id: 'send_contact', name: 'Send Contact', icon: '👤', description: 'Share a contact', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'phoneNumber', label: 'Phone Number', type: 'text', placeholder: '+919876543210', required: true },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{contact_name}}', required: true },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '' },
+      ]},
+      { id: 'send_buttons', name: 'Send Inline Buttons', icon: '🔘', description: 'Send message with clickable buttons', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Please choose an option:', required: true },
+        { key: 'buttons', label: 'Buttons (JSON)', type: 'textarea', placeholder: '[\n  [{"text": "✅ Yes", "callback_data": "yes"}],\n  [{"text": "❌ No", "callback_data": "no"}],\n  [{"text": "🔗 Visit Website", "url": "https://example.com"}]\n]', required: true, helpText: 'Array of button rows. Each row is an array of buttons.' },
+      ]},
+      { id: 'send_keyboard', name: 'Send Reply Keyboard', icon: '⌨️', description: 'Send custom keyboard', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Choose from the keyboard below:', required: true },
+        { key: 'keyboard', label: 'Keyboard (JSON)', type: 'textarea', placeholder: '[\n  ["Option 1", "Option 2"],\n  ["Option 3", "Option 4"],\n  ["Cancel"]\n]', required: true },
+        { key: 'oneTime', label: 'One-time Keyboard', type: 'select', options: ['yes', 'no'], default: 'yes' },
+        { key: 'resize', label: 'Resize Keyboard', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+      { id: 'remove_keyboard', name: 'Remove Keyboard', icon: '🗑️', description: 'Remove custom keyboard', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Keyboard removed.', required: true },
+      ]},
+      { id: 'edit_message', name: 'Edit Message', icon: '✏️', description: 'Edit a sent message', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'newText', label: 'New Text', type: 'textarea', placeholder: '{{updated_message}}', required: true },
+        { key: 'parseMode', label: 'Format', type: 'select', options: ['Markdown', 'HTML', 'None'], default: 'Markdown' },
+      ]},
+      { id: 'delete_message', name: 'Delete Message', icon: '🗑️', description: 'Delete a message', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+      ]},
+      { id: 'answer_callback', name: 'Answer Callback Query', icon: '✅', description: 'Answer inline button click', fields: [
+        { key: 'callbackQueryId', label: 'Callback Query ID', type: 'text', placeholder: '{{callback_query_id}}', required: true },
+        { key: 'text', label: 'Notification Text', type: 'text', placeholder: 'Processing...', helpText: 'Brief notification shown to user' },
+        { key: 'showAlert', label: 'Show as Alert', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'pin_message', name: 'Pin Message', icon: '📌', description: 'Pin a message in chat', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'notify', label: 'Send Notification', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+      { id: 'get_chat_info', name: 'Get Chat Info', icon: 'ℹ️', description: 'Get chat details', fields: [
+        { key: 'chatId', label: 'Chat ID', type: 'text', placeholder: '{{chat_id}}', required: true },
+      ]},
+      { id: 'get_user_photos', name: 'Get User Profile Photos', icon: '📷', description: 'Get user profile pictures', fields: [
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+        { key: 'limit', label: 'Max Photos', type: 'number', placeholder: '1', default: '1' },
+      ]},
+    ],
+    aiInstructions: 'Respond to Telegram users in a friendly manner. Use Markdown for formatting (*bold*, _italic_). Use emojis appropriately. For groups, be concise.',
+  },
+
+  slack: {
+    triggers: [
+      { id: 'message_received', name: 'Message Posted', icon: '📩', description: 'When a message is posted in channel', dataFields: ['channel', 'channel_name', 'user', 'user_name', 'text', 'timestamp', 'thread_ts'] },
+      { id: 'message_in_thread', name: 'Thread Reply', icon: '💬', description: 'When someone replies in a thread', dataFields: ['channel', 'user', 'text', 'thread_ts', 'parent_message'] },
+      { id: 'mention', name: 'Bot Mentioned', icon: '🔔', description: 'When your bot is @mentioned', dataFields: ['channel', 'user', 'text', 'timestamp'] },
+      { id: 'reaction_added', name: 'Reaction Added', icon: '👍', description: 'When reaction is added to message', dataFields: ['channel', 'user', 'reaction', 'message_ts', 'item_user'] },
+      { id: 'reaction_removed', name: 'Reaction Removed', icon: '👎', description: 'When reaction is removed', dataFields: ['channel', 'user', 'reaction', 'message_ts'] },
+      { id: 'channel_created', name: 'Channel Created', icon: '📢', description: 'When new channel is created', dataFields: ['channel_id', 'channel_name', 'creator'] },
+      { id: 'member_joined', name: 'Member Joined Channel', icon: '👋', description: 'When member joins channel', dataFields: ['channel', 'user', 'user_name'] },
+      { id: 'file_shared', name: 'File Shared', icon: '📎', description: 'When file is shared', dataFields: ['channel', 'user', 'file_id', 'file_name', 'file_type'] },
+      { id: 'app_home_opened', name: 'App Home Opened', icon: '🏠', description: 'When user opens app home', dataFields: ['user', 'user_name'] },
+      { id: 'slash_command', name: 'Slash Command', icon: '⌨️', description: 'When slash command is used', dataFields: ['command', 'text', 'user', 'channel'] },
+    ],
+    actions: [
+      { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general or C0123456789', required: true, helpText: 'Channel name with # or channel ID' },
+        { key: 'message', label: 'Message (Slack Markdown)', type: 'textarea', placeholder: ':wave: Hello {{customer_name}}!\n\n{{ai_response}}\n\n_Sent via AI Agent_', required: true },
+        { key: 'unfurlLinks', label: 'Unfurl Links', type: 'select', options: ['yes', 'no'], default: 'yes' },
+        { key: 'unfurlMedia', label: 'Unfurl Media', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+      { id: 'send_dm', name: 'Send Direct Message', icon: '✉️', description: 'Send DM to user', fields: [
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: 'U0123456789 or {{user_id}}', required: true, helpText: 'Slack user ID (starts with U)' },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Hi there! {{ai_response}}', required: true },
+      ]},
+      { id: 'reply_thread', name: 'Reply in Thread', icon: '↩️', description: 'Reply to a thread', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '{{channel}}', required: true },
+        { key: 'threadTs', label: 'Thread Timestamp', type: 'text', placeholder: '{{thread_ts}} or {{timestamp}}', required: true, helpText: 'The ts of the parent message' },
+        { key: 'message', label: 'Reply Message', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+        { key: 'broadcast', label: 'Also Post to Channel', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'send_blocks', name: 'Send Rich Message', icon: '🎨', description: 'Send formatted Block Kit message', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general', required: true },
+        { key: 'blocks', label: 'Blocks (JSON)', type: 'textarea', placeholder: '[\n  {\n    "type": "section",\n    "text": {\n      "type": "mrkdwn",\n      "text": "*New Lead:* {{customer_name}}"\n    }\n  },\n  {\n    "type": "section",\n    "fields": [\n      {"type": "mrkdwn", "text": "*Email:*\\n{{customer_email}}"},\n      {"type": "mrkdwn", "text": "*Phone:*\\n{{customer_phone}}"}\n    ]\n  }\n]', required: true },
+        { key: 'text', label: 'Fallback Text', type: 'text', placeholder: 'New lead from {{customer_name}}', helpText: 'Shown in notifications' },
+      ]},
+      { id: 'send_attachment', name: 'Send with Attachment', icon: '📎', description: 'Send message with attachment', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general', required: true },
+        { key: 'text', label: 'Message Text', type: 'textarea', placeholder: 'Check out this update!' },
+        { key: 'attachmentTitle', label: 'Attachment Title', type: 'text', placeholder: '{{title}}' },
+        { key: 'attachmentText', label: 'Attachment Text', type: 'textarea', placeholder: '{{details}}' },
+        { key: 'attachmentColor', label: 'Color', type: 'text', placeholder: '#36a64f', default: '#36a64f' },
+        { key: 'attachmentFooter', label: 'Footer', type: 'text', placeholder: 'Via AI Agent' },
+      ]},
+      { id: 'update_message', name: 'Update Message', icon: '✏️', description: 'Edit an existing message', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '{{channel}}', required: true },
+        { key: 'ts', label: 'Message Timestamp', type: 'text', placeholder: '{{timestamp}}', required: true },
+        { key: 'message', label: 'New Message', type: 'textarea', placeholder: '{{updated_message}}', required: true },
+      ]},
+      { id: 'delete_message', name: 'Delete Message', icon: '🗑️', description: 'Delete a message', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '{{channel}}', required: true },
+        { key: 'ts', label: 'Message Timestamp', type: 'text', placeholder: '{{timestamp}}', required: true },
+      ]},
+      { id: 'add_reaction', name: 'Add Reaction', icon: '👍', description: 'Add emoji reaction to message', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '{{channel}}', required: true },
+        { key: 'timestamp', label: 'Message Timestamp', type: 'text', placeholder: '{{timestamp}}', required: true },
+        { key: 'emoji', label: 'Emoji Name', type: 'text', placeholder: 'thumbsup', required: true, helpText: 'Emoji name without colons (e.g., thumbsup, heart, check)' },
+      ]},
+      { id: 'remove_reaction', name: 'Remove Reaction', icon: '➖', description: 'Remove emoji reaction', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '{{channel}}', required: true },
+        { key: 'timestamp', label: 'Message Timestamp', type: 'text', placeholder: '{{timestamp}}', required: true },
+        { key: 'emoji', label: 'Emoji Name', type: 'text', placeholder: 'thumbsup', required: true },
+      ]},
+      { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload file to channel', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general', required: true },
+        { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{file_url}}', required: true },
+        { key: 'filename', label: 'File Name', type: 'text', placeholder: 'report.pdf', required: true },
+        { key: 'title', label: 'Title', type: 'text', placeholder: '{{document_title}}' },
+        { key: 'initialComment', label: 'Comment', type: 'textarea', placeholder: 'Here is the report you requested.' },
+      ]},
+      { id: 'set_topic', name: 'Set Channel Topic', icon: '📝', description: 'Update channel topic', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general', required: true },
+        { key: 'topic', label: 'New Topic', type: 'textarea', placeholder: '{{new_topic}}', required: true },
+      ]},
+      { id: 'invite_user', name: 'Invite User to Channel', icon: '➕', description: 'Add user to channel', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general', required: true },
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+      ]},
+      { id: 'kick_user', name: 'Remove User from Channel', icon: '➖', description: 'Remove user from channel', fields: [
+        { key: 'channel', label: 'Channel', type: 'text', placeholder: '#general', required: true },
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+      ]},
+      { id: 'get_user_info', name: 'Get User Info', icon: 'ℹ️', description: 'Get user details', fields: [
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+      ]},
+      { id: 'list_channels', name: 'List Channels', icon: '📋', description: 'Get list of channels', fields: [
+        { key: 'limit', label: 'Max Results', type: 'number', placeholder: '100', default: '100' },
+        { key: 'types', label: 'Channel Types', type: 'text', placeholder: 'public_channel,private_channel', default: 'public_channel' },
+      ]},
+      { id: 'create_channel', name: 'Create Channel', icon: '➕', description: 'Create new channel', fields: [
+        { key: 'name', label: 'Channel Name', type: 'text', placeholder: 'project-{{project_name}}', required: true, helpText: 'Lowercase, no spaces' },
+        { key: 'isPrivate', label: 'Private Channel', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+    ],
+    aiInstructions: 'Use Slack mrkdwn formatting (*bold*, _italic_, ~strike~). Be professional but approachable. Use appropriate emojis. Keep messages scannable.',
+  },
+
+  discord: {
+    triggers: [
+      { id: 'message_received', name: 'Message Received', icon: '📩', description: 'When a message is posted', dataFields: ['channel_id', 'guild_id', 'author_id', 'author_name', 'content', 'message_id'] },
+      { id: 'message_in_thread', name: 'Thread Message', icon: '💬', description: 'When message posted in thread', dataFields: ['channel_id', 'thread_id', 'author_id', 'content'] },
+      { id: 'reaction_added', name: 'Reaction Added', icon: '👍', description: 'When reaction is added', dataFields: ['channel_id', 'user_id', 'emoji', 'message_id'] },
+      { id: 'member_joined', name: 'Member Joined', icon: '👋', description: 'When new member joins server', dataFields: ['guild_id', 'user_id', 'user_name', 'joined_at'] },
+      { id: 'member_left', name: 'Member Left', icon: '🚪', description: 'When member leaves server', dataFields: ['guild_id', 'user_id', 'user_name'] },
+      { id: 'slash_command', name: 'Slash Command', icon: '⌨️', description: 'When slash command is used', dataFields: ['command', 'options', 'user_id', 'channel_id'] },
+      { id: 'button_clicked', name: 'Button Clicked', icon: '🔘', description: 'When button is clicked', dataFields: ['custom_id', 'user_id', 'message_id'] },
+      { id: 'select_menu_used', name: 'Select Menu Used', icon: '📋', description: 'When select menu option chosen', dataFields: ['custom_id', 'values', 'user_id'] },
+    ],
+    actions: [
+      { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to channel', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true, helpText: 'Discord channel ID (numeric)' },
+        { key: 'message', label: 'Message (Discord Markdown)', type: 'textarea', placeholder: '**Hello!** {{ai_response}}\n\n> Quote example\n```code block```', required: true },
+        { key: 'tts', label: 'Text-to-Speech', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'reply_message', name: 'Reply to Message', icon: '↩️', description: 'Reply to specific message', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID to Reply', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'message', label: 'Reply', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+        { key: 'mentionAuthor', label: 'Mention Author', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+      { id: 'send_embed', name: 'Send Embed', icon: '🎨', description: 'Send rich embed message', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'title', label: 'Embed Title', type: 'text', placeholder: '{{title}}' },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '**Name:** {{customer_name}}\n**Email:** {{customer_email}}\n**Message:**\n{{message}}' },
+        { key: 'color', label: 'Color (decimal)', type: 'text', placeholder: '5814783', default: '5814783', helpText: 'Decimal color code (5814783 = Discord blue)' },
+        { key: 'thumbnailUrl', label: 'Thumbnail URL', type: 'text', placeholder: '{{image_url}}' },
+        { key: 'imageUrl', label: 'Image URL', type: 'text', placeholder: '{{image_url}}' },
+        { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Powered by AI Agent' },
+        { key: 'timestamp', label: 'Show Timestamp', type: 'select', options: ['yes', 'no'], default: 'no' },
+      ]},
+      { id: 'send_buttons', name: 'Send with Buttons', icon: '🔘', description: 'Send message with buttons', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Choose an option:', required: true },
+        { key: 'buttons', label: 'Buttons (JSON)', type: 'textarea', placeholder: '[\n  {"label": "Approve", "style": "success", "custom_id": "approve"},\n  {"label": "Reject", "style": "danger", "custom_id": "reject"},\n  {"label": "Website", "style": "link", "url": "https://example.com"}\n]', required: true, helpText: 'Styles: primary, secondary, success, danger, link' },
+      ]},
+      { id: 'send_select_menu', name: 'Send Select Menu', icon: '📋', description: 'Send dropdown menu', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Select an option:', required: true },
+        { key: 'placeholder', label: 'Placeholder', type: 'text', placeholder: 'Choose...', default: 'Choose an option' },
+        { key: 'options', label: 'Options (JSON)', type: 'textarea', placeholder: '[\n  {"label": "Option 1", "value": "opt1", "description": "First option"},\n  {"label": "Option 2", "value": "opt2", "description": "Second option"}\n]', required: true },
+      ]},
+      { id: 'edit_message', name: 'Edit Message', icon: '✏️', description: 'Edit existing message', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'newContent', label: 'New Content', type: 'textarea', placeholder: '{{updated_message}}', required: true },
+      ]},
+      { id: 'delete_message', name: 'Delete Message', icon: '🗑️', description: 'Delete a message', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+      ]},
+      { id: 'add_reaction', name: 'Add Reaction', icon: '👍', description: 'Add emoji reaction', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'emoji', label: 'Emoji', type: 'text', placeholder: '👍 or custom:123456789', required: true },
+      ]},
+      { id: 'send_dm', name: 'Send DM', icon: '✉️', description: 'Send direct message to user', fields: [
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'create_thread', name: 'Create Thread', icon: '🧵', description: 'Start a thread from message', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'name', label: 'Thread Name', type: 'text', placeholder: 'Discussion: {{topic}}', required: true },
+        { key: 'autoArchive', label: 'Auto Archive (minutes)', type: 'select', options: ['60', '1440', '4320', '10080'], default: '1440' },
+      ]},
+      { id: 'pin_message', name: 'Pin Message', icon: '📌', description: 'Pin a message', fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+      ]},
+      { id: 'assign_role', name: 'Assign Role', icon: '🏷️', description: 'Assign role to member', fields: [
+        { key: 'guildId', label: 'Server ID', type: 'text', placeholder: '{{guild_id}}', required: true },
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+        { key: 'roleId', label: 'Role ID', type: 'text', placeholder: '{{role_id}}', required: true },
+      ]},
+      { id: 'remove_role', name: 'Remove Role', icon: '🏷️', description: 'Remove role from member', fields: [
+        { key: 'guildId', label: 'Server ID', type: 'text', placeholder: '{{guild_id}}', required: true },
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+        { key: 'roleId', label: 'Role ID', type: 'text', placeholder: '{{role_id}}', required: true },
+      ]},
+      { id: 'kick_member', name: 'Kick Member', icon: '🚪', description: 'Kick member from server', fields: [
+        { key: 'guildId', label: 'Server ID', type: 'text', placeholder: '{{guild_id}}', required: true },
+        { key: 'userId', label: 'User ID', type: 'text', placeholder: '{{user_id}}', required: true },
+        { key: 'reason', label: 'Reason', type: 'text', placeholder: '{{kick_reason}}' },
+      ]},
+    ],
+    aiInstructions: 'Use Discord markdown (**bold**, *italic*, __underline__, ~~strike~~, `code`, ```code block```). Keep responses concise. Use embeds for structured data.',
+  },
+
+  sms_twilio: {
+    triggers: [
+      { id: 'sms_received', name: 'SMS Received', icon: '📩', description: 'When an SMS is received', dataFields: ['from', 'to', 'body', 'timestamp', 'message_sid', 'num_media'] },
+      { id: 'sms_with_media', name: 'MMS Received', icon: '🖼️', description: 'When MMS with media is received', dataFields: ['from', 'body', 'media_urls', 'media_types'] },
+      { id: 'sms_status_update', name: 'SMS Status Update', icon: '📊', description: 'When SMS status changes', dataFields: ['message_sid', 'status', 'error_code', 'to'] },
+      { id: 'call_received', name: 'Call Received', icon: '📞', description: 'When phone call is received', dataFields: ['from', 'to', 'call_sid', 'call_status'] },
+    ],
+    actions: [
+      { id: 'send_sms', name: 'Send SMS', icon: '📱', description: 'Send text message', fields: [
+        { key: 'to', label: 'To Phone', type: 'text', placeholder: '{{customer_phone}}', required: true, helpText: 'Include country code: +1234567890' },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Hi {{customer_name}}, {{ai_response}}', required: true },
+        { key: 'statusCallback', label: 'Status Callback URL', type: 'text', placeholder: 'https://your-webhook.com/sms-status', helpText: 'Get delivery status updates' },
+      ]},
+      { id: 'send_mms', name: 'Send MMS', icon: '🖼️', description: 'Send with media', fields: [
+        { key: 'to', label: 'To Phone', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Check this out! {{description}}' },
+        { key: 'mediaUrl', label: 'Media URL', type: 'text', placeholder: 'https://example.com/image.jpg', required: true, helpText: 'Publicly accessible image/video URL' },
+      ]},
+      { id: 'send_whatsapp', name: 'Send WhatsApp (Twilio)', icon: '💬', description: 'Send via WhatsApp', fields: [
+        { key: 'to', label: 'To Phone (WhatsApp)', type: 'text', placeholder: 'whatsapp:+{{customer_phone}}', required: true, helpText: 'Format: whatsapp:+1234567890' },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'make_call', name: 'Make Call', icon: '📞', description: 'Initiate phone call', fields: [
+        { key: 'to', label: 'To Phone', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'twimlUrl', label: 'TwiML URL', type: 'text', placeholder: 'https://your-server.com/twiml', required: true, helpText: 'URL returning TwiML for call flow' },
+        { key: 'statusCallback', label: 'Status Callback', type: 'text', placeholder: 'https://your-webhook.com/call-status' },
+      ]},
+      { id: 'send_verification', name: 'Send Verification Code', icon: '🔐', description: 'Send OTP via SMS', fields: [
+        { key: 'to', label: 'To Phone', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'channel', label: 'Channel', type: 'select', options: ['sms', 'call', 'whatsapp'], default: 'sms' },
+        { key: 'serviceSid', label: 'Verify Service SID', type: 'text', placeholder: 'VAxxxxxxxxxx', required: true },
+      ]},
+      { id: 'check_verification', name: 'Check Verification Code', icon: '✅', description: 'Verify OTP', fields: [
+        { key: 'to', label: 'Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'code', label: 'Code', type: 'text', placeholder: '{{verification_code}}', required: true },
+        { key: 'serviceSid', label: 'Verify Service SID', type: 'text', placeholder: 'VAxxxxxxxxxx', required: true },
+      ]},
+      { id: 'lookup_phone', name: 'Lookup Phone Number', icon: '🔍', description: 'Get phone number info', fields: [
+        { key: 'phoneNumber', label: 'Phone Number', type: 'text', placeholder: '{{customer_phone}}', required: true },
+        { key: 'type', label: 'Lookup Type', type: 'select', options: ['carrier', 'caller-name', 'line-type-intelligence'], default: 'carrier' },
+      ]},
+      { id: 'get_message', name: 'Get Message Details', icon: 'ℹ️', description: 'Get message info', fields: [
+        { key: 'messageSid', label: 'Message SID', type: 'text', placeholder: '{{message_sid}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Keep SMS under 160 characters when possible. For longer messages, use multiple segments wisely. Include opt-out info for marketing messages.',
+  },
+
+  microsoft_teams: {
+    triggers: [
+      { id: 'message_received', name: 'Message Received', icon: '📩', description: 'When message is posted', dataFields: ['channel', 'team_id', 'from', 'text', 'timestamp', 'message_id'] },
+      { id: 'mention', name: 'Bot Mentioned', icon: '🔔', description: 'When bot is mentioned', dataFields: ['channel', 'team_id', 'from', 'text'] },
+      { id: 'channel_created', name: 'Channel Created', icon: '📢', description: 'When new channel is created', dataFields: ['channel_id', 'channel_name', 'team_id'] },
+      { id: 'member_added', name: 'Member Added', icon: '👋', description: 'When member joins team', dataFields: ['team_id', 'member_id', 'member_name'] },
+      { id: 'member_removed', name: 'Member Removed', icon: '🚪', description: 'When member leaves team', dataFields: ['team_id', 'member_id'] },
+      { id: 'file_consent', name: 'File Consent', icon: '📎', description: 'When user accepts file upload', dataFields: ['context', 'value'] },
+      { id: 'task_module_fetch', name: 'Task Module Opened', icon: '📋', description: 'When task module is opened', dataFields: ['data', 'context'] },
+      { id: 'card_action', name: 'Card Action', icon: '🎴', description: 'When adaptive card action triggered', dataFields: ['action_type', 'action_data', 'user'] },
+    ],
+    actions: [
+      { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to Teams channel', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: '**New Lead:** {{customer_name}}\n\n{{ai_response}}', required: true },
+      ]},
+      { id: 'reply_message', name: 'Reply to Message', icon: '↩️', description: 'Reply in thread', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'message', label: 'Reply', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'send_card', name: 'Send Adaptive Card', icon: '🎨', description: 'Send rich card message', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'cardJson', label: 'Adaptive Card JSON', type: 'textarea', placeholder: '{\n  "type": "AdaptiveCard",\n  "body": [\n    {\n      "type": "TextBlock",\n      "text": "New Lead: {{customer_name}}",\n      "weight": "bolder",\n      "size": "large"\n    },\n    {\n      "type": "FactSet",\n      "facts": [\n        {"title": "Email:", "value": "{{customer_email}}"},\n        {"title": "Phone:", "value": "{{customer_phone}}"}\n      ]\n    }\n  ],\n  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",\n  "version": "1.4"\n}', required: true },
+      ]},
+      { id: 'send_dm', name: 'Send Direct Message', icon: '✉️', description: 'Send DM to user', fields: [
+        { key: 'userId', label: 'User ID or Email', type: 'text', placeholder: '{{user_id}} or user@company.com', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Hi! {{ai_response}}', required: true },
+      ]},
+      { id: 'update_message', name: 'Update Message', icon: '✏️', description: 'Edit posted message', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'message', label: 'New Message', type: 'textarea', placeholder: '{{updated_content}}', required: true },
+      ]},
+      { id: 'delete_message', name: 'Delete Message', icon: '🗑️', description: 'Delete a message', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+      ]},
+      { id: 'create_meeting', name: 'Schedule Meeting', icon: '📅', description: 'Create Teams meeting', fields: [
+        { key: 'subject', label: 'Meeting Subject', type: 'text', placeholder: 'Call with {{customer_name}}', required: true },
+        { key: 'startDateTime', label: 'Start Time (ISO)', type: 'text', placeholder: '2024-12-20T10:00:00', required: true },
+        { key: 'endDateTime', label: 'End Time (ISO)', type: 'text', placeholder: '2024-12-20T10:30:00', required: true },
+        { key: 'attendees', label: 'Attendee Emails', type: 'textarea', placeholder: '{{customer_email}}, team@company.com', helpText: 'Comma-separated emails' },
+        { key: 'content', label: 'Meeting Notes', type: 'textarea', placeholder: 'Agenda:\n1. {{topic}}\n2. Q&A' },
+      ]},
+      { id: 'create_channel', name: 'Create Channel', icon: '➕', description: 'Create new channel', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'displayName', label: 'Channel Name', type: 'text', placeholder: '{{channel_name}}', required: true },
+        { key: 'description', label: 'Description', type: 'text', placeholder: 'Channel for {{purpose}}' },
+      ]},
+      { id: 'add_member', name: 'Add Team Member', icon: '👤', description: 'Add user to team', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'userId', label: 'User ID or Email', type: 'text', placeholder: '{{user_email}}', required: true },
+        { key: 'role', label: 'Role', type: 'select', options: ['member', 'owner'], default: 'member' },
+      ]},
+      { id: 'get_team_members', name: 'Get Team Members', icon: '👥', description: 'List team members', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+      ]},
+      { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload file to channel', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{file_url}}', required: true },
+        { key: 'fileName', label: 'File Name', type: 'text', placeholder: '{{file_name}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Use Teams markdown formatting. Be professional and concise. For complex data, use Adaptive Cards.',
+  },
+
+  // ==================== EMAIL ====================
+  gmail: {
+    triggers: [
+      { id: 'email_received', name: 'Email Received', icon: '📩', description: 'When new email arrives', dataFields: ['from', 'to', 'subject', 'body', 'body_html', 'attachments', 'date', 'thread_id', 'email_id'] },
+      { id: 'email_from_specific', name: 'Email from Specific Sender', icon: '👤', description: 'When email from specific address arrives', dataFields: ['from', 'subject', 'body', 'date', 'thread_id'] },
+      { id: 'email_with_subject', name: 'Email with Subject Match', icon: '🔍', description: 'When email subject contains keyword', dataFields: ['from', 'subject', 'body', 'date', 'thread_id'] },
+      { id: 'email_with_attachment', name: 'Email with Attachment', icon: '📎', description: 'When email has attachments', dataFields: ['from', 'subject', 'attachments', 'date', 'thread_id'] },
+      { id: 'email_labeled', name: 'Email Labeled', icon: '🏷️', description: 'When email gets a label', dataFields: ['email_id', 'label', 'subject'] },
+      { id: 'email_starred', name: 'Email Starred', icon: '⭐', description: 'When email is starred', dataFields: ['email_id', 'subject', 'from'] },
+    ],
+    actions: [
+      { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send new email', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true, helpText: 'Recipient email address' },
+        { key: 'cc', label: 'CC', type: 'text', placeholder: 'cc@example.com', helpText: 'Comma-separated for multiple' },
+        { key: 'bcc', label: 'BCC', type: 'text', placeholder: 'bcc@example.com' },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Re: {{subject}}', required: true },
+        { key: 'body', label: 'Email Body (HTML)', type: 'textarea', placeholder: '<p>Dear {{customer_name}},</p>\n<p>{{ai_response}}</p>\n<p>Best regards</p>', required: true },
+        { key: 'attachmentUrl', label: 'Attachment URL (optional)', type: 'text', placeholder: '{{file_url}}', helpText: 'URL of file to attach' },
+      ]},
+      { id: 'reply_email', name: 'Reply to Email', icon: '↩️', description: 'Reply in same thread', fields: [
+        { key: 'threadId', label: 'Thread ID', type: 'text', placeholder: '{{thread_id}}', required: true, helpText: 'From the trigger data' },
+        { key: 'body', label: 'Reply Body (HTML)', type: 'textarea', placeholder: '<p>{{ai_response}}</p>', required: true },
+      ]},
+      { id: 'reply_all', name: 'Reply All', icon: '↩️👥', description: 'Reply to all recipients', fields: [
+        { key: 'threadId', label: 'Thread ID', type: 'text', placeholder: '{{thread_id}}', required: true },
+        { key: 'body', label: 'Reply Body', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'forward_email', name: 'Forward Email', icon: '➡️', description: 'Forward to someone', fields: [
+        { key: 'to', label: 'Forward To', type: 'email', placeholder: 'manager@company.com', required: true },
+        { key: 'threadId', label: 'Thread ID', type: 'text', placeholder: '{{thread_id}}', required: true },
+        { key: 'note', label: 'Forward Note', type: 'textarea', placeholder: 'FYI - {{ai_summary}}' },
+      ]},
+      { id: 'add_label', name: 'Add Label', icon: '🏷️', description: 'Add label to email', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+        { key: 'label', label: 'Label Name', type: 'text', placeholder: 'Processed', required: true, helpText: 'Label will be created if it doesn\'t exist' },
+      ]},
+      { id: 'remove_label', name: 'Remove Label', icon: '🏷️❌', description: 'Remove label from email', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+        { key: 'label', label: 'Label Name', type: 'text', placeholder: 'Inbox', required: true },
+      ]},
+      { id: 'create_draft', name: 'Create Draft', icon: '📝', description: 'Save as draft for review', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{subject}}', required: true },
+        { key: 'body', label: 'Draft Body', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'mark_read', name: 'Mark as Read', icon: '✅', description: 'Mark email as read', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+      ]},
+      { id: 'mark_unread', name: 'Mark as Unread', icon: '📬', description: 'Mark email as unread', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+      ]},
+      { id: 'star_email', name: 'Star Email', icon: '⭐', description: 'Add star to email', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+      ]},
+      { id: 'archive_email', name: 'Archive Email', icon: '📥', description: 'Archive email (remove from inbox)', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+      ]},
+      { id: 'trash_email', name: 'Move to Trash', icon: '🗑️', description: 'Send email to trash', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+      ]},
+      { id: 'search_emails', name: 'Search Emails', icon: '🔍', description: 'Search for emails', fields: [
+        { key: 'query', label: 'Search Query', type: 'text', placeholder: 'from:{{customer_email}} subject:order', required: true, helpText: 'Gmail search syntax' },
+        { key: 'maxResults', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'get_email_content', name: 'Get Email Content', icon: '📄', description: 'Get full email content', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+      ]},
+      { id: 'download_attachment', name: 'Download Attachment', icon: '📎', description: 'Download email attachment', fields: [
+        { key: 'emailId', label: 'Email ID', type: 'text', placeholder: '{{email_id}}', required: true },
+        { key: 'attachmentIndex', label: 'Attachment Index', type: 'number', placeholder: '0', default: '0', helpText: '0 for first attachment' },
+        { key: 'saveTo', label: 'Save Location', type: 'select', options: ['google_drive', 'local', 'dropbox'], default: 'google_drive' },
+      ]},
+    ],
+    aiInstructions: 'Write professional emails. Match the tone of the incoming email. Include proper greeting and signature. When replying, reference the original context.',
+  },
+
+  outlook: {
+    triggers: [
+      { id: 'email_received', name: 'Email Received', icon: '📩', description: 'When new email arrives', dataFields: ['from', 'to', 'subject', 'body', 'body_html', 'date', 'conversation_id', 'message_id', 'has_attachments'] },
+      { id: 'email_from_specific', name: 'Email from Sender', icon: '👤', description: 'When email from specific address', dataFields: ['from', 'subject', 'body', 'date', 'conversation_id'] },
+      { id: 'email_with_attachment', name: 'Email with Attachment', icon: '📎', description: 'When email has attachments', dataFields: ['from', 'subject', 'attachments', 'date'] },
+      { id: 'calendar_event', name: 'Calendar Event Created', icon: '📅', description: 'When calendar event is created', dataFields: ['event_id', 'title', 'start', 'end', 'attendees', 'organizer'] },
+      { id: 'calendar_event_updated', name: 'Calendar Event Updated', icon: '✏️', description: 'When event is modified', dataFields: ['event_id', 'title', 'changes', 'updated_by'] },
+      { id: 'meeting_invite', name: 'Meeting Invitation', icon: '📬', description: 'When meeting invite received', dataFields: ['event_id', 'title', 'organizer', 'start', 'end'] },
+    ],
+    actions: [
+      { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send new email', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'cc', label: 'CC', type: 'text', placeholder: 'cc1@example.com, cc2@example.com' },
+        { key: 'bcc', label: 'BCC', type: 'text', placeholder: 'bcc@example.com' },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Re: {{subject}}', required: true },
+        { key: 'body', label: 'Email Body', type: 'textarea', placeholder: '<p>Dear {{customer_name}},</p>\n<p>{{ai_response}}</p>\n<p>Best regards</p>', required: true },
+        { key: 'importance', label: 'Importance', type: 'select', options: ['low', 'normal', 'high'], default: 'normal' },
+      ]},
+      { id: 'reply_email', name: 'Reply to Email', icon: '↩️', description: 'Reply to email in thread', fields: [
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'body', label: 'Reply', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+        { key: 'replyAll', label: 'Reply All', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'forward_email', name: 'Forward Email', icon: '➡️', description: 'Forward email to someone', fields: [
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'to', label: 'Forward To', type: 'email', placeholder: 'colleague@company.com', required: true },
+        { key: 'comment', label: 'Comment', type: 'textarea', placeholder: 'FYI - {{ai_summary}}' },
+      ]},
+      { id: 'create_draft', name: 'Create Draft', icon: '📝', description: 'Save as draft', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{subject}}', required: true },
+        { key: 'body', label: 'Body', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'move_email', name: 'Move Email', icon: '📁', description: 'Move to folder', fields: [
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'folder', label: 'Destination Folder', type: 'text', placeholder: 'Archive or folder path', required: true },
+      ]},
+      { id: 'flag_email', name: 'Flag Email', icon: '🚩', description: 'Add flag to email', fields: [
+        { key: 'messageId', label: 'Message ID', type: 'text', placeholder: '{{message_id}}', required: true },
+        { key: 'flagStatus', label: 'Flag Status', type: 'select', options: ['flagged', 'complete', 'notFlagged'], default: 'flagged' },
+      ]},
+      { id: 'create_event', name: 'Create Calendar Event', icon: '📅', description: 'Create meeting/event', fields: [
+        { key: 'subject', label: 'Event Title', type: 'text', placeholder: 'Meeting with {{customer_name}}', required: true },
+        { key: 'body', label: 'Description', type: 'textarea', placeholder: 'Agenda:\n1. {{topic}}\n2. Q&A' },
+        { key: 'start', label: 'Start Time (ISO)', type: 'text', placeholder: '2024-01-15T10:00:00', required: true },
+        { key: 'end', label: 'End Time (ISO)', type: 'text', placeholder: '2024-01-15T10:30:00', required: true },
+        { key: 'attendees', label: 'Attendees', type: 'text', placeholder: '{{customer_email}}, team@company.com' },
+        { key: 'location', label: 'Location', type: 'text', placeholder: '{{meeting_link}}' },
+        { key: 'isOnlineMeeting', label: 'Online Meeting', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+      { id: 'update_event', name: 'Update Event', icon: '✏️', description: 'Modify calendar event', fields: [
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'subject', label: 'New Subject', type: 'text', placeholder: '{{updated_title}}' },
+        { key: 'body', label: 'New Description', type: 'textarea', placeholder: '{{updated_description}}' },
+        { key: 'start', label: 'New Start Time', type: 'text', placeholder: '2024-01-15T11:00:00' },
+        { key: 'end', label: 'New End Time', type: 'text', placeholder: '2024-01-15T11:30:00' },
+      ]},
+      { id: 'cancel_event', name: 'Cancel Event', icon: '❌', description: 'Cancel calendar event', fields: [
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'comment', label: 'Cancellation Note', type: 'textarea', placeholder: 'This meeting has been cancelled due to...' },
+      ]},
+      { id: 'respond_invite', name: 'Respond to Invite', icon: '✅', description: 'Accept/decline meeting invite', fields: [
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'response', label: 'Response', type: 'select', options: ['accept', 'tentative', 'decline'], required: true },
+        { key: 'comment', label: 'Response Note', type: 'textarea', placeholder: 'Optional message' },
+      ]},
+      { id: 'search_emails', name: 'Search Emails', icon: '🔍', description: 'Search mailbox', fields: [
+        { key: 'query', label: 'Search Query', type: 'text', placeholder: 'from:{{customer_email}} subject:order', required: true, helpText: 'Outlook search query syntax' },
+        { key: 'folder', label: 'Folder', type: 'text', placeholder: 'inbox', default: 'inbox' },
+        { key: 'maxResults', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+      ]},
+    ],
+    aiInstructions: 'Write professional business emails. Be courteous and clear. Use proper email etiquette.',
+  },
+
+  smtp: {
+    triggers: [], // SMTP is outbound only
+    actions: [
+      { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send via SMTP', fields: [
+        { key: 'to', label: 'To', type: 'text', placeholder: '{{customer_email}}', required: true, helpText: 'Comma-separated for multiple' },
+        { key: 'cc', label: 'CC', type: 'text', placeholder: 'cc@example.com' },
+        { key: 'bcc', label: 'BCC', type: 'text', placeholder: 'bcc@example.com' },
+        { key: 'replyTo', label: 'Reply-To', type: 'email', placeholder: 'support@company.com' },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Re: {{subject}}', required: true },
+        { key: 'body', label: 'Email Body', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+        { key: 'isHtml', label: 'HTML Email', type: 'select', options: ['yes', 'no'], default: 'yes' },
+        { key: 'fromName', label: 'From Name', type: 'text', placeholder: 'Your Company Name' },
+      ]},
+      { id: 'send_with_attachment', name: 'Send with Attachment', icon: '📎', description: 'Send email with file', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{subject}}', required: true },
+        { key: 'body', label: 'Email Body', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+        { key: 'attachmentUrl', label: 'Attachment URL', type: 'text', placeholder: '{{file_url}}', required: true },
+        { key: 'attachmentName', label: 'Attachment Name', type: 'text', placeholder: 'document.pdf' },
+      ]},
+      { id: 'send_template', name: 'Send Template', icon: '📋', description: 'Send using HTML template', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{subject}}', required: true },
+        { key: 'templateHtml', label: 'HTML Template', type: 'textarea', placeholder: '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Hello {{customer_name}}</h1>\n  <p>{{ai_response}}</p>\n</body>\n</html>', required: true },
+      ]},
+    ],
+    aiInstructions: 'Write clear and professional emails. Format properly for HTML when needed.',
+  },
+
+  sendgrid: {
+    triggers: [
+      { id: 'email_opened', name: 'Email Opened', icon: '👁️', description: 'When email is opened', dataFields: ['email', 'subject', 'opened_at', 'user_agent', 'ip'] },
+      { id: 'email_clicked', name: 'Link Clicked', icon: '🔗', description: 'When link in email is clicked', dataFields: ['email', 'url', 'clicked_at'] },
+      { id: 'email_bounced', name: 'Email Bounced', icon: '⚠️', description: 'When email bounces', dataFields: ['email', 'reason', 'bounce_type', 'timestamp'] },
+      { id: 'email_delivered', name: 'Email Delivered', icon: '✅', description: 'When email is delivered', dataFields: ['email', 'subject', 'delivered_at'] },
+      { id: 'email_dropped', name: 'Email Dropped', icon: '🚫', description: 'When email is dropped', dataFields: ['email', 'reason', 'timestamp'] },
+      { id: 'unsubscribe', name: 'Unsubscribed', icon: '🚪', description: 'When user unsubscribes', dataFields: ['email', 'timestamp'] },
+      { id: 'spam_report', name: 'Spam Report', icon: '⚠️', description: 'When marked as spam', dataFields: ['email', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send transactional email', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'toName', label: 'Recipient Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'cc', label: 'CC', type: 'text', placeholder: 'cc@example.com' },
+        { key: 'bcc', label: 'BCC', type: 'text', placeholder: 'bcc@example.com' },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{subject}}', required: true },
+        { key: 'body', label: 'Email Body (HTML)', type: 'textarea', placeholder: '<p>Dear {{customer_name}},</p>\n<p>{{ai_response}}</p>', required: true },
+        { key: 'category', label: 'Category', type: 'text', placeholder: 'transactional', helpText: 'For analytics grouping' },
+      ]},
+      { id: 'send_template', name: 'Send Template Email', icon: '📋', description: 'Use SendGrid template', fields: [
+        { key: 'to', label: 'To', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'toName', label: 'Recipient Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'templateId', label: 'Template ID', type: 'text', placeholder: 'd-xxxxxxxxxxxx', required: true, helpText: 'Dynamic template ID from SendGrid' },
+        { key: 'dynamicData', label: 'Dynamic Data (JSON)', type: 'textarea', placeholder: '{\n  "name": "{{customer_name}}",\n  "order_id": "{{order_id}}",\n  "message": "{{ai_response}}"\n}', required: true },
+      ]},
+      { id: 'send_bulk', name: 'Send Bulk Email', icon: '📤', description: 'Send to multiple recipients', fields: [
+        { key: 'recipients', label: 'Recipients (JSON array)', type: 'textarea', placeholder: '[\n  {"email": "user1@example.com", "name": "User 1"},\n  {"email": "user2@example.com", "name": "User 2"}\n]', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{subject}}', required: true },
+        { key: 'body', label: 'Email Body', type: 'textarea', placeholder: '{{ai_response}}', required: true },
+      ]},
+      { id: 'add_contact', name: 'Add Contact', icon: '👤', description: 'Add to contact list', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}' },
+        { key: 'listIds', label: 'List IDs', type: 'text', placeholder: 'list-id-1, list-id-2', helpText: 'Comma-separated list IDs' },
+        { key: 'customFields', label: 'Custom Fields (JSON)', type: 'textarea', placeholder: '{"phone": "{{customer_phone}}", "company": "{{company}}"}' },
+      ]},
+      { id: 'remove_contact', name: 'Remove Contact', icon: '🗑️', description: 'Remove from list', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'listIds', label: 'List IDs (optional)', type: 'text', placeholder: 'Leave empty to delete completely' },
+      ]},
+      { id: 'search_contacts', name: 'Search Contacts', icon: '🔍', description: 'Search contact database', fields: [
+        { key: 'query', label: 'Search Query', type: 'text', placeholder: 'email LIKE \'%@company.com\' AND first_name=\'John\'', required: true, helpText: 'SGQL query syntax' },
+      ]},
+      { id: 'get_stats', name: 'Get Email Stats', icon: '📊', description: 'Get email statistics', fields: [
+        { key: 'startDate', label: 'Start Date', type: 'text', placeholder: '2024-01-01', required: true },
+        { key: 'endDate', label: 'End Date', type: 'text', placeholder: '2024-01-31' },
+        { key: 'aggregatedBy', label: 'Aggregate By', type: 'select', options: ['day', 'week', 'month'], default: 'day' },
+      ]},
+    ],
+    aiInstructions: 'Create engaging email content that drives opens and clicks. Use personalization tokens effectively.',
+  },
+
+  mailchimp: {
+    triggers: [
+      { id: 'subscriber_added', name: 'New Subscriber', icon: '👤', description: 'When someone subscribes', dataFields: ['email', 'first_name', 'last_name', 'list_id', 'subscribed_at', 'merge_fields'] },
+      { id: 'subscriber_updated', name: 'Subscriber Updated', icon: '✏️', description: 'When subscriber info changes', dataFields: ['email', 'changed_fields', 'updated_at'] },
+      { id: 'subscriber_unsubscribed', name: 'Unsubscribed', icon: '🚪', description: 'When someone unsubscribes', dataFields: ['email', 'reason', 'unsubscribed_at'] },
+      { id: 'campaign_sent', name: 'Campaign Sent', icon: '📤', description: 'When campaign is sent', dataFields: ['campaign_id', 'subject', 'list_id', 'sent_at'] },
+      { id: 'campaign_opened', name: 'Campaign Opened', icon: '👁️', description: 'When campaign is opened', dataFields: ['campaign_id', 'email', 'opened_at'] },
+      { id: 'campaign_clicked', name: 'Link Clicked', icon: '🔗', description: 'When link is clicked', dataFields: ['campaign_id', 'email', 'url', 'clicked_at'] },
+    ],
+    actions: [
+      { id: 'add_subscriber', name: 'Add Subscriber', icon: '👤', description: 'Add to mailing list', fields: [
+        { key: 'listId', label: 'List/Audience ID', type: 'text', placeholder: 'Your list ID', required: true, helpText: 'Find in Audience > Settings > Audience ID' },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'status', label: 'Status', type: 'select', options: ['subscribed', 'pending', 'unsubscribed'], default: 'subscribed' },
+        { key: 'tags', label: 'Tags', type: 'text', placeholder: 'lead, whatsapp, {{ai_category}}', helpText: 'Comma-separated' },
+      ]},
+      { id: 'update_subscriber', name: 'Update Subscriber', icon: '✏️', description: 'Update subscriber info', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'mergeFields', label: 'Merge Fields (JSON)', type: 'textarea', placeholder: '{\n  "FNAME": "{{customer_name}}",\n  "PHONE": "{{customer_phone}}",\n  "COMPANY": "{{company}}"\n}' },
+      ]},
+      { id: 'add_tag', name: 'Add Tag', icon: '🏷️', description: 'Add tag to subscriber', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'tags', label: 'Tags to Add', type: 'text', placeholder: '{{ai_category}}, qualified', required: true },
+      ]},
+      { id: 'remove_tag', name: 'Remove Tag', icon: '🏷️❌', description: 'Remove tag from subscriber', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'tags', label: 'Tags to Remove', type: 'text', placeholder: 'prospect', required: true },
+      ]},
+      { id: 'unsubscribe', name: 'Unsubscribe', icon: '🚪', description: 'Unsubscribe email', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+      ]},
+      { id: 'archive_subscriber', name: 'Archive Subscriber', icon: '📦', description: 'Archive (soft delete)', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+      ]},
+      { id: 'search_subscribers', name: 'Search Subscribers', icon: '🔍', description: 'Search in audience', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'query', label: 'Search Query', type: 'text', placeholder: '{{customer_email}} or name', required: true },
+      ]},
+      { id: 'get_subscriber', name: 'Get Subscriber Info', icon: 'ℹ️', description: 'Get subscriber details', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+      ]},
+      { id: 'add_to_segment', name: 'Add to Segment', icon: '📊', description: 'Add to saved segment', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'segmentId', label: 'Segment ID', type: 'text', placeholder: 'segment_id', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+      ]},
+      { id: 'create_campaign', name: 'Create Campaign', icon: '📧', description: 'Create email campaign', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'Your list ID', required: true },
+        { key: 'subject', label: 'Subject Line', type: 'text', placeholder: '{{campaign_subject}}', required: true },
+        { key: 'previewText', label: 'Preview Text', type: 'text', placeholder: 'Preview text shown in inbox' },
+        { key: 'fromName', label: 'From Name', type: 'text', placeholder: 'Your Company', required: true },
+        { key: 'replyTo', label: 'Reply-To Email', type: 'email', placeholder: 'reply@company.com', required: true },
+      ]},
+    ],
+    aiInstructions: 'Categorize contacts appropriately. Use tags to segment based on conversation topics. Keep subscriber data updated.',
+  },
+
+  // ==================== GOOGLE SERVICES ====================
+  google_sheets: {
+    triggers: [
+      { id: 'row_added', name: 'New Row Added', icon: '➕', description: 'When a new row is added to sheet', dataFields: ['row_number', 'row_data', 'sheet_name', 'timestamp'] },
+      { id: 'row_updated', name: 'Row Updated', icon: '✏️', description: 'When a row is modified', dataFields: ['row_number', 'old_data', 'new_data', 'sheet_name'] },
+      { id: 'row_deleted', name: 'Row Deleted', icon: '🗑️', description: 'When a row is deleted', dataFields: ['row_number', 'deleted_data', 'sheet_name', 'timestamp'] },
+      { id: 'cell_changed', name: 'Cell Changed', icon: '📝', description: 'When specific cell changes', dataFields: ['cell', 'old_value', 'new_value', 'sheet_name'] },
+      { id: 'sheet_created', name: 'New Sheet Created', icon: '📋', description: 'When a new worksheet is added', dataFields: ['sheet_name', 'sheet_id', 'created_by', 'timestamp'] },
+      { id: 'specific_column_changed', name: 'Column Value Changed', icon: '📊', description: 'When a specific column value changes', dataFields: ['column', 'row_number', 'old_value', 'new_value', 'sheet_name'] },
+    ],
+    actions: [
+      { id: 'append_row', name: 'Add Row', icon: '➕', description: 'Append a new row to sheet', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL: /d/[SPREADSHEET_ID]/edit', required: true, helpText: 'Copy from the Google Sheets URL between /d/ and /edit' },
+        { key: 'sheetName', label: 'Sheet/Tab Name', type: 'text', placeholder: 'Sheet1', required: true, helpText: 'Name of the worksheet tab (bottom of spreadsheet)' },
+        { key: 'values', label: 'Row Values (comma separated)', type: 'textarea', placeholder: '{{customer_name}}, {{customer_email}}, {{customer_phone}}, {{message}}, {{timestamp}}', required: true, helpText: 'Values will be added as columns A, B, C, D, E...' },
+      ]},
+      { id: 'update_row', name: 'Update Row', icon: '✏️', description: 'Update an existing row by row number', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL: /d/[SPREADSHEET_ID]/edit', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'rowNumber', label: 'Row Number', type: 'number', placeholder: '2', required: true, helpText: 'Row 1 is usually headers. Use {{row_number}} for dynamic.' },
+        { key: 'values', label: 'New Values (comma separated)', type: 'textarea', placeholder: '{{customer_name}}, {{status}}, {{updated_at}}', required: true },
+      ]},
+      { id: 'update_cell', name: 'Update Cell', icon: '📝', description: 'Update a single cell', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL: /d/[SPREADSHEET_ID]/edit', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'cell', label: 'Cell Reference', type: 'text', placeholder: 'A2 or B5', required: true, helpText: 'Column letter + row number' },
+        { key: 'value', label: 'New Value', type: 'text', placeholder: '{{customer_status}}', required: true },
+      ]},
+      { id: 'find_row', name: 'Find Row by Value', icon: '🔍', description: 'Search for a row containing a value', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'searchColumn', label: 'Column to Search', type: 'text', placeholder: 'A or B or Email', required: true, helpText: 'Column letter or header name' },
+        { key: 'searchValue', label: 'Value to Find', type: 'text', placeholder: '{{customer_email}}', required: true },
+        { key: 'returnColumns', label: 'Return Columns', type: 'text', placeholder: 'A:D or all', helpText: 'Which columns to return, e.g., A:D or "all"' },
+      ]},
+      { id: 'find_and_update', name: 'Find & Update Row', icon: '🔄', description: 'Find a row and update specific columns', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'searchColumn', label: 'Search Column', type: 'text', placeholder: 'A or Email', required: true },
+        { key: 'searchValue', label: 'Search Value', type: 'text', placeholder: '{{customer_email}}', required: true },
+        { key: 'updateColumn', label: 'Column to Update', type: 'text', placeholder: 'D or Status', required: true },
+        { key: 'newValue', label: 'New Value', type: 'text', placeholder: '{{new_status}}', required: true },
+      ]},
+      { id: 'delete_row', name: 'Delete Row', icon: '🗑️', description: 'Delete a row by row number', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'rowNumber', label: 'Row Number', type: 'number', placeholder: '{{row_number}}', required: true, helpText: 'The row will be permanently deleted' },
+      ]},
+      { id: 'find_and_delete', name: 'Find & Delete Row', icon: '🔍🗑️', description: 'Find and delete a row by value', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'searchColumn', label: 'Search Column', type: 'text', placeholder: 'A or Email', required: true },
+        { key: 'searchValue', label: 'Value to Match', type: 'text', placeholder: '{{customer_email}}', required: true },
+        { key: 'deleteAll', label: 'Delete All Matches?', type: 'select', options: ['no', 'yes'], default: 'no', helpText: 'Delete first match only, or all matching rows' },
+      ]},
+      { id: 'get_values', name: 'Get Range Values', icon: '📊', description: 'Read a range of cells', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'range', label: 'Cell Range', type: 'text', placeholder: 'A1:D10', required: true, helpText: 'e.g., A1:D10, A:A (entire column), 1:1 (entire row)' },
+      ]},
+      { id: 'get_row', name: 'Get Specific Row', icon: '📄', description: 'Get data from a specific row', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'rowNumber', label: 'Row Number', type: 'number', placeholder: '2', required: true },
+        { key: 'columns', label: 'Columns', type: 'text', placeholder: 'A:E or leave empty for all' },
+      ]},
+      { id: 'clear_range', name: 'Clear Range', icon: '🧹', description: 'Clear values in a range (keep formatting)', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'range', label: 'Range to Clear', type: 'text', placeholder: 'A2:D100', required: true, helpText: 'Clears content but keeps formatting' },
+      ]},
+      { id: 'create_sheet', name: 'Create New Sheet/Tab', icon: '📋', description: 'Add a new worksheet tab', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'New Sheet Name', type: 'text', placeholder: '{{month}}_{{year}}_Data', required: true },
+        { key: 'headers', label: 'Column Headers (optional)', type: 'textarea', placeholder: 'Name, Email, Phone, Date, Status', helpText: 'Comma-separated. Will be added as row 1.' },
+      ]},
+      { id: 'copy_sheet', name: 'Copy Sheet to Another', icon: '📑', description: 'Copy sheet to another spreadsheet', fields: [
+        { key: 'sourceSpreadsheetId', label: 'Source Spreadsheet ID', type: 'text', required: true },
+        { key: 'sourceSheetName', label: 'Source Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'destinationSpreadsheetId', label: 'Destination Spreadsheet ID', type: 'text', required: true },
+      ]},
+      { id: 'get_last_row', name: 'Get Last Row Number', icon: '⬇️', description: 'Get the last row with data', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'column', label: 'Column to Check', type: 'text', placeholder: 'A', helpText: 'Which column to check for last value' },
+      ]},
+      { id: 'count_rows', name: 'Count Rows', icon: '🔢', description: 'Count rows with data or matching criteria', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'filterColumn', label: 'Filter Column (optional)', type: 'text', placeholder: 'D or Status' },
+        { key: 'filterValue', label: 'Filter Value (optional)', type: 'text', placeholder: 'active', helpText: 'Count only rows where column equals this value' },
+      ]},
+      { id: 'batch_update', name: 'Batch Update Multiple Cells', icon: '📝📝', description: 'Update multiple cells at once', fields: [
+        { key: 'spreadsheetId', label: 'Spreadsheet ID', type: 'text', placeholder: 'From URL', required: true },
+        { key: 'sheetName', label: 'Sheet Name', type: 'text', placeholder: 'Sheet1', required: true },
+        { key: 'updates', label: 'Updates (JSON)', type: 'textarea', placeholder: '[\n  {"cell": "A2", "value": "{{name}}"},\n  {"cell": "B2", "value": "{{email}}"},\n  {"cell": "C2", "value": "{{status}}"}\n]', required: true, helpText: 'JSON array of cell updates' },
+      ]},
+    ],
+    aiInstructions: 'Log data accurately. Use consistent date/time formats. When searching, match exact values. For bulk operations, use batch methods.',
+  },
+
+  google_drive: {
+    triggers: [
+      { id: 'file_uploaded', name: 'File Uploaded', icon: '📤', description: 'When new file is uploaded', dataFields: ['file_id', 'file_name', 'file_type', 'folder_id', 'uploaded_by', 'size'] },
+      { id: 'file_modified', name: 'File Modified', icon: '✏️', description: 'When file is modified', dataFields: ['file_id', 'file_name', 'modified_by', 'timestamp'] },
+      { id: 'file_shared', name: 'File Shared', icon: '🔗', description: 'When file is shared', dataFields: ['file_id', 'file_name', 'shared_with', 'permission'] },
+      { id: 'file_deleted', name: 'File Deleted', icon: '🗑️', description: 'When file is deleted', dataFields: ['file_id', 'file_name', 'deleted_by', 'timestamp'] },
+      { id: 'folder_created', name: 'Folder Created', icon: '📁', description: 'When new folder is created', dataFields: ['folder_id', 'folder_name', 'parent_id', 'created_by'] },
+      { id: 'comment_added', name: 'Comment Added', icon: '💬', description: 'When comment is added to file', dataFields: ['file_id', 'comment_text', 'author', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload file to Drive', fields: [
+        { key: 'folderId', label: 'Folder ID', type: 'text', placeholder: 'Leave empty for root', helpText: 'Find in folder URL after /folders/' },
+        { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{file_url}}', required: true, helpText: 'URL of file to upload' },
+        { key: 'fileName', label: 'File Name', type: 'text', placeholder: '{{customer_name}}_document.pdf', required: true },
+        { key: 'mimeType', label: 'File Type', type: 'select', options: ['auto-detect', 'application/pdf', 'image/jpeg', 'image/png', 'text/plain', 'application/json'], default: 'auto-detect' },
+      ]},
+      { id: 'create_folder', name: 'Create Folder', icon: '📁', description: 'Create new folder', fields: [
+        { key: 'folderName', label: 'Folder Name', type: 'text', placeholder: '{{customer_name}}_files', required: true },
+        { key: 'parentFolderId', label: 'Parent Folder ID', type: 'text', placeholder: 'Leave empty for root' },
+        { key: 'description', label: 'Description', type: 'text', placeholder: 'Files for {{customer_name}}' },
+      ]},
+      { id: 'share_file', name: 'Share File', icon: '🔗', description: 'Share file with someone', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'email', label: 'Share With Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'role', label: 'Permission', type: 'select', options: ['reader', 'commenter', 'writer'], default: 'reader' },
+        { key: 'sendNotification', label: 'Send Notification', type: 'select', options: ['yes', 'no'], default: 'yes' },
+        { key: 'message', label: 'Notification Message', type: 'textarea', placeholder: 'Here is the document we discussed.' },
+      ]},
+      { id: 'share_link', name: 'Create Share Link', icon: '🔗', description: 'Generate shareable link', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'access', label: 'Who Can Access', type: 'select', options: ['anyone', 'anyone_with_link', 'domain', 'private'], default: 'anyone_with_link' },
+        { key: 'role', label: 'Permission', type: 'select', options: ['reader', 'commenter', 'writer'], default: 'reader' },
+      ]},
+      { id: 'move_file', name: 'Move File', icon: '📦', description: 'Move file to folder', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'destinationFolderId', label: 'Destination Folder ID', type: 'text', placeholder: 'folder_id', required: true },
+      ]},
+      { id: 'copy_file', name: 'Copy File', icon: '📋', description: 'Create a copy of file', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'newName', label: 'New File Name', type: 'text', placeholder: 'Copy of {{file_name}}' },
+        { key: 'destinationFolderId', label: 'Destination Folder', type: 'text', placeholder: 'Optional - same folder if empty' },
+      ]},
+      { id: 'rename_file', name: 'Rename File', icon: '✏️', description: 'Rename file or folder', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'newName', label: 'New Name', type: 'text', placeholder: '{{new_name}}', required: true },
+      ]},
+      { id: 'delete_file', name: 'Delete File', icon: '🗑️', description: 'Move file to trash', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'permanent', label: 'Permanently Delete', type: 'select', options: ['no', 'yes'], default: 'no', helpText: 'Move to trash or delete forever' },
+      ]},
+      { id: 'search_files', name: 'Search Files', icon: '🔍', description: 'Search in Drive', fields: [
+        { key: 'query', label: 'Search Query', type: 'text', placeholder: 'name contains "{{search_term}}"', required: true, helpText: 'Drive query syntax' },
+        { key: 'folderId', label: 'Search in Folder', type: 'text', placeholder: 'Leave empty for all' },
+        { key: 'maxResults', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'get_file_info', name: 'Get File Info', icon: 'ℹ️', description: 'Get file metadata', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+      ]},
+      { id: 'list_folder', name: 'List Folder Contents', icon: '📂', description: 'List files in folder', fields: [
+        { key: 'folderId', label: 'Folder ID', type: 'text', placeholder: 'root for root folder', default: 'root' },
+        { key: 'maxResults', label: 'Max Results', type: 'number', placeholder: '100', default: '100' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Add comment to file', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'comment', label: 'Comment', type: 'textarea', placeholder: '{{ai_comment}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Organize files logically. Use descriptive names. Keep folder structures clean and intuitive.',
+  },
+
+  google_calendar: {
+    triggers: [
+      { id: 'event_created', name: 'Event Created', icon: '📅', description: 'When new event is created', dataFields: ['event_id', 'title', 'start_time', 'end_time', 'attendees', 'location', 'description'] },
+      { id: 'event_updated', name: 'Event Updated', icon: '✏️', description: 'When event is modified', dataFields: ['event_id', 'title', 'changes', 'updated_by'] },
+      { id: 'event_cancelled', name: 'Event Cancelled', icon: '❌', description: 'When event is cancelled', dataFields: ['event_id', 'title', 'cancelled_by', 'reason'] },
+      { id: 'event_starting', name: 'Event Starting Soon', icon: '⏰', description: 'Minutes before event starts', dataFields: ['event_id', 'title', 'start_time', 'attendees', 'location'] },
+      { id: 'rsvp_received', name: 'RSVP Received', icon: '✅', description: 'When attendee responds', dataFields: ['event_id', 'attendee_email', 'response', 'timestamp'] },
+      { id: 'event_ended', name: 'Event Ended', icon: '🏁', description: 'When event ends', dataFields: ['event_id', 'title', 'end_time', 'attendees'] },
+    ],
+    actions: [
+      { id: 'create_event', name: 'Create Event', icon: '📅', description: 'Schedule a new event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary', helpText: 'Use "primary" for main calendar' },
+        { key: 'title', label: 'Event Title', type: 'text', placeholder: 'Meeting with {{customer_name}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Agenda:\n1. {{topic}}\n2. Follow-up items' },
+        { key: 'startDateTime', label: 'Start Date & Time', type: 'text', placeholder: '2024-01-15T10:00:00', required: true, helpText: 'ISO format: YYYY-MM-DDTHH:MM:SS' },
+        { key: 'endDateTime', label: 'End Date & Time', type: 'text', placeholder: '2024-01-15T10:30:00', required: true },
+        { key: 'timezone', label: 'Timezone', type: 'text', placeholder: 'America/New_York', default: 'America/New_York' },
+        { key: 'attendees', label: 'Attendee Emails', type: 'textarea', placeholder: '{{customer_email}}, team@company.com', helpText: 'Comma-separated' },
+        { key: 'location', label: 'Location', type: 'text', placeholder: 'Zoom: {{meeting_link}}' },
+        { key: 'sendNotifications', label: 'Send Invites', type: 'select', options: ['yes', 'no'], default: 'yes' },
+        { key: 'conferenceType', label: 'Video Conference', type: 'select', options: ['none', 'hangoutsMeet', 'addOn'], default: 'none' },
+      ]},
+      { id: 'create_quick_event', name: 'Quick Add Event', icon: '⚡', description: 'Create event from text', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'text', label: 'Event Text', type: 'text', placeholder: 'Meeting with {{customer_name}} tomorrow at 3pm', required: true, helpText: 'Natural language like "Lunch tomorrow at noon"' },
+      ]},
+      { id: 'update_event', name: 'Update Event', icon: '✏️', description: 'Modify existing event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'title', label: 'New Title', type: 'text', placeholder: '{{updated_title}}' },
+        { key: 'description', label: 'New Description', type: 'textarea', placeholder: '{{updated_description}}' },
+        { key: 'startDateTime', label: 'New Start Time', type: 'text', placeholder: '2024-01-15T11:00:00' },
+        { key: 'endDateTime', label: 'New End Time', type: 'text', placeholder: '2024-01-15T11:30:00' },
+        { key: 'location', label: 'New Location', type: 'text', placeholder: '{{new_location}}' },
+      ]},
+      { id: 'delete_event', name: 'Delete/Cancel Event', icon: '❌', description: 'Delete or cancel event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'sendNotification', label: 'Notify Attendees', type: 'select', options: ['yes', 'no'], default: 'yes' },
+      ]},
+      { id: 'find_free_slot', name: 'Find Free Time', icon: '🔍', description: 'Find available time slots', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'durationMinutes', label: 'Duration (minutes)', type: 'number', placeholder: '30', required: true },
+        { key: 'startDate', label: 'Search From', type: 'text', placeholder: '2024-01-15', required: true },
+        { key: 'endDate', label: 'Search Until', type: 'text', placeholder: '2024-01-22' },
+        { key: 'workingHoursStart', label: 'Working Hours Start', type: 'text', placeholder: '09:00', default: '09:00' },
+        { key: 'workingHoursEnd', label: 'Working Hours End', type: 'text', placeholder: '17:00', default: '17:00' },
+      ]},
+      { id: 'list_events', name: 'List Events', icon: '📋', description: 'Get upcoming events', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'timeMin', label: 'From Date', type: 'text', placeholder: '2024-01-15T00:00:00' },
+        { key: 'timeMax', label: 'To Date', type: 'text', placeholder: '2024-01-22T23:59:59' },
+        { key: 'maxResults', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+        { key: 'searchQuery', label: 'Search Query', type: 'text', placeholder: '{{customer_name}}' },
+      ]},
+      { id: 'get_event', name: 'Get Event Details', icon: 'ℹ️', description: 'Get specific event info', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+      ]},
+      { id: 'add_attendee', name: 'Add Attendee', icon: '👤', description: 'Add attendee to event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'email', label: 'Attendee Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'optional', label: 'Optional Attendee', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'remove_attendee', name: 'Remove Attendee', icon: '👤❌', description: 'Remove attendee from event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'email', label: 'Attendee Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+      ]},
+      { id: 'create_all_day', name: 'Create All-Day Event', icon: '📆', description: 'Create full-day event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'title', label: 'Event Title', type: 'text', placeholder: '{{event_name}}', required: true },
+        { key: 'date', label: 'Date', type: 'text', placeholder: '2024-01-15', required: true, helpText: 'Format: YYYY-MM-DD' },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '{{description}}' },
+      ]},
+      { id: 'set_reminder', name: 'Set Reminder', icon: '⏰', description: 'Add reminder to event', fields: [
+        { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'method', label: 'Reminder Method', type: 'select', options: ['email', 'popup'], default: 'popup' },
+        { key: 'minutesBefore', label: 'Minutes Before', type: 'number', placeholder: '30', required: true },
+      ]},
+    ],
+    aiInstructions: 'Schedule meetings during business hours. Always include clear titles and descriptions. Check for conflicts before scheduling.',
+  },
+
+  google_docs: {
+    triggers: [
+      { id: 'doc_created', name: 'Document Created', icon: '📄', description: 'When new doc is created', dataFields: ['doc_id', 'title', 'created_by', 'timestamp'] },
+      { id: 'doc_edited', name: 'Document Edited', icon: '✏️', description: 'When doc is modified', dataFields: ['doc_id', 'title', 'edited_by', 'changes'] },
+      { id: 'comment_added', name: 'Comment Added', icon: '💬', description: 'When comment is added', dataFields: ['doc_id', 'comment_text', 'author', 'timestamp'] },
+      { id: 'comment_resolved', name: 'Comment Resolved', icon: '✅', description: 'When comment is resolved', dataFields: ['doc_id', 'comment_text', 'resolved_by'] },
+    ],
+    actions: [
+      { id: 'create_doc', name: 'Create Document', icon: '📄', description: 'Create new Google Doc', fields: [
+        { key: 'title', label: 'Document Title', type: 'text', placeholder: '{{customer_name}} - Proposal', required: true },
+        { key: 'content', label: 'Initial Content', type: 'textarea', placeholder: '# Welcome {{customer_name}}\n\n{{ai_generated_content}}' },
+        { key: 'folderId', label: 'Folder ID', type: 'text', placeholder: 'Optional - folder to save in' },
+      ]},
+      { id: 'create_from_template', name: 'Create from Template', icon: '📋', description: 'Create doc from template', fields: [
+        { key: 'templateId', label: 'Template Doc ID', type: 'text', placeholder: 'Template document ID', required: true },
+        { key: 'newTitle', label: 'New Document Title', type: 'text', placeholder: '{{customer_name}} - {{template_name}}', required: true },
+        { key: 'folderId', label: 'Destination Folder', type: 'text', placeholder: 'Leave empty for same folder' },
+      ]},
+      { id: 'append_text', name: 'Append Text', icon: '➕', description: 'Add text to end of doc', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'text', label: 'Text to Append', type: 'textarea', placeholder: '\n\n## New Section\n{{ai_response}}', required: true },
+      ]},
+      { id: 'prepend_text', name: 'Prepend Text', icon: '⬆️', description: 'Add text to beginning', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'text', label: 'Text to Prepend', type: 'textarea', placeholder: '# Document Title\n\n{{date}}\n\n', required: true },
+      ]},
+      { id: 'replace_text', name: 'Find & Replace', icon: '🔄', description: 'Find and replace text', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'findText', label: 'Find Text', type: 'text', placeholder: '{{placeholder}}', required: true },
+        { key: 'replaceWith', label: 'Replace With', type: 'text', placeholder: '{{customer_name}}', required: true },
+        { key: 'matchCase', label: 'Match Case', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'batch_replace', name: 'Batch Replace', icon: '🔄🔄', description: 'Replace multiple placeholders', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'replacements', label: 'Replacements (JSON)', type: 'textarea', placeholder: '{\n  "{{customer_name}}": "John Doe",\n  "{{customer_email}}": "john@example.com",\n  "{{date}}": "January 15, 2024"\n}', required: true },
+      ]},
+      { id: 'get_content', name: 'Get Document Content', icon: '📖', description: 'Read document content', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'format', label: 'Output Format', type: 'select', options: ['plain_text', 'html', 'markdown'], default: 'plain_text' },
+      ]},
+      { id: 'insert_image', name: 'Insert Image', icon: '🖼️', description: 'Add image to document', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'imageUrl', label: 'Image URL', type: 'text', placeholder: '{{image_url}}', required: true },
+        { key: 'position', label: 'Position', type: 'select', options: ['end', 'start', 'at_index'], default: 'end' },
+        { key: 'index', label: 'Index (if at_index)', type: 'number', placeholder: '1' },
+      ]},
+      { id: 'insert_table', name: 'Insert Table', icon: '📊', description: 'Add table to document', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'rows', label: 'Number of Rows', type: 'number', placeholder: '3', required: true },
+        { key: 'columns', label: 'Number of Columns', type: 'number', placeholder: '3', required: true },
+        { key: 'data', label: 'Table Data (JSON)', type: 'textarea', placeholder: '[["Header1", "Header2"], ["Row1Col1", "Row1Col2"]]' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Add comment to document', fields: [
+        { key: 'docId', label: 'Document ID', type: 'text', placeholder: '{{doc_id}}', required: true },
+        { key: 'comment', label: 'Comment Text', type: 'textarea', placeholder: '{{ai_feedback}}', required: true },
+        { key: 'quotedText', label: 'Quote Text (optional)', type: 'text', placeholder: 'Text to attach comment to' },
+      ]},
+    ],
+    aiInstructions: 'Generate professional document content. Use proper formatting and structure. Include all relevant placeholders.',
+  },
+
+  google_forms: {
+    triggers: [
+      { id: 'response_submitted', name: 'Form Response', icon: '📋', description: 'When form is submitted', dataFields: ['response_id', 'form_id', 'form_title', 'answers', 'respondent_email', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'get_responses', name: 'Get All Responses', icon: '📊', description: 'Retrieve form responses', fields: [
+        { key: 'formId', label: 'Form ID', type: 'text', placeholder: 'Form ID from URL', required: true },
+        { key: 'limit', label: 'Max Responses', type: 'number', placeholder: '100', default: '100' },
+      ]},
+      { id: 'get_response', name: 'Get Single Response', icon: '📄', description: 'Get specific response', fields: [
+        { key: 'formId', label: 'Form ID', type: 'text', placeholder: 'Form ID', required: true },
+        { key: 'responseId', label: 'Response ID', type: 'text', placeholder: '{{response_id}}', required: true },
+      ]},
+      { id: 'create_form', name: 'Create Form', icon: '📝', description: 'Create new form', fields: [
+        { key: 'title', label: 'Form Title', type: 'text', placeholder: 'Customer Feedback - {{campaign}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Please share your feedback about {{topic}}' },
+      ]},
+      { id: 'add_question', name: 'Add Question', icon: '❓', description: 'Add question to form', fields: [
+        { key: 'formId', label: 'Form ID', type: 'text', placeholder: 'Form ID', required: true },
+        { key: 'title', label: 'Question Text', type: 'text', placeholder: 'How satisfied are you?', required: true },
+        { key: 'type', label: 'Question Type', type: 'select', options: ['short_answer', 'paragraph', 'multiple_choice', 'checkbox', 'dropdown', 'linear_scale'], required: true },
+        { key: 'required', label: 'Required', type: 'select', options: ['yes', 'no'], default: 'no' },
+        { key: 'options', label: 'Options (for choice questions)', type: 'textarea', placeholder: 'Very satisfied\nSatisfied\nNeutral\nDissatisfied', helpText: 'One option per line' },
+      ]},
+      { id: 'update_form_settings', name: 'Update Settings', icon: '⚙️', description: 'Update form settings', fields: [
+        { key: 'formId', label: 'Form ID', type: 'text', placeholder: 'Form ID', required: true },
+        { key: 'collectEmail', label: 'Collect Emails', type: 'select', options: ['yes', 'no'], default: 'no' },
+        { key: 'limitResponses', label: 'Limit to 1 Response', type: 'select', options: ['yes', 'no'], default: 'no' },
+        { key: 'confirmationMessage', label: 'Confirmation Message', type: 'textarea', placeholder: 'Thank you for your response!' },
+      ]},
+    ],
+    aiInstructions: 'Process form responses and extract relevant information. Categorize responses appropriately.',
+  },
+
+  // ==================== MICROSOFT SERVICES ====================
+  microsoft_teams: {
+    triggers: [
+      { id: 'message_received', name: 'Message Received', icon: '📩', description: 'When message is posted', dataFields: ['channel_id', 'team_id', 'sender', 'message_text', 'timestamp'] },
+      { id: 'mention', name: 'Bot Mentioned', icon: '🔔', description: 'When bot is @mentioned', dataFields: ['channel_id', 'user', 'message_text'] },
+      { id: 'meeting_started', name: 'Meeting Started', icon: '📹', description: 'When Teams meeting starts', dataFields: ['meeting_id', 'organizer', 'participants', 'start_time'] },
+    ],
+    actions: [
+      { id: 'send_message', name: 'Send Message', icon: '💬', description: 'Post to Teams channel', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: '**New Lead:** {{customer_name}}\n{{ai_response}}', required: true },
+      ]},
+      { id: 'send_card', name: 'Send Adaptive Card', icon: '🎨', description: 'Send rich card message', fields: [
+        { key: 'teamId', label: 'Team ID', type: 'text', placeholder: '{{team_id}}', required: true },
+        { key: 'channelId', label: 'Channel ID', type: 'text', placeholder: '{{channel_id}}', required: true },
+        { key: 'cardJson', label: 'Adaptive Card JSON', type: 'textarea', placeholder: '{"type": "AdaptiveCard", ...}' },
+      ]},
+      { id: 'create_meeting', name: 'Schedule Meeting', icon: '📅', description: 'Create Teams meeting', fields: [
+        { key: 'subject', label: 'Meeting Subject', type: 'text', placeholder: 'Call with {{customer_name}}', required: true },
+        { key: 'startDateTime', label: 'Start Time', type: 'text', placeholder: '2024-01-15T10:00:00', required: true },
+        { key: 'duration', label: 'Duration (minutes)', type: 'number', placeholder: '30', default: '30' },
+        { key: 'attendees', label: 'Attendee Emails', type: 'text', placeholder: '{{customer_email}}' },
+      ]},
+    ],
+    aiInstructions: 'Use Teams markdown formatting. Be professional and concise.',
+  },
+
+  outlook_calendar: {
+    triggers: [
+      { id: 'event_created', name: 'Event Created', icon: '📅', description: 'When new event is created', dataFields: ['event_id', 'subject', 'start', 'end', 'organizer', 'attendees'] },
+      { id: 'event_updated', name: 'Event Updated', icon: '✏️', description: 'When event is modified', dataFields: ['event_id', 'subject', 'changes'] },
+      { id: 'event_cancelled', name: 'Event Cancelled', icon: '❌', description: 'When event is cancelled', dataFields: ['event_id', 'subject', 'cancelled_by'] },
+    ],
+    actions: [
+      { id: 'create_event', name: 'Create Event', icon: '📅', description: 'Schedule Outlook event', fields: [
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Meeting: {{customer_name}}', required: true },
+        { key: 'body', label: 'Description', type: 'textarea', placeholder: 'Agenda: {{topic}}' },
+        { key: 'start', label: 'Start DateTime', type: 'text', placeholder: '2024-01-15T10:00:00', required: true },
+        { key: 'end', label: 'End DateTime', type: 'text', placeholder: '2024-01-15T10:30:00', required: true },
+        { key: 'attendees', label: 'Attendees', type: 'text', placeholder: '{{customer_email}}' },
+      ]},
+      { id: 'update_event', name: 'Update Event', icon: '✏️', description: 'Modify event', fields: [
+        { key: 'eventId', label: 'Event ID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'subject', label: 'New Subject', type: 'text', placeholder: '{{updated_subject}}' },
+        { key: 'body', label: 'New Description', type: 'textarea', placeholder: '{{updated_description}}' },
+      ]},
+    ],
+    aiInstructions: 'Schedule within business hours. Include clear meeting objectives.',
+  },
+
+  onedrive: {
+    triggers: [
+      { id: 'file_created', name: 'File Created', icon: '📄', description: 'When new file is uploaded', dataFields: ['file_id', 'name', 'path', 'created_by', 'size'] },
+      { id: 'file_modified', name: 'File Modified', icon: '✏️', description: 'When file is changed', dataFields: ['file_id', 'name', 'modified_by', 'timestamp'] },
+      { id: 'file_shared', name: 'File Shared', icon: '🔗', description: 'When file is shared', dataFields: ['file_id', 'name', 'shared_with', 'permission'] },
+    ],
+    actions: [
+      { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload to OneDrive', fields: [
+        { key: 'folderPath', label: 'Folder Path', type: 'text', placeholder: '/Documents/{{customer_name}}' },
+        { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{file_url}}', required: true },
+        { key: 'fileName', label: 'File Name', type: 'text', placeholder: '{{document_name}}.pdf', required: true },
+      ]},
+      { id: 'create_folder', name: 'Create Folder', icon: '📁', description: 'Create new folder', fields: [
+        { key: 'folderPath', label: 'Folder Path', type: 'text', placeholder: '/Projects/{{project_name}}', required: true },
+      ]},
+      { id: 'share_file', name: 'Share File', icon: '🔗', description: 'Share with user', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'email', label: 'Share With', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'permission', label: 'Permission', type: 'select', options: ['view', 'edit'], default: 'view' },
+      ]},
+      { id: 'get_share_link', name: 'Get Share Link', icon: '🔗', description: 'Generate shareable link', fields: [
+        { key: 'fileId', label: 'File ID', type: 'text', placeholder: '{{file_id}}', required: true },
+        { key: 'type', label: 'Link Type', type: 'select', options: ['view', 'edit'], default: 'view' },
+      ]},
+    ],
+    aiInstructions: 'Organize files in logical folder structures. Use descriptive names.',
+  },
+
+  // ==================== CRM & SALES ====================
+  hubspot: {
+    triggers: [
+      { id: 'contact_created', name: 'Contact Created', icon: '👤', description: 'When new contact is added', dataFields: ['contact_id', 'email', 'firstname', 'lastname', 'phone', 'company', 'created_at'] },
+      { id: 'contact_updated', name: 'Contact Updated', icon: '✏️', description: 'When contact is modified', dataFields: ['contact_id', 'email', 'changed_properties', 'updated_at'] },
+      { id: 'deal_created', name: 'Deal Created', icon: '💰', description: 'When new deal is created', dataFields: ['deal_id', 'deal_name', 'amount', 'stage', 'contact_id', 'created_at'] },
+      { id: 'deal_stage_changed', name: 'Deal Stage Changed', icon: '📊', description: 'When deal moves to new stage', dataFields: ['deal_id', 'deal_name', 'old_stage', 'new_stage', 'amount'] },
+      { id: 'deal_won', name: 'Deal Won', icon: '🏆', description: 'When deal is marked as won', dataFields: ['deal_id', 'deal_name', 'amount', 'contact_id'] },
+      { id: 'deal_lost', name: 'Deal Lost', icon: '❌', description: 'When deal is marked as lost', dataFields: ['deal_id', 'deal_name', 'reason', 'contact_id'] },
+      { id: 'form_submitted', name: 'Form Submitted', icon: '📋', description: 'When HubSpot form is submitted', dataFields: ['form_id', 'form_name', 'submission_data', 'contact_email'] },
+      { id: 'ticket_created', name: 'Ticket Created', icon: '🎫', description: 'When support ticket is created', dataFields: ['ticket_id', 'subject', 'priority', 'contact_id', 'created_at'] },
+    ],
+    actions: [
+      { id: 'create_contact', name: 'Create Contact', icon: '👤', description: 'Add new contact', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'firstname', label: 'First Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'lastname', label: 'Last Name', type: 'text', placeholder: '' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'company', label: 'Company', type: 'text', placeholder: '{{company_name}}' },
+        { key: 'lifecyclestage', label: 'Lifecycle Stage', type: 'select', options: ['subscriber', 'lead', 'marketingqualifiedlead', 'salesqualifiedlead', 'opportunity', 'customer'], default: 'lead' },
+      ]},
+      { id: 'update_contact', name: 'Update Contact', icon: '✏️', description: 'Update existing contact', fields: [
+        { key: 'email', label: 'Contact Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'properties', label: 'Properties (JSON)', type: 'textarea', placeholder: '{"phone": "{{phone}}", "lifecyclestage": "customer"}' },
+      ]},
+      { id: 'create_deal', name: 'Create Deal', icon: '💰', description: 'Create new deal', fields: [
+        { key: 'dealname', label: 'Deal Name', type: 'text', placeholder: '{{customer_name}} - {{product}}', required: true },
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: '{{deal_amount}}' },
+        { key: 'dealstage', label: 'Deal Stage', type: 'text', placeholder: 'appointmentscheduled', default: 'appointmentscheduled' },
+        { key: 'contactEmail', label: 'Associate Contact Email', type: 'email', placeholder: '{{customer_email}}' },
+      ]},
+      { id: 'update_deal_stage', name: 'Update Deal Stage', icon: '📊', description: 'Move deal to new stage', fields: [
+        { key: 'dealId', label: 'Deal ID', type: 'text', placeholder: '{{deal_id}}', required: true },
+        { key: 'dealstage', label: 'New Stage', type: 'text', placeholder: 'closedwon', required: true },
+      ]},
+      { id: 'add_note', name: 'Add Note', icon: '📝', description: 'Add note to contact/deal', fields: [
+        { key: 'contactEmail', label: 'Contact Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'note', label: 'Note Content', type: 'textarea', placeholder: 'Call summary: {{ai_summary}}', required: true },
+      ]},
+      { id: 'create_ticket', name: 'Create Ticket', icon: '🎫', description: 'Create support ticket', fields: [
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{issue_summary}}', required: true },
+        { key: 'content', label: 'Description', type: 'textarea', placeholder: '{{customer_message}}', required: true },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
+        { key: 'contactEmail', label: 'Contact Email', type: 'email', placeholder: '{{customer_email}}' },
+      ]},
+    ],
+    aiInstructions: 'Qualify leads based on conversation. Update lifecycle stages appropriately. Add detailed notes after interactions.',
+  },
+
+  salesforce: {
+    triggers: [
+      { id: 'lead_created', name: 'Lead Created', icon: '👤', description: 'When new lead is added', dataFields: ['lead_id', 'email', 'name', 'company', 'phone', 'source', 'created_at'] },
+      { id: 'lead_converted', name: 'Lead Converted', icon: '🔄', description: 'When lead converts to contact', dataFields: ['lead_id', 'contact_id', 'account_id', 'opportunity_id'] },
+      { id: 'opportunity_created', name: 'Opportunity Created', icon: '💰', description: 'When new opportunity is created', dataFields: ['opportunity_id', 'name', 'amount', 'stage', 'account_id'] },
+      { id: 'opportunity_stage_changed', name: 'Opportunity Stage Changed', icon: '📊', description: 'When opportunity moves stages', dataFields: ['opportunity_id', 'name', 'old_stage', 'new_stage', 'amount'] },
+      { id: 'opportunity_closed_won', name: 'Opportunity Won', icon: '🏆', description: 'When opportunity is won', dataFields: ['opportunity_id', 'name', 'amount', 'account_id'] },
+      { id: 'case_created', name: 'Case Created', icon: '🎫', description: 'When support case is created', dataFields: ['case_id', 'subject', 'priority', 'contact_id', 'account_id'] },
+    ],
+    actions: [
+      { id: 'create_lead', name: 'Create Lead', icon: '👤', description: 'Create new lead', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}', required: true },
+        { key: 'company', label: 'Company', type: 'text', placeholder: '{{company_name}}', required: true },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'leadSource', label: 'Lead Source', type: 'text', placeholder: 'WhatsApp Bot', default: 'WhatsApp Bot' },
+      ]},
+      { id: 'update_lead', name: 'Update Lead', icon: '✏️', description: 'Update existing lead', fields: [
+        { key: 'leadId', label: 'Lead ID', type: 'text', placeholder: '{{lead_id}}', required: true },
+        { key: 'fields', label: 'Fields (JSON)', type: 'textarea', placeholder: '{"Status": "Contacted", "Rating": "Hot"}' },
+      ]},
+      { id: 'create_opportunity', name: 'Create Opportunity', icon: '💰', description: 'Create new opportunity', fields: [
+        { key: 'name', label: 'Opportunity Name', type: 'text', placeholder: '{{customer_name}} - {{product}}', required: true },
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: '{{deal_amount}}' },
+        { key: 'stageName', label: 'Stage', type: 'text', placeholder: 'Prospecting', default: 'Prospecting' },
+        { key: 'closeDate', label: 'Close Date', type: 'text', placeholder: '{{expected_close_date}}', required: true },
+        { key: 'accountId', label: 'Account ID', type: 'text', placeholder: '{{account_id}}' },
+      ]},
+      { id: 'create_task', name: 'Create Task', icon: '✅', description: 'Create follow-up task', fields: [
+        { key: 'subject', label: 'Task Subject', type: 'text', placeholder: 'Follow up: {{customer_name}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '{{ai_generated_task}}' },
+        { key: 'dueDate', label: 'Due Date', type: 'text', placeholder: '{{due_date}}', required: true },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['High', 'Normal', 'Low'], default: 'Normal' },
+        { key: 'whoId', label: 'Related To (Contact/Lead ID)', type: 'text', placeholder: '{{contact_id}}' },
+      ]},
+      { id: 'create_case', name: 'Create Case', icon: '🎫', description: 'Create support case', fields: [
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: '{{issue_summary}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '{{customer_message}}', required: true },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['High', 'Medium', 'Low'], default: 'Medium' },
+        { key: 'origin', label: 'Case Origin', type: 'text', placeholder: 'WhatsApp', default: 'WhatsApp' },
+      ]},
+    ],
+    aiInstructions: 'Qualify leads and update status. Create tasks for follow-ups. Log all interactions.',
+  },
+
+  pipedrive: {
+    triggers: [
+      { id: 'person_created', name: 'Person Created', icon: '👤', description: 'When new person is added', dataFields: ['person_id', 'name', 'email', 'phone', 'org_id', 'created_at'] },
+      { id: 'deal_created', name: 'Deal Created', icon: '💰', description: 'When new deal is created', dataFields: ['deal_id', 'title', 'value', 'stage_id', 'person_id', 'org_id'] },
+      { id: 'deal_stage_changed', name: 'Deal Stage Changed', icon: '📊', description: 'When deal moves stages', dataFields: ['deal_id', 'title', 'old_stage', 'new_stage', 'value'] },
+      { id: 'deal_won', name: 'Deal Won', icon: '🏆', description: 'When deal is won', dataFields: ['deal_id', 'title', 'value', 'person_id'] },
+      { id: 'deal_lost', name: 'Deal Lost', icon: '❌', description: 'When deal is lost', dataFields: ['deal_id', 'title', 'lost_reason'] },
+      { id: 'activity_completed', name: 'Activity Completed', icon: '✅', description: 'When activity is marked done', dataFields: ['activity_id', 'type', 'subject', 'deal_id', 'person_id'] },
+    ],
+    actions: [
+      { id: 'create_person', name: 'Create Person', icon: '👤', description: 'Add new person', fields: [
+        { key: 'name', label: 'Name', type: 'text', placeholder: '{{customer_name}}', required: true },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'orgName', label: 'Organization', type: 'text', placeholder: '{{company_name}}' },
+      ]},
+      { id: 'create_deal', name: 'Create Deal', icon: '💰', description: 'Create new deal', fields: [
+        { key: 'title', label: 'Deal Title', type: 'text', placeholder: '{{customer_name}} - {{product}}', required: true },
+        { key: 'value', label: 'Deal Value', type: 'number', placeholder: '{{deal_amount}}' },
+        { key: 'personEmail', label: 'Person Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'stageId', label: 'Stage ID', type: 'number', placeholder: '1' },
+      ]},
+      { id: 'update_deal_stage', name: 'Update Deal Stage', icon: '📊', description: 'Move deal to stage', fields: [
+        { key: 'dealId', label: 'Deal ID', type: 'text', placeholder: '{{deal_id}}', required: true },
+        { key: 'stageId', label: 'Stage ID', type: 'number', placeholder: '2', required: true },
+      ]},
+      { id: 'create_activity', name: 'Create Activity', icon: '📅', description: 'Schedule activity', fields: [
+        { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Call {{customer_name}}', required: true },
+        { key: 'type', label: 'Type', type: 'select', options: ['call', 'meeting', 'task', 'deadline', 'email'], default: 'call' },
+        { key: 'dueDate', label: 'Due Date', type: 'text', placeholder: '{{due_date}}', required: true },
+        { key: 'dealId', label: 'Deal ID', type: 'text', placeholder: '{{deal_id}}' },
+        { key: 'note', label: 'Note', type: 'textarea', placeholder: '{{ai_note}}' },
+      ]},
+      { id: 'add_note', name: 'Add Note', icon: '📝', description: 'Add note to deal/person', fields: [
+        { key: 'dealId', label: 'Deal ID', type: 'text', placeholder: '{{deal_id}}' },
+        { key: 'personId', label: 'Person ID', type: 'text', placeholder: '{{person_id}}' },
+        { key: 'content', label: 'Note Content', type: 'textarea', placeholder: '{{ai_summary}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Track deals through pipeline. Add notes after conversations. Schedule follow-up activities.',
+  },
+
+  zoho_crm: {
+    triggers: [
+      { id: 'lead_created', name: 'Lead Created', icon: '👤', description: 'When new lead is added', dataFields: ['lead_id', 'email', 'full_name', 'company', 'phone', 'source'] },
+      { id: 'lead_converted', name: 'Lead Converted', icon: '🔄', description: 'When lead converts', dataFields: ['lead_id', 'contact_id', 'account_id', 'deal_id'] },
+      { id: 'deal_created', name: 'Deal Created', icon: '💰', description: 'When new deal is created', dataFields: ['deal_id', 'deal_name', 'amount', 'stage', 'account_id'] },
+      { id: 'deal_stage_changed', name: 'Deal Stage Changed', icon: '📊', description: 'When deal stage changes', dataFields: ['deal_id', 'deal_name', 'old_stage', 'new_stage'] },
+      { id: 'contact_created', name: 'Contact Created', icon: '👥', description: 'When new contact is added', dataFields: ['contact_id', 'email', 'full_name', 'phone', 'account_id'] },
+    ],
+    actions: [
+      { id: 'create_lead', name: 'Create Lead', icon: '👤', description: 'Add new lead', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}', required: true },
+        { key: 'company', label: 'Company', type: 'text', placeholder: '{{company_name}}' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'leadSource', label: 'Lead Source', type: 'text', placeholder: 'WhatsApp', default: 'WhatsApp' },
+      ]},
+      { id: 'create_contact', name: 'Create Contact', icon: '👥', description: 'Add new contact', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}', required: true },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+      ]},
+      { id: 'create_deal', name: 'Create Deal', icon: '💰', description: 'Create new deal', fields: [
+        { key: 'dealName', label: 'Deal Name', type: 'text', placeholder: '{{customer_name}} - {{product}}', required: true },
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: '{{deal_amount}}' },
+        { key: 'stage', label: 'Stage', type: 'text', placeholder: 'Qualification', default: 'Qualification' },
+        { key: 'closingDate', label: 'Closing Date', type: 'text', placeholder: '{{close_date}}' },
+      ]},
+      { id: 'add_note', name: 'Add Note', icon: '📝', description: 'Add note to record', fields: [
+        { key: 'module', label: 'Module', type: 'select', options: ['Leads', 'Contacts', 'Deals'], required: true },
+        { key: 'recordId', label: 'Record ID', type: 'text', placeholder: '{{record_id}}', required: true },
+        { key: 'noteContent', label: 'Note', type: 'textarea', placeholder: '{{ai_summary}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Manage leads through conversion. Update deal stages based on conversation outcomes.',
+  },
+
+  freshsales: {
+    triggers: [
+      { id: 'lead_created', name: 'Lead Created', icon: '👤', description: 'When new lead is added', dataFields: ['lead_id', 'email', 'name', 'company', 'phone'] },
+      { id: 'lead_updated', name: 'Lead Updated', icon: '✏️', description: 'When lead is modified', dataFields: ['lead_id', 'email', 'changed_fields'] },
+      { id: 'deal_created', name: 'Deal Created', icon: '💰', description: 'When new deal is created', dataFields: ['deal_id', 'name', 'amount', 'stage'] },
+      { id: 'deal_won', name: 'Deal Won', icon: '🏆', description: 'When deal is won', dataFields: ['deal_id', 'name', 'amount'] },
+      { id: 'task_due', name: 'Task Due', icon: '⏰', description: 'When task is due', dataFields: ['task_id', 'title', 'due_date', 'lead_id'] },
+    ],
+    actions: [
+      { id: 'create_lead', name: 'Create Lead', icon: '👤', description: 'Add new lead', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}', required: true },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'company', label: 'Company', type: 'text', placeholder: '{{company_name}}' },
+      ]},
+      { id: 'create_deal', name: 'Create Deal', icon: '💰', description: 'Create new deal', fields: [
+        { key: 'name', label: 'Deal Name', type: 'text', placeholder: '{{customer_name}} - {{product}}', required: true },
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: '{{deal_amount}}' },
+        { key: 'expectedClose', label: 'Expected Close', type: 'text', placeholder: '{{close_date}}' },
+      ]},
+      { id: 'create_task', name: 'Create Task', icon: '✅', description: 'Create follow-up task', fields: [
+        { key: 'title', label: 'Task Title', type: 'text', placeholder: 'Follow up with {{customer_name}}', required: true },
+        { key: 'dueDate', label: 'Due Date', type: 'text', placeholder: '{{due_date}}', required: true },
+        { key: 'leadId', label: 'Lead ID', type: 'text', placeholder: '{{lead_id}}' },
+      ]},
+      { id: 'add_note', name: 'Add Note', icon: '📝', description: 'Add note', fields: [
+        { key: 'leadId', label: 'Lead ID', type: 'text', placeholder: '{{lead_id}}', required: true },
+        { key: 'description', label: 'Note', type: 'textarea', placeholder: '{{ai_summary}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Capture leads from conversations. Create follow-up tasks automatically.',
+  },
+
+  // ==================== AUTOMATION PLATFORMS ====================
+  zapier: {
+    triggers: [
+      { id: 'webhook_received', name: 'Webhook Received', icon: '📩', description: 'When data is received from Zapier', dataFields: ['payload', 'timestamp', 'zap_id'] },
+    ],
+    actions: [
+      { id: 'trigger_zap', name: 'Trigger Zap', icon: '⚡', description: 'Send data to Zapier webhook', fields: [
+        { key: 'webhookUrl', label: 'Zapier Webhook URL', type: 'text', placeholder: 'https://hooks.zapier.com/...', required: true, helpText: 'Get this from your Zap\'s webhook trigger' },
+        { key: 'data', label: 'Data to Send (JSON)', type: 'textarea', placeholder: '{\n  "customer_name": "{{customer_name}}",\n  "email": "{{customer_email}}",\n  "phone": "{{customer_phone}}",\n  "message": "{{message}}",\n  "ai_response": "{{ai_response}}"\n}', required: true },
+      ]},
+      { id: 'trigger_with_template', name: 'Send Lead Data', icon: '👤', description: 'Send formatted lead data', fields: [
+        { key: 'webhookUrl', label: 'Zapier Webhook URL', type: 'text', placeholder: 'https://hooks.zapier.com/...', required: true },
+        { key: 'name', label: 'Customer Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'source', label: 'Lead Source', type: 'text', placeholder: 'WhatsApp Bot', default: 'WhatsApp Bot' },
+        { key: 'notes', label: 'Notes', type: 'textarea', placeholder: '{{ai_summary}}' },
+      ]},
+    ],
+    aiInstructions: 'Format data properly before sending to Zapier. Include all relevant customer information.',
+  },
+
+  make: {
+    triggers: [
+      { id: 'webhook_received', name: 'Webhook Received', icon: '📩', description: 'When data is received from Make', dataFields: ['payload', 'scenario_id', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'trigger_scenario', name: 'Trigger Scenario', icon: '🔄', description: 'Send data to Make webhook', fields: [
+        { key: 'webhookUrl', label: 'Make Webhook URL', type: 'text', placeholder: 'https://hook.make.com/...', required: true, helpText: 'Get this from your Make scenario\'s webhook module' },
+        { key: 'data', label: 'Data to Send (JSON)', type: 'textarea', placeholder: '{\n  "customer": "{{customer_name}}",\n  "contact": "{{customer_phone}}",\n  "inquiry": "{{message}}"\n}', required: true },
+      ]},
+      { id: 'send_structured_data', name: 'Send Structured Data', icon: '📦', description: 'Send with predefined structure', fields: [
+        { key: 'webhookUrl', label: 'Make Webhook URL', type: 'text', placeholder: 'https://hook.make.com/...', required: true },
+        { key: 'eventType', label: 'Event Type', type: 'select', options: ['new_lead', 'new_order', 'support_request', 'feedback', 'custom'], default: 'new_lead' },
+        { key: 'customerName', label: 'Customer Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'customerEmail', label: 'Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'customerPhone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'additionalData', label: 'Additional Data', type: 'textarea', placeholder: '{{ai_extracted_data}}' },
+      ]},
+    ],
+    aiInstructions: 'Structure data according to scenario requirements. Validate data before sending.',
+  },
+
+  n8n: {
+    triggers: [
+      { id: 'webhook_received', name: 'Webhook Received', icon: '📩', description: 'When data is received from n8n', dataFields: ['payload', 'workflow_id', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'trigger_workflow', name: 'Trigger Workflow', icon: '🔗', description: 'Send data to n8n webhook', fields: [
+        { key: 'webhookUrl', label: 'n8n Webhook URL', type: 'text', placeholder: 'https://your-n8n.com/webhook/...', required: true, helpText: 'Get this from your n8n workflow\'s webhook node' },
+        { key: 'method', label: 'HTTP Method', type: 'select', options: ['POST', 'GET'], default: 'POST' },
+        { key: 'data', label: 'Data to Send (JSON)', type: 'textarea', placeholder: '{\n  "action": "new_lead",\n  "data": {\n    "name": "{{customer_name}}",\n    "phone": "{{customer_phone}}"\n  }\n}', required: true },
+      ]},
+      { id: 'trigger_with_auth', name: 'Trigger with Auth', icon: '🔐', description: 'Send data with authentication', fields: [
+        { key: 'webhookUrl', label: 'n8n Webhook URL', type: 'text', placeholder: 'https://your-n8n.com/webhook/...', required: true },
+        { key: 'headerKey', label: 'Auth Header Name', type: 'text', placeholder: 'X-Auth-Token', default: 'X-Auth-Token' },
+        { key: 'headerValue', label: 'Auth Header Value', type: 'text', placeholder: 'your-secret-token' },
+        { key: 'data', label: 'Data (JSON)', type: 'textarea', placeholder: '{"customer": "{{customer_name}}"}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Send properly formatted JSON data. Include authentication when required.',
+  },
+
+  ifttt: {
+    triggers: [
+      { id: 'webhook_received', name: 'Webhook Received', icon: '📩', description: 'When triggered by IFTTT', dataFields: ['value1', 'value2', 'value3', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'trigger_applet', name: 'Trigger Applet', icon: '🔀', description: 'Trigger IFTTT applet via webhook', fields: [
+        { key: 'webhookKey', label: 'Webhook Key', type: 'text', placeholder: 'Your IFTTT webhook key', required: true, helpText: 'Find at ifttt.com/maker_webhooks/settings' },
+        { key: 'eventName', label: 'Event Name', type: 'text', placeholder: 'new_whatsapp_lead', required: true },
+        { key: 'value1', label: 'Value 1', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'value2', label: 'Value 2', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'value3', label: 'Value 3', type: 'text', placeholder: '{{message}}' },
+      ]},
+    ],
+    aiInstructions: 'Use the three value fields efficiently. Combine data if needed.',
+  },
+
+  power_automate: {
+    triggers: [
+      { id: 'webhook_received', name: 'Flow Triggered', icon: '📩', description: 'When flow sends data', dataFields: ['payload', 'flow_id', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'trigger_flow', name: 'Trigger Flow', icon: '⚙️', description: 'Trigger Power Automate flow', fields: [
+        { key: 'webhookUrl', label: 'Flow HTTP URL', type: 'text', placeholder: 'https://prod-xx.westus.logic.azure.com/...', required: true, helpText: 'Get from "When HTTP request is received" trigger' },
+        { key: 'data', label: 'Request Body (JSON)', type: 'textarea', placeholder: '{\n  "customer_name": "{{customer_name}}",\n  "email": "{{customer_email}}",\n  "phone": "{{customer_phone}}",\n  "message": "{{message}}"\n}', required: true },
+      ]},
+      { id: 'trigger_teams_flow', name: 'Notify Teams', icon: '💬', description: 'Trigger Teams notification flow', fields: [
+        { key: 'webhookUrl', label: 'Flow HTTP URL', type: 'text', placeholder: 'https://prod-xx.westus.logic.azure.com/...', required: true },
+        { key: 'title', label: 'Notification Title', type: 'text', placeholder: 'New Lead: {{customer_name}}', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', placeholder: '**Name:** {{customer_name}}\n**Phone:** {{customer_phone}}\n**Message:** {{message}}', required: true },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['low', 'normal', 'high'], default: 'normal' },
+      ]},
+    ],
+    aiInstructions: 'Format JSON according to flow schema. Use proper data types.',
+  },
+
+  // ==================== DATABASE & STORAGE ====================
+  airtable: {
+    triggers: [
+      { id: 'record_created', name: 'Record Created', icon: '➕', description: 'When new record is added', dataFields: ['record_id', 'fields', 'table_name', 'created_time'] },
+      { id: 'record_updated', name: 'Record Updated', icon: '✏️', description: 'When record is modified', dataFields: ['record_id', 'fields', 'changed_fields', 'table_name'] },
+      { id: 'record_deleted', name: 'Record Deleted', icon: '🗑️', description: 'When record is deleted', dataFields: ['record_id', 'table_name', 'deleted_time'] },
+      { id: 'record_matches_condition', name: 'Record Matches Condition', icon: '🎯', description: 'When a record matches a filter', dataFields: ['record_id', 'fields', 'matched_condition'] },
+      { id: 'field_value_changed', name: 'Specific Field Changed', icon: '📝', description: 'When specific field value changes', dataFields: ['record_id', 'field_name', 'old_value', 'new_value'] },
+    ],
+    actions: [
+      { id: 'create_record', name: 'Create Record', icon: '➕', description: 'Add new record to table', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true, helpText: 'Found in Airtable URL or API docs' },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX or "Leads"', required: true },
+        { key: 'fields', label: 'Fields (JSON)', type: 'textarea', placeholder: '{\n  "Name": "{{customer_name}}",\n  "Email": "{{customer_email}}",\n  "Phone": "{{customer_phone}}",\n  "Status": "New",\n  "Source": "WhatsApp",\n  "Date Added": "{{timestamp}}"\n}', required: true, helpText: 'Use your Airtable column names exactly' },
+      ]},
+      { id: 'update_record', name: 'Update Record', icon: '✏️', description: 'Update existing record by ID', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'recordId', label: 'Record ID', type: 'text', placeholder: 'recXXXXXXXXXXXXXX or {{record_id}}', required: true },
+        { key: 'fields', label: 'Fields to Update (JSON)', type: 'textarea', placeholder: '{\n  "Status": "Contacted",\n  "Notes": "{{ai_summary}}",\n  "Last Contact": "{{timestamp}}"\n}', required: true },
+      ]},
+      { id: 'find_record', name: 'Find Record', icon: '🔍', description: 'Search for a single record', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'filterFormula', label: 'Filter Formula', type: 'text', placeholder: '{Email} = "{{customer_email}}"', required: true, helpText: 'Airtable formula syntax: {Field} = "value"' },
+      ]},
+      { id: 'find_and_update', name: 'Find & Update Record', icon: '🔄', description: 'Find a record and update it', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'filterFormula', label: 'Find by Formula', type: 'text', placeholder: '{Email} = "{{customer_email}}"', required: true },
+        { key: 'fields', label: 'Fields to Update (JSON)', type: 'textarea', placeholder: '{"Status": "{{new_status}}"}', required: true },
+        { key: 'createIfNotFound', label: 'Create if Not Found?', type: 'select', options: ['no', 'yes'], default: 'no' },
+      ]},
+      { id: 'delete_record', name: 'Delete Record', icon: '🗑️', description: 'Delete a record', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'recordId', label: 'Record ID', type: 'text', placeholder: '{{record_id}}', required: true },
+      ]},
+      { id: 'find_and_delete', name: 'Find & Delete Record', icon: '🔍🗑️', description: 'Find and delete a record', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'filterFormula', label: 'Find by Formula', type: 'text', placeholder: '{Email} = "{{customer_email}}"', required: true },
+      ]},
+      { id: 'list_records', name: 'List Records', icon: '📋', description: 'Get multiple records', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'filterFormula', label: 'Filter (optional)', type: 'text', placeholder: '{Status} = "New"' },
+        { key: 'sortField', label: 'Sort by Field', type: 'text', placeholder: 'Date Added' },
+        { key: 'sortDirection', label: 'Sort Direction', type: 'select', options: ['asc', 'desc'], default: 'desc' },
+        { key: 'maxRecords', label: 'Max Records', type: 'number', placeholder: '100', default: '100' },
+      ]},
+      { id: 'get_record', name: 'Get Record by ID', icon: '📄', description: 'Get a specific record', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'recordId', label: 'Record ID', type: 'text', placeholder: '{{record_id}}', required: true },
+      ]},
+      { id: 'batch_create', name: 'Batch Create Records', icon: '➕➕', description: 'Create multiple records at once', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'records', label: 'Records (JSON Array)', type: 'textarea', placeholder: '[\n  {"fields": {"Name": "John", "Email": "john@example.com"}},\n  {"fields": {"Name": "Jane", "Email": "jane@example.com"}}\n]', required: true },
+      ]},
+      { id: 'batch_update', name: 'Batch Update Records', icon: '✏️✏️', description: 'Update multiple records', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'records', label: 'Records (JSON Array)', type: 'textarea', placeholder: '[\n  {"id": "recXXX", "fields": {"Status": "Updated"}},\n  {"id": "recYYY", "fields": {"Status": "Updated"}}\n]', required: true },
+      ]},
+      { id: 'count_records', name: 'Count Records', icon: '🔢', description: 'Count matching records', fields: [
+        { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
+        { key: 'tableId', label: 'Table ID or Name', type: 'text', placeholder: 'tblXXXXX', required: true },
+        { key: 'filterFormula', label: 'Filter (optional)', type: 'text', placeholder: '{Status} = "Active"' },
+      ]},
+    ],
+    aiInstructions: 'Store data with consistent field names. Use appropriate field types. When searching, use exact formula syntax.',
+  },
+
+  notion: {
+    triggers: [
+      { id: 'page_created', name: 'Page Created', icon: '📄', description: 'When new page is created', dataFields: ['page_id', 'title', 'properties', 'created_by', 'created_time'] },
+      { id: 'page_updated', name: 'Page Updated', icon: '✏️', description: 'When page is modified', dataFields: ['page_id', 'title', 'changed_properties', 'updated_by'] },
+      { id: 'database_item_created', name: 'Database Item Created', icon: '➕', description: 'When item added to database', dataFields: ['page_id', 'properties', 'database_id'] },
+    ],
+    actions: [
+      { id: 'create_page', name: 'Create Page', icon: '📄', description: 'Create new Notion page', fields: [
+        { key: 'parentPageId', label: 'Parent Page ID', type: 'text', placeholder: 'Page ID to create under', helpText: 'Leave empty for workspace root' },
+        { key: 'title', label: 'Page Title', type: 'text', placeholder: '{{customer_name}} - Notes', required: true },
+        { key: 'content', label: 'Content (Markdown)', type: 'textarea', placeholder: '## Customer Info\n- **Name:** {{customer_name}}\n- **Phone:** {{customer_phone}}\n\n## Notes\n{{ai_summary}}' },
+      ]},
+      { id: 'add_database_item', name: 'Add to Database', icon: '➕', description: 'Add item to Notion database', fields: [
+        { key: 'databaseId', label: 'Database ID', type: 'text', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', required: true },
+        { key: 'properties', label: 'Properties (JSON)', type: 'textarea', placeholder: '{\n  "Name": {"title": [{"text": {"content": "{{customer_name}}"}}]},\n  "Email": {"email": "{{customer_email}}"},\n  "Status": {"select": {"name": "New"}}\n}', required: true, helpText: 'Use Notion property format' },
+      ]},
+      { id: 'update_page', name: 'Update Page', icon: '✏️', description: 'Update page properties', fields: [
+        { key: 'pageId', label: 'Page ID', type: 'text', placeholder: '{{page_id}}', required: true },
+        { key: 'properties', label: 'Properties (JSON)', type: 'textarea', placeholder: '{"Status": {"select": {"name": "Contacted"}}}', required: true },
+      ]},
+      { id: 'append_block', name: 'Append Content', icon: '📝', description: 'Add content to page', fields: [
+        { key: 'pageId', label: 'Page ID', type: 'text', placeholder: '{{page_id}}', required: true },
+        { key: 'content', label: 'Content (Markdown)', type: 'textarea', placeholder: '---\n**Update {{timestamp}}:**\n{{ai_response}}', required: true },
+      ]},
+      { id: 'query_database', name: 'Query Database', icon: '🔍', description: 'Search database', fields: [
+        { key: 'databaseId', label: 'Database ID', type: 'text', placeholder: 'Database ID', required: true },
+        { key: 'filter', label: 'Filter (JSON)', type: 'textarea', placeholder: '{"property": "Email", "email": {"equals": "{{customer_email}}"}}' },
+      ]},
+    ],
+    aiInstructions: 'Create organized pages with clear structure. Use databases for structured data.',
+  },
+
+  firebase: {
+    triggers: [
+      { id: 'document_created', name: 'Document Created', icon: '➕', description: 'When Firestore document is created', dataFields: ['document_id', 'data', 'collection', 'created_at'] },
+      { id: 'document_updated', name: 'Document Updated', icon: '✏️', description: 'When document is modified', dataFields: ['document_id', 'data', 'changed_fields', 'collection'] },
+      { id: 'document_deleted', name: 'Document Deleted', icon: '🗑️', description: 'When document is deleted', dataFields: ['document_id', 'collection', 'deleted_at'] },
+    ],
+    actions: [
+      { id: 'add_document', name: 'Add Document', icon: '➕', description: 'Create Firestore document', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'documentId', label: 'Document ID (optional)', type: 'text', placeholder: 'Auto-generated if empty' },
+        { key: 'data', label: 'Document Data (JSON)', type: 'textarea', placeholder: '{\n  "name": "{{customer_name}}",\n  "email": "{{customer_email}}",\n  "phone": "{{customer_phone}}",\n  "createdAt": "{{timestamp}}"\n}', required: true },
+      ]},
+      { id: 'update_document', name: 'Update Document', icon: '✏️', description: 'Update Firestore document', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'documentId', label: 'Document ID', type: 'text', placeholder: '{{document_id}}', required: true },
+        { key: 'data', label: 'Fields to Update (JSON)', type: 'textarea', placeholder: '{"status": "contacted", "notes": "{{ai_summary}}"}', required: true },
+      ]},
+      { id: 'get_document', name: 'Get Document', icon: '📄', description: 'Read document data', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'documentId', label: 'Document ID', type: 'text', placeholder: '{{document_id}}', required: true },
+      ]},
+      { id: 'query_collection', name: 'Query Collection', icon: '🔍', description: 'Search documents', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'field', label: 'Field to Filter', type: 'text', placeholder: 'email', required: true },
+        { key: 'operator', label: 'Operator', type: 'select', options: ['==', '!=', '<', '<=', '>', '>=', 'array-contains'], default: '==' },
+        { key: 'value', label: 'Value', type: 'text', placeholder: '{{customer_email}}', required: true },
+      ]},
+      { id: 'delete_document', name: 'Delete Document', icon: '🗑️', description: 'Delete document', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'documentId', label: 'Document ID', type: 'text', placeholder: '{{document_id}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Use consistent collection and field naming. Include timestamps for tracking.',
+  },
+
+  supabase: {
+    triggers: [
+      { id: 'row_inserted', name: 'Row Inserted', icon: '➕', description: 'When new row is inserted', dataFields: ['id', 'row_data', 'table', 'created_at'] },
+      { id: 'row_updated', name: 'Row Updated', icon: '✏️', description: 'When row is updated', dataFields: ['id', 'old_data', 'new_data', 'table'] },
+      { id: 'row_deleted', name: 'Row Deleted', icon: '🗑️', description: 'When row is deleted', dataFields: ['id', 'table', 'deleted_data'] },
+    ],
+    actions: [
+      { id: 'insert_row', name: 'Insert Row', icon: '➕', description: 'Add new row to table', fields: [
+        { key: 'table', label: 'Table Name', type: 'text', placeholder: 'leads', required: true },
+        { key: 'data', label: 'Row Data (JSON)', type: 'textarea', placeholder: '{\n  "name": "{{customer_name}}",\n  "email": "{{customer_email}}",\n  "phone": "{{customer_phone}}",\n  "status": "new"\n}', required: true },
+      ]},
+      { id: 'update_row', name: 'Update Row', icon: '✏️', description: 'Update existing row', fields: [
+        { key: 'table', label: 'Table Name', type: 'text', placeholder: 'leads', required: true },
+        { key: 'matchColumn', label: 'Match Column', type: 'text', placeholder: 'email', required: true },
+        { key: 'matchValue', label: 'Match Value', type: 'text', placeholder: '{{customer_email}}', required: true },
+        { key: 'data', label: 'Data to Update (JSON)', type: 'textarea', placeholder: '{"status": "contacted", "notes": "{{ai_summary}}"}', required: true },
+      ]},
+      { id: 'upsert_row', name: 'Upsert Row', icon: '🔄', description: 'Insert or update row', fields: [
+        { key: 'table', label: 'Table Name', type: 'text', placeholder: 'leads', required: true },
+        { key: 'data', label: 'Row Data (JSON)', type: 'textarea', placeholder: '{"email": "{{customer_email}}", "name": "{{customer_name}}", "updated_at": "{{timestamp}}"}', required: true },
+        { key: 'onConflict', label: 'Conflict Column', type: 'text', placeholder: 'email', required: true, helpText: 'Column to check for existing row' },
+      ]},
+      { id: 'select_rows', name: 'Select Rows', icon: '🔍', description: 'Query table data', fields: [
+        { key: 'table', label: 'Table Name', type: 'text', placeholder: 'leads', required: true },
+        { key: 'columns', label: 'Columns', type: 'text', placeholder: '*', default: '*' },
+        { key: 'filter', label: 'Filter (column=value)', type: 'text', placeholder: 'email={{customer_email}}' },
+        { key: 'limit', label: 'Limit', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'delete_row', name: 'Delete Row', icon: '🗑️', description: 'Delete row from table', fields: [
+        { key: 'table', label: 'Table Name', type: 'text', placeholder: 'leads', required: true },
+        { key: 'matchColumn', label: 'Match Column', type: 'text', placeholder: 'id', required: true },
+        { key: 'matchValue', label: 'Match Value', type: 'text', placeholder: '{{record_id}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Use proper SQL column types. Include created_at/updated_at timestamps.',
+  },
+
+  mongodb: {
+    triggers: [
+      { id: 'document_inserted', name: 'Document Inserted', icon: '➕', description: 'When document is inserted', dataFields: ['_id', 'document', 'collection', 'timestamp'] },
+      { id: 'document_updated', name: 'Document Updated', icon: '✏️', description: 'When document is updated', dataFields: ['_id', 'updateDescription', 'collection'] },
+      { id: 'document_deleted', name: 'Document Deleted', icon: '🗑️', description: 'When document is deleted', dataFields: ['_id', 'collection', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'insert_document', name: 'Insert Document', icon: '➕', description: 'Add new document', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'document', label: 'Document (JSON)', type: 'textarea', placeholder: '{\n  "name": "{{customer_name}}",\n  "email": "{{customer_email}}",\n  "phone": "{{customer_phone}}",\n  "createdAt": {"$date": "{{timestamp}}"}\n}', required: true },
+      ]},
+      { id: 'update_document', name: 'Update Document', icon: '✏️', description: 'Update document', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'filter', label: 'Filter (JSON)', type: 'textarea', placeholder: '{"email": "{{customer_email}}"}', required: true },
+        { key: 'update', label: 'Update (JSON)', type: 'textarea', placeholder: '{"$set": {"status": "contacted", "notes": "{{ai_summary}}"}}', required: true },
+      ]},
+      { id: 'find_documents', name: 'Find Documents', icon: '🔍', description: 'Query documents', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'filter', label: 'Filter (JSON)', type: 'textarea', placeholder: '{"email": "{{customer_email}}"}', required: true },
+        { key: 'limit', label: 'Limit', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'delete_document', name: 'Delete Document', icon: '🗑️', description: 'Delete document', fields: [
+        { key: 'collection', label: 'Collection', type: 'text', placeholder: 'leads', required: true },
+        { key: 'filter', label: 'Filter (JSON)', type: 'textarea', placeholder: '{"_id": "{{document_id}}"}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Use proper MongoDB operators. Index frequently queried fields.',
+  },
+
+  dropbox: {
+    triggers: [
+      { id: 'file_added', name: 'File Added', icon: '📄', description: 'When file is uploaded', dataFields: ['file_id', 'name', 'path', 'size', 'modified'] },
+      { id: 'file_modified', name: 'File Modified', icon: '✏️', description: 'When file is changed', dataFields: ['file_id', 'name', 'path', 'modified'] },
+      { id: 'folder_created', name: 'Folder Created', icon: '📁', description: 'When folder is created', dataFields: ['folder_id', 'name', 'path'] },
+    ],
+    actions: [
+      { id: 'upload_file', name: 'Upload File', icon: '📤', description: 'Upload file to Dropbox', fields: [
+        { key: 'path', label: 'Destination Path', type: 'text', placeholder: '/Leads/{{customer_name}}/document.pdf', required: true },
+        { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{file_url}}', required: true },
+        { key: 'mode', label: 'If Exists', type: 'select', options: ['add', 'overwrite'], default: 'add' },
+      ]},
+      { id: 'create_folder', name: 'Create Folder', icon: '📁', description: 'Create new folder', fields: [
+        { key: 'path', label: 'Folder Path', type: 'text', placeholder: '/Customers/{{customer_name}}', required: true },
+      ]},
+      { id: 'get_share_link', name: 'Get Share Link', icon: '🔗', description: 'Create shareable link', fields: [
+        { key: 'path', label: 'File Path', type: 'text', placeholder: '/Documents/{{file_name}}', required: true },
+      ]},
+      { id: 'move_file', name: 'Move File', icon: '📦', description: 'Move file to new location', fields: [
+        { key: 'fromPath', label: 'From Path', type: 'text', placeholder: '/Inbox/{{file_name}}', required: true },
+        { key: 'toPath', label: 'To Path', type: 'text', placeholder: '/Processed/{{file_name}}', required: true },
+      ]},
+      { id: 'delete_file', name: 'Delete File', icon: '🗑️', description: 'Delete file or folder', fields: [
+        { key: 'path', label: 'Path', type: 'text', placeholder: '/Temp/{{file_name}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Organize files in logical folder structure. Use descriptive file names.',
+  },
+
+  aws_s3: {
+    triggers: [
+      { id: 'object_created', name: 'Object Created', icon: '📄', description: 'When object is uploaded', dataFields: ['bucket', 'key', 'size', 'etag', 'event_time'] },
+      { id: 'object_deleted', name: 'Object Deleted', icon: '🗑️', description: 'When object is deleted', dataFields: ['bucket', 'key', 'event_time'] },
+    ],
+    actions: [
+      { id: 'put_object', name: 'Upload Object', icon: '📤', description: 'Upload file to S3', fields: [
+        { key: 'key', label: 'Object Key (path)', type: 'text', placeholder: 'leads/{{customer_id}}/{{filename}}', required: true },
+        { key: 'fileUrl', label: 'File URL', type: 'text', placeholder: '{{file_url}}', required: true },
+        { key: 'contentType', label: 'Content Type', type: 'text', placeholder: 'application/pdf', helpText: 'e.g., image/jpeg, application/pdf' },
+      ]},
+      { id: 'get_object', name: 'Get Object', icon: '📥', description: 'Download file from S3', fields: [
+        { key: 'key', label: 'Object Key', type: 'text', placeholder: 'documents/{{filename}}', required: true },
+      ]},
+      { id: 'get_presigned_url', name: 'Get Presigned URL', icon: '🔗', description: 'Generate temporary URL', fields: [
+        { key: 'key', label: 'Object Key', type: 'text', placeholder: 'documents/{{filename}}', required: true },
+        { key: 'expiresIn', label: 'Expires In (seconds)', type: 'number', placeholder: '3600', default: '3600' },
+        { key: 'operation', label: 'Operation', type: 'select', options: ['getObject', 'putObject'], default: 'getObject' },
+      ]},
+      { id: 'delete_object', name: 'Delete Object', icon: '🗑️', description: 'Delete file from S3', fields: [
+        { key: 'key', label: 'Object Key', type: 'text', placeholder: 'temp/{{filename}}', required: true },
+      ]},
+      { id: 'list_objects', name: 'List Objects', icon: '📋', description: 'List files in prefix', fields: [
+        { key: 'prefix', label: 'Prefix (folder)', type: 'text', placeholder: 'leads/{{customer_id}}/' },
+        { key: 'maxKeys', label: 'Max Results', type: 'number', placeholder: '100', default: '100' },
+      ]},
+    ],
+    aiInstructions: 'Use consistent key naming conventions. Set appropriate content types.',
+  },
+
+  // ==================== E-COMMERCE & PAYMENTS ====================
+  stripe: {
+    triggers: [
+      { id: 'payment_succeeded', name: 'Payment Succeeded', icon: '✅', description: 'When payment is successful', dataFields: ['payment_intent_id', 'amount', 'currency', 'customer_id', 'customer_email', 'metadata'] },
+      { id: 'payment_failed', name: 'Payment Failed', icon: '❌', description: 'When payment fails', dataFields: ['payment_intent_id', 'amount', 'error_message', 'customer_email'] },
+      { id: 'subscription_created', name: 'Subscription Created', icon: '🔄', description: 'When subscription starts', dataFields: ['subscription_id', 'customer_id', 'plan_id', 'amount', 'interval'] },
+      { id: 'subscription_cancelled', name: 'Subscription Cancelled', icon: '🚫', description: 'When subscription is cancelled', dataFields: ['subscription_id', 'customer_id', 'cancelled_at', 'reason'] },
+      { id: 'invoice_paid', name: 'Invoice Paid', icon: '📄', description: 'When invoice is paid', dataFields: ['invoice_id', 'customer_id', 'amount', 'invoice_pdf'] },
+      { id: 'customer_created', name: 'Customer Created', icon: '👤', description: 'When customer is created', dataFields: ['customer_id', 'email', 'name', 'created'] },
+      { id: 'refund_created', name: 'Refund Created', icon: '💸', description: 'When refund is issued', dataFields: ['refund_id', 'amount', 'reason', 'payment_intent_id'] },
+    ],
+    actions: [
+      { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Create Stripe customer', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'name', label: 'Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'metadata', label: 'Metadata (JSON)', type: 'textarea', placeholder: '{"source": "whatsapp", "agent_id": "{{agent_id}}"}' },
+      ]},
+      { id: 'create_payment_link', name: 'Create Payment Link', icon: '🔗', description: 'Generate payment link', fields: [
+        { key: 'priceId', label: 'Price ID', type: 'text', placeholder: 'price_XXXXX', required: true, helpText: 'From Stripe dashboard' },
+        { key: 'quantity', label: 'Quantity', type: 'number', placeholder: '1', default: '1' },
+        { key: 'metadata', label: 'Metadata (JSON)', type: 'textarea', placeholder: '{"customer_phone": "{{customer_phone}}"}' },
+      ]},
+      { id: 'create_invoice', name: 'Create Invoice', icon: '📄', description: 'Create and send invoice', fields: [
+        { key: 'customerId', label: 'Customer ID', type: 'text', placeholder: '{{stripe_customer_id}}', required: true },
+        { key: 'items', label: 'Line Items (JSON)', type: 'textarea', placeholder: '[{"price": "price_XXX", "quantity": 1}]', required: true },
+        { key: 'autoSend', label: 'Auto-send Email', type: 'select', options: ['true', 'false'], default: 'true' },
+      ]},
+      { id: 'create_refund', name: 'Create Refund', icon: '💸', description: 'Issue refund', fields: [
+        { key: 'paymentIntentId', label: 'Payment Intent ID', type: 'text', placeholder: '{{payment_intent_id}}', required: true },
+        { key: 'amount', label: 'Amount (cents)', type: 'number', placeholder: 'Leave empty for full refund' },
+        { key: 'reason', label: 'Reason', type: 'select', options: ['duplicate', 'fraudulent', 'requested_by_customer'], default: 'requested_by_customer' },
+      ]},
+      { id: 'get_customer', name: 'Get Customer', icon: '🔍', description: 'Retrieve customer details', fields: [
+        { key: 'customerId', label: 'Customer ID', type: 'text', placeholder: '{{stripe_customer_id}}' },
+        { key: 'email', label: 'Or Email', type: 'email', placeholder: '{{customer_email}}' },
+      ]},
+    ],
+    aiInstructions: 'Handle payment data securely. Confirm amounts before processing. Always include metadata for tracking.',
+  },
+
+  razorpay: {
+    triggers: [
+      { id: 'payment_captured', name: 'Payment Captured', icon: '✅', description: 'When payment is captured', dataFields: ['payment_id', 'order_id', 'amount', 'currency', 'email', 'contact'] },
+      { id: 'payment_failed', name: 'Payment Failed', icon: '❌', description: 'When payment fails', dataFields: ['payment_id', 'order_id', 'error_code', 'error_description'] },
+      { id: 'refund_processed', name: 'Refund Processed', icon: '💸', description: 'When refund is processed', dataFields: ['refund_id', 'payment_id', 'amount', 'status'] },
+      { id: 'subscription_activated', name: 'Subscription Activated', icon: '🔄', description: 'When subscription starts', dataFields: ['subscription_id', 'plan_id', 'customer_id', 'current_start'] },
+    ],
+    actions: [
+      { id: 'create_order', name: 'Create Order', icon: '📦', description: 'Create Razorpay order', fields: [
+        { key: 'amount', label: 'Amount (paise)', type: 'number', placeholder: '10000 (for ₹100)', required: true, helpText: 'Amount in smallest currency unit' },
+        { key: 'currency', label: 'Currency', type: 'text', placeholder: 'INR', default: 'INR' },
+        { key: 'receipt', label: 'Receipt ID', type: 'text', placeholder: 'order_{{timestamp}}' },
+        { key: 'notes', label: 'Notes (JSON)', type: 'textarea', placeholder: '{"customer_name": "{{customer_name}}", "phone": "{{customer_phone}}"}' },
+      ]},
+      { id: 'create_payment_link', name: 'Create Payment Link', icon: '🔗', description: 'Generate payment link', fields: [
+        { key: 'amount', label: 'Amount (paise)', type: 'number', placeholder: '10000', required: true },
+        { key: 'currency', label: 'Currency', type: 'text', placeholder: 'INR', default: 'INR' },
+        { key: 'description', label: 'Description', type: 'text', placeholder: 'Payment for {{product_name}}', required: true },
+        { key: 'customerName', label: 'Customer Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'customerEmail', label: 'Customer Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'customerPhone', label: 'Customer Phone', type: 'text', placeholder: '{{customer_phone}}' },
+        { key: 'expireBy', label: 'Expire After (minutes)', type: 'number', placeholder: '1440', default: '1440' },
+      ]},
+      { id: 'create_refund', name: 'Create Refund', icon: '💸', description: 'Process refund', fields: [
+        { key: 'paymentId', label: 'Payment ID', type: 'text', placeholder: '{{payment_id}}', required: true },
+        { key: 'amount', label: 'Amount (paise)', type: 'number', placeholder: 'Leave empty for full refund' },
+        { key: 'notes', label: 'Notes (JSON)', type: 'textarea', placeholder: '{"reason": "customer_request"}' },
+      ]},
+      { id: 'fetch_payment', name: 'Fetch Payment', icon: '🔍', description: 'Get payment details', fields: [
+        { key: 'paymentId', label: 'Payment ID', type: 'text', placeholder: '{{payment_id}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Amounts must be in paise (smallest unit). Validate before processing payments.',
+  },
+
+  shopify: {
+    triggers: [
+      { id: 'order_created', name: 'Order Created', icon: '🛒', description: 'When new order is placed', dataFields: ['order_id', 'order_number', 'total_price', 'customer_email', 'line_items', 'shipping_address'] },
+      { id: 'order_fulfilled', name: 'Order Fulfilled', icon: '📦', description: 'When order is shipped', dataFields: ['order_id', 'tracking_number', 'tracking_url', 'fulfillment_status'] },
+      { id: 'order_cancelled', name: 'Order Cancelled', icon: '❌', description: 'When order is cancelled', dataFields: ['order_id', 'cancel_reason', 'refund_amount'] },
+      { id: 'customer_created', name: 'Customer Created', icon: '👤', description: 'When new customer signs up', dataFields: ['customer_id', 'email', 'first_name', 'last_name', 'phone'] },
+      { id: 'product_updated', name: 'Product Updated', icon: '📝', description: 'When product is modified', dataFields: ['product_id', 'title', 'variants', 'inventory_quantity'] },
+      { id: 'checkout_abandoned', name: 'Checkout Abandoned', icon: '🛑', description: 'When checkout is abandoned', dataFields: ['checkout_id', 'email', 'abandoned_url', 'total_price', 'line_items'] },
+    ],
+    actions: [
+      { id: 'create_order', name: 'Create Order', icon: '🛒', description: 'Create draft order', fields: [
+        { key: 'customerEmail', label: 'Customer Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'lineItems', label: 'Line Items (JSON)', type: 'textarea', placeholder: '[{"variant_id": 123456, "quantity": 1}]', required: true },
+        { key: 'shippingAddress', label: 'Shipping Address (JSON)', type: 'textarea', placeholder: '{"first_name": "{{first_name}}", "address1": "{{address}}", "city": "{{city}}", "zip": "{{zip}}", "country": "IN"}' },
+        { key: 'note', label: 'Order Note', type: 'text', placeholder: 'Via WhatsApp Bot' },
+      ]},
+      { id: 'update_order', name: 'Update Order', icon: '✏️', description: 'Update order details', fields: [
+        { key: 'orderId', label: 'Order ID', type: 'text', placeholder: '{{order_id}}', required: true },
+        { key: 'note', label: 'Note', type: 'textarea', placeholder: '{{update_note}}' },
+        { key: 'tags', label: 'Tags', type: 'text', placeholder: 'whatsapp, priority' },
+      ]},
+      { id: 'fulfill_order', name: 'Fulfill Order', icon: '📦', description: 'Mark as shipped', fields: [
+        { key: 'orderId', label: 'Order ID', type: 'text', placeholder: '{{order_id}}', required: true },
+        { key: 'trackingNumber', label: 'Tracking Number', type: 'text', placeholder: '{{tracking_number}}' },
+        { key: 'trackingCompany', label: 'Shipping Company', type: 'text', placeholder: 'FedEx' },
+        { key: 'notifyCustomer', label: 'Notify Customer', type: 'select', options: ['true', 'false'], default: 'true' },
+      ]},
+      { id: 'get_order', name: 'Get Order', icon: '🔍', description: 'Fetch order details', fields: [
+        { key: 'orderId', label: 'Order ID', type: 'text', placeholder: '{{order_id}}' },
+        { key: 'orderNumber', label: 'Or Order Number', type: 'text', placeholder: '{{order_number}}' },
+      ]},
+      { id: 'search_products', name: 'Search Products', icon: '🔍', description: 'Search product catalog', fields: [
+        { key: 'query', label: 'Search Query', type: 'text', placeholder: '{{product_query}}', required: true },
+        { key: 'limit', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'update_inventory', name: 'Update Inventory', icon: '📊', description: 'Adjust stock level', fields: [
+        { key: 'inventoryItemId', label: 'Inventory Item ID', type: 'text', placeholder: '{{inventory_item_id}}', required: true },
+        { key: 'adjustment', label: 'Adjustment (+/-)', type: 'number', placeholder: '-1', required: true },
+      ]},
+    ],
+    aiInstructions: 'Help customers find products. Provide order status updates. Handle returns gracefully.',
+  },
+
+  woocommerce: {
+    triggers: [
+      { id: 'order_created', name: 'Order Created', icon: '🛒', description: 'When new order is placed', dataFields: ['order_id', 'status', 'total', 'billing_email', 'line_items', 'billing_address'] },
+      { id: 'order_status_changed', name: 'Order Status Changed', icon: '🔄', description: 'When order status updates', dataFields: ['order_id', 'old_status', 'new_status'] },
+      { id: 'order_completed', name: 'Order Completed', icon: '✅', description: 'When order is completed', dataFields: ['order_id', 'total', 'customer_email'] },
+      { id: 'customer_created', name: 'Customer Created', icon: '👤', description: 'When customer registers', dataFields: ['customer_id', 'email', 'first_name', 'last_name'] },
+      { id: 'product_low_stock', name: 'Low Stock Alert', icon: '⚠️', description: 'When product stock is low', dataFields: ['product_id', 'name', 'stock_quantity'] },
+    ],
+    actions: [
+      { id: 'create_order', name: 'Create Order', icon: '🛒', description: 'Create new order', fields: [
+        { key: 'customerEmail', label: 'Customer Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'lineItems', label: 'Line Items (JSON)', type: 'textarea', placeholder: '[{"product_id": 123, "quantity": 1}]', required: true },
+        { key: 'billingAddress', label: 'Billing Address (JSON)', type: 'textarea', placeholder: '{"first_name": "{{name}}", "email": "{{email}}", "phone": "{{phone}}"}' },
+        { key: 'status', label: 'Status', type: 'select', options: ['pending', 'processing', 'on-hold', 'completed'], default: 'pending' },
+      ]},
+      { id: 'update_order_status', name: 'Update Order Status', icon: '🔄', description: 'Change order status', fields: [
+        { key: 'orderId', label: 'Order ID', type: 'text', placeholder: '{{order_id}}', required: true },
+        { key: 'status', label: 'New Status', type: 'select', options: ['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded'], required: true },
+        { key: 'note', label: 'Order Note', type: 'textarea', placeholder: 'Status updated via AI agent' },
+      ]},
+      { id: 'get_order', name: 'Get Order', icon: '🔍', description: 'Fetch order details', fields: [
+        { key: 'orderId', label: 'Order ID', type: 'text', placeholder: '{{order_id}}', required: true },
+      ]},
+      { id: 'search_products', name: 'Search Products', icon: '🔍', description: 'Search products', fields: [
+        { key: 'search', label: 'Search Term', type: 'text', placeholder: '{{product_query}}', required: true },
+        { key: 'perPage', label: 'Results Per Page', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'create_customer', name: 'Create Customer', icon: '👤', description: 'Register customer', fields: [
+        { key: 'email', label: 'Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'firstName', label: 'First Name', type: 'text', placeholder: '{{first_name}}' },
+        { key: 'lastName', label: 'Last Name', type: 'text', placeholder: '{{last_name}}' },
+        { key: 'phone', label: 'Phone', type: 'text', placeholder: '{{customer_phone}}' },
+      ]},
+    ],
+    aiInstructions: 'Assist with order inquiries. Provide product recommendations. Handle order status updates.',
+  },
+
+  paypal: {
+    triggers: [
+      { id: 'payment_completed', name: 'Payment Completed', icon: '✅', description: 'When payment is completed', dataFields: ['transaction_id', 'amount', 'currency', 'payer_email', 'payer_name'] },
+      { id: 'payment_refunded', name: 'Payment Refunded', icon: '💸', description: 'When refund is processed', dataFields: ['refund_id', 'transaction_id', 'amount', 'status'] },
+      { id: 'subscription_activated', name: 'Subscription Activated', icon: '🔄', description: 'When subscription starts', dataFields: ['subscription_id', 'plan_id', 'subscriber_email'] },
+      { id: 'subscription_cancelled', name: 'Subscription Cancelled', icon: '🚫', description: 'When subscription ends', dataFields: ['subscription_id', 'cancellation_time'] },
+      { id: 'dispute_created', name: 'Dispute Created', icon: '⚠️', description: 'When dispute is opened', dataFields: ['dispute_id', 'transaction_id', 'reason', 'amount'] },
+    ],
+    actions: [
+      { id: 'create_payment_link', name: 'Create Payment', icon: '🔗', description: 'Create PayPal payment', fields: [
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: '99.99', required: true },
+        { key: 'currency', label: 'Currency', type: 'text', placeholder: 'USD', default: 'USD' },
+        { key: 'description', label: 'Description', type: 'text', placeholder: '{{product_name}}', required: true },
+        { key: 'returnUrl', label: 'Return URL', type: 'text', placeholder: 'https://yoursite.com/success', required: true },
+        { key: 'cancelUrl', label: 'Cancel URL', type: 'text', placeholder: 'https://yoursite.com/cancel', required: true },
+      ]},
+      { id: 'create_invoice', name: 'Create Invoice', icon: '📄', description: 'Send PayPal invoice', fields: [
+        { key: 'recipientEmail', label: 'Recipient Email', type: 'email', placeholder: '{{customer_email}}', required: true },
+        { key: 'items', label: 'Items (JSON)', type: 'textarea', placeholder: '[{"name": "{{product}}", "quantity": "1", "unit_amount": {"currency_code": "USD", "value": "99.99"}}]', required: true },
+        { key: 'note', label: 'Note', type: 'textarea', placeholder: 'Thank you for your business!' },
+      ]},
+      { id: 'refund_payment', name: 'Refund Payment', icon: '💸', description: 'Issue refund', fields: [
+        { key: 'captureId', label: 'Capture ID', type: 'text', placeholder: '{{capture_id}}', required: true },
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: 'Leave empty for full refund' },
+        { key: 'note', label: 'Note to Payer', type: 'text', placeholder: 'Refund processed' },
+      ]},
+      { id: 'get_transaction', name: 'Get Transaction', icon: '🔍', description: 'Fetch transaction details', fields: [
+        { key: 'transactionId', label: 'Transaction ID', type: 'text', placeholder: '{{transaction_id}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Handle payment queries professionally. Verify transaction details before refunds.',
+  },
+
+  // ==================== PRODUCTIVITY ====================
+  trello: {
+    triggers: [
+      { id: 'card_created', name: 'Card Created', icon: '➕', description: 'When new card is created', dataFields: ['card_id', 'name', 'description', 'list_id', 'list_name', 'board_id'] },
+      { id: 'card_moved', name: 'Card Moved', icon: '📦', description: 'When card moves to different list', dataFields: ['card_id', 'card_name', 'old_list', 'new_list', 'board_id'] },
+      { id: 'card_updated', name: 'Card Updated', icon: '✏️', description: 'When card is modified', dataFields: ['card_id', 'card_name', 'changed_fields'] },
+      { id: 'comment_added', name: 'Comment Added', icon: '💬', description: 'When comment is added to card', dataFields: ['card_id', 'card_name', 'comment_text', 'author'] },
+      { id: 'due_date_approaching', name: 'Due Date Soon', icon: '⏰', description: 'When card due date is approaching', dataFields: ['card_id', 'card_name', 'due_date', 'list_name'] },
+    ],
+    actions: [
+      { id: 'create_card', name: 'Create Card', icon: '➕', description: 'Create new Trello card', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'List ID from Trello', required: true, helpText: 'Find in list URL or API' },
+        { key: 'name', label: 'Card Title', type: 'text', placeholder: '{{customer_name}} - {{inquiry_type}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '**Contact:** {{customer_phone}}\n**Email:** {{customer_email}}\n\n**Details:**\n{{message}}' },
+        { key: 'dueDate', label: 'Due Date', type: 'text', placeholder: '{{due_date}} or leave empty' },
+        { key: 'labels', label: 'Label IDs', type: 'text', placeholder: 'label_id1,label_id2', helpText: 'Comma-separated label IDs' },
+      ]},
+      { id: 'move_card', name: 'Move Card', icon: '📦', description: 'Move card to different list', fields: [
+        { key: 'cardId', label: 'Card ID', type: 'text', placeholder: '{{card_id}}', required: true },
+        { key: 'listId', label: 'Destination List ID', type: 'text', placeholder: 'Target list ID', required: true },
+      ]},
+      { id: 'update_card', name: 'Update Card', icon: '✏️', description: 'Update card details', fields: [
+        { key: 'cardId', label: 'Card ID', type: 'text', placeholder: '{{card_id}}', required: true },
+        { key: 'name', label: 'New Name', type: 'text', placeholder: '{{updated_title}}' },
+        { key: 'description', label: 'New Description', type: 'textarea', placeholder: '{{updated_description}}' },
+        { key: 'dueDate', label: 'Due Date', type: 'text', placeholder: '{{new_due_date}}' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Add comment to card', fields: [
+        { key: 'cardId', label: 'Card ID', type: 'text', placeholder: '{{card_id}}', required: true },
+        { key: 'text', label: 'Comment', type: 'textarea', placeholder: '**Update {{timestamp}}:**\n{{ai_summary}}', required: true },
+      ]},
+      { id: 'add_member', name: 'Add Member', icon: '👤', description: 'Assign member to card', fields: [
+        { key: 'cardId', label: 'Card ID', type: 'text', placeholder: '{{card_id}}', required: true },
+        { key: 'memberId', label: 'Member ID', type: 'text', placeholder: 'Trello member ID', required: true },
+      ]},
+    ],
+    aiInstructions: 'Create well-organized cards with clear titles. Move cards through workflow stages based on progress.',
+  },
+
+  asana: {
+    triggers: [
+      { id: 'task_created', name: 'Task Created', icon: '➕', description: 'When new task is created', dataFields: ['task_id', 'name', 'notes', 'project_id', 'assignee', 'due_date'] },
+      { id: 'task_completed', name: 'Task Completed', icon: '✅', description: 'When task is marked complete', dataFields: ['task_id', 'name', 'completed_by', 'completed_at'] },
+      { id: 'task_updated', name: 'Task Updated', icon: '✏️', description: 'When task is modified', dataFields: ['task_id', 'name', 'changed_fields'] },
+      { id: 'comment_added', name: 'Comment Added', icon: '💬', description: 'When comment is added', dataFields: ['task_id', 'task_name', 'comment_text', 'author'] },
+      { id: 'due_date_approaching', name: 'Due Date Soon', icon: '⏰', description: 'When task due date approaches', dataFields: ['task_id', 'task_name', 'due_date', 'assignee'] },
+    ],
+    actions: [
+      { id: 'create_task', name: 'Create Task', icon: '➕', description: 'Create new Asana task', fields: [
+        { key: 'projectId', label: 'Project ID', type: 'text', placeholder: 'Project GID', required: true },
+        { key: 'name', label: 'Task Name', type: 'text', placeholder: '{{customer_name}} - Follow up', required: true },
+        { key: 'notes', label: 'Description', type: 'textarea', placeholder: '**Contact Info:**\n- Phone: {{customer_phone}}\n- Email: {{customer_email}}\n\n**Notes:**\n{{message}}' },
+        { key: 'dueOn', label: 'Due Date', type: 'text', placeholder: 'YYYY-MM-DD' },
+        { key: 'assignee', label: 'Assignee Email', type: 'email', placeholder: 'team@company.com' },
+      ]},
+      { id: 'update_task', name: 'Update Task', icon: '✏️', description: 'Update task details', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'name', label: 'New Name', type: 'text', placeholder: '{{updated_name}}' },
+        { key: 'notes', label: 'New Notes', type: 'textarea', placeholder: '{{updated_notes}}' },
+        { key: 'completed', label: 'Mark Complete', type: 'select', options: ['true', 'false'] },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Add comment to task', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'text', label: 'Comment', type: 'textarea', placeholder: '{{ai_update}}', required: true },
+      ]},
+      { id: 'add_subtask', name: 'Add Subtask', icon: '📝', description: 'Create subtask', fields: [
+        { key: 'parentTaskId', label: 'Parent Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'name', label: 'Subtask Name', type: 'text', placeholder: '{{subtask_name}}', required: true },
+        { key: 'dueOn', label: 'Due Date', type: 'text', placeholder: 'YYYY-MM-DD' },
+      ]},
+      { id: 'assign_task', name: 'Assign Task', icon: '👤', description: 'Assign task to user', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'assignee', label: 'Assignee Email', type: 'email', placeholder: '{{assignee_email}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Create actionable tasks with clear names and descriptions. Set realistic due dates.',
+  },
+
+  jira: {
+    triggers: [
+      { id: 'issue_created', name: 'Issue Created', icon: '➕', description: 'When new issue is created', dataFields: ['issue_key', 'summary', 'description', 'issue_type', 'priority', 'reporter'] },
+      { id: 'issue_updated', name: 'Issue Updated', icon: '✏️', description: 'When issue is modified', dataFields: ['issue_key', 'summary', 'changed_fields', 'updated_by'] },
+      { id: 'issue_status_changed', name: 'Status Changed', icon: '🔄', description: 'When issue status changes', dataFields: ['issue_key', 'summary', 'old_status', 'new_status'] },
+      { id: 'comment_added', name: 'Comment Added', icon: '💬', description: 'When comment is added', dataFields: ['issue_key', 'comment_body', 'author'] },
+      { id: 'issue_assigned', name: 'Issue Assigned', icon: '👤', description: 'When issue is assigned', dataFields: ['issue_key', 'summary', 'assignee', 'assigned_by'] },
+    ],
+    actions: [
+      { id: 'create_issue', name: 'Create Issue', icon: '➕', description: 'Create Jira issue', fields: [
+        { key: 'projectKey', label: 'Project Key', type: 'text', placeholder: 'PROJ', required: true },
+        { key: 'issueType', label: 'Issue Type', type: 'select', options: ['Bug', 'Task', 'Story', 'Epic', 'Support'], default: 'Task', required: true },
+        { key: 'summary', label: 'Summary', type: 'text', placeholder: '[{{customer_name}}] {{issue_summary}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: 'h3. Customer Details\n* *Name:* {{customer_name}}\n* *Phone:* {{customer_phone}}\n* *Email:* {{customer_email}}\n\nh3. Issue Details\n{{message}}' },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['Highest', 'High', 'Medium', 'Low', 'Lowest'], default: 'Medium' },
+        { key: 'assignee', label: 'Assignee (username)', type: 'text', placeholder: 'Leave empty for unassigned' },
+        { key: 'labels', label: 'Labels', type: 'text', placeholder: 'whatsapp,customer-support', helpText: 'Comma-separated' },
+      ]},
+      { id: 'update_issue', name: 'Update Issue', icon: '✏️', description: 'Update issue fields', fields: [
+        { key: 'issueKey', label: 'Issue Key', type: 'text', placeholder: 'PROJ-123', required: true },
+        { key: 'summary', label: 'New Summary', type: 'text', placeholder: '{{updated_summary}}' },
+        { key: 'description', label: 'New Description', type: 'textarea', placeholder: '{{updated_description}}' },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['Highest', 'High', 'Medium', 'Low', 'Lowest'] },
+      ]},
+      { id: 'transition_issue', name: 'Change Status', icon: '🔄', description: 'Move issue to new status', fields: [
+        { key: 'issueKey', label: 'Issue Key', type: 'text', placeholder: 'PROJ-123', required: true },
+        { key: 'transitionName', label: 'Transition Name', type: 'text', placeholder: 'In Progress', required: true, helpText: 'e.g., "To Do", "In Progress", "Done"' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Add comment to issue', fields: [
+        { key: 'issueKey', label: 'Issue Key', type: 'text', placeholder: 'PROJ-123', required: true },
+        { key: 'body', label: 'Comment', type: 'textarea', placeholder: '*Update from AI Agent:*\n{{ai_summary}}', required: true },
+      ]},
+      { id: 'assign_issue', name: 'Assign Issue', icon: '👤', description: 'Assign to user', fields: [
+        { key: 'issueKey', label: 'Issue Key', type: 'text', placeholder: 'PROJ-123', required: true },
+        { key: 'assignee', label: 'Assignee Username', type: 'text', placeholder: '{{assignee}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Create well-structured issues with proper categorization. Use Jira markup for formatting.',
+  },
+
+  monday: {
+    triggers: [
+      { id: 'item_created', name: 'Item Created', icon: '➕', description: 'When new item is created', dataFields: ['item_id', 'name', 'board_id', 'group_id', 'column_values'] },
+      { id: 'item_updated', name: 'Item Updated', icon: '✏️', description: 'When item is modified', dataFields: ['item_id', 'name', 'changed_columns', 'previous_values'] },
+      { id: 'status_changed', name: 'Status Changed', icon: '🔄', description: 'When status column changes', dataFields: ['item_id', 'item_name', 'old_status', 'new_status'] },
+      { id: 'column_changed', name: 'Column Changed', icon: '📝', description: 'When specific column changes', dataFields: ['item_id', 'column_id', 'old_value', 'new_value'] },
+    ],
+    actions: [
+      { id: 'create_item', name: 'Create Item', icon: '➕', description: 'Create new board item', fields: [
+        { key: 'boardId', label: 'Board ID', type: 'text', placeholder: 'Board ID from URL', required: true },
+        { key: 'groupId', label: 'Group ID', type: 'text', placeholder: 'Group ID (e.g., "new_group")', required: true },
+        { key: 'itemName', label: 'Item Name', type: 'text', placeholder: '{{customer_name}} - {{request_type}}', required: true },
+        { key: 'columnValues', label: 'Column Values (JSON)', type: 'textarea', placeholder: '{\n  "status": {"label": "New"},\n  "text": "{{customer_phone}}",\n  "email": {"email": "{{customer_email}}", "text": "{{customer_email}}"}\n}', helpText: 'Use Monday column IDs and value format' },
+      ]},
+      { id: 'update_item', name: 'Update Item', icon: '✏️', description: 'Update item columns', fields: [
+        { key: 'itemId', label: 'Item ID', type: 'text', placeholder: '{{item_id}}', required: true },
+        { key: 'columnValues', label: 'Column Values (JSON)', type: 'textarea', placeholder: '{"status": {"label": "Working on it"}}', required: true },
+      ]},
+      { id: 'change_status', name: 'Change Status', icon: '🔄', description: 'Update status column', fields: [
+        { key: 'itemId', label: 'Item ID', type: 'text', placeholder: '{{item_id}}', required: true },
+        { key: 'columnId', label: 'Status Column ID', type: 'text', placeholder: 'status', default: 'status' },
+        { key: 'label', label: 'New Status Label', type: 'text', placeholder: 'Done', required: true },
+      ]},
+      { id: 'add_update', name: 'Add Update', icon: '💬', description: 'Add update/comment to item', fields: [
+        { key: 'itemId', label: 'Item ID', type: 'text', placeholder: '{{item_id}}', required: true },
+        { key: 'body', label: 'Update Text', type: 'textarea', placeholder: '<b>AI Agent Update:</b><br>{{ai_summary}}', required: true },
+      ]},
+      { id: 'move_item', name: 'Move to Group', icon: '📦', description: 'Move item to different group', fields: [
+        { key: 'itemId', label: 'Item ID', type: 'text', placeholder: '{{item_id}}', required: true },
+        { key: 'groupId', label: 'Target Group ID', type: 'text', placeholder: 'completed_group', required: true },
+      ]},
+    ],
+    aiInstructions: 'Create items with all relevant columns filled. Update status based on conversation progress.',
+  },
+
+  clickup: {
+    triggers: [
+      { id: 'task_created', name: 'Task Created', icon: '➕', description: 'When new task is created', dataFields: ['task_id', 'name', 'description', 'status', 'list_id', 'assignees'] },
+      { id: 'task_updated', name: 'Task Updated', icon: '✏️', description: 'When task is modified', dataFields: ['task_id', 'name', 'changed_fields'] },
+      { id: 'task_status_changed', name: 'Status Changed', icon: '🔄', description: 'When task status changes', dataFields: ['task_id', 'task_name', 'old_status', 'new_status'] },
+      { id: 'task_completed', name: 'Task Completed', icon: '✅', description: 'When task is marked done', dataFields: ['task_id', 'task_name', 'completed_by'] },
+      { id: 'comment_added', name: 'Comment Added', icon: '💬', description: 'When comment is added', dataFields: ['task_id', 'comment_text', 'author'] },
+    ],
+    actions: [
+      { id: 'create_task', name: 'Create Task', icon: '➕', description: 'Create new ClickUp task', fields: [
+        { key: 'listId', label: 'List ID', type: 'text', placeholder: 'List ID from ClickUp', required: true },
+        { key: 'name', label: 'Task Name', type: 'text', placeholder: '{{customer_name}} - {{request_type}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '## Contact Info\n- **Phone:** {{customer_phone}}\n- **Email:** {{customer_email}}\n\n## Details\n{{message}}' },
+        { key: 'status', label: 'Status', type: 'text', placeholder: 'to do', default: 'to do' },
+        { key: 'priority', label: 'Priority (1-4)', type: 'number', placeholder: '3', helpText: '1=Urgent, 2=High, 3=Normal, 4=Low' },
+        { key: 'dueDate', label: 'Due Date (timestamp)', type: 'text', placeholder: '{{due_timestamp}}' },
+        { key: 'assignees', label: 'Assignee User IDs', type: 'text', placeholder: 'user_id1,user_id2', helpText: 'Comma-separated' },
+      ]},
+      { id: 'update_task', name: 'Update Task', icon: '✏️', description: 'Update task details', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'name', label: 'New Name', type: 'text', placeholder: '{{updated_name}}' },
+        { key: 'description', label: 'New Description', type: 'textarea', placeholder: '{{updated_description}}' },
+        { key: 'status', label: 'New Status', type: 'text', placeholder: 'in progress' },
+        { key: 'priority', label: 'Priority (1-4)', type: 'number', placeholder: '2' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Add comment to task', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'commentText', label: 'Comment', type: 'textarea', placeholder: '**Update:** {{ai_summary}}', required: true },
+      ]},
+      { id: 'change_status', name: 'Change Status', icon: '🔄', description: 'Update task status', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'status', label: 'New Status', type: 'text', placeholder: 'complete', required: true },
+      ]},
+      { id: 'add_checklist', name: 'Add Checklist', icon: '☑️', description: 'Add checklist to task', fields: [
+        { key: 'taskId', label: 'Task ID', type: 'text', placeholder: '{{task_id}}', required: true },
+        { key: 'name', label: 'Checklist Name', type: 'text', placeholder: 'Follow-up Steps', required: true },
+        { key: 'items', label: 'Items (one per line)', type: 'textarea', placeholder: 'Send quote\nSchedule call\nFollow up in 3 days' },
+      ]},
+    ],
+    aiInstructions: 'Create detailed tasks with proper status and priority. Add checklists for multi-step processes.',
+  },
+
+  calendly: {
+    triggers: [
+      { id: 'event_scheduled', name: 'Event Scheduled', icon: '📅', description: 'When meeting is booked', dataFields: ['event_id', 'event_type', 'invitee_name', 'invitee_email', 'start_time', 'end_time', 'location', 'questions_answers'] },
+      { id: 'event_cancelled', name: 'Event Cancelled', icon: '❌', description: 'When meeting is cancelled', dataFields: ['event_id', 'invitee_name', 'invitee_email', 'cancel_reason', 'cancelled_by'] },
+      { id: 'event_rescheduled', name: 'Event Rescheduled', icon: '🔄', description: 'When meeting is rescheduled', dataFields: ['event_id', 'invitee_name', 'old_time', 'new_time'] },
+    ],
+    actions: [
+      { id: 'get_scheduling_link', name: 'Get Scheduling Link', icon: '🔗', description: 'Get Calendly booking link', fields: [
+        { key: 'eventTypeSlug', label: 'Event Type Slug', type: 'text', placeholder: '30min-meeting', required: true, helpText: 'From your Calendly event URL' },
+        { key: 'prefillName', label: 'Prefill Name', type: 'text', placeholder: '{{customer_name}}' },
+        { key: 'prefillEmail', label: 'Prefill Email', type: 'email', placeholder: '{{customer_email}}' },
+      ]},
+      { id: 'cancel_event', name: 'Cancel Event', icon: '❌', description: 'Cancel scheduled event', fields: [
+        { key: 'eventUuid', label: 'Event UUID', type: 'text', placeholder: '{{event_id}}', required: true },
+        { key: 'reason', label: 'Cancellation Reason', type: 'text', placeholder: 'Customer requested reschedule' },
+      ]},
+      { id: 'list_events', name: 'List Events', icon: '📋', description: 'Get scheduled events', fields: [
+        { key: 'inviteeEmail', label: 'Invitee Email', type: 'email', placeholder: '{{customer_email}}' },
+        { key: 'status', label: 'Status', type: 'select', options: ['active', 'canceled'], default: 'active' },
+        { key: 'maxResults', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+      ]},
+    ],
+    aiInstructions: 'Share booking links proactively. Confirm meeting details after scheduling.',
+  },
+
+  // ==================== DEVELOPER TOOLS ====================
+  webhook: {
+    triggers: [
+      { id: 'webhook_received', name: 'Webhook Received', icon: '📩', description: 'When data is received', dataFields: ['headers', 'body', 'method', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'send_webhook', name: 'Send Webhook', icon: '🔗', description: 'POST data to URL', fields: [
+        { key: 'url', label: 'Webhook URL', type: 'text', placeholder: 'https://your-endpoint.com/webhook', required: true },
+        { key: 'method', label: 'HTTP Method', type: 'select', options: ['POST', 'PUT', 'PATCH'], default: 'POST' },
+        { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer {{token}}"}' },
+        { key: 'body', label: 'Request Body (JSON)', type: 'textarea', placeholder: '{\n  "event": "new_lead",\n  "data": {\n    "name": "{{customer_name}}",\n    "phone": "{{customer_phone}}",\n    "email": "{{customer_email}}",\n    "message": "{{message}}"\n  },\n  "timestamp": "{{timestamp}}"\n}', required: true },
+      ]},
+      { id: 'send_get', name: 'GET Request', icon: '🌐', description: 'Send GET request', fields: [
+        { key: 'url', label: 'URL', type: 'text', placeholder: 'https://api.example.com/data?email={{customer_email}}', required: true },
+        { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{"Authorization": "Bearer {{token}}"}' },
+      ]},
+    ],
+    aiInstructions: 'Format JSON properly. Include appropriate headers for authentication.',
+  },
+
+  custom_api: {
+    triggers: [
+      { id: 'api_response', name: 'API Response', icon: '📩', description: 'When API returns data', dataFields: ['status_code', 'headers', 'body', 'endpoint'] },
+    ],
+    actions: [
+      { id: 'call_api', name: 'Call REST API', icon: '🌐', description: 'Make HTTP request', fields: [
+        { key: 'url', label: 'API Endpoint', type: 'text', placeholder: 'https://api.example.com/v1/resource', required: true },
+        { key: 'method', label: 'HTTP Method', type: 'select', options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], default: 'GET', required: true },
+        { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer {{api_key}}",\n  "X-Custom-Header": "value"\n}' },
+        { key: 'body', label: 'Request Body (JSON)', type: 'textarea', placeholder: '{\n  "field1": "{{value1}}",\n  "field2": "{{value2}}"\n}', helpText: 'Only for POST, PUT, PATCH' },
+        { key: 'queryParams', label: 'Query Parameters', type: 'textarea', placeholder: 'param1={{value1}}&param2={{value2}}', helpText: 'Will be appended to URL' },
+      ]},
+      { id: 'call_with_auth', name: 'Call with Basic Auth', icon: '🔐', description: 'API call with basic auth', fields: [
+        { key: 'url', label: 'API Endpoint', type: 'text', placeholder: 'https://api.example.com/resource', required: true },
+        { key: 'method', label: 'HTTP Method', type: 'select', options: ['GET', 'POST', 'PUT', 'DELETE'], default: 'GET' },
+        { key: 'username', label: 'Username', type: 'text', placeholder: '{{api_username}}', required: true },
+        { key: 'password', label: 'Password', type: 'text', placeholder: '{{api_password}}', required: true },
+        { key: 'body', label: 'Request Body', type: 'textarea', placeholder: '{}' },
+      ]},
+    ],
+    aiInstructions: 'Use appropriate HTTP methods. Handle errors gracefully. Validate responses.',
+  },
+
+  graphql: {
+    triggers: [
+      { id: 'subscription_data', name: 'Subscription Data', icon: '📩', description: 'When subscription receives data', dataFields: ['operation', 'data', 'timestamp'] },
+    ],
+    actions: [
+      { id: 'query', name: 'Execute Query', icon: '🔍', description: 'Run GraphQL query', fields: [
+        { key: 'endpoint', label: 'GraphQL Endpoint', type: 'text', placeholder: 'https://api.example.com/graphql', required: true },
+        { key: 'query', label: 'Query', type: 'textarea', placeholder: 'query GetUser($email: String!) {\n  user(email: $email) {\n    id\n    name\n    email\n  }\n}', required: true },
+        { key: 'variables', label: 'Variables (JSON)', type: 'textarea', placeholder: '{"email": "{{customer_email}}"}' },
+        { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{"Authorization": "Bearer {{token}}"}' },
+      ]},
+      { id: 'mutation', name: 'Execute Mutation', icon: '✏️', description: 'Run GraphQL mutation', fields: [
+        { key: 'endpoint', label: 'GraphQL Endpoint', type: 'text', placeholder: 'https://api.example.com/graphql', required: true },
+        { key: 'mutation', label: 'Mutation', type: 'textarea', placeholder: 'mutation CreateUser($input: UserInput!) {\n  createUser(input: $input) {\n    id\n    name\n  }\n}', required: true },
+        { key: 'variables', label: 'Variables (JSON)', type: 'textarea', placeholder: '{"input": {"name": "{{customer_name}}", "email": "{{customer_email}}"}}', required: true },
+        { key: 'headers', label: 'Headers (JSON)', type: 'textarea', placeholder: '{"Authorization": "Bearer {{token}}"}' },
+      ]},
+    ],
+    aiInstructions: 'Write efficient queries requesting only needed fields. Use variables for dynamic data.',
+  },
+
+  github: {
+    triggers: [
+      { id: 'issue_opened', name: 'Issue Opened', icon: '➕', description: 'When new issue is created', dataFields: ['issue_number', 'title', 'body', 'author', 'labels', 'repo'] },
+      { id: 'issue_closed', name: 'Issue Closed', icon: '✅', description: 'When issue is closed', dataFields: ['issue_number', 'title', 'closed_by', 'repo'] },
+      { id: 'pr_opened', name: 'PR Opened', icon: '🔀', description: 'When pull request is opened', dataFields: ['pr_number', 'title', 'author', 'branch', 'repo'] },
+      { id: 'pr_merged', name: 'PR Merged', icon: '✅', description: 'When PR is merged', dataFields: ['pr_number', 'title', 'merged_by', 'repo'] },
+      { id: 'comment_created', name: 'Comment Created', icon: '💬', description: 'When comment is added', dataFields: ['issue_number', 'comment_body', 'author'] },
+      { id: 'push', name: 'Push Event', icon: '📤', description: 'When code is pushed', dataFields: ['ref', 'commits', 'pusher', 'repo'] },
+    ],
+    actions: [
+      { id: 'create_issue', name: 'Create Issue', icon: '➕', description: 'Create GitHub issue', fields: [
+        { key: 'owner', label: 'Repo Owner', type: 'text', placeholder: 'username or org', required: true },
+        { key: 'repo', label: 'Repository', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'title', label: 'Issue Title', type: 'text', placeholder: '[{{customer_name}}] {{issue_summary}}', required: true },
+        { key: 'body', label: 'Issue Body', type: 'textarea', placeholder: '## Customer Details\n- **Name:** {{customer_name}}\n- **Email:** {{customer_email}}\n\n## Issue Description\n{{message}}' },
+        { key: 'labels', label: 'Labels', type: 'text', placeholder: 'bug,customer-report', helpText: 'Comma-separated' },
+        { key: 'assignees', label: 'Assignees', type: 'text', placeholder: 'username1,username2', helpText: 'Comma-separated usernames' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Comment on issue/PR', fields: [
+        { key: 'owner', label: 'Repo Owner', type: 'text', placeholder: 'username or org', required: true },
+        { key: 'repo', label: 'Repository', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'issueNumber', label: 'Issue/PR Number', type: 'number', placeholder: '{{issue_number}}', required: true },
+        { key: 'body', label: 'Comment', type: 'textarea', placeholder: '**AI Agent Update:**\n{{ai_summary}}', required: true },
+      ]},
+      { id: 'close_issue', name: 'Close Issue', icon: '✅', description: 'Close an issue', fields: [
+        { key: 'owner', label: 'Repo Owner', type: 'text', placeholder: 'username', required: true },
+        { key: 'repo', label: 'Repository', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'issueNumber', label: 'Issue Number', type: 'number', placeholder: '{{issue_number}}', required: true },
+      ]},
+      { id: 'add_labels', name: 'Add Labels', icon: '🏷️', description: 'Add labels to issue', fields: [
+        { key: 'owner', label: 'Repo Owner', type: 'text', placeholder: 'username', required: true },
+        { key: 'repo', label: 'Repository', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'issueNumber', label: 'Issue Number', type: 'number', placeholder: '{{issue_number}}', required: true },
+        { key: 'labels', label: 'Labels to Add', type: 'text', placeholder: 'in-progress,priority-high', required: true },
+      ]},
+      { id: 'create_gist', name: 'Create Gist', icon: '📝', description: 'Create code snippet', fields: [
+        { key: 'description', label: 'Description', type: 'text', placeholder: 'Code from {{customer_name}}' },
+        { key: 'filename', label: 'Filename', type: 'text', placeholder: 'snippet.js', required: true },
+        { key: 'content', label: 'Content', type: 'textarea', placeholder: '{{code_content}}', required: true },
+        { key: 'public', label: 'Public', type: 'select', options: ['true', 'false'], default: 'false' },
+      ]},
+    ],
+    aiInstructions: 'Create well-formatted issues with proper markdown. Use appropriate labels for categorization.',
+  },
+};
+
+// Extract actions from comprehensive integrations for the form
+const integrationActions: Record<string, any[]> = {};
+Object.entries(comprehensiveIntegrations).forEach(([key, config]) => {
+  integrationActions[key] = config.actions || [];
+});
+
+// Old format actions for backward compatibility
+const legacyActions: Record<string, any[]> = {
   outlook: [
     { id: 'send_email', name: 'Send Email', icon: '📧', description: 'Send an email', templates: [
       { key: 'to', label: 'To Email', type: 'text', placeholder: '{{customer_email}}' },
@@ -1641,6 +3970,13 @@ const integrationActions: Record<string, Array<{
   ],
 };
 
+// Merge legacy actions into integrationActions
+Object.entries(legacyActions).forEach(([key, actions]) => {
+  if (!integrationActions[key]) {
+    integrationActions[key] = actions;
+  }
+});
+
 // Available template variables with descriptions
 const templateVariables = [
   { var: '{{customer_name}}', desc: 'Customer full name' },
@@ -1654,7 +3990,471 @@ const templateVariables = [
   { var: '{{amount}}', desc: 'Order/payment amount' },
   { var: '{{order_id}}', desc: 'Order ID' },
   { var: '{{timestamp}}', desc: 'Current timestamp' },
+  { var: '{{ai_response}}', desc: 'AI generated response' },
+  { var: '{{ai_summary}}', desc: 'AI conversation summary' },
 ];
+
+// ============= QUICK SETUP TEMPLATES =============
+// Pre-configured templates for common use cases - users just select and go!
+interface QuickSetupTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  integrationId: string;
+  trigger: string;
+  action: string;
+  aiInstructions: string;
+  prefilledConfig: Record<string, string>;
+  prefilledActionConfig: Record<string, string>;
+}
+
+const quickSetupTemplates: QuickSetupTemplate[] = [
+  // 🔥 LEAD CAPTURE
+  {
+    id: 'lead_to_sheets',
+    name: 'Lead → Google Sheets',
+    description: 'Automatically save all new leads to a Google Sheet',
+    icon: '📊',
+    category: 'Lead Capture',
+    integrationId: 'google_sheets',
+    trigger: 'lead_captured',
+    action: 'append_row',
+    aiInstructions: 'Extract customer details and format consistently',
+    prefilledConfig: {},
+    prefilledActionConfig: { 
+      sheetName: 'Leads',
+      values: '{{customer_name}}, {{customer_email}}, {{customer_phone}}, {{message}}, {{timestamp}}'
+    },
+  },
+  {
+    id: 'lead_to_hubspot',
+    name: 'Lead → HubSpot CRM',
+    description: 'Create HubSpot contact for every new lead',
+    icon: '🧲',
+    category: 'Lead Capture',
+    integrationId: 'hubspot',
+    trigger: 'lead_captured',
+    action: 'create_contact',
+    aiInstructions: 'Qualify the lead and set appropriate lifecycle stage',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      lifecyclestage: 'lead',
+    },
+  },
+  {
+    id: 'lead_to_airtable',
+    name: 'Lead → Airtable',
+    description: 'Store leads in your Airtable base',
+    icon: '📑',
+    category: 'Lead Capture',
+    integrationId: 'airtable',
+    trigger: 'lead_captured',
+    action: 'create_record',
+    aiInstructions: 'Capture all relevant lead information',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      fields: '{"Name": "{{customer_name}}", "Email": "{{customer_email}}", "Phone": "{{customer_phone}}", "Message": "{{message}}", "Status": "New"}',
+    },
+  },
+  {
+    id: 'lead_to_notion',
+    name: 'Lead → Notion Database',
+    description: 'Add leads to your Notion CRM database',
+    icon: '📓',
+    category: 'Lead Capture',
+    integrationId: 'notion',
+    trigger: 'lead_captured',
+    action: 'add_database_item',
+    aiInstructions: 'Organize lead information in Notion format',
+    prefilledConfig: {},
+    prefilledActionConfig: {},
+  },
+  {
+    id: 'lead_to_slack',
+    name: 'Lead → Slack Alert',
+    description: 'Get instant Slack notification for new leads',
+    icon: '💼',
+    category: 'Lead Capture',
+    integrationId: 'slack',
+    trigger: 'lead_captured',
+    action: 'send_message',
+    aiInstructions: 'Format lead details in a clear, actionable message',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '🎯 *New Lead!*\n\n*Name:* {{customer_name}}\n*Phone:* {{customer_phone}}\n*Email:* {{customer_email}}\n\n*Message:* {{message}}',
+    },
+  },
+
+  // 📅 APPOINTMENTS
+  {
+    id: 'booking_to_calendar',
+    name: 'Booking → Google Calendar',
+    description: 'Auto-create calendar events for appointments',
+    icon: '📅',
+    category: 'Appointments',
+    integrationId: 'google_calendar',
+    trigger: 'appointment_booked',
+    action: 'create_event',
+    aiInstructions: 'Create professional calendar events with clear details',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      duration: '30',
+    },
+  },
+  {
+    id: 'booking_whatsapp_confirm',
+    name: 'Booking → WhatsApp Confirmation',
+    description: 'Send booking confirmation via WhatsApp',
+    icon: '💬',
+    category: 'Appointments',
+    integrationId: 'whatsapp',
+    trigger: 'appointment_booked',
+    action: 'send_message',
+    aiInstructions: 'Send friendly, professional booking confirmation',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '✅ Your appointment is confirmed!\n\n📅 Date: {{date}}\n⏰ Time: {{time}}\n\nWe look forward to seeing you!',
+    },
+  },
+  {
+    id: 'booking_to_email',
+    name: 'Booking → Email Confirmation',
+    description: 'Send email confirmation for appointments',
+    icon: '📧',
+    category: 'Appointments',
+    integrationId: 'gmail',
+    trigger: 'appointment_booked',
+    action: 'send_email',
+    aiInstructions: 'Send professional email confirmation with all details',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      subject: 'Appointment Confirmed - {{date}}',
+      body: 'Dear {{customer_name}},\n\nYour appointment has been confirmed.\n\nDate: {{date}}\nTime: {{time}}\n\nBest regards',
+    },
+  },
+  {
+    id: 'reminder_whatsapp',
+    name: 'Reminder → WhatsApp',
+    description: 'Send appointment reminders via WhatsApp',
+    icon: '⏰',
+    category: 'Appointments',
+    integrationId: 'whatsapp',
+    trigger: 'appointment_reminder',
+    action: 'send_message',
+    aiInstructions: 'Send friendly reminder with appointment details',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '⏰ Reminder: You have an appointment tomorrow!\n\n📅 {{date}} at {{time}}\n\nReply YES to confirm or RESCHEDULE to change.',
+    },
+  },
+
+  // 🛒 E-COMMERCE
+  {
+    id: 'order_to_sheets',
+    name: 'Order → Google Sheets',
+    description: 'Log all orders to a Google Sheet',
+    icon: '🛒',
+    category: 'E-commerce',
+    integrationId: 'google_sheets',
+    trigger: 'order_placed',
+    action: 'append_row',
+    aiInstructions: 'Record order details for tracking and reporting',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      sheetName: 'Orders',
+      values: '{{order_id}}, {{customer_name}}, {{customer_email}}, {{amount}}, {{timestamp}}',
+    },
+  },
+  {
+    id: 'order_whatsapp_confirm',
+    name: 'Order → WhatsApp Confirmation',
+    description: 'Send order confirmation via WhatsApp',
+    icon: '📦',
+    category: 'E-commerce',
+    integrationId: 'whatsapp',
+    trigger: 'order_placed',
+    action: 'send_message',
+    aiInstructions: 'Send friendly order confirmation with details',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '🛒 Order Confirmed!\n\nOrder #{{order_id}}\nAmount: {{amount}}\n\nThank you for your purchase, {{customer_name}}!',
+    },
+  },
+  {
+    id: 'payment_to_slack',
+    name: 'Payment → Slack Alert',
+    description: 'Get Slack notification for every payment',
+    icon: '💰',
+    category: 'E-commerce',
+    integrationId: 'slack',
+    trigger: 'payment_received',
+    action: 'send_message',
+    aiInstructions: 'Format payment notification clearly',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '💰 *Payment Received!*\n\nFrom: {{customer_name}}\nAmount: {{amount}}\nOrder: #{{order_id}}',
+    },
+  },
+  {
+    id: 'payment_stripe_link',
+    name: 'Invoice → Stripe Payment Link',
+    description: 'Send Stripe payment links for invoices',
+    icon: '💳',
+    category: 'E-commerce',
+    integrationId: 'stripe',
+    trigger: 'invoice_sent',
+    action: 'create_payment_link',
+    aiInstructions: 'Generate secure payment links for customers',
+    prefilledConfig: {},
+    prefilledActionConfig: {},
+  },
+
+  // 📋 TASK MANAGEMENT
+  {
+    id: 'lead_to_trello',
+    name: 'Lead → Trello Card',
+    description: 'Create Trello card for each new lead',
+    icon: '📋',
+    category: 'Task Management',
+    integrationId: 'trello',
+    trigger: 'lead_captured',
+    action: 'create_card',
+    aiInstructions: 'Create organized cards with all lead details',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      name: '{{customer_name}} - New Lead',
+      description: '**Contact:** {{customer_phone}}\n**Email:** {{customer_email}}\n\n**Message:**\n{{message}}',
+    },
+  },
+  {
+    id: 'lead_to_asana',
+    name: 'Lead → Asana Task',
+    description: 'Create Asana task for follow-up',
+    icon: '✅',
+    category: 'Task Management',
+    integrationId: 'asana',
+    trigger: 'lead_captured',
+    action: 'create_task',
+    aiInstructions: 'Create actionable tasks with clear descriptions',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      name: 'Follow up: {{customer_name}}',
+      notes: '**Contact:** {{customer_phone}}\n**Email:** {{customer_email}}\n\n**Details:**\n{{message}}',
+    },
+  },
+  {
+    id: 'lead_to_clickup',
+    name: 'Lead → ClickUp Task',
+    description: 'Create ClickUp task for new leads',
+    icon: '🎯',
+    category: 'Task Management',
+    integrationId: 'clickup',
+    trigger: 'lead_captured',
+    action: 'create_task',
+    aiInstructions: 'Create detailed tasks with proper priority',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      priority: '3',
+      status: 'to do',
+    },
+  },
+  {
+    id: 'support_to_jira',
+    name: 'Support → Jira Ticket',
+    description: 'Create Jira issue for support requests',
+    icon: '🎫',
+    category: 'Task Management',
+    integrationId: 'jira',
+    trigger: 'message_received',
+    action: 'create_issue',
+    aiInstructions: 'Create well-structured support tickets',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      issueType: 'Support',
+      priority: 'Medium',
+    },
+  },
+
+  // 🔔 NOTIFICATIONS
+  {
+    id: 'message_to_email',
+    name: 'Message → Email Alert',
+    description: 'Get email for every customer message',
+    icon: '📬',
+    category: 'Notifications',
+    integrationId: 'gmail',
+    trigger: 'message_received',
+    action: 'send_email',
+    aiInstructions: 'Forward important messages with context',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      subject: 'New Message from {{customer_name}}',
+      body: 'You received a new message:\n\nFrom: {{customer_name}}\nPhone: {{customer_phone}}\n\nMessage:\n{{message}}',
+    },
+  },
+  {
+    id: 'message_to_telegram',
+    name: 'Message → Telegram Alert',
+    description: 'Forward messages to Telegram',
+    icon: '✈️',
+    category: 'Notifications',
+    integrationId: 'telegram',
+    trigger: 'message_received',
+    action: 'send_message',
+    aiInstructions: 'Format messages for Telegram with emojis',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '📩 *New Message*\n\nFrom: {{customer_name}}\n📱 {{customer_phone}}\n\n{{message}}',
+      parseMode: 'Markdown',
+    },
+  },
+  {
+    id: 'message_to_discord',
+    name: 'Message → Discord Alert',
+    description: 'Send notifications to Discord channel',
+    icon: '🎮',
+    category: 'Notifications',
+    integrationId: 'discord',
+    trigger: 'message_received',
+    action: 'send_message',
+    aiInstructions: 'Format for Discord with markdown',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '**📩 New Message**\n\nFrom: {{customer_name}}\nPhone: {{customer_phone}}\n\n> {{message}}',
+    },
+  },
+  {
+    id: 'message_to_teams',
+    name: 'Message → Teams Alert',
+    description: 'Send notifications to Microsoft Teams',
+    icon: '💼',
+    category: 'Notifications',
+    integrationId: 'microsoft_teams',
+    trigger: 'message_received',
+    action: 'send_message',
+    aiInstructions: 'Format professionally for Teams',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      message: '**New Customer Message**\n\n- **From:** {{customer_name}}\n- **Phone:** {{customer_phone}}\n\n**Message:**\n{{message}}',
+    },
+  },
+
+  // 🤖 AUTOMATION
+  {
+    id: 'lead_to_zapier',
+    name: 'Lead → Zapier',
+    description: 'Send leads to Zapier for custom workflows',
+    icon: '⚡',
+    category: 'Automation',
+    integrationId: 'zapier',
+    trigger: 'lead_captured',
+    action: 'trigger_zap',
+    aiInstructions: 'Format data properly for Zapier',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      data: '{"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}", "message": "{{message}}"}',
+    },
+  },
+  {
+    id: 'lead_to_make',
+    name: 'Lead → Make (Integromat)',
+    description: 'Trigger Make scenarios for leads',
+    icon: '🔄',
+    category: 'Automation',
+    integrationId: 'make',
+    trigger: 'lead_captured',
+    action: 'trigger_scenario',
+    aiInstructions: 'Structure data for Make scenarios',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      eventType: 'new_lead',
+    },
+  },
+  {
+    id: 'order_to_webhook',
+    name: 'Order → Custom Webhook',
+    description: 'Send orders to your custom endpoint',
+    icon: '🔗',
+    category: 'Automation',
+    integrationId: 'webhook',
+    trigger: 'order_placed',
+    action: 'send_webhook',
+    aiInstructions: 'Send complete order data',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      method: 'POST',
+      body: '{"event": "order_placed", "order_id": "{{order_id}}", "customer": {"name": "{{customer_name}}", "email": "{{customer_email}}", "phone": "{{customer_phone}}"}, "amount": "{{amount}}"}',
+    },
+  },
+
+  // 📁 FILE & DOCS
+  {
+    id: 'lead_to_drive',
+    name: 'Lead → Google Drive Folder',
+    description: 'Create Drive folder for each lead',
+    icon: '📁',
+    category: 'File Management',
+    integrationId: 'google_drive',
+    trigger: 'lead_captured',
+    action: 'create_folder',
+    aiInstructions: 'Organize lead documents in folders',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      folderName: '{{customer_name}} - {{timestamp}}',
+    },
+  },
+  {
+    id: 'lead_to_docs',
+    name: 'Lead → Google Doc',
+    description: 'Create detailed lead document',
+    icon: '📝',
+    category: 'File Management',
+    integrationId: 'google_docs',
+    trigger: 'lead_captured',
+    action: 'create_doc',
+    aiInstructions: 'Create well-formatted lead document',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      title: 'Lead - {{customer_name}}',
+      content: '# Lead Details\n\n## Contact Information\n- **Name:** {{customer_name}}\n- **Email:** {{customer_email}}\n- **Phone:** {{customer_phone}}\n\n## Message\n{{message}}\n\n## Notes\n_Add follow-up notes here_',
+    },
+  },
+
+  // 💌 EMAIL MARKETING
+  {
+    id: 'lead_to_mailchimp',
+    name: 'Lead → Mailchimp List',
+    description: 'Add leads to Mailchimp audience',
+    icon: '🐵',
+    category: 'Email Marketing',
+    integrationId: 'mailchimp',
+    trigger: 'lead_captured',
+    action: 'add_subscriber',
+    aiInstructions: 'Add subscribers with proper tags',
+    prefilledConfig: {},
+    prefilledActionConfig: {
+      tags: 'lead, whatsapp',
+    },
+  },
+  {
+    id: 'lead_to_sendgrid',
+    name: 'Lead → SendGrid Contact',
+    description: 'Add leads to SendGrid contact list',
+    icon: '📤',
+    category: 'Email Marketing',
+    integrationId: 'sendgrid',
+    trigger: 'lead_captured',
+    action: 'add_contact',
+    aiInstructions: 'Add contacts with relevant fields',
+    prefilledConfig: {},
+    prefilledActionConfig: {},
+  },
+];
+
+// Group templates by category
+const templateCategories = [...new Set(quickSetupTemplates.map(t => t.category))];
 
 // Dynamic Integration Configuration Form
 function IntegrationConfigForm({
@@ -1671,6 +4471,8 @@ function IntegrationConfigForm({
   isLoading: boolean;
 }) {
   const [step, setStep] = useState(1);
+  const [setupMode, setSetupMode] = useState<'quick' | 'custom'>('quick');
+  const [selectedTemplate, setSelectedTemplate] = useState<QuickSetupTemplate | null>(null);
   const [name, setName] = useState(integrationType.name);
   const [description, setDescription] = useState('');
   const [agentId, setAgentId] = useState<string>('');
@@ -1678,8 +4480,26 @@ function IntegrationConfigForm({
   const [selectedAction, setSelectedAction] = useState<string>('');
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
+  const [aiInstructions, setAiInstructions] = useState<string>('');
 
   const actions = integrationActions[integrationType.id] || [];
+  
+  // Get templates for this integration
+  const availableTemplates = quickSetupTemplates.filter(t => t.integrationId === integrationType.id);
+
+  // Apply template when selected
+  const applyTemplate = (template: QuickSetupTemplate) => {
+    setSelectedTemplate(template);
+    setName(template.name);
+    setDescription(template.description);
+    setSelectedAction(template.action);
+    setSelectedTriggers([template.trigger]);
+    setAiInstructions(template.aiInstructions);
+    setActionConfig(template.prefilledActionConfig);
+    if (Object.keys(template.prefilledConfig).length > 0) {
+      setConfig(template.prefilledConfig);
+    }
+  };
 
   // Field configurations for different integration types
   const fieldConfigs: Record<string, Array<{ key: string; label: string; type: string; placeholder: string; required?: boolean; helpText?: string }>> = {
@@ -1913,7 +4733,7 @@ function IntegrationConfigForm({
       name,
       description,
       agentId: agentId || null,
-      config: { ...config, action: selectedAction, actionTemplates: actionConfig },
+      config: { ...config, action: selectedAction, actionTemplates: actionConfig, aiInstructions },
       triggers: selectedTriggers.map(event => ({ event })),
     });
   };
@@ -1928,7 +4748,7 @@ function IntegrationConfigForm({
       {/* Progress Steps */}
       <div className="flex items-center justify-between mb-6">
         {[
-          { num: 1, label: 'Basics' },
+          { num: 1, label: 'Setup' },
           { num: 2, label: 'Connect' },
           { num: 3, label: 'Action' },
           { num: 4, label: 'Triggers' },
@@ -1948,10 +4768,10 @@ function IntegrationConfigForm({
         ))}
       </div>
 
-      {/* Step 1: Basic Info */}
+      {/* Step 1: Quick Setup or Custom */}
       {step === 1 && (
         <div className="space-y-4">
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <div className={`w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl ${integrationType.categoryColor} text-white`}>
               {integrationType.icon}
             </div>
@@ -1959,38 +4779,91 @@ function IntegrationConfigForm({
             <p className="text-sm text-muted-foreground">{integrationType.description}</p>
           </div>
 
-          <div>
-            <Label>Integration Name *</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={`My ${integrationType.name} Integration`}
-            />
-          </div>
-
-          <div>
-            <Label>Description (optional)</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What will this integration do?"
-              rows={2}
-            />
-          </div>
-
-          <div>
-            <Label>Link to Agent</Label>
-            <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="All agents (global)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Agents (Global)</SelectItem>
-                {agents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+          {/* Quick Setup Templates (if available) */}
+          {availableTemplates.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm font-medium">Quick Setup Templates</span>
+                <Badge variant="secondary" className="text-xs">One-click setup</Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2 mb-4">
+                {availableTemplates.map((template) => (
+                  <Card 
+                    key={template.id}
+                    className={`cursor-pointer transition-all hover:border-primary ${
+                      selectedTemplate?.id === template.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''
+                    }`}
+                    onClick={() => {
+                      applyTemplate(template);
+                      setSetupMode('quick');
+                    }}
+                  >
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <span className="text-2xl">{template.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{template.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                      </div>
+                      {selectedTemplate?.id === template.id && (
+                        <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
+                    </CardContent>
+                  </Card>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or customize</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Custom Setup Fields */}
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label>Integration Name *</Label>
+              <Input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (selectedTemplate) setSetupMode('custom');
+                }}
+                placeholder={`My ${integrationType.name} Integration`}
+              />
+            </div>
+
+            <div>
+              <Label>Description (optional)</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What will this integration do?"
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <Label>Link to Agent</Label>
+              <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All agents (global)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Agents (Global)</SelectItem>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Which AI agent should use this integration?</p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -2105,49 +4978,115 @@ function IntegrationConfigForm({
             )}
           </div>
 
-          {/* Action Template Configuration */}
-          {currentAction && (
-            <Card className="mt-4">
+          {/* Action Configuration Fields */}
+          {currentAction && (currentAction.fields || currentAction.templates) && (
+            <Card className="mt-4 border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Configure {currentAction.name}
+                  <Settings className="h-4 w-4 text-primary" />
+                  Configure: {currentAction.name}
                 </CardTitle>
                 <CardDescription>
-                  Use variables like {'{{customer_name}}'} for dynamic data
+                  Fill in the fields below. Use variables like {'{{customer_name}}'} for dynamic data
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {currentAction.templates.map((template) => (
-                  <div key={template.key}>
-                    <Label>{template.label}</Label>
-                    {template.type === 'textarea' ? (
+                {(currentAction.fields || currentAction.templates || []).map((field: any) => (
+                  <div key={field.key} className="space-y-1">
+                    <Label className="flex items-center gap-1">
+                      {field.label}
+                      {field.required && <span className="text-red-500">*</span>}
+                    </Label>
+                    
+                    {/* Textarea */}
+                    {field.type === 'textarea' && (
                       <Textarea
-                        value={actionConfig[template.key] || template.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [template.key]: e.target.value })}
-                        placeholder={template.placeholder}
+                        value={actionConfig[field.key] || field.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
                         rows={3}
                         className="font-mono text-sm"
                       />
-                    ) : (
+                    )}
+                    
+                    {/* Select Dropdown */}
+                    {field.type === 'select' && (
+                      <Select 
+                        value={actionConfig[field.key] || field.default || ''} 
+                        onValueChange={(v) => setActionConfig({ ...actionConfig, [field.key]: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={field.placeholder || 'Select...'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(field.options || []).map((opt: string) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    
+                    {/* Number Input */}
+                    {field.type === 'number' && (
                       <Input
-                        value={actionConfig[template.key] || template.default || ''}
-                        onChange={(e) => setActionConfig({ ...actionConfig, [template.key]: e.target.value })}
-                        placeholder={template.placeholder}
+                        type="number"
+                        value={actionConfig[field.key] || field.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
                       />
                     )}
-                    {template.helpText && (
-                      <p className="text-xs text-muted-foreground mt-1">{template.helpText}</p>
+                    
+                    {/* Password Input */}
+                    {field.type === 'password' && (
+                      <Input
+                        type="password"
+                        value={actionConfig[field.key] || field.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                    
+                    {/* Email Input */}
+                    {field.type === 'email' && (
+                      <Input
+                        type="email"
+                        value={actionConfig[field.key] || field.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                    
+                    {/* Default Text Input */}
+                    {(!field.type || field.type === 'text') && (
+                      <Input
+                        type="text"
+                        value={actionConfig[field.key] || field.default || ''}
+                        onChange={(e) => setActionConfig({ ...actionConfig, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                    
+                    {field.helpText && (
+                      <p className="text-xs text-muted-foreground">{field.helpText}</p>
                     )}
                   </div>
                 ))}
 
                 {/* Variable Reference */}
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs font-medium mb-2">📌 Available Variables:</p>
+                <div className="mt-4 p-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-lg border border-primary/10">
+                  <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-purple-500" />
+                    Available Variables (copy & paste):
+                  </p>
                   <div className="flex flex-wrap gap-1">
-                    {templateVariables.slice(0, 6).map((v) => (
-                      <Badge key={v.var} variant="secondary" className="text-xs font-mono cursor-help" title={v.desc}>
+                    {templateVariables.map((v) => (
+                      <Badge 
+                        key={v.var} 
+                        variant="secondary" 
+                        className="text-xs font-mono cursor-pointer hover:bg-primary/20 transition-colors" 
+                        title={v.desc}
+                        onClick={() => navigator.clipboard.writeText(v.var)}
+                      >
                         {v.var}
                       </Badge>
                     ))}
@@ -2210,15 +5149,67 @@ function IntegrationConfigForm({
             </CardContent>
           </Card>
 
-          {/* Summary */}
-          <Card className="bg-muted/30">
+          {/* AI Instructions */}
+          <Card>
             <CardContent className="p-4">
-              <h4 className="font-medium mb-2">📋 Summary</h4>
-              <div className="text-sm space-y-1">
-                <p><span className="text-muted-foreground">Integration:</span> {name}</p>
-                <p><span className="text-muted-foreground">App:</span> {integrationType.name}</p>
-                {currentAction && <p><span className="text-muted-foreground">Action:</span> {currentAction.name}</p>}
-                <p><span className="text-muted-foreground">Triggers:</span> {selectedTriggers.length} selected</p>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                <Label className="font-medium">AI Behavior Instructions</Label>
+                <Badge variant="outline" className="text-xs">Optional</Badge>
+              </div>
+              <Textarea
+                value={aiInstructions}
+                onChange={(e) => setAiInstructions(e.target.value)}
+                placeholder={integrationType.aiInstructions || `Describe how the AI should handle ${integrationType.name} events...\n\nExamples:\n• "Reply to all support emails with helpful responses"\n• "Summarize new messages and send to Slack"\n• "Auto-tag and categorize incoming data"`}
+                rows={4}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Tell the AI how to behave when this integration is triggered. This shapes the AI's responses and actions.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Summary */}
+          <Card className="bg-gradient-to-r from-primary/5 to-purple-500/5 border-primary/20">
+            <CardContent className="p-4">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Integration Summary
+              </h4>
+              <div className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Name:</span>
+                  <span className="font-medium">{name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">App:</span>
+                  <span className="font-medium flex items-center gap-1">
+                    {integrationType.icon} {integrationType.name}
+                  </span>
+                </div>
+                {currentAction && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Action:</span>
+                    <span className="font-medium">{currentAction.name}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Triggers:</span>
+                  <span className="font-medium">{selectedTriggers.length} event{selectedTriggers.length !== 1 ? 's' : ''}</span>
+                </div>
+                {selectedTemplate && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Template:</span>
+                    <Badge variant="secondary" className="text-xs">{selectedTemplate.name}</Badge>
+                  </div>
+                )}
+                {aiInstructions && (
+                  <div className="pt-2 border-t">
+                    <span className="text-muted-foreground text-xs">AI Instructions:</span>
+                    <p className="text-xs mt-1 italic">{aiInstructions.substring(0, 100)}{aiInstructions.length > 100 ? '...' : ''}</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -2227,6 +5218,7 @@ function IntegrationConfigForm({
             <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
             <Button onClick={handleSubmit} disabled={isLoading || !isStep4Valid}>
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Zap className="h-4 w-4 mr-2" />
               Create Integration
             </Button>
           </DialogFooter>
