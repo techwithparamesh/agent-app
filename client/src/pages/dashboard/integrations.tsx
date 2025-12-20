@@ -1574,12 +1574,12 @@ function IntegrationConfigForm({
 
         <div>
           <Label>Link to Agent</Label>
-          <Select value={agentId} onValueChange={setAgentId}>
+          <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="All agents (global)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Agents (Global)</SelectItem>
+              <SelectItem value="all">All Agents (Global)</SelectItem>
               {agents.map((agent) => (
                 <SelectItem key={agent.id} value={agent.id}>
                   {agent.name}
