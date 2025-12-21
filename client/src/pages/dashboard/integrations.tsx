@@ -6159,8 +6159,89 @@ function IntegrationConfigForm({
                 {/* Additional Workflow Steps (after first action or conditional) */}
                 {(selectedAction || (useConditionalLogic && trueAction)) && (
                   <>
-                    <div className="flex justify-center">
-                      <div className="w-0.5 h-6 bg-muted-foreground/30" />
+                    {/* First connector with Insert Button */}
+                    <div className="flex justify-center group/connector relative">
+                      <div className="w-0.5 h-8 bg-muted-foreground/30" />
+                      {/* Insert Step Popover - First Position */}
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/connector:opacity-100 transition-opacity z-10">
+                        <Select
+                          value=""
+                          onValueChange={(value) => {
+                            if (value === '__condition__') {
+                              const newCondition: WorkflowStep = {
+                                id: `condition-${Date.now()}`,
+                                type: 'condition',
+                                conditions: [],
+                                trueBranch: [],
+                                falseBranch: [],
+                                config: {}
+                              };
+                              setWorkflowSteps([newCondition, ...workflowSteps]);
+                            } else if (value === '__delay__') {
+                              const newDelay: WorkflowStep = {
+                                id: `delay-${Date.now()}`,
+                                type: 'delay',
+                                delayAmount: 5,
+                                delayUnit: 'minutes',
+                                config: {}
+                              };
+                              setWorkflowSteps([newDelay, ...workflowSteps]);
+                            } else {
+                              const action = actions.find(a => a.id === value);
+                              if (action) {
+                                const selectedAppData = apps.find(app => 
+                                  app.actions.some(a => a.id === value)
+                                );
+                                const newStep: WorkflowStep = {
+                                  id: `step-${Date.now()}`,
+                                  type: 'action',
+                                  appId: selectedAppData?.id || '',
+                                  appName: selectedAppData?.name || '',
+                                  appIcon: selectedAppData?.icon || '⚡',
+                                  actionId: value,
+                                  actionName: action.name,
+                                  config: {}
+                                };
+                                setWorkflowSteps([newStep, ...workflowSteps]);
+                              }
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-6 w-6 p-0 rounded-full bg-background border-2 border-dashed border-muted-foreground/50 hover:border-primary flex items-center justify-center">
+                            <Plus className="h-3 w-3 text-muted-foreground" />
+                          </SelectTrigger>
+                          <SelectContent align="center">
+                            <SelectItem value="__condition__">
+                              <span className="flex items-center gap-2">
+                                <GitBranch className="h-3 w-3 text-purple-500" />
+                                <span>Add Condition</span>
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="__delay__">
+                              <span className="flex items-center gap-2">
+                                <Clock className="h-3 w-3 text-orange-500" />
+                                <span>Add Delay</span>
+                              </span>
+                            </SelectItem>
+                            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Actions</div>
+                            {apps.map((app) => (
+                              <React.Fragment key={app.id}>
+                                <div className="px-2 py-1 text-[10px] text-muted-foreground/70 flex items-center gap-1">
+                                  <span>{app.icon}</span> {app.name}
+                                </div>
+                                {app.actions.map((action) => (
+                                  <SelectItem key={action.id} value={action.id}>
+                                    <span className="flex items-center gap-2 pl-2">
+                                      <Zap className="h-3 w-3 text-green-500" />
+                                      <span className="text-xs">{action.name}</span>
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     
                     {/* Additional Steps - Actions and Conditions */}
@@ -6285,19 +6366,46 @@ function IntegrationConfigForm({
                                   </div>
                                 ))}
                                 
-                                {/* Add to TRUE Branch */}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 text-[10px] border-dashed border-green-500/50 hover:border-green-500 hover:bg-green-500/10 text-green-600"
-                                  onClick={() => {
-                                    setEditingStepId(wfStep.id);
-                                    setEditingBranch('true');
+                                {/* Add to TRUE Branch - Inline Action Selector */}
+                                <Select
+                                  value=""
+                                  onValueChange={(actionId) => {
+                                    const action = actions.find(a => a.id === actionId);
+                                    if (action) {
+                                      const selectedAppData = apps.find(app => 
+                                        app.actions.some(a => a.id === actionId)
+                                      );
+                                      addStepToBranch(
+                                        wfStep.id, 
+                                        'true', 
+                                        actionId, 
+                                        action.name, 
+                                        selectedAppData?.icon || '⚡'
+                                      );
+                                    }
                                   }}
                                 >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Add Step
-                                </Button>
+                                  <SelectTrigger className="h-8 text-[10px] border-dashed border-green-500/50 hover:border-green-500 bg-green-500/5 text-green-600 w-full">
+                                    <SelectValue placeholder="➕ Add Action..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {apps.map((app) => (
+                                      <React.Fragment key={app.id}>
+                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                                          <span>{app.icon}</span> {app.name}
+                                        </div>
+                                        {app.actions.map((action) => (
+                                          <SelectItem key={action.id} value={action.id}>
+                                            <span className="flex items-center gap-2 pl-4">
+                                              <Zap className="h-3 w-3" />
+                                              <span>{action.name}</span>
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </React.Fragment>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
 
                               {/* FALSE Branch Column */}
@@ -6333,43 +6441,54 @@ function IntegrationConfigForm({
                                   </div>
                                 ))}
                                 
-                                {/* Add to FALSE Branch or Skip */}
-                                {(wfStep.falseBranch || []).length === 0 ? (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-8 text-[10px] border-dashed border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-600"
-                                      onClick={() => {
-                                        setEditingStepId(wfStep.id);
-                                        setEditingBranch('false');
-                                      }}
-                                    >
-                                      <Plus className="h-3 w-3 mr-1" />
-                                      Add
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 text-[10px] text-muted-foreground"
-                                    >
-                                      ⏭ Skip
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 text-[10px] border-dashed border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-600"
-                                    onClick={() => {
-                                      setEditingStepId(wfStep.id);
-                                      setEditingBranch('false');
-                                    }}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Add Step
-                                  </Button>
-                                )}
+                                {/* Add to FALSE Branch - Inline Action Selector */}
+                                <Select
+                                  value=""
+                                  onValueChange={(actionId) => {
+                                    const action = actions.find(a => a.id === actionId);
+                                    if (action) {
+                                      const selectedAppData = apps.find(app => 
+                                        app.actions.some(a => a.id === actionId)
+                                      );
+                                      addStepToBranch(
+                                        wfStep.id, 
+                                        'false', 
+                                        actionId, 
+                                        action.name, 
+                                        selectedAppData?.icon || '⚡'
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-[10px] border-dashed border-red-500/50 hover:border-red-500 bg-red-500/5 text-red-600 w-full">
+                                    <SelectValue placeholder={(wfStep.falseBranch || []).length === 0 ? "➕ Add or Skip..." : "➕ Add Action..."} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {(wfStep.falseBranch || []).length === 0 && (
+                                      <SelectItem value="__skip__" disabled>
+                                        <span className="flex items-center gap-2 text-muted-foreground">
+                                          <span>⏭️</span>
+                                          <span>Leave empty to skip</span>
+                                        </span>
+                                      </SelectItem>
+                                    )}
+                                    {apps.map((app) => (
+                                      <React.Fragment key={app.id}>
+                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                                          <span>{app.icon}</span> {app.name}
+                                        </div>
+                                        {app.actions.map((action) => (
+                                          <SelectItem key={action.id} value={action.id}>
+                                            <span className="flex items-center gap-2 pl-4">
+                                              <Zap className="h-3 w-3" />
+                                              <span>{action.name}</span>
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </React.Fragment>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </div>
                             
@@ -6418,8 +6537,98 @@ function IntegrationConfigForm({
                           </div>
                         )}
 
-                        <div className="flex justify-center">
-                          <div className="w-0.5 h-6 bg-muted-foreground/30" />
+                        {/* Connector with Insert Button */}
+                        <div className="flex justify-center group/connector relative">
+                          <div className="w-0.5 h-8 bg-muted-foreground/30" />
+                          {/* Insert Step Popover */}
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/connector:opacity-100 transition-opacity z-10">
+                            <Select
+                              value=""
+                              onValueChange={(value) => {
+                                if (value === '__condition__') {
+                                  // Insert condition at this position
+                                  const newCondition: WorkflowStep = {
+                                    id: `condition-${Date.now()}`,
+                                    type: 'condition',
+                                    conditions: [],
+                                    trueBranch: [],
+                                    falseBranch: [],
+                                    config: {}
+                                  };
+                                  const newSteps = [...workflowSteps];
+                                  newSteps.splice(index + 1, 0, newCondition);
+                                  setWorkflowSteps(newSteps);
+                                } else if (value === '__delay__') {
+                                  // Insert delay at this position
+                                  const newDelay: WorkflowStep = {
+                                    id: `delay-${Date.now()}`,
+                                    type: 'delay',
+                                    delayAmount: 5,
+                                    delayUnit: 'minutes',
+                                    config: {}
+                                  };
+                                  const newSteps = [...workflowSteps];
+                                  newSteps.splice(index + 1, 0, newDelay);
+                                  setWorkflowSteps(newSteps);
+                                } else {
+                                  // Insert action
+                                  const action = actions.find(a => a.id === value);
+                                  if (action) {
+                                    const selectedAppData = apps.find(app => 
+                                      app.actions.some(a => a.id === value)
+                                    );
+                                    const newStep: WorkflowStep = {
+                                      id: `step-${Date.now()}`,
+                                      type: 'action',
+                                      appId: selectedAppData?.id || '',
+                                      appName: selectedAppData?.name || '',
+                                      appIcon: selectedAppData?.icon || '⚡',
+                                      actionId: value,
+                                      actionName: action.name,
+                                      config: {}
+                                    };
+                                    const newSteps = [...workflowSteps];
+                                    newSteps.splice(index + 1, 0, newStep);
+                                    setWorkflowSteps(newSteps);
+                                  }
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-6 w-6 p-0 rounded-full bg-background border-2 border-dashed border-muted-foreground/50 hover:border-primary flex items-center justify-center">
+                                <Plus className="h-3 w-3 text-muted-foreground" />
+                              </SelectTrigger>
+                              <SelectContent align="center">
+                                <SelectItem value="__condition__">
+                                  <span className="flex items-center gap-2">
+                                    <GitBranch className="h-3 w-3 text-purple-500" />
+                                    <span>Add Condition</span>
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="__delay__">
+                                  <span className="flex items-center gap-2">
+                                    <Clock className="h-3 w-3 text-orange-500" />
+                                    <span>Add Delay</span>
+                                  </span>
+                                </SelectItem>
+                                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Actions</div>
+                                {apps.map((app) => (
+                                  <React.Fragment key={app.id}>
+                                    <div className="px-2 py-1 text-[10px] text-muted-foreground/70 flex items-center gap-1">
+                                      <span>{app.icon}</span> {app.name}
+                                    </div>
+                                    {app.actions.map((action) => (
+                                      <SelectItem key={action.id} value={action.id}>
+                                        <span className="flex items-center gap-2 pl-2">
+                                          <Zap className="h-3 w-3 text-green-500" />
+                                          <span className="text-xs">{action.name}</span>
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </React.Fragment>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </React.Fragment>
                     ))}
@@ -7146,7 +7355,16 @@ function IntegrationConfigForm({
                         onValueChange={(actionId) => {
                           const action = actions.find(a => a.id === actionId);
                           if (action) {
-                            addStepToBranch(editingStep.id, 'true', actionId, action.name, action.icon);
+                            const selectedAppData = apps.find(app => 
+                              app.actions.some(a => a.id === actionId)
+                            );
+                            addStepToBranch(
+                              editingStep.id, 
+                              'true', 
+                              actionId, 
+                              action.name, 
+                              selectedAppData?.icon || '⚡'
+                            );
                           }
                         }}
                       >
@@ -7154,13 +7372,20 @@ function IntegrationConfigForm({
                           <SelectValue placeholder="➕ Add action to TRUE path..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {actions.map((action) => (
-                            <SelectItem key={action.id} value={action.id}>
-                              <span className="flex items-center gap-2">
-                                <span>{action.icon}</span>
-                                <span>{action.name}</span>
-                              </span>
-                            </SelectItem>
+                          {apps.map((app) => (
+                            <React.Fragment key={app.id}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2 bg-muted/50">
+                                <span>{app.icon}</span> {app.name}
+                              </div>
+                              {app.actions.map((action) => (
+                                <SelectItem key={action.id} value={action.id}>
+                                  <span className="flex items-center gap-2 pl-3">
+                                    <Zap className="h-3 w-3 text-green-500" />
+                                    <span>{action.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </React.Fragment>
                           ))}
                         </SelectContent>
                       </Select>
@@ -7208,7 +7433,16 @@ function IntegrationConfigForm({
                         onValueChange={(actionId) => {
                           const action = actions.find(a => a.id === actionId);
                           if (action) {
-                            addStepToBranch(editingStep.id, 'false', actionId, action.name, action.icon);
+                            const selectedAppData = apps.find(app => 
+                              app.actions.some(a => a.id === actionId)
+                            );
+                            addStepToBranch(
+                              editingStep.id, 
+                              'false', 
+                              actionId, 
+                              action.name, 
+                              selectedAppData?.icon || '⚡'
+                            );
                           }
                         }}
                       >
@@ -7222,13 +7456,20 @@ function IntegrationConfigForm({
                               <span>Leave empty to skip</span>
                             </span>
                           </SelectItem>
-                          {actions.map((action) => (
-                            <SelectItem key={action.id} value={action.id}>
-                              <span className="flex items-center gap-2">
-                                <span>{action.icon}</span>
-                                <span>{action.name}</span>
-                              </span>
-                            </SelectItem>
+                          {apps.map((app) => (
+                            <React.Fragment key={app.id}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2 bg-muted/50">
+                                <span>{app.icon}</span> {app.name}
+                              </div>
+                              {app.actions.map((action) => (
+                                <SelectItem key={action.id} value={action.id}>
+                                  <span className="flex items-center gap-2 pl-3">
+                                    <Zap className="h-3 w-3 text-red-500" />
+                                    <span>{action.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </React.Fragment>
                           ))}
                         </SelectContent>
                       </Select>
