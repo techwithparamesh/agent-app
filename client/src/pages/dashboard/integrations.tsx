@@ -5969,14 +5969,18 @@ function IntegrationConfigForm({
 
                 {/* ROW 2: Add Condition or Action */}
                 <div className="flex items-center justify-center gap-4">
-                  {/* Add Node Button */}
-                  {!selectedAction && !useConditionalLogic && (
+                  {/* Add Node Buttons - Show when no action selected and not in adding mode */}
+                  {!selectedAction && !useConditionalLogic && !isAddingStep && (
                     <div className="flex flex-col items-center gap-2">
                       <div className="flex gap-2">
                         <Button 
                           variant="outline" 
-                          className="h-auto py-3 px-4 border-dashed border-2 hover:border-primary hover:bg-primary/5"
-                          onClick={() => setUseConditionalLogic(false)}
+                          className="h-auto py-3 px-4 border-dashed border-2 hover:border-green-500 hover:bg-green-500/5"
+                          onClick={() => {
+                            setIsAddingStep(true);
+                            setAddStepType('action');
+                            setAddStepAppId('');
+                          }}
                         >
                           <div className="flex flex-col items-center gap-1">
                             <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -6000,6 +6004,75 @@ function IntegrationConfigForm({
                       </div>
                       <p className="text-xs text-muted-foreground">Choose what happens next</p>
                     </div>
+                  )}
+
+                  {/* Action Selection Panel - Shows when Add Action is clicked */}
+                  {!selectedAction && !useConditionalLogic && isAddingStep && addStepType === 'action' && (
+                    <Card className="w-full max-w-md border-green-500/30 bg-card/95 backdrop-blur">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-green-500" />
+                            Select Action
+                          </CardTitle>
+                          <Button variant="ghost" size="sm" onClick={() => setIsAddingStep(false)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <CardDescription className="text-xs">Choose an app and action to perform</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {/* App Selection */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Select App</Label>
+                          <Select value={addStepAppId} onValueChange={setAddStepAppId}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Choose an app..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableApps.map(app => (
+                                <SelectItem key={app.id} value={app.id}>
+                                  <span className="flex items-center gap-2">
+                                    <span>{app.icon}</span>
+                                    <span>{app.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Action Selection - Only show after app is selected */}
+                        {addStepAppId && (() => {
+                          const selectedApp = availableApps.find(a => a.id === addStepAppId);
+                          if (!selectedApp) return null;
+                          
+                          return (
+                            <div className="space-y-2">
+                              <Label className="text-xs">Select Action</Label>
+                              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                {selectedApp.actions.map(action => (
+                                  <Button
+                                    key={action.id}
+                                    variant="outline"
+                                    className="h-auto py-2 px-3 justify-start hover:border-green-500 hover:bg-green-500/5"
+                                    onClick={() => {
+                                      setSelectedAction(action.id);
+                                      setIsAddingStep(false);
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Zap className="h-3 w-3 text-green-500" />
+                                      <span className="text-xs truncate">{action.name}</span>
+                                    </div>
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
                   )}
 
                   {/* Condition Node (IF/ELSE) */}
@@ -6189,7 +6262,7 @@ function IntegrationConfigForm({
                             } else {
                               const action = actions.find(a => a.id === value);
                               if (action) {
-                                const selectedAppData = apps.find(app => 
+                                const selectedAppData = availableApps.find(app => 
                                   app.actions.some(a => a.id === value)
                                 );
                                 const newStep: WorkflowStep = {
@@ -6224,7 +6297,7 @@ function IntegrationConfigForm({
                               </span>
                             </SelectItem>
                             <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Actions</div>
-                            {apps.map((app) => (
+                            {availableApps.map((app) => (
                               <React.Fragment key={app.id}>
                                 <div className="px-2 py-1 text-[10px] text-muted-foreground/70 flex items-center gap-1">
                                   <span>{app.icon}</span> {app.name}
@@ -6372,7 +6445,7 @@ function IntegrationConfigForm({
                                   onValueChange={(actionId) => {
                                     const action = actions.find(a => a.id === actionId);
                                     if (action) {
-                                      const selectedAppData = apps.find(app => 
+                                      const selectedAppData = availableApps.find(app => 
                                         app.actions.some(a => a.id === actionId)
                                       );
                                       addStepToBranch(
@@ -6389,7 +6462,7 @@ function IntegrationConfigForm({
                                     <SelectValue placeholder="➕ Add Action..." />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {apps.map((app) => (
+                                    {availableApps.map((app) => (
                                       <React.Fragment key={app.id}>
                                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                                           <span>{app.icon}</span> {app.name}
@@ -6447,7 +6520,7 @@ function IntegrationConfigForm({
                                   onValueChange={(actionId) => {
                                     const action = actions.find(a => a.id === actionId);
                                     if (action) {
-                                      const selectedAppData = apps.find(app => 
+                                      const selectedAppData = availableApps.find(app => 
                                         app.actions.some(a => a.id === actionId)
                                       );
                                       addStepToBranch(
@@ -6472,7 +6545,7 @@ function IntegrationConfigForm({
                                         </span>
                                       </SelectItem>
                                     )}
-                                    {apps.map((app) => (
+                                    {availableApps.map((app) => (
                                       <React.Fragment key={app.id}>
                                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                                           <span>{app.icon}</span> {app.name}
@@ -6574,7 +6647,7 @@ function IntegrationConfigForm({
                                   // Insert action
                                   const action = actions.find(a => a.id === value);
                                   if (action) {
-                                    const selectedAppData = apps.find(app => 
+                                    const selectedAppData = availableApps.find(app => 
                                       app.actions.some(a => a.id === value)
                                     );
                                     const newStep: WorkflowStep = {
@@ -6611,7 +6684,7 @@ function IntegrationConfigForm({
                                   </span>
                                 </SelectItem>
                                 <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Actions</div>
-                                {apps.map((app) => (
+                                {availableApps.map((app) => (
                                   <React.Fragment key={app.id}>
                                     <div className="px-2 py-1 text-[10px] text-muted-foreground/70 flex items-center gap-1">
                                       <span>{app.icon}</span> {app.name}
@@ -7355,7 +7428,7 @@ function IntegrationConfigForm({
                         onValueChange={(actionId) => {
                           const action = actions.find(a => a.id === actionId);
                           if (action) {
-                            const selectedAppData = apps.find(app => 
+                            const selectedAppData = availableApps.find(app => 
                               app.actions.some(a => a.id === actionId)
                             );
                             addStepToBranch(
@@ -7372,7 +7445,7 @@ function IntegrationConfigForm({
                           <SelectValue placeholder="➕ Add action to TRUE path..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {apps.map((app) => (
+                          {availableApps.map((app) => (
                             <React.Fragment key={app.id}>
                               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2 bg-muted/50">
                                 <span>{app.icon}</span> {app.name}
@@ -7433,7 +7506,7 @@ function IntegrationConfigForm({
                         onValueChange={(actionId) => {
                           const action = actions.find(a => a.id === actionId);
                           if (action) {
-                            const selectedAppData = apps.find(app => 
+                            const selectedAppData = availableApps.find(app => 
                               app.actions.some(a => a.id === actionId)
                             );
                             addStepToBranch(
@@ -7456,7 +7529,7 @@ function IntegrationConfigForm({
                               <span>Leave empty to skip</span>
                             </span>
                           </SelectItem>
-                          {apps.map((app) => (
+                          {availableApps.map((app) => (
                             <React.Fragment key={app.id}>
                               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2 bg-muted/50">
                                 <span>{app.icon}</span> {app.name}
