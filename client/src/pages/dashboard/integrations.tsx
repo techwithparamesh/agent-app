@@ -4678,19 +4678,29 @@ function IntegrationConfigForm({
     { id: 'trigger_webhook', name: 'Trigger Webhook', icon: '🔗', description: 'Call a webhook endpoint' },
   ];
   
-  // Get all available apps for adding steps (from comprehensiveIntegrations)
-  // Include ALL apps, not just those with predefined actions
-  const availableApps = Object.entries(comprehensiveIntegrations).map(([id, data]) => {
-    const specificActions = integrationActions[id] || [];
+  // Get ALL integrations from the catalog (flat list)
+  const allCatalogIntegrations = Object.values(integrationCatalog).flatMap(category => 
+    category.integrations.map(int => ({
+      ...int,
+      categoryLabel: category.label,
+    }))
+  );
+  
+  // Get all available apps for adding steps - merge catalog with comprehensiveIntegrations actions
+  const availableApps = allCatalogIntegrations.map(catalogApp => {
+    // Get specific actions from comprehensiveIntegrations if they exist
+    const comprehensiveData = comprehensiveIntegrations[catalogApp.id];
+    const specificActions = comprehensiveData?.actions || integrationActions[catalogApp.id] || [];
+    
     return {
-      id,
-      name: data.name,
-      icon: data.icon,
-      category: data.category,
+      id: catalogApp.id,
+      name: catalogApp.name,
+      icon: catalogApp.icon,
+      category: catalogApp.categoryLabel || catalogApp.category,
       // Use specific actions if available, otherwise provide generic actions
       actions: specificActions.length > 0 ? specificActions : genericActions.map(a => ({
         ...a,
-        description: `${a.description} for ${data.name}`
+        description: `${a.description} for ${catalogApp.name}`
       })),
       hasSpecificActions: specificActions.length > 0,
     };
@@ -4698,11 +4708,10 @@ function IntegrationConfigForm({
 
   // Add a new workflow step
   const addWorkflowStep = (appId: string, actionId: string) => {
-    const app = comprehensiveIntegrations[appId];
     const appData = availableApps.find(a => a.id === appId);
     const action = appData?.actions.find((a: any) => a.id === actionId);
     
-    if (!app || !action) {
+    if (!appData || !action) {
       toast({
         title: "Error",
         description: "Could not add step. Please try again.",
@@ -4714,8 +4723,8 @@ function IntegrationConfigForm({
     const newStep: WorkflowStep = {
       id: `step_${Date.now()}`,
       appId,
-      appName: app.name,
-      appIcon: app.icon,
+      appName: appData.name,
+      appIcon: appData.icon,
       actionId,
       actionName: action.name,
       actionIcon: action.icon,
@@ -4729,7 +4738,7 @@ function IntegrationConfigForm({
     
     toast({
       title: "Step Added",
-      description: `${app.icon} ${action.name} added to workflow`,
+      description: `${appData.icon} ${action.name} added to workflow`,
       duration: 2000,
     });
   };
@@ -6075,28 +6084,17 @@ function IntegrationConfigForm({
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Choose an app..." />
                         </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                          {Object.entries(
-                            availableApps.reduce((acc, app) => {
-                              if (!acc[app.category]) acc[app.category] = [];
-                              acc[app.category].push(app);
-                              return acc;
-                            }, {} as Record<string, typeof availableApps>)
-                          ).map(([category, apps]) => (
-                            <div key={category}>
-                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">{category}</div>
-                              {apps.map(app => (
-                                <SelectItem key={app.id} value={app.id}>
-                                  <span className="flex items-center gap-2">
-                                    <span className="text-base">{app.icon}</span>
-                                    <span>{app.name}</span>
-                                    {!app.hasSpecificActions && (
-                                      <span className="text-[10px] text-muted-foreground">(Generic)</span>
-                                    )}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </div>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
+                          {availableApps.map(app => (
+                            <SelectItem key={app.id} value={app.id}>
+                              <span className="flex items-center gap-2">
+                                <span className="text-base">{app.icon}</span>
+                                <span>{app.name}</span>
+                                {!app.hasSpecificActions && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">Generic</Badge>
+                                )}
+                              </span>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
