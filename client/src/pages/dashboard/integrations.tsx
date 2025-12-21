@@ -4629,10 +4629,11 @@ function IntegrationConfigForm({
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
 
-  // Multi-Step Workflow State - Supports both Actions and Conditions as steps
+  // ============ n8n-STYLE WORKFLOW DATA MODEL ============
+  // Each step is a node in the workflow. Conditions have branches that contain their own steps.
   type WorkflowStep = {
     id: string;
-    type: 'action' | 'condition';
+    type: 'action' | 'condition' | 'delay' | 'loop';
     // For action steps
     appId?: string;
     appName?: string;
@@ -4641,7 +4642,7 @@ function IntegrationConfigForm({
     actionName?: string;
     actionIcon?: string;
     config: Record<string, string>;
-    // For condition steps
+    // For condition steps - TRUE/FALSE branches each have their own workflow
     conditions?: Array<{
       id: string;
       field: string;
@@ -4649,20 +4650,29 @@ function IntegrationConfigForm({
       value: string;
       logicOperator: 'AND' | 'OR';
     }>;
-    trueAction?: string;
-    trueActionConfig?: Record<string, string>;
-    falseAction?: string;
-    falseActionConfig?: Record<string, string>;
+    trueBranch?: WorkflowStep[];  // Steps to execute if TRUE
+    falseBranch?: WorkflowStep[]; // Steps to execute if FALSE
+    // For delay steps
+    delayAmount?: number;
+    delayUnit?: 'seconds' | 'minutes' | 'hours' | 'days';
+    // For loop steps
+    loopType?: 'count' | 'forEach' | 'while';
+    loopCount?: number;
+    loopArray?: string;
+    loopCondition?: string;
+    loopSteps?: WorkflowStep[];
   };
+  
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [isAddingStep, setIsAddingStep] = useState(false);
-  const [addStepType, setAddStepType] = useState<'action' | 'condition' | null>(null);
+  const [addStepType, setAddStepType] = useState<'action' | 'condition' | 'delay' | null>(null);
   const [addStepAppId, setAddStepAppId] = useState<string>('');
   const [addStepActionId, setAddStepActionId] = useState<string>('');
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editingBranch, setEditingBranch] = useState<'true' | 'false' | null>(null); // Which branch we're adding to
   const [aiInstructions, setAiInstructions] = useState<string>('');
   
-  // Conditional Branching State (for first action only)
+  // Legacy Conditional Branching State (for first action - keeping for backward compatibility)
   const [useConditionalLogic, setUseConditionalLogic] = useState(false);
   const [conditions, setConditions] = useState<Array<{
     id: string;
@@ -4815,7 +4825,7 @@ function IntegrationConfigForm({
     });
   };
 
-  // Add a new condition step
+  // Add a new condition step with proper branch arrays
   const addConditionStep = () => {
     const newStep: WorkflowStep = {
       id: `condition_${Date.now()}`,
@@ -4828,10 +4838,8 @@ function IntegrationConfigForm({
         value: '',
         logicOperator: 'AND'
       }],
-      trueAction: '',
-      trueActionConfig: {},
-      falseAction: '',
-      falseActionConfig: {},
+      trueBranch: [],   // n8n-style: array of steps for TRUE path
+      falseBranch: [],  // n8n-style: array of steps for FALSE path
     };
 
     setWorkflowSteps([...workflowSteps, newStep]);
@@ -4841,9 +4849,86 @@ function IntegrationConfigForm({
     
     toast({
       title: "Condition Added",
-      description: "Configure your IF/ELSE condition",
+      description: "Configure your IF/ELSE condition with branch workflows",
       duration: 2000,
     });
+  };
+
+  // Add a delay step
+  const addDelayStep = () => {
+    const newStep: WorkflowStep = {
+      id: `delay_${Date.now()}`,
+      type: 'delay',
+      config: {},
+      delayAmount: 5,
+      delayUnit: 'minutes',
+    };
+
+    setWorkflowSteps([...workflowSteps, newStep]);
+    setIsAddingStep(false);
+    setAddStepType(null);
+    setEditingStepId(newStep.id);
+    
+    toast({
+      title: "Delay Added",
+      description: "Configure your wait time",
+      duration: 2000,
+    });
+  };
+
+  // Add step to a condition branch (TRUE or FALSE path)
+  const addStepToBranch = (conditionStepId: string, branch: 'true' | 'false', appId: string, actionId: string) => {
+    const appData = availableApps.find(a => a.id === appId);
+    const action = appData?.actions.find((a: any) => a.id === actionId);
+    
+    if (!appData || !action) return;
+
+    const newStep: WorkflowStep = {
+      id: `step_${Date.now()}`,
+      type: 'action',
+      appId,
+      appName: appData.name,
+      appIcon: appData.icon,
+      actionId,
+      actionName: action.name,
+      actionIcon: action.icon,
+      config: {},
+    };
+
+    setWorkflowSteps(workflowSteps.map(s => {
+      if (s.id === conditionStepId && s.type === 'condition') {
+        if (branch === 'true') {
+          return { ...s, trueBranch: [...(s.trueBranch || []), newStep] };
+        } else {
+          return { ...s, falseBranch: [...(s.falseBranch || []), newStep] };
+        }
+      }
+      return s;
+    }));
+
+    setEditingBranch(null);
+    setAddStepAppId('');
+    setAddStepActionId('');
+    
+    toast({
+      title: "Step Added to Branch",
+      description: `${appData.icon} ${action.name} added to ${branch.toUpperCase()} path`,
+      duration: 2000,
+    });
+  };
+
+  // Remove step from a branch
+  const removeStepFromBranch = (conditionStepId: string, branch: 'true' | 'false', stepId: string) => {
+    setWorkflowSteps(workflowSteps.map(s => {
+      if (s.id === conditionStepId && s.type === 'condition') {
+        if (branch === 'true') {
+          return { ...s, trueBranch: (s.trueBranch || []).filter(b => b.id !== stepId) };
+        } else {
+          return { ...s, falseBranch: (s.falseBranch || []).filter(b => b.id !== stepId) };
+        }
+      }
+      return s;
+    }));
   };
 
   // Update condition step
@@ -5973,7 +6058,7 @@ function IntegrationConfigForm({
 
                   {/* Simple Action Node (non-conditional) */}
                   {!useConditionalLogic && selectedAction && (
-                    <div className="relative">
+                    <div className="relative group">
                       <div 
                         className="w-48 p-3 rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg shadow-green-500/20 border border-green-400/30 cursor-pointer hover:ring-2 hover:ring-green-400/50 transition-all"
                         onClick={() => setEditingStepId('action1')}
@@ -5986,6 +6071,21 @@ function IntegrationConfigForm({
                             <p className="text-xs text-green-200 font-medium">ACTION 1</p>
                             <p className="text-sm font-semibold truncate">{currentAction?.name || 'Select action'}</p>
                           </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAction('');
+                              setActionConfig({});
+                              setEditingStepId(null);
+                              // Also clear workflow steps that depend on this action
+                              setWorkflowSteps([]);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                         <div className="mt-2 pt-2 border-t border-white/20">
                           <p className="text-[10px] text-green-200">Click to configure</p>
@@ -6105,9 +6205,9 @@ function IntegrationConfigForm({
                           </div>
                         )}
 
-                        {/* Render Condition Step */}
+                        {/* Render Condition Step - n8n Style with Branch Workflows */}
                         {wfStep.type === 'condition' && (
-                          <div className="flex flex-col items-center">
+                          <div className="flex flex-col items-center w-full">
                             {/* Condition Node */}
                             <div className="relative group">
                               <div 
@@ -6136,29 +6236,184 @@ function IntegrationConfigForm({
                                 </div>
                                 <div className="mt-2 pt-2 border-t border-white/20">
                                   <p className="text-[10px] text-purple-200">
-                                    {(wfStep.conditions?.length || 0) > 0 
-                                      ? `${wfStep.conditions?.length} condition${(wfStep.conditions?.length || 0) > 1 ? 's' : ''} • ` 
-                                      : ''}
-                                    {wfStep.trueAction ? '✓ TRUE action set' : 'Click to configure'}
+                                    {(wfStep.conditions?.length || 0)} condition{(wfStep.conditions?.length || 0) !== 1 ? 's' : ''} defined
                                   </p>
                                 </div>
                               </div>
                             </div>
                             
-                            {/* Branch Preview (mini) */}
-                            <div className="flex items-center gap-4 mt-2">
-                              <div className="flex flex-col items-center">
+                            {/* Branch Split Visual */}
+                            <div className="flex items-start gap-0 mt-2">
+                              {/* Left connector */}
+                              <div className="w-24 h-4 border-l-2 border-t-2 border-green-500 rounded-tl-xl" />
+                              {/* Right connector */}
+                              <div className="w-24 h-4 border-r-2 border-t-2 border-red-500 rounded-tr-xl" />
+                            </div>
+                            
+                            {/* n8n-Style Branch Columns */}
+                            <div className="flex gap-6 w-full max-w-xl justify-center">
+                              {/* TRUE Branch Column */}
+                              <div className="flex flex-col items-center flex-1 max-w-[200px]">
                                 <div className="w-0.5 h-3 bg-green-500" />
-                                <div className={`px-2 py-1 rounded text-[9px] font-bold ${wfStep.trueAction ? 'bg-green-500/20 text-green-400' : 'bg-muted text-muted-foreground'}`}>
-                                  TRUE {wfStep.trueAction && '✓'}
+                                <div className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold mb-2 border border-green-500/30">
+                                  ✓ TRUE PATH
                                 </div>
+                                
+                                {/* TRUE Branch Steps */}
+                                {(wfStep.trueBranch || []).map((branchStep, bIdx) => (
+                                  <div key={branchStep.id} className="flex flex-col items-center w-full">
+                                    <div className="relative group w-full">
+                                      <div className="w-full p-2 rounded-lg bg-green-600/90 text-white border border-green-400/30 text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                          <span className="text-base">{branchStep.appIcon}</span>
+                                          <span className="text-xs font-medium truncate">{branchStep.actionName}</span>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              removeStepFromBranch(wfStep.id, 'true', branchStep.id);
+                                            }}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="w-0.5 h-3 bg-green-500/50" />
+                                  </div>
+                                ))}
+                                
+                                {/* Add to TRUE Branch */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 text-[10px] border-dashed border-green-500/50 hover:border-green-500 hover:bg-green-500/10 text-green-600"
+                                  onClick={() => {
+                                    setEditingStepId(wfStep.id);
+                                    setEditingBranch('true');
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add Step
+                                </Button>
                               </div>
-                              <div className="flex flex-col items-center">
+
+                              {/* FALSE Branch Column */}
+                              <div className="flex flex-col items-center flex-1 max-w-[200px]">
                                 <div className="w-0.5 h-3 bg-red-500" />
-                                <div className={`px-2 py-1 rounded text-[9px] font-bold ${wfStep.falseAction ? 'bg-red-500/20 text-red-400' : 'bg-muted text-muted-foreground'}`}>
-                                  FALSE {wfStep.falseAction ? '✓' : '⏭'}
+                                <div className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold mb-2 border border-red-500/30">
+                                  ✗ FALSE PATH
+                                </div>
+                                
+                                {/* FALSE Branch Steps */}
+                                {(wfStep.falseBranch || []).map((branchStep, bIdx) => (
+                                  <div key={branchStep.id} className="flex flex-col items-center w-full">
+                                    <div className="relative group w-full">
+                                      <div className="w-full p-2 rounded-lg bg-red-600/90 text-white border border-red-400/30 text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                          <span className="text-base">{branchStep.appIcon}</span>
+                                          <span className="text-xs font-medium truncate">{branchStep.actionName}</span>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              removeStepFromBranch(wfStep.id, 'false', branchStep.id);
+                                            }}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="w-0.5 h-3 bg-red-500/50" />
+                                  </div>
+                                ))}
+                                
+                                {/* Add to FALSE Branch or Skip */}
+                                {(wfStep.falseBranch || []).length === 0 ? (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-[10px] border-dashed border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-600"
+                                      onClick={() => {
+                                        setEditingStepId(wfStep.id);
+                                        setEditingBranch('false');
+                                      }}
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 text-[10px] text-muted-foreground"
+                                    >
+                                      ⏭ Skip
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-[10px] border-dashed border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-600"
+                                    onClick={() => {
+                                      setEditingStepId(wfStep.id);
+                                      setEditingBranch('false');
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add Step
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Merge Visual */}
+                            <div className="flex items-end gap-0 mt-2">
+                              <div className="w-24 h-4 border-l-2 border-b-2 border-muted-foreground/30 rounded-bl-xl" />
+                              <div className="w-24 h-4 border-r-2 border-b-2 border-muted-foreground/30 rounded-br-xl" />
+                            </div>
+                            <div className="w-0.5 h-3 bg-muted-foreground/30" />
+                          </div>
+                        )}
+
+                        {/* Render Delay Step */}
+                        {wfStep.type === 'delay' && (
+                          <div className="flex items-center justify-center">
+                            <div className="relative group">
+                              <div 
+                                className="w-48 p-3 rounded-xl bg-gradient-to-br from-orange-600 to-orange-700 text-white shadow-lg shadow-orange-500/20 border border-orange-400/30 cursor-pointer hover:ring-2 hover:ring-orange-400/50 transition-all"
+                                onClick={() => setEditingStepId(wfStep.id)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                                    <Clock className="h-5 w-5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-orange-200 font-medium">STEP {index + 2} • DELAY</p>
+                                    <p className="text-sm font-semibold">
+                                      Wait {wfStep.delayAmount || 5} {wfStep.delayUnit || 'minutes'}
+                                    </p>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeWorkflowStep(wfStep.id);
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               </div>
+                              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-orange-500 to-transparent" />
                             </div>
                           </div>
                         )}
@@ -6169,10 +6424,10 @@ function IntegrationConfigForm({
                       </React.Fragment>
                     ))}
 
-                    {/* Add More Steps - Choice between Action or Condition */}
+                    {/* Add More Steps - Choice between Action, Condition, or Delay */}
                     <div className="flex justify-center">
                       {!isAddingStep ? (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap justify-center">
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -6193,6 +6448,15 @@ function IntegrationConfigForm({
                           >
                             <GitBranch className="h-4 w-4 text-purple-500" />
                             Add Condition
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-dashed border-2 hover:border-orange-500 hover:bg-orange-500/5 gap-2"
+                            onClick={() => addDelayStep()}
+                          >
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            Add Delay
                           </Button>
                         </div>
                       ) : (
@@ -6840,18 +7104,54 @@ function IntegrationConfigForm({
                       )}
                     </div>
 
-                    {/* TRUE Action */}
-                    <div className="space-y-2 pt-3 border-t">
+                    {/* TRUE Branch - n8n Style */}
+                    <div className="space-y-3 pt-3 border-t">
                       <Label className="text-sm font-medium flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-green-500">IF TRUE</span> → Action
+                        <span className="text-green-500">TRUE PATH</span>
+                        <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-500">
+                          {(editingStep.trueBranch || []).length} step{(editingStep.trueBranch || []).length !== 1 ? 's' : ''}
+                        </Badge>
                       </Label>
+                      
+                      {(editingStep.trueBranch || []).length > 0 ? (
+                        <div className="space-y-2">
+                          {(editingStep.trueBranch || []).map((step, idx) => (
+                            <div key={step.id} className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                              <div className="w-6 h-6 rounded bg-green-500/20 flex items-center justify-center text-xs font-bold text-green-600">
+                                {idx + 1}
+                              </div>
+                              <span className="text-lg">{step.appIcon}</span>
+                              <span className="text-sm flex-1">{step.actionName}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={() => removeStepFromBranch(editingStep.id, 'true', step.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-3 border-2 border-dashed border-green-500/30 rounded-lg bg-green-500/5">
+                          <p className="text-xs text-muted-foreground">No actions in TRUE path</p>
+                        </div>
+                      )}
+                      
+                      {/* Add Action to TRUE Branch */}
                       <Select 
-                        value={editingStep.trueAction || ''} 
-                        onValueChange={(v) => updateConditionStep(editingStep.id, { trueAction: v, trueActionConfig: {} })}
+                        value="" 
+                        onValueChange={(actionId) => {
+                          const action = actions.find(a => a.id === actionId);
+                          if (action) {
+                            addStepToBranch(editingStep.id, 'true', actionId, action.name, action.icon);
+                          }
+                        }}
                       >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Select action when TRUE..." />
+                        <SelectTrigger className="h-9 border-dashed border-green-500/50 hover:border-green-500">
+                          <SelectValue placeholder="➕ Add action to TRUE path..." />
                         </SelectTrigger>
                         <SelectContent>
                           {actions.map((action) => (
@@ -6866,24 +7166,60 @@ function IntegrationConfigForm({
                       </Select>
                     </div>
 
-                    {/* FALSE Action */}
-                    <div className="space-y-2">
+                    {/* FALSE Branch - n8n Style */}
+                    <div className="space-y-3 pt-3 border-t">
                       <Label className="text-sm font-medium flex items-center gap-2">
                         <XCircle className="h-4 w-4 text-red-500" />
-                        <span className="text-red-500">IF FALSE</span> → Action (Optional)
+                        <span className="text-red-500">FALSE PATH</span>
+                        <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-500">
+                          {(editingStep.falseBranch || []).length === 0 ? 'Skip' : `${(editingStep.falseBranch || []).length} step${(editingStep.falseBranch || []).length !== 1 ? 's' : ''}`}
+                        </Badge>
                       </Label>
+                      
+                      {(editingStep.falseBranch || []).length > 0 ? (
+                        <div className="space-y-2">
+                          {(editingStep.falseBranch || []).map((step, idx) => (
+                            <div key={step.id} className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                              <div className="w-6 h-6 rounded bg-red-500/20 flex items-center justify-center text-xs font-bold text-red-600">
+                                {idx + 1}
+                              </div>
+                              <span className="text-lg">{step.appIcon}</span>
+                              <span className="text-sm flex-1">{step.actionName}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={() => removeStepFromBranch(editingStep.id, 'false', step.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-3 border-2 border-dashed border-red-500/30 rounded-lg bg-red-500/5">
+                          <p className="text-xs text-muted-foreground">Skip (no actions)</p>
+                        </div>
+                      )}
+                      
+                      {/* Add Action to FALSE Branch */}
                       <Select 
-                        value={editingStep.falseAction || 'skip'} 
-                        onValueChange={(v) => updateConditionStep(editingStep.id, { falseAction: v === 'skip' ? '' : v, falseActionConfig: {} })}
+                        value="" 
+                        onValueChange={(actionId) => {
+                          const action = actions.find(a => a.id === actionId);
+                          if (action) {
+                            addStepToBranch(editingStep.id, 'false', actionId, action.name, action.icon);
+                          }
+                        }}
                       >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Select action when FALSE..." />
+                        <SelectTrigger className="h-9 border-dashed border-red-500/50 hover:border-red-500">
+                          <SelectValue placeholder="➕ Add action to FALSE path..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="skip">
-                            <span className="flex items-center gap-2">
+                          <SelectItem value="__skip__" disabled>
+                            <span className="flex items-center gap-2 text-muted-foreground">
                               <span>⏭️</span>
-                              <span>Skip / Continue</span>
+                              <span>Leave empty to skip</span>
                             </span>
                           </SelectItem>
                           {actions.map((action) => (
@@ -6898,6 +7234,84 @@ function IntegrationConfigForm({
                       </Select>
                     </div>
 
+                    {/* Move buttons */}
+                    <div className="pt-2 flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'up')}>
+                        <ArrowUp className="h-4 w-4 mr-1" /> Move Up
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'down')}>
+                        <ArrowDown className="h-4 w-4 mr-1" /> Move Down
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+            
+            // Handle Delay Step Configuration
+            if (editingStep.type === 'delay') {
+              return (
+                <Card className="border-orange-500/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-orange-500" />
+                        Configure Delay Step
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
+                        Done
+                      </Button>
+                    </div>
+                    <CardDescription>Add a wait/delay between steps</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-3">
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm">Duration</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={editingStep.delayAmount || 5}
+                          onChange={(e) => {
+                            setWorkflowSteps(workflowSteps.map(s => 
+                              s.id === editingStep.id ? { ...s, delayAmount: parseInt(e.target.value) || 1 } : s
+                            ));
+                          }}
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm">Unit</Label>
+                        <Select 
+                          value={editingStep.delayUnit || 'minutes'} 
+                          onValueChange={(v) => {
+                            setWorkflowSteps(workflowSteps.map(s => 
+                              s.id === editingStep.id ? { ...s, delayUnit: v } : s
+                            ));
+                          }}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="seconds">Seconds</SelectItem>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                      <p className="text-sm flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-orange-500" />
+                        <span>
+                          Wait <strong>{editingStep.delayAmount || 5} {editingStep.delayUnit || 'minutes'}</strong> before continuing
+                        </span>
+                      </p>
+                    </div>
+                    
                     {/* Move buttons */}
                     <div className="pt-2 flex gap-2">
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'up')}>
