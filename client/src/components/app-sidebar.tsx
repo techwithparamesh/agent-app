@@ -57,6 +57,7 @@ import {
   Zap,
   CreditCard,
   Phone,
+  FileText,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -451,6 +452,18 @@ export function AppSidebar() {
                   <Link href="/dashboard/billing">
                     <CreditCard className="h-5 w-5" />
                     <span>Billing & Plans</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/docs"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/docs">
+                    <FileText className="h-5 w-5" />
+                    <span>Documentation</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
