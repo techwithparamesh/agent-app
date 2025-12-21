@@ -4629,31 +4629,40 @@ function IntegrationConfigForm({
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
 
-  // Multi-Step Workflow State
+  // Multi-Step Workflow State - Supports both Actions and Conditions as steps
   type WorkflowStep = {
     id: string;
-    appId: string;
-    appName: string;
-    appIcon: string;
-    actionId: string;
-    actionName: string;
-    actionIcon: string;
+    type: 'action' | 'condition';
+    // For action steps
+    appId?: string;
+    appName?: string;
+    appIcon?: string;
+    actionId?: string;
+    actionName?: string;
+    actionIcon?: string;
     config: Record<string, string>;
-    // For conditional steps
-    condition?: {
+    // For condition steps
+    conditions?: Array<{
+      id: string;
       field: string;
       operator: string;
       value: string;
-    };
+      logicOperator: 'AND' | 'OR';
+    }>;
+    trueAction?: string;
+    trueActionConfig?: Record<string, string>;
+    falseAction?: string;
+    falseActionConfig?: Record<string, string>;
   };
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [isAddingStep, setIsAddingStep] = useState(false);
+  const [addStepType, setAddStepType] = useState<'action' | 'condition' | null>(null);
   const [addStepAppId, setAddStepAppId] = useState<string>('');
   const [addStepActionId, setAddStepActionId] = useState<string>('');
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [aiInstructions, setAiInstructions] = useState<string>('');
   
-  // Conditional Branching State
+  // Conditional Branching State (for first action only)
   const [useConditionalLogic, setUseConditionalLogic] = useState(false);
   const [conditions, setConditions] = useState<Array<{
     id: string;
@@ -4767,7 +4776,7 @@ function IntegrationConfigForm({
     };
   });
 
-  // Add a new workflow step
+  // Add a new workflow step (action type)
   const addWorkflowStep = (appId: string, actionId: string) => {
     const appData = availableApps.find(a => a.id === appId);
     const action = appData?.actions.find((a: any) => a.id === actionId);
@@ -4783,6 +4792,7 @@ function IntegrationConfigForm({
 
     const newStep: WorkflowStep = {
       id: `step_${Date.now()}`,
+      type: 'action',
       appId,
       appName: appData.name,
       appIcon: appData.icon,
@@ -4794,6 +4804,7 @@ function IntegrationConfigForm({
 
     setWorkflowSteps([...workflowSteps, newStep]);
     setIsAddingStep(false);
+    setAddStepType(null);
     setAddStepAppId('');
     setAddStepActionId('');
     
@@ -4802,6 +4813,91 @@ function IntegrationConfigForm({
       description: `${appData.icon} ${action.name} added to workflow`,
       duration: 2000,
     });
+  };
+
+  // Add a new condition step
+  const addConditionStep = () => {
+    const newStep: WorkflowStep = {
+      id: `condition_${Date.now()}`,
+      type: 'condition',
+      config: {},
+      conditions: [{
+        id: `cond_${Date.now()}`,
+        field: 'message_text',
+        operator: 'contains',
+        value: '',
+        logicOperator: 'AND'
+      }],
+      trueAction: '',
+      trueActionConfig: {},
+      falseAction: '',
+      falseActionConfig: {},
+    };
+
+    setWorkflowSteps([...workflowSteps, newStep]);
+    setIsAddingStep(false);
+    setAddStepType(null);
+    setEditingStepId(newStep.id);
+    
+    toast({
+      title: "Condition Added",
+      description: "Configure your IF/ELSE condition",
+      duration: 2000,
+    });
+  };
+
+  // Update condition step
+  const updateConditionStep = (stepId: string, updates: Partial<WorkflowStep>) => {
+    setWorkflowSteps(workflowSteps.map(s => 
+      s.id === stepId ? { ...s, ...updates } : s
+    ));
+  };
+
+  // Add condition to a condition step
+  const addConditionToStep = (stepId: string) => {
+    setWorkflowSteps(workflowSteps.map(s => {
+      if (s.id === stepId && s.type === 'condition') {
+        return {
+          ...s,
+          conditions: [...(s.conditions || []), {
+            id: `cond_${Date.now()}`,
+            field: 'message_text',
+            operator: 'contains',
+            value: '',
+            logicOperator: 'AND'
+          }]
+        };
+      }
+      return s;
+    }));
+  };
+
+  // Update a condition within a condition step
+  const updateConditionInStep = (stepId: string, conditionId: string, updates: any) => {
+    setWorkflowSteps(workflowSteps.map(s => {
+      if (s.id === stepId && s.type === 'condition') {
+        return {
+          ...s,
+          conditions: (s.conditions || []).map(c => 
+            c.id === conditionId ? { ...c, ...updates } : c
+          )
+        };
+      }
+      return s;
+    }));
+  };
+
+  // Remove condition from a condition step
+  const removeConditionFromStep = (stepId: string, conditionId: string) => {
+    setWorkflowSteps(workflowSteps.map(s => {
+      if (s.id === stepId && s.type === 'condition') {
+        return {
+          ...s,
+          conditions: (s.conditions || []).filter(c => c.id !== conditionId)
+        };
+      }
+      return s;
+    }));
   };
 
   // Remove a workflow step
@@ -5967,61 +6063,141 @@ function IntegrationConfigForm({
                       <div className="w-0.5 h-6 bg-muted-foreground/30" />
                     </div>
                     
-                    {/* Additional Steps */}
+                    {/* Additional Steps - Actions and Conditions */}
                     {workflowSteps.map((wfStep, index) => (
                       <React.Fragment key={wfStep.id}>
-                        <div className="flex items-center justify-center">
-                          <div className="relative group">
-                            <div 
-                              className="w-48 p-3 rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-500/20 border border-violet-400/30 cursor-pointer hover:ring-2 hover:ring-violet-400/50 transition-all"
-                              onClick={() => setEditingStepId(wfStep.id)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-xl">
-                                  {wfStep.appIcon}
+                        {/* Render Action Step */}
+                        {wfStep.type === 'action' && (
+                          <div className="flex items-center justify-center">
+                            <div className="relative group">
+                              <div 
+                                className="w-48 p-3 rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-500/20 border border-violet-400/30 cursor-pointer hover:ring-2 hover:ring-violet-400/50 transition-all"
+                                onClick={() => setEditingStepId(wfStep.id)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-xl">
+                                    {wfStep.appIcon}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-violet-200 font-medium">STEP {index + 2}</p>
+                                    <p className="text-sm font-semibold truncate">{wfStep.actionName}</p>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeWorkflowStep(wfStep.id);
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-violet-200 font-medium">STEP {index + 2}</p>
-                                  <p className="text-sm font-semibold truncate">{wfStep.actionName}</p>
+                                <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between">
+                                  <p className="text-[10px] text-violet-200">{wfStep.appName}</p>
+                                  <Settings className="h-3 w-3 text-violet-300" />
                                 </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeWorkflowStep(wfStep.id);
-                                  }}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
                               </div>
-                              <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between">
-                                <p className="text-[10px] text-violet-200">{wfStep.appName}</p>
-                                <Settings className="h-3 w-3 text-violet-300" />
+                              {/* Connection Line */}
+                              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-violet-500 to-transparent" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Render Condition Step */}
+                        {wfStep.type === 'condition' && (
+                          <div className="flex flex-col items-center">
+                            {/* Condition Node */}
+                            <div className="relative group">
+                              <div 
+                                className="w-56 p-3 rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/20 border border-purple-400/30 cursor-pointer hover:ring-2 hover:ring-purple-400/50 transition-all"
+                                onClick={() => setEditingStepId(wfStep.id)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                                    <GitBranch className="h-5 w-5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-purple-200 font-medium">STEP {index + 2} • IF/ELSE</p>
+                                    <p className="text-sm font-semibold">Condition</p>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeWorkflowStep(wfStep.id);
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="mt-2 pt-2 border-t border-white/20">
+                                  <p className="text-[10px] text-purple-200">
+                                    {(wfStep.conditions?.length || 0) > 0 
+                                      ? `${wfStep.conditions?.length} condition${(wfStep.conditions?.length || 0) > 1 ? 's' : ''} • ` 
+                                      : ''}
+                                    {wfStep.trueAction ? '✓ TRUE action set' : 'Click to configure'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                            {/* Connection Line */}
-                            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-violet-500 to-transparent" />
+                            
+                            {/* Branch Preview (mini) */}
+                            <div className="flex items-center gap-4 mt-2">
+                              <div className="flex flex-col items-center">
+                                <div className="w-0.5 h-3 bg-green-500" />
+                                <div className={`px-2 py-1 rounded text-[9px] font-bold ${wfStep.trueAction ? 'bg-green-500/20 text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                                  TRUE {wfStep.trueAction && '✓'}
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-center">
+                                <div className="w-0.5 h-3 bg-red-500" />
+                                <div className={`px-2 py-1 rounded text-[9px] font-bold ${wfStep.falseAction ? 'bg-red-500/20 text-red-400' : 'bg-muted text-muted-foreground'}`}>
+                                  FALSE {wfStep.falseAction ? '✓' : '⏭'}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        )}
+
                         <div className="flex justify-center">
                           <div className="w-0.5 h-6 bg-muted-foreground/30" />
                         </div>
                       </React.Fragment>
                     ))}
 
-                    {/* Add More Steps */}
+                    {/* Add More Steps - Choice between Action or Condition */}
                     <div className="flex justify-center">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="border-dashed border-2 hover:border-primary hover:bg-primary/5 gap-2"
-                        onClick={() => setIsAddingStep(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Another App
-                      </Button>
+                      {!isAddingStep ? (
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-dashed border-2 hover:border-green-500 hover:bg-green-500/5 gap-2"
+                            onClick={() => {
+                              setIsAddingStep(true);
+                              setAddStepType('action');
+                            }}
+                          >
+                            <Zap className="h-4 w-4 text-green-500" />
+                            Add Action
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-dashed border-2 hover:border-purple-500 hover:bg-purple-500/5 gap-2"
+                            onClick={() => addConditionStep()}
+                          >
+                            <GitBranch className="h-4 w-4 text-purple-500" />
+                            Add Condition
+                          </Button>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">Adding step...</Badge>
+                      )}
                     </div>
                   </>
                 )}
@@ -6384,23 +6560,24 @@ function IntegrationConfigForm({
           )}
 
           {/* Add App Step Panel */}
-          {isAddingStep && (
+          {isAddingStep && addStepType === 'action' && (
             <Card className="border-violet-500/30">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-violet-500" />
-                    Add Another App
+                    <Zap className="h-4 w-4 text-green-500" />
+                    Add Action Step
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => {
                     setIsAddingStep(false);
+                    setAddStepType(null);
                     setAddStepAppId('');
                     setAddStepActionId('');
                   }}>
                     Cancel
                   </Button>
                 </div>
-                <CardDescription>Chain another app to your workflow</CardDescription>
+                <CardDescription>Chain another app action to your workflow</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* App Selection */}
@@ -6477,72 +6654,265 @@ function IntegrationConfigForm({
             </Card>
           )}
 
-          {/* Workflow Step Configuration Panel */}
+          {/* Workflow Step Configuration Panel - Action Type */}
           {editingStepId && !['action1', 'condition', 'trueAction', 'falseAction'].includes(editingStepId) && (() => {
             const editingStep = workflowSteps.find(s => s.id === editingStepId);
             if (!editingStep) return null;
-            const stepFields = getStepActionFields(editingStep.appId, editingStep.actionId);
             
-            return (
-              <Card className="border-violet-500/30">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <span className="text-xl">{editingStep.appIcon}</span>
-                      Configure: {editingStep.actionName}
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
-                      Done
-                    </Button>
-                  </div>
-                  <CardDescription>{editingStep.appName}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {stepFields.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No configuration needed</p>
-                  ) : (
-                    stepFields.map((field: any) => (
-                      <div key={field.key} className="space-y-1">
-                        <Label className="text-xs flex items-center gap-2">
-                          {field.label}
-                          {field.required && <Badge variant="destructive" className="text-[9px]">Required</Badge>}
-                        </Label>
-                        {field.type === 'textarea' ? (
-                          <Textarea
-                            value={editingStep.config[field.key] || ''}
-                            onChange={(e) => updateWorkflowStepConfig(editingStep.id, {
-                              ...editingStep.config,
-                              [field.key]: e.target.value
-                            })}
-                            placeholder={field.placeholder}
-                            rows={2}
-                            className="text-sm"
-                          />
-                        ) : (
-                          <Input
-                            value={editingStep.config[field.key] || ''}
-                            onChange={(e) => updateWorkflowStepConfig(editingStep.id, {
-                              ...editingStep.config,
-                              [field.key]: e.target.value
-                            })}
-                            placeholder={field.placeholder}
-                            className="h-9"
-                          />
-                        )}
-                      </div>
-                    ))
-                  )}
-                  <div className="pt-2 flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'up')}>
-                      <ArrowUp className="h-4 w-4 mr-1" /> Move Up
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'down')}>
-                      <ArrowDown className="h-4 w-4 mr-1" /> Move Down
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
+            // Handle Action Step Configuration
+            if (editingStep.type === 'action') {
+              const stepFields = getStepActionFields(editingStep.appId || '', editingStep.actionId || '');
+              
+              return (
+                <Card className="border-violet-500/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <span className="text-xl">{editingStep.appIcon}</span>
+                        Configure: {editingStep.actionName}
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
+                        Done
+                      </Button>
+                    </div>
+                    <CardDescription>{editingStep.appName}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {stepFields.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">No configuration needed</p>
+                    ) : (
+                      stepFields.map((field: any) => (
+                        <div key={field.key} className="space-y-1">
+                          <Label className="text-xs flex items-center gap-2">
+                            {field.label}
+                            {field.required && <Badge variant="destructive" className="text-[9px]">Required</Badge>}
+                          </Label>
+                          {field.type === 'textarea' ? (
+                            <Textarea
+                              value={editingStep.config[field.key] || ''}
+                              onChange={(e) => updateWorkflowStepConfig(editingStep.id, {
+                                ...editingStep.config,
+                                [field.key]: e.target.value
+                              })}
+                              placeholder={field.placeholder}
+                              rows={2}
+                              className="text-sm"
+                            />
+                          ) : (
+                            <Input
+                              value={editingStep.config[field.key] || ''}
+                              onChange={(e) => updateWorkflowStepConfig(editingStep.id, {
+                                ...editingStep.config,
+                                [field.key]: e.target.value
+                              })}
+                              placeholder={field.placeholder}
+                              className="h-9"
+                            />
+                          )}
+                        </div>
+                      ))
+                    )}
+                    <div className="pt-2 flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'up')}>
+                        <ArrowUp className="h-4 w-4 mr-1" /> Move Up
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'down')}>
+                        <ArrowDown className="h-4 w-4 mr-1" /> Move Down
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+            
+            // Handle Condition Step Configuration
+            if (editingStep.type === 'condition') {
+              return (
+                <Card className="border-purple-500/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <GitBranch className="h-4 w-4 text-purple-500" />
+                        Configure Condition Step
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
+                        Done
+                      </Button>
+                    </div>
+                    <CardDescription>Define conditions and actions for TRUE/FALSE paths</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Conditions Builder */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-purple-500">IF</span> Conditions
+                      </Label>
+                      
+                      {(editingStep.conditions || []).length === 0 ? (
+                        <div className="text-center py-4 border-2 border-dashed rounded-xl bg-muted/30">
+                          <GitBranch className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-xs text-muted-foreground mb-2">No conditions defined</p>
+                          <Button variant="outline" size="sm" onClick={() => addConditionToStep(editingStep.id)}>
+                            <Plus className="h-3 w-3 mr-1" /> Add Condition
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {(editingStep.conditions || []).map((cond, idx) => (
+                            <div key={cond.id} className="space-y-2">
+                              {idx > 0 && (
+                                <div className="flex items-center gap-2 py-1">
+                                  <div className="flex-1 h-px bg-border" />
+                                  <Select 
+                                    value={cond.logicOperator} 
+                                    onValueChange={(v) => updateConditionInStep(editingStep.id, cond.id, { logicOperator: v })}
+                                  >
+                                    <SelectTrigger className="w-16 h-6 text-[10px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="AND">AND</SelectItem>
+                                      <SelectItem value="OR">OR</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="flex-1 h-px bg-border" />
+                                </div>
+                              )}
+                              <div className="p-2 rounded-lg bg-muted/50 border">
+                                <div className="grid grid-cols-12 gap-1.5">
+                                  <div className="col-span-4">
+                                    <Select value={cond.field} onValueChange={(v) => updateConditionInStep(editingStep.id, cond.id, { field: v })}>
+                                      <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Field" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {conditionFields.map(f => (
+                                          <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="col-span-3">
+                                    <Select value={cond.operator} onValueChange={(v) => updateConditionInStep(editingStep.id, cond.id, { operator: v })}>
+                                      <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Op" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {conditionOperators.map(op => (
+                                          <SelectItem key={op.value} value={op.value}>
+                                            <span className="flex items-center gap-1">
+                                              <span>{op.icon}</span>
+                                              <span className="text-xs">{op.label}</span>
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="col-span-4">
+                                    {!['is_empty', 'is_not_empty'].includes(cond.operator) && (
+                                      <Input
+                                        value={cond.value}
+                                        onChange={(e) => updateConditionInStep(editingStep.id, cond.id, { value: e.target.value })}
+                                        placeholder="Value"
+                                        className="h-8 text-xs"
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="col-span-1 flex justify-end">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                      onClick={() => removeConditionFromStep(editingStep.id, cond.id)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <Button variant="outline" size="sm" onClick={() => addConditionToStep(editingStep.id)} className="w-full">
+                            <Plus className="h-3 w-3 mr-1" /> Add Another Condition
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* TRUE Action */}
+                    <div className="space-y-2 pt-3 border-t">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-green-500">IF TRUE</span> → Action
+                      </Label>
+                      <Select 
+                        value={editingStep.trueAction || ''} 
+                        onValueChange={(v) => updateConditionStep(editingStep.id, { trueAction: v, trueActionConfig: {} })}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select action when TRUE..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {actions.map((action) => (
+                            <SelectItem key={action.id} value={action.id}>
+                              <span className="flex items-center gap-2">
+                                <span>{action.icon}</span>
+                                <span>{action.name}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* FALSE Action */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        <span className="text-red-500">IF FALSE</span> → Action (Optional)
+                      </Label>
+                      <Select 
+                        value={editingStep.falseAction || 'skip'} 
+                        onValueChange={(v) => updateConditionStep(editingStep.id, { falseAction: v === 'skip' ? '' : v, falseActionConfig: {} })}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select action when FALSE..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="skip">
+                            <span className="flex items-center gap-2">
+                              <span>⏭️</span>
+                              <span>Skip / Continue</span>
+                            </span>
+                          </SelectItem>
+                          {actions.map((action) => (
+                            <SelectItem key={action.id} value={action.id}>
+                              <span className="flex items-center gap-2">
+                                <span>{action.icon}</span>
+                                <span>{action.name}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Move buttons */}
+                    <div className="pt-2 flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'up')}>
+                        <ArrowUp className="h-4 w-4 mr-1" /> Move Up
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => moveWorkflowStep(editingStep.id, 'down')}>
+                        <ArrowDown className="h-4 w-4 mr-1" /> Move Down
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+            
+            return null;
           })()}
 
           {/* Integration Summary */}
