@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export default function DocsPage() {
+export default function Docs() {
   return (
     <DashboardLayout title="Product Documentation">
       <ScrollArea className="max-w-4xl mx-auto py-8 px-4 md:px-8 h-[calc(100vh-100px)]">
