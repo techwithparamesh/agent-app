@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,6 +66,12 @@ import {
   GitBranch,
   X,
   Layers,
+  ChevronRight,
+  ChevronLeft,
+  Workflow,
+  Target,
+  Cog,
+  PlugZap,
 } from "lucide-react";
 
 // ============= INTEGRATION CATALOG (n8n-style) =============
@@ -1177,28 +1184,15 @@ function IntegrationsPageContent() {
           </TabsContent>
         </Tabs>
 
-        {/* Create Integration Dialog */}
-        <Dialog open={isCreateOpen} onOpenChange={(open) => {
+        {/* Create Integration - Modern Full-Screen Sheet */}
+        <Sheet open={isCreateOpen} onOpenChange={(open) => {
           setIsCreateOpen(open);
           if (!open) setSelectedType(null);
         }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                {selectedType && (
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${selectedType.categoryColor} text-white`}>
-                    {selectedType.icon}
-                  </div>
-                )}
-                {selectedType ? `Configure ${selectedType.name}` : 'Choose Integration'}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedType 
-                  ? selectedType.description
-                  : 'Select an app to connect with your AI agents'}
-              </DialogDescription>
-            </DialogHeader>
-
+          <SheetContent 
+            side="right" 
+            className="w-full sm:max-w-[900px] p-0 overflow-hidden flex flex-col"
+          >
             {selectedType ? (
               <IntegrationConfigForm
                 integrationType={selectedType}
@@ -1206,47 +1200,112 @@ function IntegrationsPageContent() {
                 onSubmit={(data) => createMutation.mutate(data)}
                 onCancel={() => setSelectedType(null)}
                 isLoading={createMutation.isPending}
+                onClose={() => setIsCreateOpen(false)}
               />
             ) : (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search integrations..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <ScrollArea className="h-[400px]">
-                  <div className="grid grid-cols-2 gap-2">
-                    {(searchQuery 
-                      ? allIntegrations.filter(i => 
-                          i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          i.description.toLowerCase().includes(searchQuery.toLowerCase())
-                        )
-                      : popularIntegrations
-                    ).map((int) => (
-                      <Card
-                        key={int.id}
-                        className="cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => setSelectedType(int)}
-                      >
-                        <CardContent className="p-3 flex items-center gap-3">
-                          <span className="text-2xl">{int.icon}</span>
-                          <div>
-                            <p className="font-medium text-sm">{int.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{int.description}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+              <>
+                {/* Header */}
+                <div className="p-6 border-b bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <PlugZap className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold">Add New Integration</h2>
+                      <p className="text-sm text-muted-foreground">Connect your favorite apps and automate workflows</p>
+                    </div>
                   </div>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search 50+ integrations..."
+                      className="pl-11 h-11 bg-background/80 backdrop-blur-sm border-muted-foreground/20"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                {/* Integration Grid */}
+                <ScrollArea className="flex-1 p-6">
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      {searchQuery ? 'Search Results' : 'Popular Integrations'}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {(searchQuery 
+                        ? allIntegrations.filter(i => 
+                            i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            i.description.toLowerCase().includes(searchQuery.toLowerCase())
+                          )
+                        : popularIntegrations
+                      ).map((int) => (
+                        <Card
+                          key={int.id}
+                          className="group cursor-pointer border-2 border-transparent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
+                          onClick={() => setSelectedType(int)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${int.categoryColor} text-white shadow-lg group-hover:scale-110 transition-transform duration-200`}>
+                                {int.icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm group-hover:text-primary transition-colors">{int.name}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{int.description}</p>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {!searchQuery && (
+                    <div className="mt-8">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                        <Layers className="h-4 w-4" />
+                        All Categories
+                      </h3>
+                      {Object.entries(integrationCatalog).map(([key, category]) => (
+                        <div key={key} className="mb-6">
+                          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <div className={`w-6 h-6 rounded-md ${category.color} flex items-center justify-center`}>
+                              <category.icon className="h-3.5 w-3.5 text-white" />
+                            </div>
+                            {category.label}
+                            <Badge variant="secondary" className="text-xs">{category.integrations.length}</Badge>
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {category.integrations.map((int: any) => (
+                              <Card
+                                key={int.id}
+                                className="group cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+                                onClick={() => setSelectedType({
+                                  ...int,
+                                  categoryLabel: category.label,
+                                  categoryColor: category.color,
+                                })}
+                              >
+                                <CardContent className="p-3 flex items-center gap-3">
+                                  <span className="text-xl">{int.icon}</span>
+                                  <span className="text-sm font-medium flex-1">{int.name}</span>
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </ScrollArea>
-              </div>
+              </>
             )}
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
 
         {/* Logs Dialog */}
         <Dialog open={isLogsOpen} onOpenChange={setIsLogsOpen}>
@@ -4540,19 +4599,21 @@ const quickSetupTemplates: QuickSetupTemplate[] = [
 // Group templates by category
 const templateCategories = [...new Set(quickSetupTemplates.map(t => t.category))];
 
-// Dynamic Integration Configuration Form
+// Dynamic Integration Configuration Form - Modern Full-Screen Design
 function IntegrationConfigForm({
   integrationType,
   agents,
   onSubmit,
   onCancel,
   isLoading,
+  onClose,
 }: {
   integrationType: any;
   agents: Agent[];
   onSubmit: (data: any) => void;
   onCancel: () => void;
   isLoading: boolean;
+  onClose?: () => void;
 }) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -5131,295 +5192,462 @@ function IntegrationConfigForm({
     : selectedAction !== '';
 
   return (
-    <div className="space-y-6">
-      {/* Progress Steps */}
-      <div className="flex items-center justify-between mb-6 overflow-x-auto">
-        {[
-          { num: 1, label: 'Setup' },
-          { num: 2, label: 'Connect' },
-          { num: 3, label: 'Triggers' },
-          { num: 4, label: 'Action' },
-        ].map((s, i) => (
-          <div key={s.num} className="flex items-center flex-shrink-0">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step === s.num ? 'bg-primary text-primary-foreground' :
-              step > s.num ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
-            }`}>
-              {step > s.num ? '✓' : s.num}
-            </div>
-            <span className={`ml-2 text-sm hidden sm:inline ${step === s.num ? 'font-medium' : 'text-muted-foreground'}`}>
-              {s.label}
-            </span>
-            {i < 3 && <div className={`w-6 sm:w-12 h-0.5 mx-2 ${step > s.num ? 'bg-green-500' : 'bg-muted'}`} />}
+    <div className="flex flex-col h-full">
+      {/* Modern Header with App Info */}
+      <div className="flex-shrink-0 border-b bg-gradient-to-r from-background via-muted/30 to-background">
+        <div className="p-4 sm:p-6">
+          {/* Back button and close */}
+          <div className="flex items-center justify-between mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onCancel}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to apps
+            </Button>
           </div>
-        ))}
+          
+          {/* App Info Banner */}
+          <div className="flex items-center gap-4">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg ${integrationType.categoryColor} text-white`}>
+              {integrationType.icon}
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold">{integrationType.name}</h2>
+              <p className="text-sm text-muted-foreground">{integrationType.description}</p>
+            </div>
+            {selectedTemplate && (
+              <Badge className="bg-primary/10 text-primary border-primary/20">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Using Template
+              </Badge>
+            )}
+          </div>
+        </div>
+        
+        {/* Modern Stepper */}
+        <div className="px-4 sm:px-6 pb-4">
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-1">
+            {[
+              { num: 1, label: 'Setup', icon: Cog, desc: 'Basic settings' },
+              { num: 2, label: 'Connect', icon: PlugZap, desc: 'API credentials' },
+              { num: 3, label: 'Triggers', icon: Target, desc: 'When to run' },
+              { num: 4, label: 'Actions', icon: Workflow, desc: 'What to do' },
+            ].map((s, i) => (
+              <div 
+                key={s.num} 
+                className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                  step === s.num 
+                    ? 'bg-background shadow-sm' 
+                    : step > s.num 
+                      ? 'text-green-600' 
+                      : 'text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => {
+                  // Only allow going back to completed steps
+                  if (s.num < step) setStep(s.num);
+                }}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                  step === s.num 
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+                    : step > s.num 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-muted text-muted-foreground'
+                }`}>
+                  {step > s.num ? <CheckCircle className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
+                </div>
+                <div className="hidden sm:block">
+                  <p className={`text-sm font-medium ${step === s.num ? 'text-foreground' : ''}`}>{s.label}</p>
+                  <p className="text-xs text-muted-foreground">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Step Content Area */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 sm:p-6 max-w-3xl mx-auto">
 
       {/* Step 1: Quick Setup or Custom */}
       {step === 1 && (
-        <div className="space-y-4">
-          <div className="text-center mb-4">
-            <div className={`w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl ${integrationType.categoryColor} text-white`}>
-              {integrationType.icon}
-            </div>
-            <h3 className="text-lg font-semibold">{integrationType.name}</h3>
-            <p className="text-sm text-muted-foreground">{integrationType.description}</p>
-          </div>
-
+        <div className="space-y-6">
           {/* Quick Setup Templates (if available) */}
           {availableTemplates.length > 0 && (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span className="text-sm font-medium">Quick Setup Templates</span>
-                  <Badge variant="secondary" className="text-xs">One-click setup</Badge>
-                </div>
-                {selectedTemplate && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearTemplate();
-                    }}
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Clear Selection
-                  </Button>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2 mb-4">
-                {availableTemplates.map((template) => (
-                  <Card 
-                    key={template.id}
-                    className={`cursor-pointer transition-all hover:border-primary ${
-                      selectedTemplate?.id === template.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''
-                    }`}
-                    onClick={() => {
-                      if (selectedTemplate?.id === template.id) {
-                        // Toggle off if already selected
+            <Card className="border-2 border-dashed border-yellow-500/30 bg-yellow-500/5">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">Quick Setup Templates</CardTitle>
+                      <CardDescription>One-click pre-configured workflows</CardDescription>
+                    </div>
+                  </div>
+                  {selectedTemplate && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         clearTemplate();
-                      } else {
-                        applyTemplate(template);
-                        setSetupMode('quick');
-                      }
-                    }}
-                  >
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <span className="text-2xl">{template.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{template.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                      }}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {availableTemplates.map((template) => (
+                    <div 
+                      key={template.id}
+                      className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                        selectedTemplate?.id === template.id 
+                          ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' 
+                          : 'border-transparent bg-muted/50 hover:border-primary/30 hover:bg-muted'
+                      }`}
+                      onClick={() => {
+                        if (selectedTemplate?.id === template.id) {
+                          clearTemplate();
+                        } else {
+                          applyTemplate(template);
+                          setSetupMode('quick');
+                        }
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-3xl">{template.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm">{template.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
+                        </div>
                       </div>
-                      {selectedTemplate?.id === template.id ? (
-                        <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      ) : (
-                        <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
+                      {selectedTemplate?.id === template.id && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        </div>
                       )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or customize</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Custom Setup Fields */}
-          <div className="space-y-3 pt-2">
-            <div>
-              <Label>Integration Name *</Label>
-              <Input
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (selectedTemplate) setSetupMode('custom');
-                }}
-                placeholder={`My ${integrationType.name} Integration`}
-              />
-            </div>
-
-            <div>
-              <Label>Description (optional)</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What will this integration do?"
-                rows={2}
-              />
-            </div>
-
-            <div>
-              <Label>Link to Agent</Label>
-              <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All agents (global)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Agents (Global)</SelectItem>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">Which AI agent should use this integration?</p>
-            </div>
-
-            {/* AI Model Selection */}
-            <div className="pt-2 border-t">
-              <Label className="flex items-center gap-2">
-                <Bot className="h-4 w-4" />
-                AI Model *
-              </Label>
-              <Select value={aiModel} onValueChange={setAiModel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select AI model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {['OpenAI', 'Anthropic', 'Google', 'Mistral', 'Groq', 'Cohere', 'Custom'].map((provider) => (
-                    <div key={provider}>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                        {provider}
-                      </div>
-                      {aiModelOptions
-                        .filter(m => m.provider === provider)
-                        .map(model => (
-                          <SelectItem key={model.value} value={model.value}>
-                            {model.label}
-                          </SelectItem>
-                        ))}
                     </div>
                   ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">Choose which AI model powers this integration</p>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-            {/* AI API Key - only show if not using default or custom */}
-            <div>
-              <Label>
-                AI API Key {aiModel !== 'custom' ? '(optional - uses system default)' : '*'}
-              </Label>
-              <Input
-                type="password"
-                value={aiApiKey}
-                onChange={(e) => setAiApiKey(e.target.value)}
-                placeholder={aiModel === 'custom' ? 'Your API key (required)' : 'Leave empty to use system key'}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {aiModel === 'custom' 
-                  ? 'Enter your custom API endpoint key'
-                  : 'Provide your own API key or leave empty to use the shared system key'}
-              </p>
+          {/* Divider */}
+          {availableTemplates.length > 0 && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-4 text-muted-foreground font-medium">Or configure manually</span>
+              </div>
             </div>
+          )}
+
+          {/* Manual Configuration - Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Basic Info */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">Basic Information</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Integration Name *</Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (selectedTemplate) setSetupMode('custom');
+                    }}
+                    placeholder={`My ${integrationType.name} Integration`}
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Description</Label>
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="What will this integration do?"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Link to Agent</Label>
+                  <Select value={agentId || "all"} onValueChange={(v) => setAgentId(v === "all" ? "" : v)}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="All agents (global)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <span className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          All Agents (Global)
+                        </span>
+                      </SelectItem>
+                      {agents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          <span className="flex items-center gap-2">
+                            <Bot className="h-4 w-4" />
+                            {agent.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Which AI agent should use this integration?</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Right Column - AI Configuration */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">AI Configuration</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    AI Model *
+                    <Badge variant="outline" className="text-xs">Required</Badge>
+                  </Label>
+                  <Select value={aiModel} onValueChange={setAiModel}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select AI model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['OpenAI', 'Anthropic', 'Google', 'Mistral', 'Groq', 'Cohere', 'Custom'].map((provider) => (
+                        <div key={provider}>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                            {provider}
+                          </div>
+                          {aiModelOptions
+                            .filter(m => m.provider === provider)
+                            .map(model => (
+                              <SelectItem key={model.value} value={model.value}>
+                                {model.label}
+                              </SelectItem>
+                            ))}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {aiModel === 'custom' && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Custom API Endpoint *</Label>
+                    <Input
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="https://api.your-model.com/v1"
+                      className="h-11"
+                    />
+                  </div>
+                )}
+
+                {aiModel && aiModel !== 'custom' && (
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="font-medium">{aiModelOptions.find(m => m.value === aiModel)?.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {aiModelOptions.find(m => m.value === aiModel)?.provider} model selected
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={onCancel}>Cancel</Button>
-            <Button onClick={() => setStep(2)} disabled={!isStep1Valid}>
-              Next: Connect <ArrowRight className="h-4 w-4 ml-2" />
+          {/* Navigation */}
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setStep(2)} disabled={!isStep1Valid} size="lg" className="gap-2">
+              Continue to Connect
+              <ChevronRight className="h-4 w-4" />
             </Button>
-          </DialogFooter>
+          </div>
         </div>
       )}
 
       {/* Step 2: Connection Settings */}
       {step === 2 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Settings className="h-5 w-5 text-primary" />
-            <div>
-              <h3 className="font-semibold">Connect {integrationType.name}</h3>
-              <p className="text-sm text-muted-foreground">Enter your API credentials</p>
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* Connection Header Card */}
+          <Card className="border-2 border-dashed border-blue-500/30 bg-blue-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <PlugZap className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Connect {integrationType.name}</h3>
+                  <p className="text-sm text-muted-foreground">Enter your API credentials to establish connection</p>
+                </div>
+                <Badge variant="outline" className="border-blue-500/30 text-blue-500">
+                  Step 2 of 4
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Credentials Form */}
           <Card>
-            <CardContent className="p-4 space-y-4">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                API Credentials
+              </CardTitle>
+              <CardDescription>
+                Securely connect your {integrationType.name} account
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {fields.length === 0 ? (
-                <div className="text-center py-6">
+                <div className="text-center py-8 rounded-xl bg-green-500/5 border border-green-500/20">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                  <p className="font-medium">No credentials required!</p>
-                  <p className="text-sm text-muted-foreground">This integration is ready to use.</p>
+                  <p className="font-semibold text-green-600">No credentials required!</p>
+                  <p className="text-sm text-muted-foreground mt-1">This integration is ready to use.</p>
                 </div>
               ) : (
-                fields.map((field: any) => {
-                  const isMissing = field.required && (!config[field.key] || config[field.key].trim() === '');
-                  return (
-                  <div key={field.key}>
-                    <Label className={isMissing ? 'text-red-500' : ''}>
-                      {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                    {field.type === 'textarea' ? (
-                      <Textarea
-                        value={config[field.key] || ''}
-                        onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                        rows={3}
-                        className={`font-mono text-sm ${isMissing ? 'border-red-500 focus:ring-red-500' : ''}`}
-                      />
-                    ) : (
-                      <Input
-                        type={field.type === 'password' ? 'password' : 'text'}
-                        value={config[field.key] || ''}
-                        onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                        className={isMissing ? 'border-red-500 focus:ring-red-500' : ''}
-                      />
-                    )}
-                    {field.helpText && (
-                      <p className="text-xs text-muted-foreground mt-1">{field.helpText}</p>
-                    )}
-                  </div>
-                )})
+                <div className="grid grid-cols-1 gap-4">
+                  {fields.map((field: any) => {
+                    const isMissing = field.required && (!config[field.key] || config[field.key].trim() === '');
+                    return (
+                      <div key={field.key} className="space-y-2">
+                        <Label className={`text-sm font-medium flex items-center gap-2 ${isMissing ? 'text-red-500' : ''}`}>
+                          {field.label}
+                          {field.required && <Badge variant="outline" className="text-xs">Required</Badge>}
+                        </Label>
+                        {field.type === 'textarea' ? (
+                          <Textarea
+                            value={config[field.key] || ''}
+                            onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            rows={4}
+                            className={`font-mono text-sm resize-none ${isMissing ? 'border-red-500 focus:ring-red-500' : ''}`}
+                          />
+                        ) : field.type === 'select' && field.options ? (
+                          <Select 
+                            value={config[field.key] || field.options[0]} 
+                            onValueChange={(v) => setConfig({ ...config, [field.key]: v })}
+                          >
+                            <SelectTrigger className={`h-11 ${isMissing ? 'border-red-500' : ''}`}>
+                              <SelectValue placeholder={field.placeholder} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {field.options.map((opt: string) => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            type={field.type === 'password' ? 'password' : 'text'}
+                            value={config[field.key] || ''}
+                            onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            className={`h-11 ${isMissing ? 'border-red-500 focus:ring-red-500' : ''}`}
+                          />
+                        )}
+                        {field.helpText && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {field.helpText}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
               
               {/* Validation message */}
               {!isStep2Valid && fields.some((f: any) => f.required) && (
-                <div className="flex items-center gap-2 text-sm text-red-500 pt-2">
+                <Alert variant="destructive" className="mt-4">
                   <AlertCircle className="h-4 w-4" />
-                  Please fill in all required fields marked with *
-                </div>
+                  <AlertDescription>
+                    Please fill in all required fields to continue
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-            <Button onClick={() => setStep(3)} disabled={!isStep2Valid}>
-              Next: Triggers <ArrowRight className="h-4 w-4 ml-2" />
+          {/* Navigation */}
+          <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
+              <ChevronLeft className="h-4 w-4" />
+              Back
             </Button>
-          </DialogFooter>
+            <Button onClick={() => setStep(3)} disabled={!isStep2Valid} size="lg" className="gap-2">
+              Continue to Triggers
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Step 3: Trigger Events - WHEN should this run? */}
       {step === 3 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Bell className="h-5 w-5 text-primary" />
-            <div>
-              <h3 className="font-semibold">When should this run?</h3>
-              <p className="text-sm text-muted-foreground">Select events that trigger this integration</p>
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* Triggers Header Card */}
+          <Card className="border-2 border-dashed border-orange-500/30 bg-orange-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Target className="h-6 w-6 text-orange-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">When should this run?</h3>
+                  <p className="text-sm text-muted-foreground">Select events that will trigger this integration</p>
+                </div>
+                {selectedTriggers.length > 0 && (
+                  <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                    {selectedTriggers.length} selected
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Trigger Selection Grid */}
           <Card>
-            <CardContent className="p-4">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                Available Triggers
+              </CardTitle>
+              <CardDescription>
+                Choose one or more events that will start this workflow
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               {availableTriggers.length === 0 ? (
-                <div className="text-center py-6">
+                <div className="text-center py-8 rounded-xl bg-muted/30">
                   <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                   <p className="font-medium text-muted-foreground">No triggers available</p>
                   <p className="text-sm text-muted-foreground">This integration is action-only (outbound)</p>
@@ -5445,11 +5673,14 @@ function IntegrationConfigForm({
                           }
                         }}
                       />
-                      <span className="text-lg">{event.icon}</span>
+                      <span className="text-xl">{event.icon}</span>
                       <div className="flex-1">
                         <p className="text-sm font-medium">{event.name}</p>
                         <p className="text-xs text-muted-foreground">{event.description || event.category}</p>
                       </div>
+                      {selectedTriggers.includes(event.id) && (
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                      )}
                     </label>
                   ))}
                 </div>
@@ -5459,51 +5690,68 @@ function IntegrationConfigForm({
 
           {/* AI Instructions */}
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-purple-500" />
-                <Label className="font-medium">AI Behavior Instructions</Label>
+                <CardTitle className="text-base">AI Behavior Instructions</CardTitle>
                 <Badge variant="outline" className="text-xs">Optional</Badge>
               </div>
+              <CardDescription>
+                Tell the AI how to behave when these events are triggered
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <Textarea
                 value={aiInstructions}
                 onChange={(e) => setAiInstructions(e.target.value)}
                 placeholder={integrationType.aiInstructions || `Describe how the AI should handle ${integrationType.name} events...\n\nExamples:\n• "Reply to all support messages with helpful responses"\n• "Summarize incoming data and categorize it"\n• "Auto-respond to common questions"`}
                 rows={4}
-                className="text-sm"
+                className="text-sm resize-none"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                Tell the AI how to behave when these events are triggered.
-              </p>
             </CardContent>
           </Card>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-            <Button onClick={() => setStep(4)} disabled={!isStep3Valid}>
-              Next: Choose Action <ArrowRight className="h-4 w-4 ml-2" />
+          {/* Navigation */}
+          <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
+              <ChevronLeft className="h-4 w-4" />
+              Back
             </Button>
-          </DialogFooter>
+            <Button onClick={() => setStep(4)} disabled={!isStep3Valid} size="lg" className="gap-2">
+              Continue to Actions
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Step 4: Action Logic - WHAT should happen? */}
       {step === 4 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Zap className="h-5 w-5 text-primary" />
-            <div>
-              <h3 className="font-semibold">What should happen?</h3>
-              <p className="text-sm text-muted-foreground">Choose simple action or add conditional logic</p>
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* Actions Header Card */}
+          <Card className="border-2 border-dashed border-green-500/30 bg-green-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                  <Workflow className="h-6 w-6 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">What should happen?</h3>
+                  <p className="text-sm text-muted-foreground">Define actions to execute when triggers fire</p>
+                </div>
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                  Final Step
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Toggle: Simple vs Conditional */}
-          <Card className="border-primary/20">
+          <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${useConditionalLogic ? 'bg-purple-500/10' : 'bg-primary/10'}`}>
+                  <div className={`p-2 rounded-xl ${useConditionalLogic ? 'bg-purple-500/10' : 'bg-primary/10'}`}>
                     {useConditionalLogic ? <GitBranch className="h-5 w-5 text-purple-500" /> : <ArrowRight className="h-5 w-5 text-primary" />}
                   </div>
                   <div>
@@ -6329,16 +6577,23 @@ function IntegrationConfigForm({
             </CardContent>
           </Card>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
-            <Button onClick={handleSubmit} disabled={isLoading || !isStep4Valid}>
+          {/* Navigation */}
+          <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={() => setStep(3)} className="gap-2">
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <Button onClick={handleSubmit} disabled={isLoading || !isStep4Valid} size="lg" className="gap-2 bg-green-600 hover:bg-green-700">
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-4 w-4" />
               Create Integration
             </Button>
-          </DialogFooter>
+          </div>
         </div>
       )}
+
+        </div>
+      </ScrollArea>
     </div>
   );
 }
