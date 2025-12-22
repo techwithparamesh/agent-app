@@ -5077,8 +5077,9 @@ function IntegrationConfigForm({
   // Get integration-specific triggers from comprehensiveIntegrations
   const integrationTriggers = comprehensiveIntegrations[integrationType.id]?.triggers || [];
   
-  // Fallback to generic triggers if no specific ones defined
-  const availableTriggers = integrationTriggers.length > 0 ? integrationTriggers : triggerEvents;
+  // Use only integration-specific triggers. If none are defined, show none
+  // (previous behavior fell back to global `triggerEvents` which caused unrelated triggers to appear)
+  const availableTriggers = integrationTriggers.length > 0 ? integrationTriggers : [];
   
   // Get templates for this integration
   const availableTemplates = quickSetupTemplates.filter(t => t.integrationId === integrationType.id);
