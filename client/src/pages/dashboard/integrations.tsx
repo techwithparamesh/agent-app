@@ -401,6 +401,22 @@ const integrationCatalog = {
         category: 'storage',
         fields: ['accessKeyId', 'secretAccessKey', 'bucket', 'region'],
       },
+      {
+        id: 'redis',
+        name: 'Redis',
+        icon: '⚡',
+        description: 'Read/write key-value data in Redis',
+        category: 'storage',
+        fields: ['host', 'port', 'password'],
+      },
+      {
+        id: 'elasticsearch',
+        name: 'Elasticsearch',
+        icon: '🔎',
+        description: 'Index and search documents using Elasticsearch/OpenSearch',
+        category: 'storage',
+        fields: ['endpoint', 'username', 'password', 'index'],
+      },
     ]
   },
   
@@ -568,6 +584,22 @@ const integrationCatalog = {
         description: 'Create issues and manage repos',
         category: 'developer',
         fields: ['accessToken', 'owner', 'repo'],
+      },
+      {
+        id: 'gitlab',
+        name: 'GitLab',
+        icon: '🦊',
+        description: 'Create issues, trigger pipelines and interact with GitLab APIs',
+        category: 'developer',
+        fields: ['accessToken', 'projectId'],
+      },
+      {
+        id: 'bitbucket',
+        name: 'Bitbucket',
+        icon: '🧩',
+        description: 'Create issues and trigger pipelines in Bitbucket',
+        category: 'developer',
+        fields: ['username', 'appPassword', 'repoSlug'],
       },
     ]
   },
