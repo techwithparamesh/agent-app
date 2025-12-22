@@ -96,7 +96,7 @@ function IntegrationCard({ integration, onClick, viewMode = "grid" }: { integrat
   if (viewMode === "list") {
     return (
       <div 
-        className="group cursor-pointer flex items-center gap-5 p-5 rounded-2xl border bg-card hover:border-primary/50 hover:bg-accent/30 transition-all duration-300 hover:shadow-lg"
+        className="group cursor-pointer flex items-center gap-5 p-5 rounded-xl border bg-card hover:border-primary/50 hover:bg-accent/30 transition-all duration-300 hover:shadow-lg"
         onClick={onClick}
       >
         <div 
@@ -107,7 +107,7 @@ function IntegrationCard({ integration, onClick, viewMode = "grid" }: { integrat
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-base group-hover:text-primary transition-colors">{integration.name}</h3>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{integration.shortDescription}</p>
+          <p className="text-sm text-muted-foreground mt-1">{integration.shortDescription}</p>
         </div>
         <Badge variant="secondary" className="hidden md:flex shrink-0">{categoryLabels[integration.category]}</Badge>
         <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200 shrink-0" />
@@ -117,40 +117,47 @@ function IntegrationCard({ integration, onClick, viewMode = "grid" }: { integrat
 
   return (
     <Card 
-      className="group cursor-pointer border bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden h-full flex flex-col"
+      className="group cursor-pointer border bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 rounded-xl min-h-[240px] flex flex-col"
       onClick={onClick}
     >
-      {/* Gradient top border on hover */}
-      <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary transition-all duration-300" />
-      
-      <CardHeader className="pb-4 flex-1">
-        <div className="flex items-start justify-between gap-3">
+      <CardHeader className="p-5 pb-3 space-y-0">
+        {/* Icon and Arrow Row */}
+        <div className="flex items-center justify-between mb-4">
           <div 
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl shrink-0"
+            className="w-11 h-11 rounded-lg flex items-center justify-center text-white font-semibold text-base shadow-md transition-transform duration-300 group-hover:scale-105"
             style={{ backgroundColor: integration.color }}
           >
             {integration.name.charAt(0)}
           </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200 shrink-0 mt-1" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
         </div>
-        <CardTitle className="text-base font-semibold mt-4 group-hover:text-primary transition-colors duration-200 leading-tight">
+        
+        {/* Title */}
+        <CardTitle className="text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors duration-200">
           {integration.name}
         </CardTitle>
-        <CardDescription className="text-sm mt-2 line-clamp-2 leading-relaxed">
+        
+        {/* Description */}
+        <CardDescription className="text-[13px] text-muted-foreground/80 mt-2 leading-relaxed line-clamp-3">
           {integration.shortDescription}
         </CardDescription>
       </CardHeader>
-      <CardContent className="pt-0 pb-5">
-        <div className="flex flex-wrap gap-2">
+      
+      {/* Features - pushed to bottom */}
+      <CardContent className="p-5 pt-0 mt-auto">
+        <div className="flex flex-wrap gap-1.5">
           {integration.features.slice(0, 2).map((feature, i) => (
-            <Badge key={i} variant="secondary" className="text-xs py-1 px-2.5 transition-colors duration-200 group-hover:bg-primary/10 truncate max-w-[140px]">
+            <span 
+              key={i} 
+              className="text-[11px] text-muted-foreground/70 bg-muted/50 px-2 py-1 rounded-md"
+            >
               {feature}
-            </Badge>
+            </span>
           ))}
           {integration.features.length > 2 && (
-            <Badge variant="outline" className="text-xs py-1 px-2">
-              +{integration.features.length - 2}
-            </Badge>
+            <span className="text-[11px] text-muted-foreground/50 px-2 py-1">
+              +{integration.features.length - 2} more
+            </span>
           )}
         </div>
       </CardContent>
@@ -774,8 +781,8 @@ export function IntegrationDocs() {
         <div className={cn(
           "animate-in fade-in duration-300",
           viewMode === "grid" 
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5" 
-            : "flex flex-col gap-4"
+            ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" 
+            : "flex flex-col gap-3"
         )}>
           {filteredIntegrations.map((integration, index) => (
             <div 
