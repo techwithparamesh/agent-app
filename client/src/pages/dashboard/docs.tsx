@@ -412,7 +412,7 @@ export function DocsContent() {
   }, []);
 
   return (
-    <div className="flex h-[calc(100vh-80px)]">
+    <div className="flex h-full min-h-[calc(100vh-80px)]">
       {/* Mobile menu button */}
       <Button variant="ghost" size="icon" className="fixed top-20 left-4 z-50 lg:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
         {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -420,7 +420,7 @@ export function DocsContent() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 lg:relative lg:translate-x-0 top-0 lg:top-auto",
+        "fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 lg:relative lg:translate-x-0 top-0 lg:top-auto bg-background border-r",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <DocsSidebar activeSection={activeSection} onSectionClick={handleSectionClick} />
