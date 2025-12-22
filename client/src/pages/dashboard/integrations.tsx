@@ -5173,18 +5173,18 @@ function IntegrationConfigForm({
     ],
     google_drive: [
       { key: 'folderId', label: 'Folder ID', type: 'text', placeholder: '1abc...', helpText: 'Leave empty for root folder' },
-      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}' },
+      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}', required: true },
     ],
     google_calendar: [
       { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary or calendar@group.calendar.google.com', required: true },
-      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}' },
+      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}', required: true },
     ],
     google_docs: [
-      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}' },
+      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}', required: true },
     ],
     google_forms: [
       { key: 'formId', label: 'Form ID', type: 'text', placeholder: 'From form URL', required: true },
-      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}' },
+      { key: 'credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type": "service_account", ...}', required: true },
     ],
     
     // CRM
@@ -5257,6 +5257,17 @@ function IntegrationConfigForm({
       { key: 'secretAccessKey', label: 'Secret Access Key', type: 'password', placeholder: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', required: true },
       { key: 'bucket', label: 'Bucket Name', type: 'text', placeholder: 'my-bucket', required: true },
       { key: 'region', label: 'Region', type: 'text', placeholder: 'us-east-1', required: true },
+    ],
+    redis: [
+      { key: 'host', label: 'Redis Host', type: 'text', placeholder: 'redis.example.com', required: true },
+      { key: 'port', label: 'Port', type: 'number', placeholder: '6379', required: true },
+      { key: 'password', label: 'Password', type: 'password', placeholder: 'Redis password (optional)' },
+    ],
+    elasticsearch: [
+      { key: 'endpoint', label: 'Elasticsearch Endpoint', type: 'text', placeholder: 'https://search-domain.region.es.amazonaws.com', required: true },
+      { key: 'username', label: 'Username', type: 'text', placeholder: 'elastic_user' },
+      { key: 'password', label: 'Password', type: 'password', placeholder: 'elastic_password' },
+      { key: 'index', label: 'Index Name', type: 'text', placeholder: 'conversations', required: true },
     ],
     
     // E-commerce
@@ -5348,6 +5359,15 @@ function IntegrationConfigForm({
       { key: 'accessToken', label: 'Personal Access Token', type: 'password', placeholder: 'ghp_xxx', required: true },
       { key: 'owner', label: 'Owner/Org', type: 'text', placeholder: 'username or org name' },
       { key: 'repo', label: 'Repository', type: 'text', placeholder: 'repo-name' },
+    ],
+    gitlab: [
+      { key: 'accessToken', label: 'Personal Access Token', type: 'password', placeholder: 'glpat_xxx', required: true },
+      { key: 'projectId', label: 'Project ID or Path', type: 'text', placeholder: 'namespace/project', required: true },
+    ],
+    bitbucket: [
+      { key: 'username', label: 'Username', type: 'text', placeholder: 'your-username', required: true },
+      { key: 'appPassword', label: 'App Password', type: 'password', placeholder: 'app_password', required: true },
+      { key: 'repoSlug', label: 'Repository Slug', type: 'text', placeholder: 'repo-name', required: true },
     ],
   };
 

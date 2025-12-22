@@ -1,4 +1,4 @@
-import DocsContent from "@/pages/dashboard/docs";
+import { DocsContent } from "@/pages/dashboard/docs";
 
 export default function PublicDocs() {
   return (
