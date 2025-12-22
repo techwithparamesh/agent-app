@@ -12,6 +12,7 @@ import {
   Copy, Check, Info, AlertTriangle, Lightbulb, ArrowRight, ArrowLeft,
   ExternalLink, Terminal, Menu, X, ChevronUp, Users, FileText, Bot
 } from "lucide-react";
+import { IntegrationDocs } from "@/components/integration-docs";
 
 // =============================================================================
 // SIDEBAR NAVIGATION
@@ -670,76 +671,23 @@ export function DocsContent() {
           </section>
 
           {/* ================================================================= */}
-          {/* INTEGRATION APPS - Using IntegrationDetail component */}
+          {/* INTEGRATION APPS - n8n-style Professional Documentation */}
           {/* ================================================================= */}
           <section id="integration-apps" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-lg bg-primary/10">
                 <Grid3X3 className="h-6 w-6 text-primary" />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight">Integration App Guides</h1>
-              <Badge variant="secondary">50+ Apps</Badge>
+              <h1 className="text-3xl font-bold tracking-tight">Integration Documentation</h1>
+              <Badge variant="secondary">30+ Apps</Badge>
             </div>
-            <p className="text-lg text-muted-foreground mb-8">Step-by-step guides for connecting all supported integrations.</p>
+            <p className="text-lg text-muted-foreground mb-8">
+              Professional, n8n-style documentation for all supported integrations. Each integration includes detailed setup instructions, operations, triggers, actions, examples, and troubleshooting guides.
+            </p>
 
-            <div id="communication-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Communication Apps</h2>
-              <IntegrationDetail name="WhatsApp Business" description="Send/receive WhatsApp messages, templates, media, interactive buttons and list messages." useCases={["Customer support", "Order updates", "Appointment reminders", "OTPs"]} howToConnect={["Go to Integrations → WhatsApp", "Connect via Official WABA or Twilio/Vonage", "Add phone number ID and access token"]} triggers={["Message received", "Template response", "Media received", "Button selection"]} actions={["Send text", "Send template", "Send media", "Send interactive buttons"]} exampleCode={`{"template_name": "order_update", "language": "en_US"}`} troubleshooting={["Verify phone number ID and access token", "Template messages require pre-approval"]} />
-              <IntegrationDetail name="Telegram" description="Send/receive Telegram messages, photos, documents via bot." useCases={["Team alerts", "Customer notifications", "Automated responses"]} howToConnect={["Create bot via BotFather", "Get bot token", "Enter token in Integrations"]} triggers={["Message received", "Command invoked", "Button pressed"]} actions={["Send message", "Send photo", "Send document", "Send buttons"]} />
-              <IntegrationDetail name="Slack" description="Send messages, upload files, reply in threads, receive events." useCases={["Team notifications", "Support escalation", "Alerting"]} howToConnect={["Go to Integrations → Slack", "Authorize OAuth", "Select channels"]} triggers={["Channel message", "Thread reply", "Mention", "Reaction"]} actions={["Send message", "Upload file", "Start thread", "Add reaction"]} />
-              <IntegrationDetail name="Discord" description="Send/receive Discord messages, publish rich embeds, manage channels." useCases={["Community notifications", "Moderation alerts", "Support routing"]} howToConnect={["Create Discord app and bot", "Invite bot to server", "Paste bot token"]} triggers={["Message created", "Reaction added", "Member join/leave"]} actions={["Send message/embed", "Reply in thread", "Assign role"]} />
-              <IntegrationDetail name="SMS (Twilio)" description="Send and receive SMS/MMS via Twilio." useCases={["OTP", "Appointment reminders", "Marketing blasts"]} howToConnect={["Enter Twilio Account SID", "Add Auth Token", "Configure phone number"]} triggers={["SMS received", "Delivery status update"]} actions={["Send SMS", "Send MMS", "Verify number"]} />
-            </div>
-
-            <div id="email-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Email Apps</h2>
-              <IntegrationDetail name="Gmail" description="Send/receive emails, manage labels, reply, forward, search." useCases={["Automated replies", "Lead follow-up", "Support tickets"]} howToConnect={["Sign in with Google account", "Grant email permissions"]} triggers={["Email received", "With attachment", "Label added"]} actions={["Send email", "Reply", "Forward", "Add label"]} />
-              <IntegrationDetail name="Outlook" description="Send/receive emails, manage folders, schedule events." useCases={["Automated replies", "Meeting scheduling", "Support tickets"]} howToConnect={["Sign in with Microsoft account", "Grant permissions"]} triggers={["Email received", "Calendar event", "Meeting invite"]} actions={["Send email", "Reply", "Create event"]} />
-              <IntegrationDetail name="SendGrid" description="Send transactional and bulk emails with analytics." useCases={["Welcome emails", "Receipts", "Newsletters"]} howToConnect={["Create API key in SendGrid", "Paste in Integrations"]} triggers={["Email delivered", "Opened", "Clicked", "Bounced"]} actions={["Send email", "Send template", "Manage contacts"]} />
-              <IntegrationDetail name="Mailchimp" description="Manage subscribers, create campaigns, automate sequences." useCases={["Newsletter automation", "Onboarding sequences", "Campaign targeting"]} howToConnect={["Enter Mailchimp API key", "Choose Audience"]} triggers={["Subscriber added", "Campaign sent", "Email opened"]} actions={["Add subscriber", "Add/remove tag", "Send campaign"]} />
-            </div>
-
-            <div id="crm-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">CRM & Sales</h2>
-              <IntegrationDetail name="HubSpot" description="Manage contacts, deals, tickets in HubSpot CRM." useCases={["Lead capture", "Sales automation", "Support tickets"]} howToConnect={["Enter HubSpot API key"]} triggers={["New contact", "New deal", "New ticket"]} actions={["Create/update contact", "Create deal", "Create ticket"]} />
-              <IntegrationDetail name="Salesforce" description="Sync contacts, deals, and opportunities with Salesforce." useCases={["Lead management", "Sales pipeline automation"]} howToConnect={["Enter instance URL and access token"]} triggers={["New contact", "New opportunity", "New case"]} actions={["Create/update contact", "Create opportunity"]} />
-              <IntegrationDetail name="Pipedrive" description="Manage deals and contacts in Pipedrive CRM." useCases={["Sales automation", "Lead tracking"]} howToConnect={["Enter API token"]} triggers={["New deal", "Contact created"]} actions={["Create/update deal", "Create contact"]} />
-            </div>
-
-            <div id="ecommerce-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">E-commerce & Payments</h2>
-              <IntegrationDetail name="Shopify" description="Sync orders, products, inventory and customers." useCases={["Order notifications", "Inventory updates", "Customer creation"]} howToConnect={["Enter shop domain", "Add Admin API token"]} triggers={["Order created", "Order paid", "Product updated"]} actions={["Update product", "Send notification", "Update inventory"]} />
-              <IntegrationDetail name="Stripe" description="Manage payments, customers, invoices and webhooks." useCases={["Payment confirmations", "Subscription management", "Refunds"]} howToConnect={["Enter Stripe Secret Key"]} triggers={["Charge succeeded", "Invoice paid", "Customer created"]} actions={["Create customer", "Create charge", "Refund"]} />
-              <IntegrationDetail name="WooCommerce" description="Manage WooCommerce orders and products." useCases={["Order sync", "Product updates", "Notifications"]} howToConnect={["Enter site URL, consumer key/secret"]} triggers={["New order", "Product updated"]} actions={["Create/update order", "Update product"]} />
-              <IntegrationDetail name="PayPal" description="Process PayPal payments." useCases={["Payment notifications", "Order sync"]} howToConnect={["Enter client ID and secret"]} triggers={["Payment received", "Order created"]} actions={["Create payment", "Refund"]} />
-            </div>
-
-            <div id="productivity-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Productivity & Project Management</h2>
-              <IntegrationDetail name="Google Sheets" description="Read/write data to Google Sheets as a lightweight database." useCases={["Log leads", "Track orders", "Conversation transcripts"]} howToConnect={["Connect Google Account via OAuth", "Select spreadsheet and worksheet"]} triggers={["New row added", "Row updated"]} actions={["Add row", "Update row", "Find row"]} exampleCode={`{"customer_name": "Jane", "email": "jane@example.com"}`} />
-              <IntegrationDetail name="Trello" description="Create and update Trello cards and boards." useCases={["Turn tickets into tasks", "Sprint planning", "Backlog management"]} howToConnect={["Get API key and token from Trello", "Choose Board and List"]} triggers={["Card created", "Card moved", "Comment added"]} actions={["Create card", "Update card", "Move card", "Add comment"]} />
-              <IntegrationDetail name="Asana" description="Create tasks, manage projects in Asana." useCases={["Task automation", "Project tracking"]} howToConnect={["Enter access token and workspace ID"]} triggers={["Task created", "Task completed"]} actions={["Create task", "Update task", "Add comment"]} />
-              <IntegrationDetail name="Jira" description="Create issues, manage projects in Jira." useCases={["Bug tracking", "Support tickets", "Project management"]} howToConnect={["Enter domain, email, API token, project key"]} triggers={["Issue created", "Issue updated"]} actions={["Create issue", "Update issue", "Add comment"]} />
-              <IntegrationDetail name="Notion" description="Create and update pages and database entries." useCases={["Knowledge base sync", "Task management", "Wiki"]} howToConnect={["Create Notion integration", "Share database with integration", "Enter token"]} triggers={["New page created", "New database entry"]} actions={["Create page", "Create database item", "Update properties"]} />
-            </div>
-
-            <div id="database-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Databases & Storage</h2>
-              <IntegrationDetail name="Airtable" description="Read/write records to Airtable bases." useCases={["CRM", "Editorial calendars", "Inventory"]} howToConnect={["Create API key in Airtable", "Add Base ID and Table name"]} triggers={["Record created", "Record updated"]} actions={["Create record", "Update record", "Find records"]} />
-              <IntegrationDetail name="Firebase" description="Store and sync data in Firestore for real-time apps." useCases={["Chat logs", "Real-time dashboards", "Presence"]} howToConnect={["Create Firebase project", "Upload service account JSON"]} triggers={["Document created/updated/deleted"]} actions={["Add document", "Update document", "Run query"]} />
-              <IntegrationDetail name="MongoDB" description="Read/write documents to MongoDB collections." useCases={["Chat transcripts", "Analytics events", "App state"]} howToConnect={["Get MongoDB URI", "Choose database and collection"]} triggers={["Document inserted", "Document updated"]} actions={["Insert document", "Update document", "Run query"]} />
-              <IntegrationDetail name="AWS S3" description="Store and serve objects in S3 buckets." useCases={["Media storage", "Backups", "Static assets"]} howToConnect={["Create IAM user with S3 permissions", "Enter credentials and bucket name"]} triggers={["Object created", "Object removed"]} actions={["Upload object", "Download object", "Generate pre-signed URL"]} />
-              <IntegrationDetail name="Google Drive" description="Upload, download and list files in Google Drive." useCases={["Save reports", "Export transcripts", "Share files"]} howToConnect={["OAuth with Google account", "Select target folder"]} triggers={["File added/updated"]} actions={["Upload file", "Download file", "Generate shareable link"]} />
-            </div>
-
-            <div id="developer-apps" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Developer Tools & Automation</h2>
-              <IntegrationDetail name="Webhooks" description="Send and receive HTTP webhooks to integrate with any service." useCases={["Push events to external systems", "Receive form submissions", "Payment callbacks"]} howToConnect={["Create Webhook endpoint", "Configure URL, method, headers", "Map data fields"]} triggers={["Webhook received"]} actions={["Send webhook", "Validate signature"]} exampleCode={`POST /api {"name": "{{customer_name}}"}`} />
-              <IntegrationDetail name="Zapier" description="Connect to 5000+ apps via Zapier webhooks." useCases={["Multi-app automation", "Custom workflows"]} howToConnect={["Enter Zapier webhook URL"]} triggers={["Webhook received"]} actions={["Send webhook", "Trigger Zap"]} />
-              <IntegrationDetail name="Make (Integromat)" description="Trigger Make scenarios via webhook." useCases={["Multi-step automation", "Data sync"]} howToConnect={["Enter Make webhook URL"]} triggers={["Webhook received"]} actions={["Send webhook", "Trigger scenario"]} />
-              <IntegrationDetail name="n8n" description="Trigger n8n workflows via webhook." useCases={["Custom automation", "Data processing"]} howToConnect={["Enter n8n webhook URL"]} triggers={["Webhook received"]} actions={["Send webhook", "Trigger workflow"]} />
-              <IntegrationDetail name="GitHub" description="Create issues, trigger workflows, manage repos." useCases={["Auto-create issues from support tickets", "Trigger CI"]} howToConnect={["Create PAT with repo scope", "Select repository"]} triggers={["Issue opened", "PR opened", "Push event"]} actions={["Create issue", "Add comment", "Trigger workflow"]} />
-              <IntegrationDetail name="REST API" description="Call any REST API endpoint." useCases={["Custom integrations", "Data sync"]} howToConnect={["Enter API URL, method, headers, API key"]} triggers={["Custom event"]} actions={["Call API", "Send/receive data"]} />
+            {/* Embedded Integration Docs Component */}
+            <div className="border rounded-xl overflow-hidden bg-card min-h-[600px]">
+              <IntegrationDocs />
             </div>
           </section>
 

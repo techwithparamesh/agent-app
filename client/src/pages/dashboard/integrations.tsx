@@ -603,6 +603,231 @@ const integrationCatalog = {
       },
     ]
   },
+
+  // AI & Machine Learning
+  ai: {
+    label: "AI & ML",
+    icon: Sparkles,
+    color: "bg-violet-500",
+    integrations: [
+      {
+        id: 'openai',
+        name: 'OpenAI',
+        icon: '🤖',
+        description: 'GPT-4, DALL-E, Whisper and more AI capabilities',
+        category: 'ai',
+        popular: true,
+        fields: ['apiKey', 'model', 'maxTokens'],
+      },
+      {
+        id: 'anthropic',
+        name: 'Anthropic Claude',
+        icon: '🧠',
+        description: 'Claude AI for advanced conversations and analysis',
+        category: 'ai',
+        popular: true,
+        fields: ['apiKey', 'model'],
+      },
+      {
+        id: 'google_ai',
+        name: 'Google AI (Gemini)',
+        icon: '✨',
+        description: 'Google Gemini models for multimodal AI',
+        category: 'ai',
+        fields: ['apiKey', 'model'],
+      },
+      {
+        id: 'elevenlabs',
+        name: 'ElevenLabs',
+        icon: '🎙️',
+        description: 'AI voice synthesis and text-to-speech',
+        category: 'ai',
+        fields: ['apiKey', 'voiceId'],
+      },
+    ]
+  },
+
+  // Marketing & Analytics
+  marketing: {
+    label: "Marketing",
+    icon: Target,
+    color: "bg-rose-500",
+    integrations: [
+      {
+        id: 'google_analytics',
+        name: 'Google Analytics',
+        icon: '📊',
+        description: 'Track and analyze website traffic',
+        category: 'marketing',
+        fields: ['measurementId', 'apiSecret'],
+      },
+      {
+        id: 'facebook_ads',
+        name: 'Facebook Ads',
+        icon: '📘',
+        description: 'Manage Facebook advertising campaigns',
+        category: 'marketing',
+        fields: ['accessToken', 'adAccountId'],
+      },
+      {
+        id: 'google_ads',
+        name: 'Google Ads',
+        icon: '🎯',
+        description: 'Manage Google advertising campaigns',
+        category: 'marketing',
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'customerId'],
+      },
+      {
+        id: 'intercom',
+        name: 'Intercom',
+        icon: '💬',
+        description: 'Customer messaging and engagement platform',
+        category: 'marketing',
+        popular: true,
+        fields: ['accessToken'],
+      },
+      {
+        id: 'linkedin',
+        name: 'LinkedIn',
+        icon: '💼',
+        description: 'Post content and manage LinkedIn presence',
+        category: 'marketing',
+        fields: ['accessToken', 'organizationId'],
+      },
+    ]
+  },
+
+  // Support & Help Desk
+  support: {
+    label: "Support",
+    icon: Bell,
+    color: "bg-amber-500",
+    integrations: [
+      {
+        id: 'zendesk',
+        name: 'Zendesk',
+        icon: '🎫',
+        description: 'Create tickets and manage support workflows',
+        category: 'support',
+        popular: true,
+        fields: ['subdomain', 'email', 'apiToken'],
+      },
+      {
+        id: 'freshdesk',
+        name: 'Freshdesk',
+        icon: '🌿',
+        description: 'Manage support tickets in Freshdesk',
+        category: 'support',
+        fields: ['domain', 'apiKey'],
+      },
+      {
+        id: 'zoom',
+        name: 'Zoom',
+        icon: '📹',
+        description: 'Create meetings and manage webinars',
+        category: 'support',
+        fields: ['clientId', 'clientSecret', 'accountId'],
+      },
+      {
+        id: 'liveagent',
+        name: 'LiveAgent',
+        icon: '🎧',
+        description: 'Manage support tickets and live chat',
+        category: 'support',
+        fields: ['apiKey', 'domain'],
+      },
+      {
+        id: 'helpscout',
+        name: 'Help Scout',
+        icon: '🔍',
+        description: 'Manage conversations and help desk',
+        category: 'support',
+        fields: ['apiKey', 'mailboxId'],
+      },
+    ]
+  },
+
+  // Database
+  database: {
+    label: "Databases",
+    icon: HardDrive,
+    color: "bg-emerald-500",
+    integrations: [
+      {
+        id: 'postgresql',
+        name: 'PostgreSQL',
+        icon: '🐘',
+        description: 'Connect to PostgreSQL databases',
+        category: 'database',
+        fields: ['host', 'port', 'database', 'user', 'password'],
+      },
+      {
+        id: 'mysql',
+        name: 'MySQL',
+        icon: '🐬',
+        description: 'Connect to MySQL databases',
+        category: 'database',
+        fields: ['host', 'port', 'database', 'user', 'password'],
+      },
+      {
+        id: 'dynamodb',
+        name: 'AWS DynamoDB',
+        icon: '⚡',
+        description: 'NoSQL database on AWS',
+        category: 'database',
+        fields: ['accessKeyId', 'secretAccessKey', 'region', 'tableName'],
+      },
+    ]
+  },
+
+  // Social Media
+  social: {
+    label: "Social Media",
+    icon: Globe,
+    color: "bg-sky-500",
+    integrations: [
+      {
+        id: 'twitter',
+        name: 'Twitter/X',
+        icon: '🐦',
+        description: 'Post tweets and manage Twitter presence',
+        category: 'social',
+        fields: ['apiKey', 'apiSecret', 'accessToken', 'accessTokenSecret'],
+      },
+      {
+        id: 'instagram',
+        name: 'Instagram',
+        icon: '📸',
+        description: 'Post content to Instagram',
+        category: 'social',
+        fields: ['accessToken', 'businessAccountId'],
+      },
+      {
+        id: 'youtube',
+        name: 'YouTube',
+        icon: '▶️',
+        description: 'Upload videos and manage channel',
+        category: 'social',
+        fields: ['clientId', 'clientSecret', 'refreshToken'],
+      },
+      {
+        id: 'tiktok',
+        name: 'TikTok',
+        icon: '🎵',
+        description: 'Post content to TikTok',
+        category: 'social',
+        fields: ['accessToken'],
+      },
+      {
+        id: 'pinterest',
+        name: 'Pinterest',
+        icon: '📌',
+        description: 'Create pins and manage boards',
+        category: 'social',
+        fields: ['accessToken', 'boardId'],
+      },
+    ]
+  },
 };
 
 // Flatten all integrations for search
