@@ -10,12 +10,12 @@ import {
   Search, ChevronDown, ChevronRight, Home, Rocket, Workflow, Book, Zap, 
   Grid3X3, MessageSquare, Shield, Code, HelpCircle, Star, BookOpen, Link2,
   Copy, Check, Info, AlertTriangle, Lightbulb, ArrowRight, ArrowLeft,
-  ExternalLink, Terminal, Menu, X, ChevronUp, Users, FileText, Bot
+  ExternalLink, Terminal, Menu, X, Users, FileText, Bot, Sparkles
 } from "lucide-react";
 import { IntegrationDocs } from "@/components/integration-docs";
 
 // =============================================================================
-// SIDEBAR NAVIGATION
+// SIDEBAR NAVIGATION - Simplified and cleaner
 // =============================================================================
 
 interface DocSection {
@@ -34,7 +34,6 @@ const docSections: DocSection[] = [
       { id: "what-is-this", title: "What is AgentForge?" },
       { id: "who-is-it-for", title: "Who is it for?" },
       { id: "key-benefits", title: "Key Benefits" },
-      { id: "use-cases", title: "Use Cases" },
     ],
   },
   {
@@ -43,7 +42,6 @@ const docSections: DocSection[] = [
     icon: Rocket,
     children: [
       { id: "quick-start", title: "Quick Start (5 min)" },
-      { id: "prerequisites", title: "Prerequisites" },
       { id: "create-agent", title: "Create an Agent" },
       { id: "populate-knowledge", title: "Add Knowledge" },
     ],
@@ -52,49 +50,11 @@ const docSections: DocSection[] = [
     id: "how-it-works",
     title: "How It Works",
     icon: Workflow,
-    children: [
-      { id: "architecture", title: "Architecture" },
-      { id: "ai-engine", title: "AI Engine" },
-      { id: "knowledge-base-how", title: "Knowledge Base" },
-    ],
-  },
-  {
-    id: "user-guide",
-    title: "User Guide",
-    icon: Book,
-    children: [
-      { id: "dashboard-overview", title: "Dashboard Overview" },
-      { id: "managing-agents", title: "Managing Agents" },
-      { id: "knowledge-management", title: "Knowledge Management" },
-      { id: "test-chatbot", title: "Test the Chatbot" },
-      { id: "deploy-website", title: "Deploy on Website" },
-      { id: "deploy-whatsapp", title: "Deploy on WhatsApp" },
-    ],
-  },
-  {
-    id: "integrations",
-    title: "Integrations",
-    icon: Zap,
-    children: [
-      { id: "integrations-overview", title: "Overview" },
-      { id: "workflow-builder", title: "Workflow Builder" },
-      { id: "triggers-actions", title: "Triggers & Actions" },
-      { id: "field-mapping", title: "Field Mapping" },
-    ],
   },
   {
     id: "integration-apps",
     title: "Integration Apps",
     icon: Grid3X3,
-    children: [
-      { id: "communication-apps", title: "Communication" },
-      { id: "email-apps", title: "Email" },
-      { id: "crm-apps", title: "CRM & Sales" },
-      { id: "ecommerce-apps", title: "E-commerce" },
-      { id: "productivity-apps", title: "Productivity" },
-      { id: "database-apps", title: "Databases" },
-      { id: "developer-apps", title: "Developer Tools" },
-    ],
   },
   {
     id: "whatsapp-guide",
@@ -103,19 +63,6 @@ const docSections: DocSection[] = [
     children: [
       { id: "whatsapp-setup", title: "Setup Guide" },
       { id: "message-flow", title: "Message Flow" },
-      { id: "whatsapp-templates", title: "Message Templates" },
-      { id: "whatsapp-errors", title: "Error Handling" },
-    ],
-  },
-  {
-    id: "admin-guide",
-    title: "Admin Guide",
-    icon: Shield,
-    children: [
-      { id: "user-management", title: "User Management" },
-      { id: "agent-management", title: "Agent Management" },
-      { id: "conversations", title: "Conversations" },
-      { id: "analytics", title: "Analytics & Logs" },
     ],
   },
   {
@@ -126,17 +73,12 @@ const docSections: DocSection[] = [
       { id: "api-overview", title: "API Overview" },
       { id: "authentication", title: "Authentication" },
       { id: "endpoints", title: "Endpoints" },
-      { id: "webhooks-api", title: "Webhooks" },
     ],
   },
   {
     id: "faqs",
     title: "FAQs",
     icon: HelpCircle,
-    children: [
-      { id: "general-faqs", title: "General" },
-      { id: "troubleshooting", title: "Troubleshooting" },
-    ],
   },
   { id: "best-practices", title: "Best Practices", icon: Star },
   { id: "glossary", title: "Glossary", icon: BookOpen },
@@ -172,11 +114,16 @@ function DocsSidebar({ activeSection, onSectionClick }: DocsSidebarProps) {
     : docSections;
 
   return (
-    <div className="flex flex-col h-full border-r bg-muted/30">
+    <div className="flex flex-col h-full border-r bg-gradient-to-b from-muted/30 to-background">
       <div className="p-4 border-b">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search docs..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-background" />
+          <Input 
+            placeholder="Search docs..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            className="pl-9 bg-background border-muted-foreground/20 focus:border-primary transition-all" 
+          />
         </div>
       </div>
       <ScrollArea className="flex-1">
@@ -188,28 +135,40 @@ function DocsSidebar({ activeSection, onSectionClick }: DocsSidebarProps) {
             const isActive = activeSection === section.id || section.children?.some((child) => activeSection === child.id);
 
             return (
-              <div key={section.id}>
+              <div key={section.id} className="animate-in fade-in duration-200">
                 <button
                   onClick={() => handleSectionClick(section.id, !!hasChildren)}
                   className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                    "hover:bg-accent hover:text-accent-foreground hover:translate-x-1",
+                    isActive ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground"
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <div className={cn(
+                    "p-1.5 rounded-lg transition-colors duration-200",
+                    isActive ? "bg-primary/20" : "bg-muted"
+                  )}>
+                    <Icon className="h-4 w-4 shrink-0" />
+                  </div>
                   <span className="flex-1 text-left truncate">{section.title}</span>
-                  {hasChildren && <span className="shrink-0">{isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</span>}
+                  {hasChildren && (
+                    <span className={cn(
+                      "shrink-0 transition-transform duration-200",
+                      isExpanded && "rotate-90"
+                    )}>
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  )}
                 </button>
                 {hasChildren && isExpanded && (
-                  <div className="ml-6 mt-1 space-y-1 border-l pl-3">
+                  <div className="ml-10 mt-1 space-y-1 border-l-2 border-muted pl-3 animate-in slide-in-from-top-2 duration-200">
                     {section.children!.map((child) => (
                       <button
                         key={child.id}
                         onClick={() => onSectionClick(child.id)}
                         className={cn(
-                          "w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors",
-                          "hover:bg-accent hover:text-accent-foreground",
+                          "w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200",
+                          "hover:bg-accent hover:text-accent-foreground hover:translate-x-1",
                           activeSection === child.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground"
                         )}
                       >
@@ -223,15 +182,18 @@ function DocsSidebar({ activeSection, onSectionClick }: DocsSidebarProps) {
           })}
         </nav>
       </ScrollArea>
-      <div className="p-4 border-t text-xs text-muted-foreground">
-        <p>Last updated: {new Date().toLocaleDateString()}</p>
+      <div className="p-4 border-t bg-muted/30">
+        <p className="text-xs text-muted-foreground flex items-center gap-2">
+          <Sparkles className="h-3 w-3" />
+          Last updated: {new Date().toLocaleDateString()}
+        </p>
       </div>
     </div>
   );
 }
 
 // =============================================================================
-// DOCS COMPONENTS
+// DOCS COMPONENTS - Enhanced styling
 // =============================================================================
 
 function DocsCodeBlock({ children, language = "text", title }: { children: string; language?: string; title?: string }) {
@@ -242,20 +204,24 @@ function DocsCodeBlock({ children, language = "text", title }: { children: strin
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="relative my-4 rounded-lg border bg-zinc-950 dark:bg-zinc-900">
+    <div className="relative my-4 rounded-xl border bg-zinc-950 dark:bg-zinc-900 overflow-hidden shadow-lg">
       {title && (
-        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
+        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2.5 bg-zinc-900/50">
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4 text-zinc-400" />
-            <span className="text-sm text-zinc-400">{title}</span>
+            <span className="text-sm text-zinc-400 font-medium">{title}</span>
           </div>
           <Badge variant="outline" className="text-xs bg-zinc-800 text-zinc-400 border-zinc-700">{language}</Badge>
         </div>
       )}
-      <div className="relative">
+      <div className="relative group">
         <pre className="overflow-x-auto p-4 text-sm text-zinc-100"><code className="font-mono">{children}</code></pre>
-        <button onClick={copyCode} className="absolute right-2 top-2 p-2 rounded-md hover:bg-zinc-800 transition-colors" aria-label="Copy code">
-          {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-zinc-400" />}
+        <button 
+          onClick={copyCode} 
+          className="absolute right-3 top-3 p-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-700 transition-all duration-200 opacity-0 group-hover:opacity-100" 
+          aria-label="Copy code"
+        >
+          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4 text-zinc-400" />}
         </button>
       </div>
     </div>
@@ -264,16 +230,16 @@ function DocsCodeBlock({ children, language = "text", title }: { children: strin
 
 type CalloutType = "info" | "warning" | "tip";
 const calloutConfig: Record<CalloutType, { icon: React.ElementType; className: string }> = {
-  info: { icon: Info, className: "border-blue-500/50 bg-blue-500/10" },
-  warning: { icon: AlertTriangle, className: "border-yellow-500/50 bg-yellow-500/10" },
-  tip: { icon: Lightbulb, className: "border-purple-500/50 bg-purple-500/10" },
+  info: { icon: Info, className: "border-l-4 border-blue-500 bg-blue-500/10" },
+  warning: { icon: AlertTriangle, className: "border-l-4 border-amber-500 bg-amber-500/10" },
+  tip: { icon: Lightbulb, className: "border-l-4 border-emerald-500 bg-emerald-500/10" },
 };
 
 function DocsCallout({ type = "info", title, children }: { type?: CalloutType; title?: string; children: React.ReactNode }) {
   const config = calloutConfig[type];
   const Icon = config.icon;
   return (
-    <div className={cn("my-6 rounded-lg border-l-4 p-4", config.className)}>
+    <div className={cn("my-6 rounded-xl p-4 transition-all duration-200 hover:shadow-md", config.className)}>
       <div className="flex items-start gap-3">
         <Icon className="h-5 w-5 shrink-0 mt-0.5" />
         <div className="flex-1">
@@ -287,10 +253,12 @@ function DocsCallout({ type = "info", title, children }: { type?: CalloutType; t
 
 function FeatureCard({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
   return (
-    <Card className="h-full hover:shadow-md transition-shadow">
+    <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-card to-muted/30">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
+          <div className="p-2.5 rounded-xl bg-primary/10 transition-transform duration-200 group-hover:scale-110">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
           <CardTitle className="text-lg">{title}</CardTitle>
         </div>
       </CardHeader>
@@ -301,78 +269,14 @@ function FeatureCard({ icon: Icon, title, description }: { icon: React.ElementTy
 
 function StepItem({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-4">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">{number}</div>
+    <div className="flex gap-4 group">
+      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground flex items-center justify-center font-bold text-sm shadow-lg group-hover:scale-110 transition-transform duration-200">
+        {number}
+      </div>
       <div className="flex-1 pt-1">
         <h4 className="font-semibold mb-2">{title}</h4>
         <div className="text-muted-foreground text-sm">{children}</div>
       </div>
-    </div>
-  );
-}
-
-// Integration details component
-interface IntegrationDetailProps {
-  name: string;
-  description: string;
-  useCases: string[];
-  howToConnect: string[];
-  triggers: string[];
-  actions: string[];
-  exampleCode?: string;
-  troubleshooting?: string[];
-}
-
-function IntegrationDetail({ name, description, useCases, howToConnect, triggers, actions, exampleCode, troubleshooting }: IntegrationDetailProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="border rounded-lg mb-3 overflow-hidden">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left">
-        <span className="font-semibold">{name}</span>
-        {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-      </button>
-      {isOpen && (
-        <div className="p-4 pt-0 border-t bg-muted/20">
-          <p className="text-muted-foreground mb-4">{description}</p>
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <h5 className="font-medium mb-2 text-sm">Use Cases</h5>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {useCases.map((uc, i) => <li key={i}>• {uc}</li>)}
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-medium mb-2 text-sm">How to Connect</h5>
-              <ol className="text-sm text-muted-foreground space-y-1">
-                {howToConnect.map((step, i) => <li key={i}>{i + 1}. {step}</li>)}
-              </ol>
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <h5 className="font-medium mb-2 text-sm">Triggers</h5>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {triggers.map((t, i) => <li key={i}>• {t}</li>)}
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-medium mb-2 text-sm">Actions</h5>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {actions.map((a, i) => <li key={i}>• {a}</li>)}
-              </ul>
-            </div>
-          </div>
-          {exampleCode && <DocsCodeBlock language="json" title="Example Payload">{exampleCode}</DocsCodeBlock>}
-          {troubleshooting && troubleshooting.length > 0 && (
-            <div className="mt-4">
-              <h5 className="font-medium mb-2 text-sm">Troubleshooting</h5>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {troubleshooting.map((t, i) => <li key={i}>• {t}</li>)}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -415,13 +319,18 @@ export function DocsContent() {
   return (
     <div className="flex h-full min-h-[calc(100vh-80px)]">
       {/* Mobile menu button */}
-      <Button variant="ghost" size="icon" className="fixed top-20 left-4 z-50 lg:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
+      <Button 
+        variant="outline" 
+        size="icon" 
+        className="fixed top-20 left-4 z-50 lg:hidden shadow-lg bg-background" 
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
         {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 lg:relative lg:translate-x-0 top-0 lg:top-auto bg-background border-r",
+        "fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-300 lg:relative lg:translate-x-0 top-0 lg:top-auto bg-background",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <DocsSidebar activeSection={activeSection} onSectionClick={handleSectionClick} />
@@ -437,9 +346,9 @@ export function DocsContent() {
           {/* ================================================================= */}
           {/* PRODUCT OVERVIEW */}
           {/* ================================================================= */}
-          <section id="product-overview" className="scroll-mt-8 mb-16">
+          <section id="product-overview" className="scroll-mt-8 mb-16 animate-in fade-in duration-500">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
+              <div className="p-2.5 rounded-xl bg-primary/10">
                 <Home className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">Product Overview</h1>
@@ -472,44 +381,18 @@ export function DocsContent() {
             <div id="key-benefits" className="scroll-mt-20 mb-8">
               <h2 className="text-xl font-semibold mb-4">Key Benefits</h2>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">No coding required</h4>
-                    <p className="text-sm text-muted-foreground">Build powerful AI agents with our visual interface</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">Fast setup (under 10 minutes)</h4>
-                    <p className="text-sm text-muted-foreground">Go from zero to live chatbot in minutes</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">24/7 automated support</h4>
-                    <p className="text-sm text-muted-foreground">Never miss a customer question, even at 3am</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">Multi-channel deployment</h4>
-                    <p className="text-sm text-muted-foreground">Website widget, WhatsApp, and more</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div id="use-cases" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Use Cases</h2>
-              <div className="space-y-3">
-                {["Customer support automation", "Lead capture and qualification", "FAQ bots", "Appointment booking", "Product recommendations", "Order status inquiries"].map((useCase, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                    <ArrowRight className="h-4 w-4 text-primary" />
-                    <span>{useCase}</span>
+                {[
+                  { title: "No coding required", desc: "Build powerful AI agents with our visual interface" },
+                  { title: "Fast setup (under 10 minutes)", desc: "Go from zero to live chatbot in minutes" },
+                  { title: "24/7 automated support", desc: "Never miss a customer question, even at 3am" },
+                  { title: "Multi-channel deployment", desc: "Website widget, WhatsApp, and more" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3 p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                    <Check className="h-5 w-5 text-emerald-500 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -521,16 +404,16 @@ export function DocsContent() {
           {/* ================================================================= */}
           <section id="how-it-works" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
+              <div className="p-2.5 rounded-xl bg-primary/10">
                 <Workflow className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">How It Works</h1>
             </div>
             <p className="text-lg text-muted-foreground mb-8">Understand the flow from setup to deployment.</p>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               <StepItem number={1} title="Sign up and log in">
-                Create your free account at <a href="/signup" className="text-primary hover:underline">Sign Up</a> and verify your email.
+                Create your free account at <a href="/signup" className="text-primary hover:underline font-medium">Sign Up</a> and verify your email.
               </StepItem>
               <StepItem number={2} title="Create an AI agent">
                 In your dashboard, click <strong>My Agents → Create New Agent</strong>. Give it a name and choose the channel type.
@@ -547,7 +430,7 @@ export function DocsContent() {
               <StepItem number={6} title="Monitor and improve">
                 Track conversations in Analytics, review responses, and continuously improve your knowledge base.
               </StepItem>
-              <StepItem number={7} title="Integrate with 50+ apps">
+              <StepItem number={7} title="Integrate with 75+ apps">
                 Connect Google Sheets, Slack, Shopify, and more using the workflow builder.
               </StepItem>
             </div>
@@ -558,11 +441,11 @@ export function DocsContent() {
           {/* ================================================================= */}
           <section id="getting-started" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
+              <div className="p-2.5 rounded-xl bg-primary/10">
                 <Rocket className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">Getting Started</h1>
-              <Badge variant="secondary">5 min setup</Badge>
+              <Badge variant="secondary" className="animate-pulse">5 min setup</Badge>
             </div>
             <p className="text-lg text-muted-foreground mb-8">Go from zero to a live chatbot in under 5 minutes.</p>
 
@@ -575,7 +458,7 @@ export function DocsContent() {
 
               <div className="space-y-6 mt-6">
                 <StepItem number={1} title="Create an account">
-                  Go to <a href="/signup" className="text-primary hover:underline">Sign Up</a>, enter your name and email, then confirm your account via the verification email.
+                  Go to <a href="/signup" className="text-primary hover:underline font-medium">Sign Up</a>, enter your name and email, then confirm your account via the verification email.
                 </StepItem>
                 <StepItem number={2} title="Create an agent">
                   In the dashboard click <strong>My Agents → Create New Agent</strong>. Choose <em>Website</em> or <em>WhatsApp</em> and give it a descriptive name.
@@ -587,35 +470,8 @@ export function DocsContent() {
                   Open <strong>Test Agents</strong>, pick your agent, ask a question and verify the response is accurate.
                 </StepItem>
                 <StepItem number={5} title="Deploy the widget">
-                  Copy the widget snippet and paste it into your website before the closing <code className="bg-muted px-1.5 py-0.5 rounded text-sm">&lt;/body&gt;</code> tag.
+                  Copy the widget snippet and paste it into your website before the closing <code className="bg-muted px-2 py-1 rounded-lg text-sm font-mono">&lt;/body&gt;</code> tag.
                 </StepItem>
-              </div>
-            </div>
-
-            <div id="prerequisites" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Prerequisites</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">AgentForge Account</h4>
-                    <p className="text-sm text-muted-foreground">A registered account with email confirmed</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">Website Access</h4>
-                    <p className="text-sm text-muted-foreground">Admin access to paste the widget snippet</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Info className="h-5 w-5 text-blue-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">WhatsApp Business (Optional)</h4>
-                    <p className="text-sm text-muted-foreground">Only needed if you plan to use WhatsApp</p>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -634,10 +490,10 @@ export function DocsContent() {
               <p className="text-muted-foreground mb-4">Your agent's intelligence comes from the knowledge you provide. There are two main ways to add knowledge:</p>
               
               <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <Card>
+                <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Search className="h-5 w-5" />
+                      <Search className="h-5 w-5 text-primary" />
                       Website Scanning
                     </CardTitle>
                   </CardHeader>
@@ -648,10 +504,10 @@ export function DocsContent() {
                     <p>4. Review and remove any irrelevant content</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
+                      <FileText className="h-5 w-5 text-primary" />
                       Manual Upload
                     </CardTitle>
                   </CardHeader>
@@ -675,18 +531,18 @@ export function DocsContent() {
           {/* ================================================================= */}
           <section id="integration-apps" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
+              <div className="p-2.5 rounded-xl bg-primary/10">
                 <Grid3X3 className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">Integration Documentation</h1>
-              <Badge variant="secondary">30+ Apps</Badge>
+              <Badge variant="secondary">75+ Apps</Badge>
             </div>
             <p className="text-lg text-muted-foreground mb-8">
               Professional, n8n-style documentation for all supported integrations. Each integration includes detailed setup instructions, operations, triggers, actions, examples, and troubleshooting guides.
             </p>
 
             {/* Embedded Integration Docs Component */}
-            <div className="border rounded-xl overflow-hidden bg-card min-h-[600px]">
+            <div className="border rounded-2xl overflow-hidden bg-card min-h-[600px] shadow-lg">
               <IntegrationDocs />
             </div>
           </section>
@@ -696,8 +552,8 @@ export function DocsContent() {
           {/* ================================================================= */}
           <section id="whatsapp-guide" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <MessageSquare className="h-6 w-6 text-primary" />
+              <div className="p-2.5 rounded-xl bg-green-500/10">
+                <MessageSquare className="h-6 w-6 text-green-500" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">WhatsApp AI Agent</h1>
             </div>
@@ -715,63 +571,85 @@ export function DocsContent() {
 
             <div id="message-flow" className="scroll-mt-20 mb-8">
               <h2 className="text-xl font-semibold mb-4">Message Flow</h2>
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-center p-6 bg-muted/30 rounded-lg">
-                <div className="text-center p-4 bg-card rounded-lg border"><MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-500" /><p className="text-sm font-medium">Customer sends message</p></div>
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-center p-8 bg-gradient-to-br from-muted/30 to-background rounded-2xl border">
+                <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                  <p className="text-sm font-medium">Customer sends message</p>
+                </div>
                 <ArrowRight className="h-6 w-6 text-muted-foreground hidden md:block" />
-                <div className="text-center p-4 bg-card rounded-lg border"><Workflow className="h-8 w-8 mx-auto mb-2 text-blue-500" /><p className="text-sm font-medium">Platform processes</p></div>
+                <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
+                  <Workflow className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                  <p className="text-sm font-medium">Platform processes</p>
+                </div>
                 <ArrowRight className="h-6 w-6 text-muted-foreground hidden md:block" />
-                <div className="text-center p-4 bg-card rounded-lg border"><Bot className="h-8 w-8 mx-auto mb-2 text-purple-500" /><p className="text-sm font-medium">AI finds answer</p></div>
+                <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
+                  <Bot className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+                  <p className="text-sm font-medium">AI finds answer</p>
+                </div>
                 <ArrowRight className="h-6 w-6 text-muted-foreground hidden md:block" />
-                <div className="text-center p-4 bg-card rounded-lg border"><MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-500" /><p className="text-sm font-medium">Reply sent</p></div>
-              </div>
-            </div>
-
-            <div id="whatsapp-templates" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Message Templates</h2>
-              <DocsCodeBlock language="text" title="Example Conversation">{`Customer: What are your opening hours?
-AI Agent: Our opening hours are 9am to 6pm, Monday to Friday. Is there anything else I can help you with?`}</DocsCodeBlock>
-            </div>
-
-            <div id="whatsapp-errors" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Error Handling</h2>
-              <div className="space-y-3">
-                <DocsCallout type="warning" title="Invalid phone number">Check your WhatsApp number is correct and registered with WhatsApp Business.</DocsCallout>
-                <DocsCallout type="warning" title="No response">Ensure your agent is active and has knowledge uploaded.</DocsCallout>
-                <DocsCallout type="warning" title="Integration failed">Reconnect your WhatsApp account and verify credentials.</DocsCallout>
+                <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                  <p className="text-sm font-medium">Reply sent</p>
+                </div>
               </div>
             </div>
           </section>
 
           {/* ================================================================= */}
-          {/* ADMIN GUIDE */}
+          {/* API REFERENCE */}
           {/* ================================================================= */}
-          <section id="admin-guide" className="scroll-mt-8 mb-16">
+          <section id="api-reference" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Shield className="h-6 w-6 text-primary" />
+              <div className="p-2.5 rounded-xl bg-violet-500/10">
+                <Code className="h-6 w-6 text-violet-500" />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight">Admin Guide</h1>
+              <h1 className="text-3xl font-bold tracking-tight">API Reference</h1>
             </div>
-            <p className="text-lg text-muted-foreground mb-8">Manage users, agents, and monitor conversations.</p>
+            <p className="text-lg text-muted-foreground mb-8">Integrate AgentForge with your own applications.</p>
 
-            <div id="user-management" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">User Management</h2>
-              <p className="text-muted-foreground mb-4">Go to <strong>Settings → Users</strong> to add or remove team members.</p>
-            </div>
-
-            <div id="agent-management" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Agent Management</h2>
-              <p className="text-muted-foreground mb-4">View all agents in <strong>My Agents</strong>. Edit, deactivate, or delete as needed.</p>
+            <div id="api-overview" className="scroll-mt-20 mb-8">
+              <h2 className="text-xl font-semibold mb-4">API Overview</h2>
+              <p className="text-muted-foreground mb-4">The AgentForge API allows you to programmatically interact with your AI agents.</p>
+              <DocsCodeBlock language="bash" title="Base URL">{`https://api.agentforge.app/v1`}</DocsCodeBlock>
             </div>
 
-            <div id="conversations" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Conversations</h2>
-              <p className="text-muted-foreground mb-4">Go to <strong>Conversations</strong> to filter by agent, date, or channel. Export conversations for analysis.</p>
+            <div id="authentication" className="scroll-mt-20 mb-8">
+              <h2 className="text-xl font-semibold mb-4">Authentication</h2>
+              <p className="text-muted-foreground mb-4">All API requests require an API key in the header:</p>
+              <DocsCodeBlock language="bash" title="Authentication Header">{`Authorization: Bearer YOUR_API_KEY`}</DocsCodeBlock>
             </div>
 
-            <div id="analytics" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Analytics & Logs</h2>
-              <p className="text-muted-foreground mb-4">Access analytics in <strong>Dashboard</strong> or <strong>Analytics</strong>. View metrics like total conversations, response rate, and user satisfaction.</p>
+            <div id="endpoints" className="scroll-mt-20 mb-8">
+              <h2 className="text-xl font-semibold mb-4">Endpoints</h2>
+              <div className="space-y-4">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Badge className="bg-green-500">POST</Badge>
+                      <code className="text-sm font-mono">/chat</code>
+                    </div>
+                    <CardDescription>Send a message to an AI agent</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Badge className="bg-blue-500">GET</Badge>
+                      <code className="text-sm font-mono">/agents</code>
+                    </div>
+                    <CardDescription>List all your AI agents</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Badge className="bg-blue-500">GET</Badge>
+                      <code className="text-sm font-mono">/conversations</code>
+                    </div>
+                    <CardDescription>Retrieve conversation history</CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
             </div>
           </section>
 
@@ -780,36 +658,25 @@ AI Agent: Our opening hours are 9am to 6pm, Monday to Friday. Is there anything 
           {/* ================================================================= */}
           <section id="faqs" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <HelpCircle className="h-6 w-6 text-primary" />
+              <div className="p-2.5 rounded-xl bg-amber-500/10">
+                <HelpCircle className="h-6 w-6 text-amber-500" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">FAQs</h1>
             </div>
 
-            <div id="general-faqs" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">General</h2>
-              <div className="space-y-4">
-                {[
-                  { q: "How long does it take to set up?", a: "Most users are live in under 10 minutes." },
-                  { q: "Do I need to code?", a: "No, everything is point-and-click." },
-                  { q: "Can I use my own data?", a: "Yes, scan your website or upload documents." },
-                  { q: "Can I use both WhatsApp and website chat?", a: "Yes, you can deploy on both channels." },
-                ].map((faq, i) => (
-                  <Card key={i}>
-                    <CardHeader className="pb-2"><CardTitle className="text-base">{faq.q}</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">{faq.a}</p></CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div id="troubleshooting" className="scroll-mt-20 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Troubleshooting</h2>
-              <div className="space-y-3">
-                <DocsCallout type="info" title="Scan not working">Check your website URL and ensure pages are publicly accessible.</DocsCallout>
-                <DocsCallout type="info" title="No responses">Make sure your agent has knowledge uploaded.</DocsCallout>
-                <DocsCallout type="info" title="Widget not showing">Ensure code is placed before &lt;/body&gt; and check for JS errors.</DocsCallout>
-              </div>
+            <div className="space-y-4 mt-6">
+              {[
+                { q: "How long does it take to set up?", a: "Most users are live in under 10 minutes." },
+                { q: "Do I need to code?", a: "No, everything is point-and-click." },
+                { q: "Can I use my own data?", a: "Yes, scan your website or upload documents." },
+                { q: "Can I use both WhatsApp and website chat?", a: "Yes, you can deploy on both channels." },
+                { q: "What's included in the free plan?", a: "1 agent, 100 messages/month, and basic integrations." },
+              ].map((faq, i) => (
+                <Card key={i} className="border-0 shadow-lg hover:shadow-xl transition-all duration-200">
+                  <CardHeader className="pb-2"><CardTitle className="text-base">{faq.q}</CardTitle></CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground">{faq.a}</p></CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 
@@ -818,15 +685,22 @@ AI Agent: Our opening hours are 9am to 6pm, Monday to Friday. Is there anything 
           {/* ================================================================= */}
           <section id="best-practices" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Star className="h-6 w-6 text-primary" />
+              <div className="p-2.5 rounded-xl bg-yellow-500/10">
+                <Star className="h-6 w-6 text-yellow-500" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">Best Practices</h1>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mt-6">
-              {["Use clear, simple language in your knowledge base", "Add FAQs and common questions", "Keep answers concise and relevant", "Regularly update your knowledge base", "Test with real user questions", "Remove outdated information", "Avoid duplicate entries", "Test both website and WhatsApp flows"].map((tip, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 rounded-lg border bg-card">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+              {[
+                "Use clear, simple language in your knowledge base", 
+                "Add FAQs and common questions", 
+                "Keep answers concise and relevant", 
+                "Regularly update your knowledge base", 
+                "Test with real user questions", 
+                "Remove outdated information"
+              ].map((tip, i) => (
+                <div key={i} className="flex items-start gap-3 p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <Check className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
                   <span className="text-sm">{tip}</span>
                 </div>
               ))}
@@ -838,12 +712,12 @@ AI Agent: Our opening hours are 9am to 6pm, Monday to Friday. Is there anything 
           {/* ================================================================= */}
           <section id="glossary" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BookOpen className="h-6 w-6 text-primary" />
+              <div className="p-2.5 rounded-xl bg-indigo-500/10">
+                <BookOpen className="h-6 w-6 text-indigo-500" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">Glossary</h1>
             </div>
-            <div className="mt-6 border rounded-lg overflow-hidden">
+            <div className="mt-6 border rounded-2xl overflow-hidden shadow-lg">
               <table className="w-full text-sm">
                 <thead><tr className="border-b bg-muted/50"><th className="px-4 py-3 text-left font-semibold">Term</th><th className="px-4 py-3 text-left font-semibold">Definition</th></tr></thead>
                 <tbody>
@@ -854,9 +728,8 @@ AI Agent: Our opening hours are 9am to 6pm, Monday to Friday. Is there anything 
                     ["Integration", "Connecting your agent to other apps"],
                     ["Trigger", "An event that starts a workflow"],
                     ["Action", "What happens after a trigger"],
-                    ["Dashboard", "The main control panel for your account"],
                   ].map(([term, def], i) => (
-                    <tr key={i} className="border-b last:border-0"><td className="px-4 py-3 font-medium">{term}</td><td className="px-4 py-3 text-muted-foreground">{def}</td></tr>
+                    <tr key={i} className="border-b last:border-0 hover:bg-muted/30 transition-colors"><td className="px-4 py-3 font-medium">{term}</td><td className="px-4 py-3 text-muted-foreground">{def}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -868,16 +741,27 @@ AI Agent: Our opening hours are 9am to 6pm, Monday to Friday. Is there anything 
           {/* ================================================================= */}
           <section id="resources" className="scroll-mt-8 mb-16">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Link2 className="h-6 w-6 text-primary" />
+              <div className="p-2.5 rounded-xl bg-cyan-500/10">
+                <Link2 className="h-6 w-6 text-cyan-500" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mt-6">
-              <a href="/signup" className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"><ArrowRight className="h-5 w-5 text-primary" /><span>Sign Up</span></a>
-              <a href="/login" className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"><ArrowRight className="h-5 w-5 text-primary" /><span>Login</span></a>
-              <a href="mailto:support@agentforge.app" className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"><ArrowRight className="h-5 w-5 text-primary" /><span>Contact Support</span></a>
-              <a href="/pricing" className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"><ArrowRight className="h-5 w-5 text-primary" /><span>Pricing</span></a>
+              {[
+                { href: "/signup", label: "Sign Up" },
+                { href: "/login", label: "Login" },
+                { href: "mailto:support@agentforge.app", label: "Contact Support" },
+                { href: "/pricing", label: "Pricing" },
+              ].map((link, i) => (
+                <a 
+                  key={i}
+                  href={link.href} 
+                  className="flex items-center gap-3 p-4 rounded-xl border bg-card hover:bg-primary/5 hover:border-primary/50 transition-all duration-200 hover:-translate-y-0.5 group"
+                >
+                  <ArrowRight className="h-5 w-5 text-primary group-hover:translate-x-1 transition-transform" />
+                  <span className="font-medium">{link.label}</span>
+                </a>
+              ))}
             </div>
           </section>
 
