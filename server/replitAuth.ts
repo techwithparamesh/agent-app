@@ -171,11 +171,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   // Development mode: bypass authentication if REPL_ID is not set
-  // Only auto-login if no session exists and we're in dev mode
-  // Commented out to force proper login
-  /*
-  if (!process.env.REPL_ID) {
-    // Create a mock user for development
+  if (!process.env.REPL_ID && process.env.NODE_ENV === "development") {
+    // Create a mock user for development (skip database in dev mode)
     const mockUser = {
       claims: {
         sub: "dev-user-001",
@@ -188,21 +185,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     };
     (req as any).user = mockUser;
     
-    // Ensure user exists in database
-    try {
-      await upsertUser({
-        sub: mockUser.claims.sub,
-        email: mockUser.claims.email,
-        name: mockUser.claims.name,
-        profile_image_url: mockUser.claims.profile_image_url
-      });
-    } catch (error) {
-      console.error("Error upserting dev user:", error);
-    }
-    
     return next();
   }
-  */
 
   // Skip Replit Auth if not configured
   if (!process.env.REPL_ID) {

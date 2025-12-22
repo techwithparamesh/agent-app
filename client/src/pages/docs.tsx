@@ -1,13 +1,15 @@
 import { DocsContent } from "@/pages/dashboard/docs";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
-export default function PublicDocs() {
+export default function Docs() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="pt-16">
+      <main className="flex-1 pt-16">
         <DocsContent />
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }

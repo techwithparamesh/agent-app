@@ -197,6 +197,19 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
+      
+      // In dev mode without database, return mock user data
+      if (!process.env.REPL_ID && process.env.NODE_ENV === "development" && userId === "dev-user-001") {
+        return res.json({
+          id: "dev-user-001",
+          email: "dev@example.com",
+          name: "Development User",
+          profileImageUrl: "https://ui-avatars.com/api/?name=Dev+User",
+          plan: "pro",
+          createdAt: new Date().toISOString()
+        });
+      }
+      
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });

@@ -41,8 +41,7 @@ const Templates = lazy(() => import("@/pages/dashboard/templates"));
 const CreateTemplate = lazy(() => import("@/pages/dashboard/templates/new"));
 const Analytics = lazy(() => import("@/pages/dashboard/analytics"));
 const Integrations = lazy(() => import("@/pages/dashboard/integrations"));
-const Docs = lazy(() => import("@/pages/dashboard/docs"));
-const PublicDocs = lazy(() => import("@/pages/docs"));
+const Docs = lazy(() => import("@/pages/docs"));
 
 // WhatsApp Business & Billing Pages - lazy loaded
 const WhatsAppAccounts = lazy(() => import("@/pages/dashboard/whatsapp-accounts"));
@@ -79,8 +78,7 @@ function Router() {
       <Route path="/dashboard/templates" component={Templates} />
       <Route path="/dashboard/analytics" component={Analytics} />
       <Route path="/dashboard/integrations" component={Integrations} />
-      <Route path="/dashboard/docs" component={Docs} />
-      <Route path="/docs" component={PublicDocs} />
+      <Route path="/docs" component={Docs} />
       
       {/* WhatsApp Business & Billing Routes */}
       <Route path="/dashboard/whatsapp/accounts" component={WhatsAppAccounts} />
