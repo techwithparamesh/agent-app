@@ -3757,6 +3757,139 @@ const comprehensiveIntegrations: Record<string, IntegrationConfig> = {
     aiInstructions: 'Create well-formatted issues with proper markdown. Use appropriate labels for categorization.',
   },
 
+  // GitLab
+  gitlab: {
+    triggers: [
+      { id: 'issue_opened', name: 'Issue Opened', icon: '➕', description: 'When new issue is created', dataFields: ['issue_iid', 'title', 'description', 'author', 'labels', 'project'] },
+      { id: 'issue_closed', name: 'Issue Closed', icon: '✅', description: 'When issue is closed', dataFields: ['issue_iid', 'title', 'closed_by', 'project'] },
+      { id: 'mr_opened', name: 'Merge Request Opened', icon: '🔀', description: 'When MR is opened', dataFields: ['mr_iid', 'title', 'author', 'source_branch', 'target_branch'] },
+      { id: 'mr_merged', name: 'Merge Request Merged', icon: '✅', description: 'When MR is merged', dataFields: ['mr_iid', 'title', 'merged_by', 'project'] },
+      { id: 'pipeline_completed', name: 'Pipeline Completed', icon: '🔧', description: 'When CI/CD pipeline completes', dataFields: ['pipeline_id', 'status', 'ref', 'duration'] },
+      { id: 'push', name: 'Push Event', icon: '📤', description: 'When code is pushed', dataFields: ['ref', 'commits', 'user_name', 'project'] },
+    ],
+    actions: [
+      { id: 'create_issue', name: 'Create Issue', icon: '➕', description: 'Create GitLab issue', fields: [
+        { key: 'projectId', label: 'Project ID/Path', type: 'text', placeholder: 'namespace/project or 12345', required: true },
+        { key: 'title', label: 'Issue Title', type: 'text', placeholder: '[{{customer_name}}] {{issue_summary}}', required: true },
+        { key: 'description', label: 'Description', type: 'textarea', placeholder: '## Details\n{{message}}' },
+        { key: 'labels', label: 'Labels', type: 'text', placeholder: 'bug,customer-report', helpText: 'Comma-separated' },
+        { key: 'assignee_ids', label: 'Assignee IDs', type: 'text', placeholder: '1,2,3', helpText: 'Comma-separated user IDs' },
+      ]},
+      { id: 'add_comment', name: 'Add Note', icon: '💬', description: 'Comment on issue/MR', fields: [
+        { key: 'projectId', label: 'Project ID', type: 'text', placeholder: 'namespace/project', required: true },
+        { key: 'issueIid', label: 'Issue IID', type: 'number', placeholder: '{{issue_iid}}', required: true },
+        { key: 'body', label: 'Note Content', type: 'textarea', placeholder: '**Update:** {{ai_summary}}', required: true },
+      ]},
+      { id: 'trigger_pipeline', name: 'Trigger Pipeline', icon: '🚀', description: 'Run CI/CD pipeline', fields: [
+        { key: 'projectId', label: 'Project ID', type: 'text', placeholder: 'namespace/project', required: true },
+        { key: 'ref', label: 'Branch/Tag', type: 'text', placeholder: 'main', required: true },
+        { key: 'variables', label: 'Variables (JSON)', type: 'textarea', placeholder: '{"key": "DEPLOY_ENV", "value": "production"}' },
+      ]},
+      { id: 'close_issue', name: 'Close Issue', icon: '✅', description: 'Close an issue', fields: [
+        { key: 'projectId', label: 'Project ID', type: 'text', placeholder: 'namespace/project', required: true },
+        { key: 'issueIid', label: 'Issue IID', type: 'number', placeholder: '{{issue_iid}}', required: true },
+      ]},
+    ],
+    aiInstructions: 'Create well-structured issues. Use GitLab markdown for formatting.',
+  },
+
+  // Bitbucket
+  bitbucket: {
+    triggers: [
+      { id: 'issue_created', name: 'Issue Created', icon: '➕', description: 'When new issue is created', dataFields: ['issue_id', 'title', 'content', 'reporter', 'priority'] },
+      { id: 'issue_updated', name: 'Issue Updated', icon: '✏️', description: 'When issue is updated', dataFields: ['issue_id', 'title', 'changes', 'actor'] },
+      { id: 'pr_created', name: 'Pull Request Created', icon: '🔀', description: 'When PR is created', dataFields: ['pr_id', 'title', 'author', 'source_branch', 'destination_branch'] },
+      { id: 'pr_merged', name: 'Pull Request Merged', icon: '✅', description: 'When PR is merged', dataFields: ['pr_id', 'title', 'merged_by'] },
+      { id: 'pipeline_completed', name: 'Pipeline Completed', icon: '🔧', description: 'When pipeline completes', dataFields: ['pipeline_uuid', 'state', 'build_number', 'duration'] },
+      { id: 'push', name: 'Push Event', icon: '📤', description: 'When code is pushed', dataFields: ['commits', 'actor', 'repository', 'branch'] },
+    ],
+    actions: [
+      { id: 'create_issue', name: 'Create Issue', icon: '➕', description: 'Create Bitbucket issue', fields: [
+        { key: 'workspace', label: 'Workspace', type: 'text', placeholder: 'your-workspace', required: true },
+        { key: 'repoSlug', label: 'Repository Slug', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'title', label: 'Issue Title', type: 'text', placeholder: '{{issue_summary}}', required: true },
+        { key: 'content', label: 'Description', type: 'textarea', placeholder: '{{message}}' },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['trivial', 'minor', 'major', 'critical', 'blocker'], default: 'major' },
+        { key: 'kind', label: 'Kind', type: 'select', options: ['bug', 'enhancement', 'proposal', 'task'], default: 'bug' },
+      ]},
+      { id: 'add_comment', name: 'Add Comment', icon: '💬', description: 'Comment on issue/PR', fields: [
+        { key: 'workspace', label: 'Workspace', type: 'text', placeholder: 'your-workspace', required: true },
+        { key: 'repoSlug', label: 'Repository', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'issueId', label: 'Issue ID', type: 'number', placeholder: '{{issue_id}}', required: true },
+        { key: 'content', label: 'Comment', type: 'textarea', placeholder: '**Update:** {{ai_summary}}', required: true },
+      ]},
+      { id: 'trigger_pipeline', name: 'Trigger Pipeline', icon: '🚀', description: 'Run pipeline', fields: [
+        { key: 'workspace', label: 'Workspace', type: 'text', placeholder: 'your-workspace', required: true },
+        { key: 'repoSlug', label: 'Repository', type: 'text', placeholder: 'repo-name', required: true },
+        { key: 'target_ref_name', label: 'Branch', type: 'text', placeholder: 'main', required: true },
+      ]},
+    ],
+    aiInstructions: 'Create issues with appropriate priority and kind. Use Bitbucket markdown.',
+  },
+
+  // Redis
+  redis: {
+    triggers: [], // Redis is primarily action-only
+    actions: [
+      { id: 'set_value', name: 'Set Key', icon: '📝', description: 'Set a key-value pair', fields: [
+        { key: 'key', label: 'Key', type: 'text', placeholder: 'user:{{customer_id}}', required: true },
+        { key: 'value', label: 'Value', type: 'textarea', placeholder: '{{data}}', required: true },
+        { key: 'expireSeconds', label: 'Expire After (seconds)', type: 'number', placeholder: '3600', helpText: 'Leave empty for no expiration' },
+      ]},
+      { id: 'get_value', name: 'Get Key', icon: '📖', description: 'Get value by key', fields: [
+        { key: 'key', label: 'Key', type: 'text', placeholder: 'user:{{customer_id}}', required: true },
+      ]},
+      { id: 'delete_key', name: 'Delete Key', icon: '🗑️', description: 'Delete a key', fields: [
+        { key: 'key', label: 'Key', type: 'text', placeholder: 'user:{{customer_id}}', required: true },
+      ]},
+      { id: 'increment', name: 'Increment', icon: '➕', description: 'Increment numeric value', fields: [
+        { key: 'key', label: 'Key', type: 'text', placeholder: 'counter:{{event_type}}', required: true },
+        { key: 'amount', label: 'Amount', type: 'number', placeholder: '1', default: '1' },
+      ]},
+      { id: 'hash_set', name: 'Hash Set', icon: '🗂️', description: 'Set hash field', fields: [
+        { key: 'key', label: 'Hash Key', type: 'text', placeholder: 'user:{{customer_id}}', required: true },
+        { key: 'field', label: 'Field', type: 'text', placeholder: 'last_seen', required: true },
+        { key: 'value', label: 'Value', type: 'text', placeholder: '{{timestamp}}', required: true },
+      ]},
+      { id: 'list_push', name: 'List Push', icon: '📋', description: 'Push to list', fields: [
+        { key: 'key', label: 'List Key', type: 'text', placeholder: 'events:{{customer_id}}', required: true },
+        { key: 'value', label: 'Value', type: 'textarea', placeholder: '{{event_data}}', required: true },
+        { key: 'direction', label: 'Direction', type: 'select', options: ['left', 'right'], default: 'right' },
+      ]},
+    ],
+    aiInstructions: 'Use appropriate key naming conventions. Set TTL for cache data.',
+  },
+
+  // Elasticsearch
+  elasticsearch: {
+    triggers: [], // Elasticsearch is primarily action-only
+    actions: [
+      { id: 'index_document', name: 'Index Document', icon: '📝', description: 'Add/update document', fields: [
+        { key: 'index', label: 'Index Name', type: 'text', placeholder: 'conversations', required: true },
+        { key: 'id', label: 'Document ID', type: 'text', placeholder: '{{conversation_id}}', helpText: 'Leave empty for auto-generated' },
+        { key: 'document', label: 'Document (JSON)', type: 'textarea', placeholder: '{\n  "customer": "{{customer_name}}",\n  "message": "{{message}}",\n  "timestamp": "{{timestamp}}"\n}', required: true },
+      ]},
+      { id: 'search', name: 'Search', icon: '🔍', description: 'Search documents', fields: [
+        { key: 'index', label: 'Index Name', type: 'text', placeholder: 'conversations', required: true },
+        { key: 'query', label: 'Query (JSON)', type: 'textarea', placeholder: '{\n  "match": {\n    "message": "{{search_term}}"\n  }\n}', required: true },
+        { key: 'size', label: 'Max Results', type: 'number', placeholder: '10', default: '10' },
+      ]},
+      { id: 'get_document', name: 'Get Document', icon: '📖', description: 'Get document by ID', fields: [
+        { key: 'index', label: 'Index Name', type: 'text', placeholder: 'conversations', required: true },
+        { key: 'id', label: 'Document ID', type: 'text', placeholder: '{{document_id}}', required: true },
+      ]},
+      { id: 'delete_document', name: 'Delete Document', icon: '🗑️', description: 'Delete document', fields: [
+        { key: 'index', label: 'Index Name', type: 'text', placeholder: 'conversations', required: true },
+        { key: 'id', label: 'Document ID', type: 'text', placeholder: '{{document_id}}', required: true },
+      ]},
+      { id: 'bulk_index', name: 'Bulk Index', icon: '📦', description: 'Index multiple documents', fields: [
+        { key: 'index', label: 'Index Name', type: 'text', placeholder: 'conversations', required: true },
+        { key: 'documents', label: 'Documents (JSON Array)', type: 'textarea', placeholder: '[\n  {"id": "1", "doc": {...}},\n  {"id": "2", "doc": {...}}\n]', required: true },
+      ]},
+    ],
+    aiInstructions: 'Use proper Elasticsearch query DSL. Index documents with appropriate fields for search.',
+  },
+
   // Custom Integration - Build from scratch
   custom_integration: {
     triggers: [

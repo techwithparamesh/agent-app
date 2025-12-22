@@ -598,7 +598,7 @@ AI Agent: Our opening hours are 9am to 6pm, Monday to Friday.</code></pre>
                 <ol>
                   <li>Create a new integration and choose <b>Webhook (Outgoing)</b>.</li>
                   <li>Enter the target URL, HTTP method (POST/PUT/GET), headers (Authorization, Content-Type), and a JSON body template.</li>
-                  <li>Map flow variables into the body using curly-brace templates (e.g., <code>{{customer_email}}</code>).</li>
+                  <li>Map flow variables into the body using curly-brace templates (e.g., <code>{"{{customer_email}}"}</code>).</li>
                 </ol>
               </li>
               <li><b>How to connect (Incoming):</b>
