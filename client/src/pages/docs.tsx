@@ -1,5 +1,5 @@
 import { DocsContent } from "@/pages/dashboard/docs";
-import Navbar from "@/components/navbar";
+import { Navbar } from "@/components/navbar";
 
 export default function PublicDocs() {
   return (
