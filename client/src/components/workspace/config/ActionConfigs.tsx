@@ -314,19 +314,12 @@ export const OpenAIConfig: React.FC<ActionConfigProps> = ({ config, updateConfig
 
     <CredentialField
       label="OpenAI Account"
-      value={config.credential || ''}
-      onChange={(v) => updateConfig('credential', v)}
-      credentialType="OpenAI API"
-      connected={!!config.credential}
-      connectionName="OpenAI"
-    />
-
-    <PasswordField
-      label="API Key"
       value={config.apiKey || ''}
       onChange={(v) => updateConfig('apiKey', v)}
-      placeholder="sk-..."
-      description="Your OpenAI API key"
+      credentialType="OpenAI API"
+      connected={!!config.apiKey}
+      connectionName="OpenAI"
+      description="Your OpenAI API key (starts with sk-...)"
     />
 
     <Separator />

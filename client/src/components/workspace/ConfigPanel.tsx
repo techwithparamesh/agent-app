@@ -165,9 +165,9 @@ export function ConfigPanel({
                 <div className="space-y-2">
                   <Label className="text-xs">Step Name</Label>
                   <Input
-                    value={config.name || node.name}
+                    value={config.name ?? ''}
                     onChange={(e) => updateConfig('name', e.target.value)}
-                    placeholder="e.g., Send welcome email"
+                    placeholder={node.name || "e.g., Send welcome email"}
                     className="h-9"
                   />
                 </div>

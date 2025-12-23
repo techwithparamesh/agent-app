@@ -219,7 +219,7 @@ export const TextField: React.FC<TextFieldProps> = ({
       )}
       <Input
         type={type}
-        value={value}
+        value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
@@ -264,7 +264,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
       <div className="relative">
         <Input
           type={show ? "text" : "password"}
-          value={value}
+          value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={cn("h-9 pr-10 font-mono text-sm", error && "border-red-500")}
@@ -307,8 +307,18 @@ export const NumberField: React.FC<NumberFieldProps> = ({
     <FieldLabel label={label} required={required} helpText={helpText} />
     <Input
       type="number"
-      value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      value={value ?? ''}
+      onChange={(e) => {
+        const val = e.target.value;
+        if (val === '') {
+          onChange(0);
+        } else {
+          const parsed = parseFloat(val);
+          if (!isNaN(parsed)) {
+            onChange(parsed);
+          }
+        }
+      }}
       placeholder={placeholder}
       min={min}
       max={max}
@@ -340,7 +350,7 @@ export const TextareaField: React.FC<TextareaFieldProps> = ({
   <div className={cn("space-y-1.5", className)}>
     <FieldLabel label={label} required={required} helpText={helpText} />
     <Textarea
-      value={value}
+      value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
@@ -374,7 +384,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 }) => (
   <div className={cn("space-y-1.5", className)}>
     <FieldLabel label={label} required={required} helpText={helpText} />
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value ?? ''} onValueChange={onChange}>
       <SelectTrigger className={cn("h-9", error && "border-red-500")}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -465,27 +475,33 @@ export const SliderField: React.FC<SliderFieldProps> = ({
   showValue = true,
   formatValue,
   className,
-}) => (
-  <div className={cn("space-y-3", className)}>
-    <div className="flex items-center justify-between">
-      <FieldLabel label={label} required={required} helpText={helpText} />
-      {showValue && (
-        <span className="text-sm font-medium">
-          {formatValue ? formatValue(value) : value}
-        </span>
-      )}
+}) => {
+  // Ensure value is a valid number within bounds
+  const safeValue = typeof value === 'number' && !isNaN(value) ? value : min;
+  const clampedValue = Math.max(min, Math.min(max, safeValue));
+  
+  return (
+    <div className={cn("space-y-3", className)}>
+      <div className="flex items-center justify-between">
+        <FieldLabel label={label} required={required} helpText={helpText} />
+        {showValue && (
+          <span className="text-sm font-medium">
+            {formatValue ? formatValue(clampedValue) : clampedValue}
+          </span>
+        )}
+      </div>
+      <Slider
+        value={[clampedValue]}
+        onValueChange={([v]) => onChange(v)}
+        min={min}
+        max={max}
+        step={step}
+        className="w-full"
+      />
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
     </div>
-    <Slider
-      value={[value]}
-      onValueChange={([v]) => onChange(v)}
-      min={min}
-      max={max}
-      step={step}
-      className="w-full"
-    />
-    {description && <p className="text-xs text-muted-foreground">{description}</p>}
-  </div>
-);
+  );
+};
 
 // ============================================
 // KEY-VALUE FIELD
@@ -502,24 +518,27 @@ export const KeyValueField: React.FC<KeyValueFieldProps> = ({
   valuePlaceholder = "Value",
   className,
 }) => {
+  // Ensure value is always an array
+  const safeValue = Array.isArray(value) ? value : [];
+  
   const addPair = () => {
-    onChange([...value, { key: '', value: '' }]);
+    onChange([...safeValue, { key: '', value: '' }]);
   };
 
   const updatePair = (index: number, field: 'key' | 'value', newValue: string) => {
-    const updated = [...value];
+    const updated = [...safeValue];
     updated[index] = { ...updated[index], [field]: newValue };
     onChange(updated);
   };
 
   const removePair = (index: number) => {
-    onChange(value.filter((_, i) => i !== index));
+    onChange(safeValue.filter((_, i) => i !== index));
   };
 
   return (
     <div className={cn("space-y-2", className)}>
       <FieldLabel label={label} required={required} helpText={helpText} />
-      {value.map((pair, index) => (
+      {safeValue.map((pair, index) => (
         <div key={index} className="flex gap-2">
           <Input
             value={pair.key}
@@ -568,24 +587,27 @@ export const TagsField: React.FC<TagsFieldProps> = ({
   className,
 }) => {
   const [input, setInput] = useState('');
+  
+  // Ensure value is always an array
+  const safeValue = Array.isArray(value) ? value : [];
 
   const addTag = () => {
     const tag = input.trim();
-    if (tag && !value.includes(tag)) {
-      onChange([...value, tag]);
+    if (tag && !safeValue.includes(tag)) {
+      onChange([...safeValue, tag]);
       setInput('');
     }
   };
 
   const removeTag = (tag: string) => {
-    onChange(value.filter(t => t !== tag));
+    onChange(safeValue.filter(t => t !== tag));
   };
 
   return (
     <div className={cn("space-y-2", className)}>
       <FieldLabel label={label} required={required} helpText={helpText} />
       <div className="flex flex-wrap gap-1.5 mb-2">
-        {value.map((tag) => (
+        {safeValue.map((tag) => (
           <Badge key={tag} variant="secondary" className="gap-1 pr-1">
             {tag}
             <button
@@ -611,13 +633,13 @@ export const TagsField: React.FC<TagsFieldProps> = ({
       </div>
       {suggestions && suggestions.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {suggestions.filter(s => !value.includes(s)).slice(0, 5).map((s) => (
+          {suggestions.filter(s => !safeValue.includes(s)).slice(0, 5).map((s) => (
             <Button
               key={s}
               variant="ghost"
               size="sm"
               className="h-6 text-xs"
-              onClick={() => onChange([...value, s])}
+              onClick={() => onChange([...safeValue, s])}
             >
               + {s}
             </Button>
@@ -686,7 +708,7 @@ export const CodeField: React.FC<CodeFieldProps> = ({
       </div>
       <div className="relative">
         <Textarea
-          value={value}
+          value={value ?? ''}
           onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
@@ -726,31 +748,77 @@ export const CredentialField: React.FC<CredentialFieldProps> = ({
   connected,
   connectionName,
   className,
-}) => (
-  <div className={cn("space-y-2", className)}>
-    <FieldLabel label={label} required={required} helpText={helpText} />
-    {connected ? (
-      <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <div>
-            <p className="text-sm font-medium">{connectionName || 'Connected'}</p>
-            <p className="text-xs text-muted-foreground">{credentialType}</p>
+}) => {
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [apiKeyValue, setApiKeyValue] = useState('');
+
+  const handleConnect = () => {
+    if (onConnect) {
+      onConnect();
+    } else {
+      // Default behavior: show API key input
+      setShowApiKeyInput(true);
+    }
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKeyValue.trim()) {
+      onChange(apiKeyValue.trim());
+      setShowApiKeyInput(false);
+      setApiKeyValue('');
+    }
+  };
+
+  const isConnected = connected || !!value;
+
+  return (
+    <div className={cn("space-y-2", className)}>
+      <FieldLabel label={label} required={required} helpText={helpText} />
+      {isConnected && !showApiKeyInput ? (
+        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <div>
+              <p className="text-sm font-medium">{connectionName || 'Connected'}</p>
+              <p className="text-xs text-muted-foreground">{credentialType}</p>
+            </div>
           </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowApiKeyInput(true)}>
+            Change
+          </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={onConnect}>
-          Change
+      ) : showApiKeyInput ? (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              type="password"
+              value={apiKeyValue}
+              onChange={(e) => setApiKeyValue(e.target.value)}
+              placeholder={`Enter ${credentialType} key...`}
+              className="h-9 flex-1 font-mono text-sm"
+            />
+            <Button size="sm" onClick={handleSaveApiKey} disabled={!apiKeyValue.trim()}>
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyInput(false)}>
+              Cancel
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Your API key will be stored securely
+          </p>
+        </div>
+      ) : (
+        <Button variant="outline" className="w-full justify-start h-10" onClick={handleConnect}>
+          <Plus className="h-4 w-4 mr-2" />
+          Connect {credentialType}
         </Button>
-      </div>
-    ) : (
-      <Button variant="outline" className="w-full justify-start h-10" onClick={onConnect}>
-        <Plus className="h-4 w-4 mr-2" />
-        Connect {credentialType}
-      </Button>
-    )}
-    {description && <p className="text-xs text-muted-foreground">{description}</p>}
-  </div>
-);
+      )}
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </div>
+  );
+};
 
 // ============================================
 // EXPRESSION FIELD (with variable picker)
@@ -790,7 +858,7 @@ export const ExpressionField: React.FC<ExpressionFieldProps> = ({
       </div>
       <div className="relative">
         <Textarea
-          value={value}
+          value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder || "Use {{variable}} syntax for dynamic values"}
           rows={3}
@@ -901,7 +969,7 @@ export const CopyableField: React.FC<{
       <Label className="text-xs font-medium">{label}</Label>
       <div className="flex gap-2">
         <Input
-          value={value}
+          value={value ?? ''}
           readOnly
           className="h-9 font-mono text-xs bg-muted flex-1"
         />
