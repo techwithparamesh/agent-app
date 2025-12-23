@@ -62,6 +62,7 @@ import {
   buildCanvasContextMenu,
   buildConnectionContextMenu,
 } from "@/components/workspace/ContextMenu";
+import { QuickNodePicker } from "@/components/workspace/QuickNodePicker";
 import { useFlowState } from "@/components/workspace/useFlowState";
 import { useKeyboardShortcuts, buildFlowShortcuts, SHORTCUT_CATEGORIES } from "@/components/workspace/useKeyboardShortcuts";
 import type { FlowNode, Connection } from "@/components/workspace/types";
@@ -126,6 +127,15 @@ export function EnhancedWorkspace() {
     sourceId: string;
     sourceHandle?: string;
     mousePosition: { x: number; y: number };
+  } | null>(null);
+
+  // Quick node picker (for dropping connections on empty canvas)
+  const [quickNodePicker, setQuickNodePicker] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    canvasPosition: { x: number; y: number };
+    sourceNodeId: string;
+    sourceHandle?: string;
   } | null>(null);
 
   // Clipboard
@@ -256,15 +266,42 @@ export function EnhancedWorkspace() {
     }
   }, [draggingNodeId, dragOffset, pendingConnection, flowActions, flowState.selectedNodeIds]);
 
-  // Handle mouse up
-  const handleCanvasMouseUp = useCallback(() => {
+  // Handle mouse up - special handling for connection drops on empty canvas
+  const handleCanvasMouseUp = useCallback((e: MouseEvent) => {
     if (draggingNodeId) {
       setDraggingNodeId(null);
     }
-    if (pendingConnection) {
+    
+    // If we were dragging a connection and released on empty canvas, show node picker
+    if (pendingConnection && canvasRef.current) {
+      const canvasPos = canvasRef.current.screenToCanvas(e.clientX, e.clientY);
+      
+      // Check if we dropped on a node (in which case connection is handled elsewhere)
+      const droppedOnNode = flowState.nodes.some(node => {
+        const nodeWidth = 260;
+        const nodeHeight = 140;
+        return (
+          canvasPos.x >= node.position.x &&
+          canvasPos.x <= node.position.x + nodeWidth &&
+          canvasPos.y >= node.position.y - 20 && // Include input handle area
+          canvasPos.y <= node.position.y + nodeHeight + 20
+        );
+      });
+
+      if (!droppedOnNode) {
+        // Show quick node picker at drop location
+        setQuickNodePicker({
+          isOpen: true,
+          position: { x: e.clientX, y: e.clientY },
+          canvasPosition: canvasPos,
+          sourceNodeId: pendingConnection.sourceId,
+          sourceHandle: pendingConnection.sourceHandle,
+        });
+      }
+      
       setPendingConnection(null);
     }
-  }, [draggingNodeId, pendingConnection]);
+  }, [draggingNodeId, pendingConnection, flowState.nodes]);
 
   // Set up global mouse handlers
   useEffect(() => {
@@ -359,6 +396,46 @@ export function EnhancedWorkspace() {
     });
     setConfigPanelOpen(false);
   }, [flowActions]);
+
+  // Handle quick node picker selection (from connection drop on empty canvas)
+  const handleQuickNodeSelect = useCallback((app: typeof appCatalog[0], nodeType: 'action' | 'condition' | 'delay' | 'loop') => {
+    if (!quickNodePicker) return;
+
+    // Create the new node at the drop position
+    const nodeData: Omit<FlowNode, 'id'> = {
+      type: nodeType,
+      appId: app.id,
+      appName: app.name,
+      appIcon: app.icon,
+      appColor: app.color,
+      name: nodeType === 'condition' ? 'Check condition' :
+            nodeType === 'delay' ? 'Wait...' :
+            nodeType === 'loop' ? 'For each item' :
+            'Do this...',
+      description: app.description || '',
+      position: quickNodePicker.canvasPosition,
+      status: 'incomplete',
+      config: {},
+      connections: [],
+    };
+
+    const newId = flowActions.addNode(nodeData, quickNodePicker.canvasPosition);
+
+    // Auto-connect from source node
+    if (quickNodePicker.sourceNodeId) {
+      flowActions.addConnection(
+        quickNodePicker.sourceNodeId,
+        newId,
+        quickNodePicker.sourceHandle,
+        'input'
+      );
+    }
+
+    // Select the new node and open config
+    flowActions.selectNode(newId);
+    setConfigPanelOpen(true);
+    setQuickNodePicker(null);
+  }, [quickNodePicker, flowActions]);
 
   // Handle node test
   const handleNodeTest = useCallback((nodeId: string) => {
@@ -751,6 +828,16 @@ export function EnhancedWorkspace() {
             onClose={() => setContextMenu(null)}
           />
         )}
+
+        {/* Quick Node Picker (for dropping connections on empty canvas) */}
+        <QuickNodePicker
+          isOpen={quickNodePicker?.isOpen || false}
+          position={quickNodePicker?.position || { x: 0, y: 0 }}
+          sourceNodeId={quickNodePicker?.sourceNodeId}
+          sourceHandle={quickNodePicker?.sourceHandle}
+          onSelect={handleQuickNodeSelect}
+          onClose={() => setQuickNodePicker(null)}
+        />
 
         {/* Keyboard Shortcuts Dialog */}
         <Dialog open={shortcutsDialogOpen} onOpenChange={setShortcutsDialogOpen}>
