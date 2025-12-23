@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { FlowNode } from "./types";
 import { AI_MODELS, AI_MODELS_BY_PROVIDER } from "./types";
+import { NodeConfigFields } from "./NodeConfigFields";
 
 interface ConfigPanelProps {
   node: FlowNode | null;
@@ -186,153 +187,100 @@ export function ConfigPanel({
 
             <Separator />
 
-            {/* Trigger/Action Selection */}
+            {/* Node-specific Configuration */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium flex items-center gap-2">
                 {node.type === 'trigger' ? (
                   <Zap className="h-4 w-4 text-amber-500" />
-                ) : (
+                ) : node.type === 'action' ? (
                   <Play className="h-4 w-4 text-blue-500" />
+                ) : (
+                  <Settings className="h-4 w-4 text-violet-500" />
                 )}
-                {node.type === 'trigger' ? 'Select Trigger' : 'Select Action'}
+                {node.type === 'trigger' ? 'Trigger Settings' : 
+                 node.type === 'action' ? 'Action Settings' : 
+                 'Configuration'}
               </h4>
 
-              {node.type === 'trigger' ? (
-                <div className="space-y-2">
-                  {availableTriggers.length > 0 ? (
-                    <div className="grid gap-2">
-                      {availableTriggers.map((trigger) => (
-                        <div
-                          key={trigger.id}
-                          className={cn(
-                            "p-3 rounded-lg border cursor-pointer transition-all",
-                            selectedTrigger === trigger.id
-                              ? "border-primary bg-primary/5"
-                              : "hover:border-primary/50 hover:bg-accent/30"
-                          )}
-                          onClick={() => setSelectedTrigger(trigger.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{trigger.name}</span>
-                            {selectedTrigger === trigger.id && (
-                              <CheckCircle className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {trigger.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-muted-foreground bg-muted/50 rounded-lg">
-                      <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No triggers available</p>
-                      <p className="text-xs">This app has no trigger events</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {availableActions.length > 0 ? (
-                    <div className="grid gap-2 max-h-60 overflow-y-auto pr-1">
-                      {availableActions.map((action) => (
-                        <div
-                          key={action.id}
-                          className={cn(
-                            "p-3 rounded-lg border cursor-pointer transition-all",
-                            selectedAction === action.id
-                              ? "border-primary bg-primary/5"
-                              : "hover:border-primary/50 hover:bg-accent/30"
-                          )}
-                          onClick={() => setSelectedAction(action.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{action.name}</span>
-                            {selectedAction === action.id && (
-                              <CheckCircle className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {action.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-muted-foreground bg-muted/50 rounded-lg">
-                      <Play className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No actions available</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              <NodeConfigFields
+                triggerId={node.triggerId}
+                actionId={node.actionId}
+                nodeType={node.type}
+                appId={node.appId}
+                config={config}
+                updateConfig={updateConfig}
+              />
             </div>
 
-            <Separator />
+            {/* Only show AI Model for action nodes that might use AI */}
+            {(node.type === 'action' && ['openai', 'anthropic', 'google_ai', 'ai'].includes(node.appId)) && (
+              <>
+                <Separator />
 
-            {/* AI Model Selection */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-violet-500" />
-                AI Model
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      Select the AI model to power intelligent responses and decision making in this step.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </h4>
+                {/* AI Model Selection */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    AI Model
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          Select the AI model to power intelligent responses and decision making in this step.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </h4>
 
-              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select AI Model" />
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  {Object.entries(AI_MODELS_BY_PROVIDER).map(([provider, models]) => (
-                    <SelectGroup key={provider}>
-                      <SelectLabel className="text-xs font-semibold text-muted-foreground">
-                        {provider}
-                      </SelectLabel>
-                      {models.map((model) => (
-                        <SelectItem key={model.id} value={model.id} className="py-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span>{model.name}</span>
-                            {model.capabilities && model.capabilities.length > 0 && (
-                              <div className="flex gap-1">
-                                {model.capabilities.slice(0, 2).map((cap) => (
-                                  <Badge key={cap} variant="outline" className="text-[10px] px-1.5 py-0">
-                                    {cap}
-                                  </Badge>
-                                ))}
+                  <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select AI Model" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-80">
+                      {Object.entries(AI_MODELS_BY_PROVIDER).map(([provider, models]) => (
+                        <SelectGroup key={provider}>
+                          <SelectLabel className="text-xs font-semibold text-muted-foreground">
+                            {provider}
+                          </SelectLabel>
+                          {models.map((model) => (
+                            <SelectItem key={model.id} value={model.id} className="py-2">
+                              <div className="flex items-center justify-between gap-3">
+                                <span>{model.name}</span>
+                                {model.capabilities && model.capabilities.length > 0 && (
+                                  <div className="flex gap-1">
+                                    {model.capabilities.slice(0, 2).map((cap) => (
+                                      <Badge key={cap} variant="outline" className="text-[10px] px-1.5 py-0">
+                                        {cap}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </SelectItem>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </SelectContent>
+                  </Select>
 
-              {selectedAIModel && (
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium">
-                      {AI_MODELS.find(m => m.id === selectedAIModel)?.name}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {AI_MODELS.find(m => m.id === selectedAIModel)?.description}
-                  </p>
+                  {selectedAIModel && (
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium">
+                          {AI_MODELS.find(m => m.id === selectedAIModel)?.name}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {AI_MODELS.find(m => m.id === selectedAIModel)?.description}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </TabsContent>
 
           {/* Connect Tab */}
