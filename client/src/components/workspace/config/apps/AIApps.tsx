@@ -39,8 +39,8 @@ interface AppConfigProps {
 // ============================================
 
 export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
-  const resource = config.resource || 'message';
-  const operation = config.operation || 'send';
+  const resource = config.resource || 'text';
+  const operation = config.operation || 'message';
   const imageInputType = config.imageInputType || 'url';
   const inputType = config.inputType || 'url';
   

@@ -151,7 +151,7 @@ export function ConfigPanel({
           </TabsList>
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 h-[calc(100vh-180px)]">
           {/* Setup Tab */}
           <TabsContent value="setup" className="m-0 p-4 space-y-6">
             {/* Basic Info */}
