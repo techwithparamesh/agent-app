@@ -157,8 +157,8 @@ export const QuickNodePicker: React.FC<QuickNodePickerProps> = ({
 
     // Add popular apps if no search, otherwise add all matches
     const appsToShow = searchLower
-      ? filteredApps.slice(0, 15)
-      : filteredApps.filter(a => a.popular).slice(0, 8);
+      ? filteredApps.slice(0, 30)
+      : filteredApps.slice(0, 20);
 
     appsToShow.forEach(app => {
       items.push({
@@ -298,7 +298,7 @@ export const QuickNodePicker: React.FC<QuickNodePickerProps> = ({
       </div>
 
       {/* Results */}
-      <ScrollArea className="max-h-[320px]">
+      <ScrollArea className="h-[320px]">
         <div className="p-2">
           {/* Logic nodes section */}
           {filteredItems.some(i => i.isLogic) && (

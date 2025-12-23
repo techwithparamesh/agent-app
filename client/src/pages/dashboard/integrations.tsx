@@ -1510,7 +1510,10 @@ function IntegrationsPageContent() {
                         <Card
                           key={int.id}
                           className="group cursor-pointer border-2 border-transparent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
-                          onClick={() => setSelectedType(int)}
+                          onClick={() => {
+                            setIsCreateOpen(false);
+                            openWorkspace(int);
+                          }}
                         >
                           <CardContent className="p-4">
                             <div className="flex items-start gap-3">
@@ -1549,11 +1552,14 @@ function IntegrationsPageContent() {
                               <Card
                                 key={int.id}
                                 className="group cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
-                                onClick={() => setSelectedType({
-                                  ...int,
-                                  categoryLabel: category.label,
-                                  categoryColor: category.color,
-                                })}
+                                onClick={() => {
+                                  setIsCreateOpen(false);
+                                  openWorkspace({
+                                    ...int,
+                                    categoryLabel: category.label,
+                                    categoryColor: category.color,
+                                  });
+                                }}
                               >
                                 <CardContent className="p-3 flex items-center gap-3">
                                   <span className="text-xl">{int.icon}</span>
