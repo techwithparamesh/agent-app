@@ -87,7 +87,7 @@ const statusConfig = {
 };
 
 // Node type badges
-const nodeTypeConfig = {
+const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; color: string }> = {
   trigger: { label: "Trigger", icon: Zap, color: "bg-amber-500" },
   action: { label: "Action", icon: Play, color: "bg-blue-500" },
   condition: { label: "Condition", icon: GitBranch, color: "bg-purple-500" },
@@ -95,6 +95,13 @@ const nodeTypeConfig = {
   loop: { label: "Loop", icon: RotateCcw, color: "bg-cyan-500" },
   router: { label: "Router", icon: GitBranch, color: "bg-indigo-500" },
   "error-handler": { label: "Error Handler", icon: AlertCircle, color: "bg-red-500" },
+  switch: { label: "Switch", icon: GitBranch, color: "bg-violet-500" },
+  filter: { label: "Filter", icon: GitBranch, color: "bg-emerald-500" },
+  merge: { label: "Merge", icon: GitBranch, color: "bg-teal-500" },
+  split: { label: "Split", icon: GitBranch, color: "bg-pink-500" },
+  code: { label: "Code", icon: Play, color: "bg-slate-500" },
+  transform: { label: "Transform", icon: RotateCcw, color: "bg-lime-500" },
+  wait: { label: "Wait", icon: Clock, color: "bg-orange-400" },
 };
 
 export function FlowNode({

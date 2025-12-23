@@ -7,7 +7,7 @@ export interface Position {
 
 export interface FlowNode {
   id: string;
-  type: 'trigger' | 'action' | 'condition' | 'delay' | 'loop' | 'router' | 'error-handler';
+  type: 'trigger' | 'action' | 'condition' | 'delay' | 'loop' | 'router' | 'error-handler' | 'switch' | 'filter' | 'merge' | 'split' | 'code' | 'transform' | 'wait';
   appId: string;
   appName: string;
   appIcon: string;

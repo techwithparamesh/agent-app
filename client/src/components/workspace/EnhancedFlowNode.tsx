@@ -132,7 +132,7 @@ const statusConfig = {
 };
 
 // Node type configuration
-const nodeTypeConfig = {
+const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; color: string; gradient: string }> = {
   trigger: { 
     label: "Trigger", 
     icon: Zap, 
@@ -174,6 +174,48 @@ const nodeTypeConfig = {
     icon: AlertCircle, 
     color: "bg-red-500",
     gradient: "from-red-500/20 to-rose-500/10",
+  },
+  switch: {
+    label: "Switch",
+    icon: GitBranch,
+    color: "bg-violet-500",
+    gradient: "from-violet-500/20 to-fuchsia-500/10",
+  },
+  filter: {
+    label: "Filter",
+    icon: GitBranch,
+    color: "bg-emerald-500",
+    gradient: "from-emerald-500/20 to-green-500/10",
+  },
+  merge: {
+    label: "Merge",
+    icon: GitBranch,
+    color: "bg-teal-500",
+    gradient: "from-teal-500/20 to-cyan-500/10",
+  },
+  split: {
+    label: "Split",
+    icon: GitBranch,
+    color: "bg-pink-500",
+    gradient: "from-pink-500/20 to-rose-500/10",
+  },
+  code: {
+    label: "Code",
+    icon: ArrowRight,
+    color: "bg-slate-500",
+    gradient: "from-slate-500/20 to-gray-500/10",
+  },
+  transform: {
+    label: "Transform",
+    icon: RotateCcw,
+    color: "bg-lime-500",
+    gradient: "from-lime-500/20 to-green-500/10",
+  },
+  wait: {
+    label: "Wait",
+    icon: Clock,
+    color: "bg-orange-400",
+    gradient: "from-orange-400/20 to-amber-500/10",
   },
 };
 

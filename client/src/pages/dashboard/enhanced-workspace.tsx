@@ -63,6 +63,15 @@ import {
   buildConnectionContextMenu,
 } from "@/components/workspace/ContextMenu";
 import { QuickNodePicker } from "@/components/workspace/QuickNodePicker";
+import { AddNodePicker } from "@/components/workspace/AddNodePicker";
+import { 
+  triggerCatalog, 
+  actionCatalog, 
+  logicNodeCatalog,
+  type TriggerDefinition,
+  type ActionDefinition,
+  type LogicNodeDefinition,
+} from "@/components/workspace/NodeCatalog";
 import { useFlowState } from "@/components/workspace/useFlowState";
 import { useKeyboardShortcuts, buildFlowShortcuts, SHORTCUT_CATEGORIES } from "@/components/workspace/useKeyboardShortcuts";
 import type { FlowNode, Connection } from "@/components/workspace/types";
@@ -137,6 +146,14 @@ export function EnhancedWorkspace() {
     canvasPosition: { x: number; y: number };
     sourceNodeId: string;
     sourceHandle?: string;
+  } | null>(null);
+
+  // Add node picker (for context menu Add Node)
+  const [addNodePicker, setAddNodePicker] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    canvasPosition: { x: number; y: number };
+    initialTab: 'triggers' | 'actions' | 'logic';
   } | null>(null);
 
   // Clipboard
@@ -447,6 +464,78 @@ export function EnhancedWorkspace() {
     setQuickNodePicker(null);
   }, [quickNodePicker, flowActions]);
 
+  // Handle add node picker selection (from context menu)
+  const handleAddTrigger = useCallback((trigger: TriggerDefinition) => {
+    if (!addNodePicker) return;
+    
+    const nodeData: Omit<FlowNode, 'id'> = {
+      type: 'trigger',
+      appId: trigger.appId || trigger.id,
+      appName: trigger.name,
+      appIcon: trigger.icon,
+      appColor: trigger.color,
+      name: 'When this happens...',
+      description: trigger.description,
+      position: addNodePicker.canvasPosition,
+      status: 'incomplete',
+      config: {},
+      connections: [],
+      triggerId: trigger.id,
+    };
+
+    const newId = flowActions.addNode(nodeData, addNodePicker.canvasPosition);
+    flowActions.selectNode(newId);
+    setConfigPanelOpen(true);
+    setAddNodePicker(null);
+  }, [addNodePicker, flowActions]);
+
+  const handleAddAction = useCallback((action: ActionDefinition) => {
+    if (!addNodePicker) return;
+    
+    const nodeData: Omit<FlowNode, 'id'> = {
+      type: 'action',
+      appId: action.appId || action.id,
+      appName: action.name,
+      appIcon: action.icon,
+      appColor: action.color,
+      name: 'Do this...',
+      description: action.description,
+      position: addNodePicker.canvasPosition,
+      status: 'incomplete',
+      config: {},
+      connections: [],
+      actionId: action.id,
+    };
+
+    const newId = flowActions.addNode(nodeData, addNodePicker.canvasPosition);
+    flowActions.selectNode(newId);
+    setConfigPanelOpen(true);
+    setAddNodePicker(null);
+  }, [addNodePicker, flowActions]);
+
+  const handleAddLogic = useCallback((logic: LogicNodeDefinition) => {
+    if (!addNodePicker) return;
+    
+    const nodeData: Omit<FlowNode, 'id'> = {
+      type: logic.type,
+      appId: logic.id,
+      appName: logic.name,
+      appIcon: logic.icon,
+      appColor: logic.color,
+      name: logic.name,
+      description: logic.description,
+      position: addNodePicker.canvasPosition,
+      status: 'incomplete',
+      config: {},
+      connections: [],
+    };
+
+    const newId = flowActions.addNode(nodeData, addNodePicker.canvasPosition);
+    flowActions.selectNode(newId);
+    setConfigPanelOpen(true);
+    setAddNodePicker(null);
+  }, [addNodePicker, flowActions]);
+
   // Handle node test
   const handleNodeTest = useCallback((nodeId: string) => {
     flowActions.updateNode(nodeId, { status: 'running' });
@@ -555,80 +644,40 @@ export function EnhancedWorkspace() {
 
     return buildCanvasContextMenu({
       onAddTrigger: () => {
-        const position = contextMenu.canvasPosition || { x: 400, y: 100 };
-        const nodeData: Omit<FlowNode, 'id'> = {
-          type: 'trigger',
-          appId: 'webhook',
-          appName: 'Webhook',
-          appIcon: '🔗',
-          appColor: '#6366f1',
-          name: 'When this happens...',
-          description: 'Triggers when a webhook is received',
-          position,
-          status: 'incomplete',
-          config: {},
-          connections: [],
-        };
-        const newId = flowActions.addNode(nodeData, position);
-        flowActions.selectNode(newId);
-        setConfigPanelOpen(true);
+        setContextMenu(null);
+        setAddNodePicker({
+          isOpen: true,
+          position: contextMenu.position,
+          canvasPosition: contextMenu.canvasPosition || { x: 400, y: 100 },
+          initialTab: 'triggers',
+        });
       },
       onAddAction: () => {
-        const position = contextMenu.canvasPosition || { x: 400, y: 200 };
-        const nodeData: Omit<FlowNode, 'id'> = {
-          type: 'action',
-          appId: 'http_request',
-          appName: 'HTTP Request',
-          appIcon: '🌐',
-          appColor: '#3b82f6',
-          name: 'Do this...',
-          description: 'Make an HTTP request',
-          position,
-          status: 'incomplete',
-          config: {},
-          connections: [],
-        };
-        const newId = flowActions.addNode(nodeData, position);
-        flowActions.selectNode(newId);
-        setConfigPanelOpen(true);
+        setContextMenu(null);
+        setAddNodePicker({
+          isOpen: true,
+          position: contextMenu.position,
+          canvasPosition: contextMenu.canvasPosition || { x: 400, y: 200 },
+          initialTab: 'actions',
+        });
       },
       onAddCondition: () => {
-        const position = contextMenu.canvasPosition || { x: 400, y: 200 };
-        const nodeData: Omit<FlowNode, 'id'> = {
-          type: 'condition',
-          appId: 'condition',
-          appName: 'Condition',
-          appIcon: '🔀',
-          appColor: '#8b5cf6',
-          name: 'Check condition',
-          description: 'Branch based on true/false',
-          position,
-          status: 'incomplete',
-          config: {},
-          connections: [],
-        };
-        const newId = flowActions.addNode(nodeData, position);
-        flowActions.selectNode(newId);
-        setConfigPanelOpen(true);
+        setContextMenu(null);
+        setAddNodePicker({
+          isOpen: true,
+          position: contextMenu.position,
+          canvasPosition: contextMenu.canvasPosition || { x: 400, y: 200 },
+          initialTab: 'logic',
+        });
       },
       onAddDelay: () => {
-        const position = contextMenu.canvasPosition || { x: 400, y: 200 };
-        const nodeData: Omit<FlowNode, 'id'> = {
-          type: 'delay',
-          appId: 'delay',
-          appName: 'Delay',
-          appIcon: '⏱️',
-          appColor: '#f97316',
-          name: 'Wait...',
-          description: 'Wait before continuing',
-          position,
-          status: 'incomplete',
-          config: {},
-          connections: [],
-        };
-        const newId = flowActions.addNode(nodeData, position);
-        flowActions.selectNode(newId);
-        setConfigPanelOpen(true);
+        setContextMenu(null);
+        setAddNodePicker({
+          isOpen: true,
+          position: contextMenu.position,
+          canvasPosition: contextMenu.canvasPosition || { x: 400, y: 200 },
+          initialTab: 'logic',
+        });
       },
       onPaste: handlePaste,
       onSelectAll: flowActions.selectAll,
@@ -937,6 +986,17 @@ export function EnhancedWorkspace() {
           sourceHandle={quickNodePicker?.sourceHandle}
           onSelect={handleQuickNodeSelect}
           onClose={() => setQuickNodePicker(null)}
+        />
+
+        {/* Add Node Picker (from context menu) */}
+        <AddNodePicker
+          isOpen={addNodePicker?.isOpen || false}
+          position={addNodePicker?.position || { x: 0, y: 0 }}
+          initialTab={addNodePicker?.initialTab || 'triggers'}
+          onSelectTrigger={handleAddTrigger}
+          onSelectAction={handleAddAction}
+          onSelectLogic={handleAddLogic}
+          onClose={() => setAddNodePicker(null)}
         />
 
         {/* Keyboard Shortcuts Dialog */}
