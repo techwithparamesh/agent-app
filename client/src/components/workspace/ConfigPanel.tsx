@@ -133,8 +133,8 @@ export function ConfigPanel({
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="px-4 pt-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 pt-3 flex-shrink-0">
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="setup" className="text-xs">
               <Settings className="h-3.5 w-3.5 mr-1.5" />
@@ -151,9 +151,9 @@ export function ConfigPanel({
           </TabsList>
         </div>
 
-        <ScrollArea className="flex-1 h-[calc(100vh-180px)]">
+        <div className="flex-1 overflow-y-auto">
           {/* Setup Tab */}
-          <TabsContent value="setup" className="m-0 p-4 space-y-6">
+          <TabsContent value="setup" className="m-0 p-4 space-y-6 h-full">
             {/* Basic Info */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium flex items-center gap-2">
@@ -349,23 +349,77 @@ export function ConfigPanel({
                 Data Mapping
               </h4>
 
-              <div className="p-3 bg-muted/50 rounded-lg text-center">
+              <div className="p-3 bg-muted/50 rounded-lg">
                 <FileJson className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm">Map input data from previous steps</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use variables like {`{{step1.data.email}}`}
+                <p className="text-sm font-medium text-center">Map input data from previous steps</p>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  Use variables like <code className="bg-background px-1 rounded">{`{{$json.email}}`}</code>
                 </p>
               </div>
 
+              {/* Field Mapping */}
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold">Field Mappings</Label>
+                
+                {/* Example mapped fields */}
+                <div className="space-y-2">
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Field name"
+                      className="h-8 text-xs flex-1"
+                      defaultValue="email"
+                    />
+                    <span className="text-xs text-muted-foreground">→</span>
+                    <Input
+                      placeholder="{{$json.email}}"
+                      className="h-8 text-xs flex-1 font-mono bg-muted/50"
+                      defaultValue="{{$json.email}}"
+                    />
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Field name"
+                      className="h-8 text-xs flex-1"
+                      defaultValue="name"
+                    />
+                    <span className="text-xs text-muted-foreground">→</span>
+                    <Input
+                      placeholder="{{$json.name}}"
+                      className="h-8 text-xs flex-1 font-mono bg-muted/50"
+                      defaultValue="{{$json.firstName}} {{$json.lastName}}"
+                    />
+                  </div>
+                </div>
+
+                <Button variant="outline" size="sm" className="w-full">
+                  <span className="text-xs">+ Add Field Mapping</span>
+                </Button>
+              </div>
+
+              <Separator />
+
               <div className="space-y-2">
-                <Label className="text-xs">Custom Input (JSON)</Label>
+                <Label className="text-xs font-semibold">Custom Input (JSON)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Or provide custom JSON with expressions
+                </p>
                 <Textarea
                   value={config.customInput || ''}
                   onChange={(e) => updateConfig('customInput', e.target.value)}
-                  placeholder='{"key": "{{previous.value}}"}'
-                  rows={4}
+                  placeholder={`{\n  "key": "{{$json.value}}",\n  "data": "{{$node["Step 1"].json}}"\n}`}
+                  rows={6}
                   className="font-mono text-xs resize-none"
                 />
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Variable className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Insert Expression</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <FileJson className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Format JSON</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -428,11 +482,11 @@ export function ConfigPanel({
               </div>
             </div>
           </TabsContent>
-        </ScrollArea>
+        </div>
       </Tabs>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t space-y-2">
+      <div className="p-4 border-t space-y-2 flex-shrink-0">
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
             Cancel
