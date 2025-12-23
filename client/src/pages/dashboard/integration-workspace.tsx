@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,10 @@ const sampleTriggers = [
   { id: 'new_message', name: 'New Message Received', description: 'Triggers when a new message arrives' },
   { id: 'new_contact', name: 'New Contact Added', description: 'Triggers when a contact is created' },
   { id: 'status_change', name: 'Status Changed', description: 'Triggers on status updates' },
+  { id: 'new_email', name: 'New Email Received', description: 'Triggers when a new email arrives' },
+  { id: 'form_submitted', name: 'Form Submitted', description: 'Triggers when a form is submitted' },
+  { id: 'webhook_received', name: 'Webhook Received', description: 'Triggers when a webhook is received' },
+  { id: 'schedule', name: 'Scheduled Trigger', description: 'Triggers on a schedule' },
 ];
 
 const sampleActions = [
@@ -56,6 +60,9 @@ const sampleActions = [
   { id: 'update_record', name: 'Update Record', description: 'Update an existing record' },
   { id: 'send_email', name: 'Send Email', description: 'Send an email notification' },
   { id: 'add_to_list', name: 'Add to List', description: 'Add contact to a list' },
+  { id: 'create_task', name: 'Create Task', description: 'Create a new task' },
+  { id: 'call_api', name: 'Call API', description: 'Make an HTTP request' },
+  { id: 'run_script', name: 'Run Script', description: 'Execute custom code' },
 ];
 
 export function IntegrationWorkspace() {
@@ -75,6 +82,51 @@ export function IntegrationWorkspace() {
 
   // Generate unique ID
   const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Check for initial app passed from integrations page
+  useEffect(() => {
+    const initialAppData = sessionStorage.getItem('workspace_initial_app');
+    if (initialAppData) {
+      try {
+        const app = JSON.parse(initialAppData);
+        sessionStorage.removeItem('workspace_initial_app');
+        
+        // Convert integration catalog format to appCatalog format
+        const appForWorkspace = {
+          id: app.id,
+          name: app.name,
+          icon: app.icon,
+          color: app.categoryColor || '#6366f1',
+          description: app.description,
+          category: app.category,
+        };
+        
+        // Auto-create the first trigger node
+        const newNode: FlowNodeType = {
+          id: generateId(),
+          type: 'trigger',
+          appId: appForWorkspace.id,
+          appName: appForWorkspace.name,
+          appIcon: appForWorkspace.icon,
+          appColor: appForWorkspace.color,
+          name: 'When this happens...',
+          description: appForWorkspace.description,
+          position: { x: 400, y: 100 },
+          status: 'incomplete',
+          config: {},
+          connections: [],
+        };
+        
+        setNodes([newNode]);
+        setFlowName(`${appForWorkspace.name} Flow`);
+        setSelectedNodeId(newNode.id);
+        setConfigPanelOpen(true);
+        setIsSaved(false);
+      } catch (e) {
+        console.error('Failed to parse initial app data:', e);
+      }
+    }
+  }, []);
 
   // Handle drop from apps panel
   const handleDrop = useCallback((appData: typeof appCatalog[0], position: { x: number; y: number }) => {

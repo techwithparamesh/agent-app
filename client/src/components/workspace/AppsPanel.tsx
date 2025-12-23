@@ -330,22 +330,20 @@ export function AppsPanel({
       </div>
 
       {/* Categories tabs */}
-      <div className="px-3 py-2 border-b">
-        <ScrollArea className="w-full" orientation="horizontal">
-          <div className="flex gap-1 pb-1">
-            {categories.slice(0, 6).map(category => (
-              <Button
-                key={category.id}
-                variant={activeCategory === category.id ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2.5 text-xs whitespace-nowrap"
-                onClick={() => setActiveCategory(category.id)}
-              >
-                {category.label}
-              </Button>
-            ))}
-          </div>
-        </ScrollArea>
+      <div className="px-3 py-2 border-b overflow-x-auto">
+        <div className="flex gap-1 pb-1">
+          {categories.slice(0, 6).map(category => (
+            <Button
+              key={category.id}
+              variant={activeCategory === category.id ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5 text-xs whitespace-nowrap flex-shrink-0"
+              onClick={() => setActiveCategory(category.id)}
+            >
+              {category.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Apps list */}

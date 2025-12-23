@@ -1,6 +1,7 @@
 import { useState, useMemo, Component, ErrorInfo, ReactNode } from "react";
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ import {
   Target,
   Cog,
   PlugZap,
+  Layout,
 } from "lucide-react";
 
 // ============= INTEGRATION CATALOG (n8n-style) =============
@@ -941,6 +943,7 @@ class IntegrationErrorBoundary extends Component<
 function IntegrationsPageContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
@@ -948,6 +951,15 @@ function IntegrationsPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Navigate to workspace to create flow with selected app
+  const openWorkspace = (integration?: any) => {
+    if (integration) {
+      // Store selected app in sessionStorage for the workspace to pick up
+      sessionStorage.setItem('workspace_initial_app', JSON.stringify(integration));
+    }
+    setLocation('/dashboard/integrations/workspace');
+  };
 
   // Filter integrations based on search and category
   const filteredIntegrations = useMemo(() => {
@@ -1097,10 +1109,16 @@ function IntegrationsPageContent() {
               Connect 50+ apps and automate your workflows like n8n
             </p>
           </div>
-          <Button size="lg" onClick={() => setIsCreateOpen(true)}>
-            <Plus className="h-5 w-5 mr-2" />
-            New Integration
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-5 w-5 mr-2" />
+              Quick Setup
+            </Button>
+            <Button size="lg" onClick={() => openWorkspace()} className="bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90">
+              <Layout className="h-5 w-5 mr-2" />
+              Open Flow Builder
+            </Button>
+          </div>
         </div>
 
         {/* Error State */}
@@ -1348,10 +1366,7 @@ function IntegrationsPageContent() {
                     <Card
                       key={int.id}
                       className="cursor-pointer hover:border-primary hover:shadow-md transition-all group"
-                      onClick={() => {
-                        setSelectedType(int);
-                        setIsCreateOpen(true);
-                      }}
+                      onClick={() => openWorkspace(int)}
                     >
                       <CardContent className="p-4 text-center">
                         <div className={`w-12 h-12 rounded-xl mx-auto mb-2 flex items-center justify-center text-2xl ${int.categoryColor}`}>
@@ -1380,10 +1395,7 @@ function IntegrationsPageContent() {
                       <Card
                         key={int.id}
                         className="cursor-pointer hover:border-primary hover:shadow-md transition-all group"
-                        onClick={() => {
-                          setSelectedType({ ...int, categoryColor: category.color });
-                          setIsCreateOpen(true);
-                        }}
+                        onClick={() => openWorkspace({ ...int, categoryColor: category.color })}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
@@ -1416,10 +1428,7 @@ function IntegrationsPageContent() {
                     <Card
                       key={int.id}
                       className="cursor-pointer hover:border-primary hover:shadow-md transition-all group"
-                      onClick={() => {
-                        setSelectedType(int);
-                        setIsCreateOpen(true);
-                      }}
+                      onClick={() => openWorkspace(int)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
