@@ -37,7 +37,14 @@ interface AppConfigProps {
 // GOOGLE SHEETS ADVANCED CONFIG
 // ============================================
 
-export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const dataMode = config.dataMode || '';
+  const readDataMode = config.readDataMode || '';
+  const deleteMode = config.deleteMode || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Credentials"
@@ -58,7 +65,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
       required
     />
 
-    {config.resource === 'document' && (
+    {resource === 'document' && (
       <>
         <SelectField
           label="Operation"
@@ -70,7 +77,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Title"
@@ -96,7 +103,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
           </>
         )}
 
-        {config.operation === 'delete' && (
+        {operation === 'delete' && (
           <ResourceLocatorField
             label="Document"
             value={config.documentId || { mode: 'list', value: '' }}
@@ -109,7 +116,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
       </>
     )}
 
-    {config.resource === 'sheet' && (
+    {resource === 'sheet' && (
       <>
         <SelectField
           label="Operation"
@@ -149,7 +156,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
           />
         )}
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Sheet Title"
@@ -172,7 +179,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
           </>
         )}
 
-        {(config.operation === 'appendOrUpdate' || config.operation === 'append') && (
+        {(operation === 'appendOrUpdate' || config.operation === 'append') && (
           <>
             <SelectField
               label="Data Mode"
@@ -202,7 +209,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
               />
             )}
 
-            {config.operation === 'appendOrUpdate' && (
+            {operation === 'appendOrUpdate' && (
               <>
                 <TextField
                   label="Matching Column"
@@ -233,7 +240,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
           </>
         )}
 
-        {config.operation === 'read' && (
+        {operation === 'read' && (
           <>
             <SelectField
               label="Data Mode"
@@ -285,7 +292,7 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
           </>
         )}
 
-        {config.operation === 'deleteRows' && (
+        {operation === 'deleteRows' && (
           <>
             <SelectField
               label="Delete Mode"
@@ -327,13 +334,18 @@ export const GoogleSheetsAdvancedConfig: React.FC<AppConfigProps> = ({ config, u
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GOOGLE DRIVE CONFIG
 // ============================================
 
-export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Credentials"
@@ -356,7 +368,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
       required
     />
 
-    {config.resource === 'file' && (
+    {resource === 'file' && (
       <>
         <SelectField
           label="Operation"
@@ -373,7 +385,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <>
             <SelectField
               label="Input Type"
@@ -417,7 +429,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
           </>
         )}
 
-        {config.operation === 'download' && (
+        {operation === 'download' && (
           <ResourceLocatorField
             label="File"
             value={config.fileId || { mode: 'list', value: '' }}
@@ -428,7 +440,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
           />
         )}
 
-        {config.operation === 'copy' && (
+        {operation === 'copy' && (
           <>
             <ResourceLocatorField
               label="Source File"
@@ -453,7 +465,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
           </>
         )}
 
-        {config.operation === 'share' && (
+        {operation === 'share' && (
           <>
             <ResourceLocatorField
               label="File"
@@ -497,7 +509,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'folder' && (
+    {resource === 'folder' && (
       <>
         <SelectField
           label="Operation"
@@ -510,7 +522,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Folder Name"
@@ -533,7 +545,7 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'fileFolder' && (
+    {resource === 'fileFolder' && (
       <>
         <SelectField
           label="Operation"
@@ -584,13 +596,18 @@ export const GoogleDriveConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GOOGLE CALENDAR CONFIG
 // ============================================
 
-export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Credentials"
@@ -611,7 +628,7 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
       required
     />
 
-    {config.resource === 'event' && (
+    {resource === 'event' && (
       <>
         <SelectField
           label="Operation"
@@ -638,7 +655,7 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
           required
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -719,7 +736,7 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <>
             <DateTimeField
               label="Time Min"
@@ -754,7 +771,7 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <TextField
             label="Event ID"
             value={config.eventId || ''}
@@ -765,7 +782,7 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'calendar' && (
+    {resource === 'calendar' && (
       <>
         <SelectField
           label="Operation"
@@ -777,7 +794,7 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'freeBusy' && (
+        {operation === 'freeBusy' && (
           <>
             <DateTimeField
               label="Start Time"
@@ -805,13 +822,20 @@ export const GoogleCalendarConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GMAIL CONFIG
 // ============================================
 
-export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  // Get values with defaults
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const emailType = config.emailType || 'text';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Gmail Credentials"
@@ -823,7 +847,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
 
     <SelectField
       label="Resource"
-      value={config.resource || 'message'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'message', label: 'Message' },
@@ -834,11 +858,11 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       required
     />
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Email' },
@@ -853,7 +877,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <ExpressionField
               label="To"
@@ -872,7 +896,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
 
             <SelectField
               label="Email Type"
-              value={config.emailType || 'text'}
+              value={emailType}
               onChange={(v) => updateConfig('emailType', v)}
               options={[
                 { value: 'text', label: 'Plain Text' },
@@ -908,7 +932,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           </>
         )}
 
-        {config.operation === 'reply' && (
+        {operation === 'reply' && (
           <>
             <TextField
               label="Message ID"
@@ -926,7 +950,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           </>
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <>
             <TextField
               label="Search Query"
@@ -948,7 +972,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           </>
         )}
 
-        {(config.operation === 'addLabels' || config.operation === 'removeLabels') && (
+        {(operation === 'addLabels' || operation === 'removeLabels') && (
           <>
             <TextField
               label="Message ID"
@@ -969,7 +993,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'draft' && (
+    {resource === 'draft' && (
       <>
         <SelectField
           label="Operation"
@@ -983,7 +1007,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="To"
@@ -1010,7 +1034,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'label' && (
+    {resource === 'label' && (
       <>
         <SelectField
           label="Operation"
@@ -1023,7 +1047,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Label Name"
@@ -1054,7 +1078,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'thread' && (
+    {resource === 'thread' && (
       <>
         <SelectField
           label="Operation"
@@ -1071,7 +1095,7 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <>
             <TextField
               label="Search Query"
@@ -1090,13 +1114,18 @@ export const GmailConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GOOGLE DOCS CONFIG
 // ============================================
 
-export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  const updateType = config.updateType || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Credentials"
@@ -1118,7 +1147,7 @@ export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       required
     />
 
-    {config.operation === 'create' && (
+    {operation === 'create' && (
       <>
         <TextField
           label="Title"
@@ -1137,7 +1166,7 @@ export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.operation === 'get' && (
+    {operation === 'get' && (
       <ResourceLocatorField
         label="Document"
         value={config.documentId || { mode: 'list', value: '' }}
@@ -1148,7 +1177,7 @@ export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       />
     )}
 
-    {config.operation === 'update' && (
+    {operation === 'update' && (
       <>
         <ResourceLocatorField
           label="Document"
@@ -1195,7 +1224,8 @@ export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

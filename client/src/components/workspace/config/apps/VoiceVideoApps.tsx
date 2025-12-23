@@ -31,7 +31,12 @@ interface AppConfigProps {
 // TWILIO VOICE CONFIG
 // ============================================
 
-export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const callType = config.callType || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Twilio Credentials"
@@ -53,7 +58,7 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       required
     />
 
-    {config.resource === 'call' && (
+    {resource === 'call' && (
       <>
         <SelectField
           label="Operation"
@@ -67,7 +72,7 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="From Number"
@@ -157,7 +162,7 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update') && (
+        {(operation === 'get' || config.operation === 'update') && (
           <ExpressionField
             label="Call SID"
             value={config.callSid || ''}
@@ -167,7 +172,7 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           />
         )}
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <SelectField
             label="Action"
             value={config.action || 'complete'}
@@ -181,7 +186,7 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'recording' && (
+    {resource === 'recording' && (
       <>
         <SelectField
           label="Operation"
@@ -194,7 +199,7 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {(config.operation === 'get' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'delete') && (
           <ExpressionField
             label="Recording SID"
             value={config.recordingSid || ''}
@@ -206,13 +211,18 @@ export const TwilioVoiceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // ZOOM CONFIG
 // ============================================
 
-export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Zoom Credentials"
@@ -235,7 +245,7 @@ export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       required
     />
 
-    {config.resource === 'meeting' && (
+    {resource === 'meeting' && (
       <>
         <SelectField
           label="Operation"
@@ -250,7 +260,7 @@ export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Topic"
@@ -320,7 +330,7 @@ export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Meeting ID"
             value={config.meetingId || ''}
@@ -331,7 +341,7 @@ export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
 
-    {config.resource === 'recording' && (
+    {resource === 'recording' && (
       <>
         <SelectField
           label="Operation"
@@ -344,7 +354,7 @@ export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           ]}
         />
 
-        {(config.operation === 'get' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'delete') && (
           <ExpressionField
             label="Meeting ID"
             value={config.meetingId || ''}
@@ -355,13 +365,17 @@ export const ZoomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GOOGLE MEET CONFIG
 // ============================================
 
-export const GoogleMeetConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleMeetConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Credentials"
@@ -382,7 +396,7 @@ export const GoogleMeetConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       required
     />
 
-    {config.operation === 'create' && (
+    {operation === 'create' && (
       <>
         <ExpressionField
           label="Meeting Title"
@@ -432,7 +446,7 @@ export const GoogleMeetConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.operation === 'get' && (
+    {operation === 'get' && (
       <ExpressionField
         label="Event ID"
         value={config.eventId || ''}
@@ -441,13 +455,18 @@ export const GoogleMeetConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       />
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // ELEVENLABS CONFIG
 // ============================================
 
-export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="ElevenLabs API Key"
@@ -470,7 +489,7 @@ export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       required
     />
 
-    {config.resource === 'textToSpeech' && (
+    {resource === 'textToSpeech' && (
       <>
         <ExpressionField
           label="Voice ID"
@@ -527,7 +546,7 @@ export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.resource === 'voice' && (
+    {resource === 'voice' && (
       <>
         <SelectField
           label="Operation"
@@ -539,7 +558,7 @@ export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           ]}
         />
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Voice ID"
             value={config.voiceId || ''}
@@ -550,7 +569,7 @@ export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.resource === 'voiceClone' && (
+    {resource === 'voiceClone' && (
       <>
         <ExpressionField
           label="Voice Name"
@@ -575,13 +594,18 @@ export const ElevenLabsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // CALENDLY CONFIG
 // ============================================
 
-export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Calendly Credentials"
@@ -604,7 +628,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'event' && (
+    {resource === 'event' && (
       <>
         <SelectField
           label="Operation"
@@ -617,7 +641,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Event UUID"
             value={config.eventUuid || ''}
@@ -626,7 +650,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Filters"
             value={config.filters || {}}
@@ -643,7 +667,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'cancel' && (
+        {operation === 'cancel' && (
           <>
             <ExpressionField
               label="Event UUID"
@@ -662,7 +686,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'eventType' && (
+    {resource === 'eventType' && (
       <>
         <SelectField
           label="Operation"
@@ -674,7 +698,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Event Type UUID"
             value={config.eventTypeUuid || ''}
@@ -685,7 +709,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'invitee' && (
+    {resource === 'invitee' && (
       <>
         <SelectField
           label="Operation"
@@ -705,7 +729,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Invitee UUID"
             value={config.inviteeUuid || ''}
@@ -716,7 +740,7 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'schedulingLink' && (
+    {resource === 'schedulingLink' && (
       <>
         <SelectField
           label="Operation"
@@ -743,7 +767,8 @@ export const CalendlyConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

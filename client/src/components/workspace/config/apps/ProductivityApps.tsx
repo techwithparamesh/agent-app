@@ -31,7 +31,11 @@ interface AppConfigProps {
 // ASANA CONFIG
 // ============================================
 
-export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Asana Credentials"
@@ -54,7 +58,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       required
     />
 
-    {config.resource === 'task' && (
+    {resource === 'task' && (
       <>
         <SelectField
           label="Operation"
@@ -70,7 +74,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Workspace ID"
@@ -101,7 +105,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Task ID"
             value={config.taskId || ''}
@@ -110,7 +114,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <>
             <ExpressionField
               label="Project ID"
@@ -129,7 +133,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'project' && (
+    {resource === 'project' && (
       <>
         <SelectField
           label="Operation"
@@ -141,7 +145,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Project ID"
             value={config.projectId || ''}
@@ -150,7 +154,7 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <ExpressionField
             label="Workspace ID"
             value={config.workspaceId || ''}
@@ -161,13 +165,18 @@ export const AsanaConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // TRELLO CONFIG
 // ============================================
 
-export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Trello Credentials"
@@ -190,7 +199,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'card' && (
+    {resource === 'card' && (
       <>
         <SelectField
           label="Operation"
@@ -205,7 +214,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="List ID"
@@ -239,7 +248,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete' || config.operation === 'move') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete' || config.operation === 'move') && (
           <ExpressionField
             label="Card ID"
             value={config.cardId || ''}
@@ -248,7 +257,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'move' && (
+        {operation === 'move' && (
           <ExpressionField
             label="Target List ID"
             value={config.targetListId || ''}
@@ -259,7 +268,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'board' && (
+    {resource === 'board' && (
       <>
         <SelectField
           label="Operation"
@@ -272,7 +281,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <ExpressionField
             label="Board Name"
             value={config.name || ''}
@@ -281,7 +290,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Board ID"
             value={config.boardId || ''}
@@ -292,7 +301,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'list' && (
+    {resource === 'list' && (
       <>
         <SelectField
           label="Operation"
@@ -305,7 +314,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Board ID"
@@ -323,7 +332,7 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <ExpressionField
             label="Board ID"
             value={config.boardId || ''}
@@ -334,13 +343,18 @@ export const TrelloConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GITHUB CONFIG
 // ============================================
 
-export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="GitHub Credentials"
@@ -379,7 +393,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'issue' && (
+    {resource === 'issue' && (
       <>
         <SelectField
           label="Operation"
@@ -395,7 +409,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -424,7 +438,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'comment' || config.operation === 'lock') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'comment' || config.operation === 'lock') && (
           <ExpressionField
             label="Issue Number"
             value={config.issueNumber || ''}
@@ -433,7 +447,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'comment' && (
+        {operation === 'comment' && (
           <TextareaField
             label="Comment Body"
             value={config.commentBody || ''}
@@ -443,7 +457,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Filters"
             value={config.filters || {}}
@@ -462,7 +476,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'pullRequest' && (
+    {resource === 'pullRequest' && (
       <>
         <SelectField
           label="Operation"
@@ -477,7 +491,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -510,7 +524,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'merge' || config.operation === 'review') && (
+        {(operation === 'get' || config.operation === 'merge' || config.operation === 'review') && (
           <ExpressionField
             label="Pull Request Number"
             value={config.prNumber || ''}
@@ -519,7 +533,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'merge' && (
+        {operation === 'merge' && (
           <SelectField
             label="Merge Method"
             value={config.mergeMethod || 'merge'}
@@ -534,7 +548,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'file' && (
+    {resource === 'file' && (
       <>
         <SelectField
           label="Operation"
@@ -556,7 +570,7 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           required
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || config.operation === 'update') && (
           <>
             <TextareaField
               label="File Content"
@@ -583,13 +597,18 @@ export const GitHubConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // JIRA CONFIG
 // ============================================
 
-export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Jira Credentials"
@@ -619,7 +638,7 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       required
     />
 
-    {config.resource === 'issue' && (
+    {resource === 'issue' && (
       <>
         <SelectField
           label="Operation"
@@ -636,7 +655,7 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Project Key"
@@ -687,7 +706,7 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete' || config.operation === 'transition' || config.operation === 'comment') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete' || config.operation === 'transition' || config.operation === 'comment') && (
           <ExpressionField
             label="Issue Key"
             value={config.issueKey || ''}
@@ -697,7 +716,7 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <>
             <ExpressionField
               label="JQL Query"
@@ -715,7 +734,7 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           </>
         )}
 
-        {config.operation === 'transition' && (
+        {operation === 'transition' && (
           <ExpressionField
             label="Transition ID"
             value={config.transitionId || ''}
@@ -724,7 +743,7 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           />
         )}
 
-        {config.operation === 'comment' && (
+        {operation === 'comment' && (
           <TextareaField
             label="Comment"
             value={config.comment || ''}
@@ -736,13 +755,18 @@ export const JiraConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GITLAB CONFIG
 // ============================================
 
-export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="GitLab Credentials"
@@ -780,7 +804,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'issue' && (
+    {resource === 'issue' && (
       <>
         <SelectField
           label="Operation"
@@ -795,7 +819,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -819,7 +843,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Issue IID"
             value={config.issueIid || ''}
@@ -830,7 +854,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'mergeRequest' && (
+    {resource === 'mergeRequest' && (
       <>
         <SelectField
           label="Operation"
@@ -845,7 +869,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -870,7 +894,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'merge' || config.operation === 'approve') && (
+        {(operation === 'get' || config.operation === 'merge' || config.operation === 'approve') && (
           <ExpressionField
             label="Merge Request IID"
             value={config.mrIid || ''}
@@ -881,7 +905,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'pipeline' && (
+    {resource === 'pipeline' && (
       <>
         <SelectField
           label="Operation"
@@ -896,7 +920,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <ExpressionField
             label="Branch/Ref"
             value={config.ref || 'main'}
@@ -905,7 +929,7 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {(config.operation === 'get' || config.operation === 'cancel' || config.operation === 'retry') && (
+        {(operation === 'get' || config.operation === 'cancel' || config.operation === 'retry') && (
           <ExpressionField
             label="Pipeline ID"
             value={config.pipelineId || ''}
@@ -916,13 +940,18 @@ export const GitLabConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // LINEAR CONFIG
 // ============================================
 
-export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Linear API Key"
@@ -944,7 +973,7 @@ export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'issue' && (
+    {resource === 'issue' && (
       <>
         <SelectField
           label="Operation"
@@ -959,7 +988,7 @@ export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Team ID"
@@ -992,7 +1021,7 @@ export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Issue ID"
             value={config.issueId || ''}
@@ -1001,7 +1030,7 @@ export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Filters"
             value={config.filters || {}}
@@ -1017,13 +1046,18 @@ export const LinearConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // CLICKUP CONFIG
 // ============================================
 
-export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="ClickUp Credentials"
@@ -1046,7 +1080,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       required
     />
 
-    {config.resource === 'task' && (
+    {resource === 'task' && (
       <>
         <SelectField
           label="Operation"
@@ -1061,7 +1095,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="List ID"
@@ -1094,7 +1128,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Task ID"
             value={config.taskId || ''}
@@ -1103,7 +1137,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <ExpressionField
             label="List ID"
             value={config.listId || ''}
@@ -1114,7 +1148,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'list' && (
+    {resource === 'list' && (
       <>
         <SelectField
           label="Operation"
@@ -1126,7 +1160,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Folder ID"
@@ -1144,7 +1178,7 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <ExpressionField
             label="Folder ID"
             value={config.folderId || ''}
@@ -1155,13 +1189,18 @@ export const ClickUpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // TODOIST CONFIG
 // ============================================
 
-export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Todoist API Token"
@@ -1184,7 +1223,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       required
     />
 
-    {config.resource === 'task' && (
+    {resource === 'task' && (
       <>
         <SelectField
           label="Operation"
@@ -1201,7 +1240,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Content"
@@ -1229,7 +1268,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'close' || config.operation === 'reopen' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'close' || config.operation === 'reopen' || config.operation === 'delete') && (
           <ExpressionField
             label="Task ID"
             value={config.taskId || ''}
@@ -1238,7 +1277,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Filters"
             value={config.filters || {}}
@@ -1253,7 +1292,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'project' && (
+    {resource === 'project' && (
       <>
         <SelectField
           label="Operation"
@@ -1268,7 +1307,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Project Name"
@@ -1290,7 +1329,7 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Project ID"
             value={config.projectId || ''}
@@ -1301,7 +1340,8 @@ export const TodoistConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

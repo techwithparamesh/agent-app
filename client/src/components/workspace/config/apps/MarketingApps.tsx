@@ -31,7 +31,11 @@ interface AppConfigProps {
 // GOOGLE ANALYTICS CONFIG
 // ============================================
 
-export const GoogleAnalyticsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleAnalyticsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const apiVersion = config.apiVersion || '';
+  const resource = config.resource || 'message';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Analytics Credentials"
@@ -71,7 +75,7 @@ export const GoogleAnalyticsConfig: React.FC<AppConfigProps> = ({ config, update
       required
     />
 
-    {config.resource === 'report' && (
+    {resource === 'report' && (
       <>
         <SelectField
           label="Operation"
@@ -133,7 +137,7 @@ export const GoogleAnalyticsConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'event' && (
+    {resource === 'event' && (
       <>
         <ExpressionField
           label="Measurement ID"
@@ -175,13 +179,18 @@ export const GoogleAnalyticsConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // FACEBOOK ADS CONFIG
 // ============================================
 
-export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Facebook Credentials"
@@ -213,7 +222,7 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       required
     />
 
-    {config.resource === 'campaign' && (
+    {resource === 'campaign' && (
       <>
         <SelectField
           label="Operation"
@@ -227,7 +236,7 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Campaign Name"
@@ -277,7 +286,7 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update') && (
+        {(operation === 'get' || config.operation === 'update') && (
           <ExpressionField
             label="Campaign ID"
             value={config.campaignId || ''}
@@ -288,7 +297,7 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'insights' && (
+    {resource === 'insights' && (
       <>
         <SelectField
           label="Level"
@@ -343,7 +352,7 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'customAudience' && (
+    {resource === 'customAudience' && (
       <>
         <SelectField
           label="Operation"
@@ -357,7 +366,7 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Audience Name"
@@ -388,13 +397,18 @@ export const FacebookAdsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // GOOGLE ADS CONFIG
 // ============================================
 
-export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google Ads Credentials"
@@ -427,7 +441,7 @@ export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       required
     />
 
-    {config.resource === 'campaign' && (
+    {resource === 'campaign' && (
       <>
         <SelectField
           label="Operation"
@@ -440,7 +454,7 @@ export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {(config.operation === 'get' || config.operation === 'update') && (
+        {(operation === 'get' || config.operation === 'update') && (
           <ExpressionField
             label="Campaign ID"
             value={config.campaignId || ''}
@@ -449,7 +463,7 @@ export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           />
         )}
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <CollectionField
             label="Update Fields"
             value={config.updateFields || {}}
@@ -466,7 +480,7 @@ export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.resource === 'report' && (
+    {resource === 'report' && (
       <>
         <SelectField
           label="Report Type"
@@ -510,13 +524,19 @@ export const GoogleAdsConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // LINKEDIN CONFIG
 // ============================================
 
-export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const postAs = config.postAs || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="LinkedIn Credentials"
@@ -539,7 +559,7 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'post' && (
+    {resource === 'post' && (
       <>
         <SelectField
           label="Operation"
@@ -552,7 +572,7 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <SelectField
               label="Post As"
@@ -598,7 +618,7 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'delete') && (
           <ExpressionField
             label="Post URN"
             value={config.postUrn || ''}
@@ -610,7 +630,7 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'company' && (
+    {resource === 'company' && (
       <>
         <SelectField
           label="Operation"
@@ -631,7 +651,7 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
@@ -660,7 +680,7 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'profile' && (
+    {resource === 'profile' && (
       <>
         <SelectField
           label="Operation"
@@ -673,7 +693,8 @@ export const LinkedInConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

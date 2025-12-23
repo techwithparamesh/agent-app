@@ -45,7 +45,11 @@ interface AppConfigProps {
 // AWS S3 CONFIG
 // ============================================
 
-export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="AWS Credentials"
@@ -67,7 +71,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       required
     />
 
-    {config.resource === 'file' && (
+    {resource === 'file' && (
       <>
         <SelectField
           label="Operation"
@@ -89,7 +93,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           required
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <>
             <ExpressionField
               label="File Key (Path)"
@@ -149,7 +153,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           </>
         )}
 
-        {(config.operation === 'download' || config.operation === 'delete') && (
+        {(operation === 'download' || config.operation === 'delete') && (
           <ExpressionField
             label="File Key (Path)"
             value={config.fileKey || ''}
@@ -159,7 +163,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           />
         )}
 
-        {config.operation === 'copy' && (
+        {operation === 'copy' && (
           <>
             <TextField
               label="Source Bucket"
@@ -182,7 +186,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           </>
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="List Options"
             value={config.options || {}}
@@ -197,7 +201,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'bucket' && (
+    {resource === 'bucket' && (
       <>
         <SelectField
           label="Operation"
@@ -210,7 +214,7 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Bucket Name"
@@ -236,13 +240,18 @@ export const AWSS3Config: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       placeholder="us-east-1"
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // DROPBOX CONFIG
 // ============================================
 
-export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Dropbox Credentials"
@@ -264,7 +273,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       required
     />
 
-    {config.resource === 'file' && (
+    {resource === 'file' && (
       <>
         <SelectField
           label="Operation"
@@ -280,7 +289,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <>
             <ExpressionField
               label="File Path"
@@ -301,7 +310,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'download' || config.operation === 'delete' || config.operation === 'share') && (
+        {(operation === 'download' || config.operation === 'delete' || config.operation === 'share') && (
           <ExpressionField
             label="File Path"
             value={config.path || ''}
@@ -311,7 +320,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {(config.operation === 'copy' || config.operation === 'move') && (
+        {(operation === 'copy' || config.operation === 'move') && (
           <>
             <ExpressionField
               label="From Path"
@@ -330,7 +339,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'folder' && (
+    {resource === 'folder' && (
       <>
         <SelectField
           label="Operation"
@@ -351,7 +360,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           required
         />
 
-        {config.operation === 'list' && (
+        {operation === 'list' && (
           <CollectionField
             label="Options"
             value={config.options || {}}
@@ -365,7 +374,7 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'search' && (
+    {resource === 'search' && (
       <>
         <ExpressionField
           label="Search Query"
@@ -386,13 +395,18 @@ export const DropboxConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // AIRTABLE CONFIG
 // ============================================
 
-export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const dataMode = config.dataMode || '';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Airtable Credentials"
@@ -435,7 +449,7 @@ export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       ]}
     />
 
-    {(config.operation === 'read' || config.operation === 'update' || config.operation === 'delete') && (
+    {(operation === 'read' || config.operation === 'update' || config.operation === 'delete') && (
       <ExpressionField
         label="Record ID"
         value={config.recordId || ''}
@@ -445,7 +459,7 @@ export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       />
     )}
 
-    {(config.operation === 'create' || config.operation === 'update' || config.operation === 'upsert') && (
+    {(operation === 'create' || config.operation === 'update' || config.operation === 'upsert') && (
       <>
         <SelectField
           label="Data Mode"
@@ -478,7 +492,7 @@ export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'upsert' && (
+        {operation === 'upsert' && (
           <TextField
             label="Merge Field"
             value={config.mergeField || ''}
@@ -490,7 +504,7 @@ export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {(config.operation === 'search' || config.operation === 'list') && (
+    {(operation === 'search' || config.operation === 'list') && (
       <>
         <TextField
           label="Filter Formula"
@@ -525,13 +539,18 @@ export const AirtableConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       description="Return all records (may be slow for large tables)"
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // NOTION CONFIG
 // ============================================
 
-export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Notion Credentials"
@@ -555,7 +574,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'page' && (
+    {resource === 'page' && (
       <>
         <SelectField
           label="Operation"
@@ -569,7 +588,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ResourceLocatorField
               label="Parent"
@@ -607,7 +626,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'archive') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'archive') && (
           <ResourceLocatorField
             label="Page"
             value={config.pageId || { mode: 'list', value: '' }}
@@ -620,7 +639,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'database' && (
+    {resource === 'database' && (
       <>
         <SelectField
           label="Operation"
@@ -644,7 +663,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'query' && (
+        {operation === 'query' && (
           <>
             <TextareaField
               label="Filter (JSON)"
@@ -678,7 +697,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'databaseItem' && (
+    {resource === 'databaseItem' && (
       <>
         <SelectField
           label="Operation"
@@ -700,7 +719,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           required
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || config.operation === 'update') && (
           <KeyValueField
             label="Properties"
             value={config.properties || []}
@@ -710,7 +729,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {(config.operation === 'update' || config.operation === 'get') && (
+        {(operation === 'update' || config.operation === 'get') && (
           <TextField
             label="Page ID"
             value={config.pageId || ''}
@@ -721,7 +740,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'block' && (
+    {resource === 'block' && (
       <>
         <SelectField
           label="Operation"
@@ -741,7 +760,7 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           required
         />
 
-        {config.operation === 'append' && (
+        {operation === 'append' && (
           <TextareaField
             label="Content (Markdown)"
             value={config.content || ''}
@@ -752,13 +771,19 @@ export const NotionConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // SUPABASE CONFIG
 // ============================================
 
-export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const dataMode = config.dataMode || '';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Supabase Credentials"
@@ -780,7 +805,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'row' && (
+    {resource === 'row' && (
       <>
         <SelectField
           label="Operation"
@@ -802,7 +827,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {(config.operation === 'create' || config.operation === 'upsert') && (
+        {(operation === 'create' || config.operation === 'upsert') && (
           <>
             <SelectField
               label="Data Mode"
@@ -835,7 +860,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'read' && (
+        {operation === 'read' && (
           <>
             <TextField
               label="Select Columns"
@@ -871,7 +896,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <>
             <KeyValueField
               label="Update Fields"
@@ -891,7 +916,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'delete' && (
+        {operation === 'delete' && (
           <FilterField
             label="Delete Where"
             value={config.filters || { conditions: [] }}
@@ -904,7 +929,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'storage' && (
+    {resource === 'storage' && (
       <>
         <SelectField
           label="Operation"
@@ -926,7 +951,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {(config.operation === 'upload' || config.operation === 'download' || config.operation === 'delete' || config.operation === 'getPublicUrl') && (
+        {(operation === 'upload' || config.operation === 'download' || config.operation === 'delete' || config.operation === 'getPublicUrl') && (
           <ExpressionField
             label="File Path"
             value={config.filePath || ''}
@@ -936,7 +961,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'list' && (
+        {operation === 'list' && (
           <TextField
             label="Folder Path"
             value={config.folderPath || ''}
@@ -946,7 +971,7 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'rpc' && (
+    {resource === 'rpc' && (
       <>
         <TextField
           label="Function Name"
@@ -964,13 +989,17 @@ export const SupabaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // MONGODB CONFIG
 // ============================================
 
-export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="MongoDB Credentials"
@@ -1011,7 +1040,7 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       ]}
     />
 
-    {config.operation === 'insert' && (
+    {operation === 'insert' && (
       <>
         <SelectField
           label="Insert Mode"
@@ -1033,7 +1062,7 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {(config.operation === 'find' || config.operation === 'findOne' || config.operation === 'count') && (
+    {(operation === 'find' || config.operation === 'findOne' || config.operation === 'count') && (
       <>
         <TextareaField
           label="Query (JSON)"
@@ -1043,7 +1072,7 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           rows={4}
         />
 
-        {config.operation === 'find' && (
+        {operation === 'find' && (
           <CollectionField
             label="Options"
             value={config.options || {}}
@@ -1059,7 +1088,7 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {(config.operation === 'update' || config.operation === 'updateOne') && (
+    {(operation === 'update' || config.operation === 'updateOne') && (
       <>
         <TextareaField
           label="Filter (JSON)"
@@ -1085,7 +1114,7 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {(config.operation === 'delete' || config.operation === 'deleteOne') && (
+    {(operation === 'delete' || config.operation === 'deleteOne') && (
       <TextareaField
         label="Filter (JSON)"
         value={config.filter || ''}
@@ -1096,7 +1125,7 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       />
     )}
 
-    {config.operation === 'aggregate' && (
+    {operation === 'aggregate' && (
       <TextareaField
         label="Pipeline (JSON Array)"
         value={config.pipeline || ''}
@@ -1107,13 +1136,18 @@ export const MongoDBConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       />
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // POSTGRES CONFIG
 // ============================================
 
-export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  const dataMode = config.dataMode || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="PostgreSQL Credentials"
@@ -1135,7 +1169,7 @@ export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       ]}
     />
 
-    {config.operation === 'executeQuery' && (
+    {operation === 'executeQuery' && (
       <>
         <TextareaField
           label="Query"
@@ -1159,7 +1193,7 @@ export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.operation === 'insert' && (
+    {operation === 'insert' && (
       <>
         <TextField
           label="Table"
@@ -1197,7 +1231,7 @@ export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.operation === 'update' && (
+    {operation === 'update' && (
       <>
         <TextField
           label="Table"
@@ -1231,7 +1265,7 @@ export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.operation === 'delete' && (
+    {operation === 'delete' && (
       <>
         <TextField
           label="Table"
@@ -1268,13 +1302,17 @@ export const PostgresConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       ]}
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // REDIS CONFIG
 // ============================================
 
-export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Redis Credentials"
@@ -1307,7 +1345,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       ]}
     />
 
-    {(config.operation === 'get' || config.operation === 'delete' || config.operation === 'incr' || config.operation === 'decr') && (
+    {(operation === 'get' || config.operation === 'delete' || config.operation === 'incr' || config.operation === 'decr') && (
       <ExpressionField
         label="Key"
         value={config.key || ''}
@@ -1316,7 +1354,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       />
     )}
 
-    {config.operation === 'set' && (
+    {operation === 'set' && (
       <>
         <ExpressionField
           label="Key"
@@ -1343,7 +1381,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.operation === 'keys' && (
+    {operation === 'keys' && (
       <ExpressionField
         label="Pattern"
         value={config.pattern || ''}
@@ -1353,7 +1391,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       />
     )}
 
-    {(config.operation === 'hget' || config.operation === 'hset' || config.operation === 'hgetall') && (
+    {(operation === 'hget' || config.operation === 'hset' || config.operation === 'hgetall') && (
       <>
         <ExpressionField
           label="Key"
@@ -1361,7 +1399,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           onChange={(v) => updateConfig('key', v)}
           required
         />
-        {(config.operation === 'hget' || config.operation === 'hset') && (
+        {(operation === 'hget' || config.operation === 'hset') && (
           <ExpressionField
             label="Field"
             value={config.field || ''}
@@ -1369,7 +1407,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
             required
           />
         )}
-        {config.operation === 'hset' && (
+        {operation === 'hset' && (
           <ExpressionField
             label="Value"
             value={config.value || ''}
@@ -1380,7 +1418,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {(config.operation === 'lpush' || config.operation === 'rpush') && (
+    {(operation === 'lpush' || config.operation === 'rpush') && (
       <>
         <ExpressionField
           label="Key"
@@ -1397,7 +1435,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {(config.operation === 'lpop' || config.operation === 'rpop') && (
+    {(operation === 'lpop' || config.operation === 'rpop') && (
       <ExpressionField
         label="Key"
         value={config.key || ''}
@@ -1406,7 +1444,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       />
     )}
 
-    {config.operation === 'lrange' && (
+    {operation === 'lrange' && (
       <>
         <ExpressionField
           label="Key"
@@ -1427,7 +1465,7 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.operation === 'publish' && (
+    {operation === 'publish' && (
       <>
         <ExpressionField
           label="Channel"
@@ -1444,7 +1482,8 @@ export const RedisConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

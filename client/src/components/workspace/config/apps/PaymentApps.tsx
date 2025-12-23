@@ -40,7 +40,13 @@ interface AppConfigProps {
 // STRIPE ADVANCED CONFIG
 // ============================================
 
-export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const sourceType = config.sourceType || '';
+  const refundFrom = config.refundFrom || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Stripe Credentials"
@@ -71,7 +77,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       required
     />
 
-    {config.resource === 'charge' && (
+    {resource === 'charge' && (
       <>
         <SelectField
           label="Operation"
@@ -86,7 +92,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Amount (cents)"
@@ -165,7 +171,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'capture') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'capture') && (
           <ExpressionField
             label="Charge ID"
             value={config.chargeId || ''}
@@ -177,7 +183,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'customer' && (
+    {resource === 'customer' && (
       <>
         <SelectField
           label="Operation"
@@ -192,7 +198,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Email"
@@ -228,7 +234,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Customer ID"
             value={config.customerId || ''}
@@ -240,7 +246,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'paymentIntent' && (
+    {resource === 'paymentIntent' && (
       <>
         <SelectField
           label="Operation"
@@ -256,7 +262,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Amount (cents)"
@@ -311,7 +317,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'subscription' && (
+    {resource === 'subscription' && (
       <>
         <SelectField
           label="Operation"
@@ -326,7 +332,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Customer ID"
@@ -375,7 +381,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           />
         )}
 
-        {config.operation === 'cancel' && (
+        {operation === 'cancel' && (
           <SwitchField
             label="Cancel at Period End"
             value={config.cancelAtPeriodEnd || false}
@@ -386,7 +392,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'invoice' && (
+    {resource === 'invoice' && (
       <>
         <SelectField
           label="Operation"
@@ -403,7 +409,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Customer ID"
@@ -442,7 +448,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'checkout' && (
+    {resource === 'checkout' && (
       <>
         <SelectField
           label="Operation"
@@ -455,7 +461,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <SelectField
               label="Mode"
@@ -509,7 +515,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'refund' && (
+    {resource === 'refund' && (
       <>
         <SelectField
           label="Operation"
@@ -522,7 +528,7 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <SelectField
               label="Refund From"
@@ -559,13 +565,18 @@ export const StripeAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // PAYPAL CONFIG
 // ============================================
 
-export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="PayPal Credentials"
@@ -599,7 +610,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'order' && (
+    {resource === 'order' && (
       <>
         <SelectField
           label="Operation"
@@ -613,7 +624,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <SelectField
               label="Intent"
@@ -649,7 +660,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'capture' || config.operation === 'authorize') && (
+        {(operation === 'get' || config.operation === 'capture' || config.operation === 'authorize') && (
           <ExpressionField
             label="Order ID"
             value={config.orderId || ''}
@@ -660,7 +671,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'payout' && (
+    {resource === 'payout' && (
       <>
         <SelectField
           label="Operation"
@@ -672,7 +683,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <FixedCollectionField
               label="Recipients"
@@ -697,7 +708,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'subscription' && (
+    {resource === 'subscription' && (
       <>
         <SelectField
           label="Operation"
@@ -712,7 +723,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Plan ID"
@@ -744,7 +755,7 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'cancel' && (
+        {operation === 'cancel' && (
           <TextField
             label="Cancellation Reason"
             value={config.reason || ''}
@@ -754,13 +765,18 @@ export const PayPalConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // RAZORPAY CONFIG
 // ============================================
 
-export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Razorpay Credentials"
@@ -786,7 +802,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'order' && (
+    {resource === 'order' && (
       <>
         <SelectField
           label="Operation"
@@ -799,7 +815,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Amount (paise)"
@@ -842,7 +858,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Order ID"
             value={config.orderId || ''}
@@ -854,7 +870,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'payment' && (
+    {resource === 'payment' && (
       <>
         <SelectField
           label="Operation"
@@ -867,7 +883,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {(config.operation === 'get' || config.operation === 'capture') && (
+        {(operation === 'get' || config.operation === 'capture') && (
           <ExpressionField
             label="Payment ID"
             value={config.paymentId || ''}
@@ -877,7 +893,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'capture' && (
+        {operation === 'capture' && (
           <ExpressionField
             label="Amount (paise)"
             value={config.amount || ''}
@@ -888,7 +904,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'refund' && (
+    {resource === 'refund' && (
       <>
         <SelectField
           label="Operation"
@@ -901,7 +917,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Payment ID"
@@ -928,7 +944,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'paymentLink' && (
+    {resource === 'paymentLink' && (
       <>
         <SelectField
           label="Operation"
@@ -941,7 +957,7 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Amount (paise)"
@@ -987,13 +1003,18 @@ export const RazorpayConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // SHOPIFY CONFIG
 // ============================================
 
-export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Shopify Credentials"
@@ -1026,7 +1047,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       required
     />
 
-    {config.resource === 'order' && (
+    {resource === 'order' && (
       <>
         <SelectField
           label="Operation"
@@ -1040,7 +1061,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'get' && (
+        {operation === 'get' && (
           <ExpressionField
             label="Order ID"
             value={config.orderId || ''}
@@ -1049,7 +1070,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Filters"
             value={config.filters || {}}
@@ -1083,7 +1104,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'product' && (
+    {resource === 'product' && (
       <>
         <SelectField
           label="Operation"
@@ -1098,7 +1119,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -1144,7 +1165,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Product ID"
             value={config.productId || ''}
@@ -1155,7 +1176,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'customer' && (
+    {resource === 'customer' && (
       <>
         <SelectField
           label="Operation"
@@ -1171,7 +1192,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Email"
@@ -1196,7 +1217,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {config.operation === 'search' && (
+        {operation === 'search' && (
           <TextField
             label="Search Query"
             value={config.query || ''}
@@ -1208,7 +1229,7 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'inventory' && (
+    {resource === 'inventory' && (
       <>
         <SelectField
           label="Operation"
@@ -1235,25 +1256,30 @@ export const ShopifyConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           required
         />
 
-        {(config.operation === 'set' || config.operation === 'adjust') && (
+        {(operation === 'set' || config.operation === 'adjust') && (
           <ExpressionField
             label="Quantity"
             value={config.quantity || ''}
             onChange={(v) => updateConfig('quantity', v)}
-            placeholder={config.operation === 'adjust' ? 'e.g., -5 or 10' : 'e.g., 100'}
+            placeholder={operation === 'adjust' ? 'e.g., -5 or 10' : 'e.g., 100'}
             required
           />
         )}
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // WOOCOMMERCE CONFIG
 // ============================================
 
-export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="WooCommerce Credentials"
@@ -1284,7 +1310,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       required
     />
 
-    {config.resource === 'order' && (
+    {resource === 'order' && (
       <>
         <SelectField
           label="Operation"
@@ -1299,7 +1325,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <CollectionField
               label="Billing"
@@ -1330,7 +1356,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Order ID"
             value={config.orderId || ''}
@@ -1339,7 +1365,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           />
         )}
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <SelectField
             label="Status"
             value={config.status || ''}
@@ -1358,7 +1384,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'product' && (
+    {resource === 'product' && (
       <>
         <SelectField
           label="Operation"
@@ -1373,7 +1399,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Name"
@@ -1418,7 +1444,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.resource === 'coupon' && (
+    {resource === 'coupon' && (
       <>
         <SelectField
           label="Operation"
@@ -1433,7 +1459,7 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Coupon Code"
@@ -1479,7 +1505,8 @@ export const WooCommerceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

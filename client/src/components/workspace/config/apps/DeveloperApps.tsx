@@ -33,7 +33,10 @@ interface AppConfigProps {
 // WEBHOOK CONFIG
 // ============================================
 
-export const WebhookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const WebhookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const responseMode = config.responseMode || '';
+  
+  return (
   <div className="space-y-4">
     <SelectField
       label="HTTP Method"
@@ -103,13 +106,18 @@ export const WebhookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       valuePlaceholder="Expected Value"
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // REST API CONFIG
 // ============================================
 
-export const RestApiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const RestApiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const authType = config.authType || 'none';
+  const bodyContentType = config.bodyContentType || '';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Authentication"
@@ -155,7 +163,7 @@ export const RestApiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       ]}
     />
 
-    {config.authType === 'basicAuth' && (
+    {authType === 'basicAuth' && (
       <>
         <TextField
           label="Username"
@@ -170,7 +178,7 @@ export const RestApiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.authType === 'headerAuth' && (
+    {authType === 'headerAuth' && (
       <KeyValueField
         label="Auth Headers"
         value={config.authHeaders || []}
@@ -180,7 +188,7 @@ export const RestApiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       />
     )}
 
-    {config.authType === 'apiKey' && (
+    {authType === 'apiKey' && (
       <>
         <TextField
           label="API Key Name"
@@ -278,7 +286,8 @@ export const RestApiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       ]}
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // GRAPHQL CONFIG
@@ -358,7 +367,11 @@ export const GraphQLConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
 // BITBUCKET CONFIG
 // ============================================
 
-export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Bitbucket Credentials"
@@ -398,7 +411,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       required
     />
 
-    {config.resource === 'repository' && (
+    {resource === 'repository' && (
       <>
         <SelectField
           label="Operation"
@@ -412,7 +425,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.resource === 'pullRequest' && (
+    {resource === 'pullRequest' && (
       <>
         <SelectField
           label="Operation"
@@ -429,7 +442,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -467,7 +480,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'merge' || config.operation === 'decline' || config.operation === 'approve') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'merge' || config.operation === 'decline' || config.operation === 'approve') && (
           <ExpressionField
             label="Pull Request ID"
             value={config.prId || ''}
@@ -478,7 +491,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.resource === 'issue' && (
+    {resource === 'issue' && (
       <>
         <SelectField
           label="Operation"
@@ -492,7 +505,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Title"
@@ -532,7 +545,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update') && (
+        {(operation === 'get' || config.operation === 'update') && (
           <ExpressionField
             label="Issue ID"
             value={config.issueId || ''}
@@ -543,7 +556,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.resource === 'pipeline' && (
+    {resource === 'pipeline' && (
       <>
         <SelectField
           label="Operation"
@@ -557,7 +570,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {config.operation === 'trigger' && (
+        {operation === 'trigger' && (
           <>
             <ExpressionField
               label="Branch/Tag/Commit"
@@ -579,7 +592,7 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'stop') && (
+        {(operation === 'get' || config.operation === 'stop') && (
           <ExpressionField
             label="Pipeline UUID"
             value={config.pipelineUuid || ''}
@@ -590,7 +603,8 @@ export const BitbucketConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

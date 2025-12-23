@@ -29,7 +29,11 @@ interface AppConfigProps {
 // ZENDESK CONFIG
 // ============================================
 
-export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Zendesk Credentials"
@@ -61,7 +65,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       required
     />
 
-    {config.resource === 'ticket' && (
+    {resource === 'ticket' && (
       <>
         <SelectField
           label="Operation"
@@ -76,7 +80,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Subject"
@@ -126,7 +130,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Ticket ID"
             value={config.ticketId || ''}
@@ -135,7 +139,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <CollectionField
             label="Update Fields"
             value={config.updateFields || {}}
@@ -160,7 +164,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'user' && (
+    {resource === 'user' && (
       <>
         <SelectField
           label="Operation"
@@ -175,7 +179,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Name"
@@ -208,7 +212,7 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {config.operation === 'search' && (
+        {operation === 'search' && (
           <TextField
             label="Search Query"
             value={config.query || ''}
@@ -220,13 +224,18 @@ export const ZendeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // FRESHDESK CONFIG
 // ============================================
 
-export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Freshdesk Credentials"
@@ -256,7 +265,7 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       required
     />
 
-    {config.resource === 'ticket' && (
+    {resource === 'ticket' && (
       <>
         <SelectField
           label="Operation"
@@ -272,7 +281,7 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Subject"
@@ -322,7 +331,7 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete' || config.operation === 'reply') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete' || config.operation === 'reply') && (
           <ExpressionField
             label="Ticket ID"
             value={config.ticketId || ''}
@@ -331,7 +340,7 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           />
         )}
 
-        {config.operation === 'reply' && (
+        {operation === 'reply' && (
           <TextareaField
             label="Reply Body"
             value={config.body || ''}
@@ -343,7 +352,7 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.resource === 'contact' && (
+    {resource === 'contact' && (
       <>
         <SelectField
           label="Operation"
@@ -358,7 +367,7 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Email"
@@ -383,13 +392,18 @@ export const FreshdeskConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // CRISP CONFIG
 // ============================================
 
-export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Crisp Credentials"
@@ -419,7 +433,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       required
     />
 
-    {config.resource === 'conversation' && (
+    {resource === 'conversation' && (
       <>
         <SelectField
           label="Operation"
@@ -433,7 +447,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           ]}
         />
 
-        {(config.operation === 'get' || config.operation === 'setState' || config.operation === 'setMeta') && (
+        {(operation === 'get' || config.operation === 'setState' || config.operation === 'setMeta') && (
           <ExpressionField
             label="Session ID"
             value={config.sessionId || ''}
@@ -442,7 +456,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           />
         )}
 
-        {config.operation === 'setState' && (
+        {operation === 'setState' && (
           <SelectField
             label="State"
             value={config.state || 'pending'}
@@ -455,7 +469,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           />
         )}
 
-        {config.operation === 'setMeta' && (
+        {operation === 'setMeta' && (
           <KeyValueField
             label="Metadata"
             value={config.metadata || []}
@@ -467,7 +481,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
@@ -486,7 +500,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <SelectField
               label="Message Type"
@@ -510,7 +524,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
 
-    {config.resource === 'people' && (
+    {resource === 'people' && (
       <>
         <SelectField
           label="Operation"
@@ -529,7 +543,7 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
           required
         />
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <CollectionField
             label="Update Fields"
             value={config.updateFields || {}}
@@ -545,13 +559,18 @@ export const CrispConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // TAWK.TO CONFIG
 // ============================================
 
-export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Tawk.to Credentials"
@@ -580,7 +599,7 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       required
     />
 
-    {config.resource === 'chat' && (
+    {resource === 'chat' && (
       <>
         <SelectField
           label="Operation"
@@ -593,7 +612,7 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           ]}
         />
 
-        {(config.operation === 'get' || config.operation === 'sendMessage') && (
+        {(operation === 'get' || config.operation === 'sendMessage') && (
           <ExpressionField
             label="Chat ID"
             value={config.chatId || ''}
@@ -602,7 +621,7 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           />
         )}
 
-        {config.operation === 'sendMessage' && (
+        {operation === 'sendMessage' && (
           <TextareaField
             label="Message"
             value={config.message || ''}
@@ -612,7 +631,7 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <NumberField
             label="Limit"
             value={config.limit || 50}
@@ -622,7 +641,7 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
 
-    {config.resource === 'ticket' && (
+    {resource === 'ticket' && (
       <>
         <SelectField
           label="Operation"
@@ -635,7 +654,7 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Subject"
@@ -666,7 +685,8 @@ export const TawkConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

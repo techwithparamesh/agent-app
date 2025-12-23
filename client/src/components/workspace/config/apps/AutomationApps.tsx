@@ -30,7 +30,10 @@ interface AppConfigProps {
 // ZAPIER CONFIG
 // ============================================
 
-export const ZapierConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ZapierConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const mode = config.mode || 'trigger';
+  
+  return (
   <div className="space-y-4">
     <InfoBox type="info" title="Zapier Integration">
       Connect to Zapier via webhooks to trigger Zaps or receive data from Zapier.
@@ -47,7 +50,7 @@ export const ZapierConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.mode === 'trigger' && (
+    {mode === 'trigger' && (
       <>
         <ExpressionField
           label="Zapier Webhook URL"
@@ -88,7 +91,7 @@ export const ZapierConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.mode === 'action' && (
+    {mode === 'action' && (
       <>
         <TextField
           label="Webhook Path"
@@ -117,13 +120,18 @@ export const ZapierConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // MAKE (INTEGROMAT) CONFIG
 // ============================================
 
-export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const mode = config.mode || 'trigger';
+  const contentType = config.contentType || 'json';
+  
+  return (
   <div className="space-y-4">
     <InfoBox type="info" title="Make Integration">
       Connect to Make (formerly Integromat) via webhooks to trigger scenarios.
@@ -140,7 +148,7 @@ export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       required
     />
 
-    {config.mode === 'trigger' && (
+    {mode === 'trigger' && (
       <>
         <ExpressionField
           label="Make Webhook URL"
@@ -171,7 +179,7 @@ export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           ]}
         />
 
-        {config.contentType === 'json' && (
+        {contentType === 'json' && (
           <TextareaField
             label="JSON Body"
             value={config.body || ''}
@@ -181,7 +189,7 @@ export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
           />
         )}
 
-        {config.contentType === 'form' && (
+        {contentType === 'form' && (
           <KeyValueField
             label="Form Data"
             value={config.formData || []}
@@ -201,7 +209,7 @@ export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
 
-    {config.mode === 'action' && (
+    {mode === 'action' && (
       <>
         <TextField
           label="Webhook Path"
@@ -232,13 +240,18 @@ export const MakeConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // N8N CONFIG
 // ============================================
 
-export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const mode = config.mode || 'trigger';
+  const authType = config.authType || 'none';
+  
+  return (
   <div className="space-y-4">
     <InfoBox type="info" title="n8n Integration">
       Connect to n8n workflows via webhooks for distributed automation.
@@ -255,7 +268,7 @@ export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =>
       required
     />
 
-    {config.mode === 'trigger' && (
+    {mode === 'trigger' && (
       <>
         <ExpressionField
           label="n8n Webhook URL"
@@ -288,7 +301,7 @@ export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =>
           ]}
         />
 
-        {config.authType === 'basicAuth' && (
+        {authType === 'basicAuth' && (
           <>
             <TextField
               label="Username"
@@ -303,7 +316,7 @@ export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =>
           </>
         )}
 
-        {config.authType === 'headerAuth' && (
+        {authType === 'headerAuth' && (
           <KeyValueField
             label="Auth Headers"
             value={config.authHeaders || []}
@@ -331,7 +344,7 @@ export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =>
       </>
     )}
 
-    {config.mode === 'action' && (
+    {mode === 'action' && (
       <>
         <TextField
           label="Webhook Path"
@@ -363,13 +376,17 @@ export const N8nConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =>
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // POWER AUTOMATE CONFIG
 // ============================================
 
-export const PowerAutomateConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const PowerAutomateConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const mode = config.mode || 'trigger';
+  
+  return (
   <div className="space-y-4">
     <InfoBox type="info" title="Power Automate Integration">
       Connect to Microsoft Power Automate via HTTP triggers.
@@ -386,7 +403,7 @@ export const PowerAutomateConfig: React.FC<AppConfigProps> = ({ config, updateCo
       required
     />
 
-    {config.mode === 'trigger' && (
+    {mode === 'trigger' && (
       <>
         <ExpressionField
           label="Flow HTTP Trigger URL"
@@ -437,7 +454,7 @@ export const PowerAutomateConfig: React.FC<AppConfigProps> = ({ config, updateCo
       </>
     )}
 
-    {config.mode === 'action' && (
+    {mode === 'action' && (
       <>
         <TextField
           label="Webhook Path"
@@ -467,7 +484,8 @@ export const PowerAutomateConfig: React.FC<AppConfigProps> = ({ config, updateCo
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

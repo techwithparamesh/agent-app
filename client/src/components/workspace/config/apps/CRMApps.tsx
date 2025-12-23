@@ -39,7 +39,11 @@ interface AppConfigProps {
 // HUBSPOT ADVANCED CONFIG
 // ============================================
 
-export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="HubSpot Credentials"
@@ -65,7 +69,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       required
     />
 
-    {config.resource === 'contact' && (
+    {resource === 'contact' && (
       <>
         <SelectField
           label="Operation"
@@ -81,9 +85,9 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || config.operation === 'update') && (
           <>
-            {config.operation === 'update' && (
+            {operation === 'update' && (
               <ResourceLocatorField
                 label="Contact"
                 value={config.contactId || { mode: 'id', value: '' }}
@@ -99,7 +103,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
               value={config.email || ''}
               onChange={(v) => updateConfig('email', v)}
               placeholder="contact@company.com"
-              required={config.operation === 'create'}
+              required={operation === 'create'}
             />
 
             <CollectionField
@@ -151,7 +155,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           </>
         )}
 
-        {config.operation === 'search' && (
+        {operation === 'search' && (
           <>
             <FilterField
               label="Search Filters"
@@ -175,7 +179,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           </>
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Options"
             value={config.options || {}}
@@ -189,7 +193,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'company' && (
+    {resource === 'company' && (
       <>
         <SelectField
           label="Operation"
@@ -205,9 +209,9 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || config.operation === 'update') && (
           <>
-            {config.operation === 'update' && (
+            {operation === 'update' && (
               <TextField
                 label="Company ID"
                 value={config.companyId || ''}
@@ -220,7 +224,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
               label="Company Name"
               value={config.name || ''}
               onChange={(v) => updateConfig('name', v)}
-              required={config.operation === 'create'}
+              required={operation === 'create'}
             />
 
             <CollectionField
@@ -251,7 +255,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'deal' && (
+    {resource === 'deal' && (
       <>
         <SelectField
           label="Operation"
@@ -267,9 +271,9 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || config.operation === 'update') && (
           <>
-            {config.operation === 'update' && (
+            {operation === 'update' && (
               <TextField
                 label="Deal ID"
                 value={config.dealId || ''}
@@ -282,7 +286,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
               label="Deal Name"
               value={config.dealname || ''}
               onChange={(v) => updateConfig('dealname', v)}
-              required={config.operation === 'create'}
+              required={operation === 'create'}
             />
 
             <CollectionField
@@ -320,7 +324,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'ticket' && (
+    {resource === 'ticket' && (
       <>
         <SelectField
           label="Operation"
@@ -335,7 +339,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Subject"
@@ -371,7 +375,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'engagement' && (
+    {resource === 'engagement' && (
       <>
         <SelectField
           label="Operation"
@@ -384,7 +388,7 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <SelectField
               label="Engagement Type"
@@ -426,13 +430,18 @@ export const HubSpotAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // SALESFORCE CONFIG
 // ============================================
 
-export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Salesforce Credentials"
@@ -458,7 +467,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       required
     />
 
-    {config.resource === 'custom' && (
+    {resource === 'custom' && (
       <TextField
         label="Object API Name"
         value={config.customObject || ''}
@@ -483,7 +492,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       ]}
     />
 
-    {config.operation === 'query' && (
+    {operation === 'query' && (
       <TextareaField
         label="SOQL Query"
         value={config.query || ''}
@@ -494,7 +503,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       />
     )}
 
-    {(config.operation === 'update' || config.operation === 'get' || config.operation === 'delete') && (
+    {(operation === 'update' || config.operation === 'get' || config.operation === 'delete') && (
       <TextField
         label="Record ID"
         value={config.recordId || ''}
@@ -504,7 +513,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       />
     )}
 
-    {config.operation === 'upsert' && (
+    {operation === 'upsert' && (
       <>
         <TextField
           label="External ID Field"
@@ -522,9 +531,9 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {(config.operation === 'create' || config.operation === 'update' || config.operation === 'upsert') && (
+    {(operation === 'create' || config.operation === 'update' || config.operation === 'upsert') && (
       <>
-        {config.resource === 'lead' && (
+        {resource === 'lead' && (
           <CollectionField
             label="Lead Fields"
             value={config.fields || {}}
@@ -549,7 +558,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           />
         )}
 
-        {config.resource === 'contact' && (
+        {resource === 'contact' && (
           <CollectionField
             label="Contact Fields"
             value={config.fields || {}}
@@ -569,7 +578,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           />
         )}
 
-        {config.resource === 'account' && (
+        {resource === 'account' && (
           <CollectionField
             label="Account Fields"
             value={config.fields || {}}
@@ -589,7 +598,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           />
         )}
 
-        {config.resource === 'opportunity' && (
+        {resource === 'opportunity' && (
           <CollectionField
             label="Opportunity Fields"
             value={config.fields || {}}
@@ -609,7 +618,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           />
         )}
 
-        {config.resource === 'custom' && (
+        {resource === 'custom' && (
           <KeyValueField
             label="Custom Fields"
             value={config.customFields || []}
@@ -621,7 +630,7 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.operation === 'getAll' && (
+    {operation === 'getAll' && (
       <CollectionField
         label="Options"
         value={config.options || {}}
@@ -633,13 +642,18 @@ export const SalesforceConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       />
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // PIPEDRIVE CONFIG
 // ============================================
 
-export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Pipedrive Credentials"
@@ -679,7 +693,7 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       ]}
     />
 
-    {(config.operation === 'update' || config.operation === 'get' || config.operation === 'delete') && (
+    {(operation === 'update' || config.operation === 'get' || config.operation === 'delete') && (
       <TextField
         label={`${config.resource?.charAt(0).toUpperCase()}${config.resource?.slice(1)} ID`}
         value={config.resourceId || ''}
@@ -688,15 +702,15 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       />
     )}
 
-    {(config.operation === 'create' || config.operation === 'update') && (
+    {(operation === 'create' || config.operation === 'update') && (
       <>
-        {config.resource === 'deal' && (
+        {resource === 'deal' && (
           <>
             <ExpressionField
               label="Title"
               value={config.title || ''}
               onChange={(v) => updateConfig('title', v)}
-              required={config.operation === 'create'}
+              required={operation === 'create'}
             />
 
             <CollectionField
@@ -724,13 +738,13 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {config.resource === 'person' && (
+        {resource === 'person' && (
           <>
             <ExpressionField
               label="Name"
               value={config.name || ''}
               onChange={(v) => updateConfig('name', v)}
-              required={config.operation === 'create'}
+              required={operation === 'create'}
             />
 
             <CollectionField
@@ -751,13 +765,13 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {config.resource === 'organization' && (
+        {resource === 'organization' && (
           <>
             <ExpressionField
               label="Name"
               value={config.name || ''}
               onChange={(v) => updateConfig('name', v)}
-              required={config.operation === 'create'}
+              required={operation === 'create'}
             />
 
             <CollectionField
@@ -777,7 +791,7 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           </>
         )}
 
-        {config.resource === 'activity' && (
+        {resource === 'activity' && (
           <>
             <ExpressionField
               label="Subject"
@@ -820,7 +834,7 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.operation === 'search' && (
+    {operation === 'search' && (
       <>
         <TextField
           label="Search Term"
@@ -847,13 +861,18 @@ export const PipedriveConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // ZOHO CRM CONFIG
 // ============================================
 
-export const ZohoCRMConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ZohoCRMConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const module = config.module || '';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Zoho CRM Credentials"
@@ -896,7 +915,7 @@ export const ZohoCRMConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       ]}
     />
 
-    {(config.operation === 'update' || config.operation === 'get' || config.operation === 'delete') && (
+    {(operation === 'update' || config.operation === 'get' || config.operation === 'delete') && (
       <TextField
         label="Record ID"
         value={config.recordId || ''}
@@ -905,7 +924,7 @@ export const ZohoCRMConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       />
     )}
 
-    {(config.operation === 'create' || config.operation === 'update' || config.operation === 'upsert') && (
+    {(operation === 'create' || config.operation === 'update' || config.operation === 'upsert') && (
       <>
         {config.module === 'Leads' && (
           <CollectionField
@@ -958,7 +977,7 @@ export const ZohoCRMConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.operation === 'search' && (
+    {operation === 'search' && (
       <>
         <TextField
           label="Search Criteria"
@@ -980,13 +999,18 @@ export const ZohoCRMConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // MONDAY.COM CONFIG
 // ============================================
 
-export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Monday.com Credentials"
@@ -1009,7 +1033,7 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {config.resource === 'item' && (
+    {resource === 'item' && (
       <>
         <SelectField
           label="Operation"
@@ -1035,7 +1059,7 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           required
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ResourceLocatorField
               label="Group"
@@ -1063,7 +1087,7 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {config.operation === 'update' && (
+        {operation === 'update' && (
           <>
             <TextField
               label="Item ID"
@@ -1081,7 +1105,7 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           </>
         )}
 
-        {config.operation === 'changeColumnValue' && (
+        {operation === 'changeColumnValue' && (
           <>
             <TextField
               label="Item ID"
@@ -1108,7 +1132,7 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'board' && (
+    {resource === 'board' && (
       <>
         <SelectField
           label="Operation"
@@ -1121,7 +1145,7 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Board Name"
@@ -1150,7 +1174,8 @@ export const MondayConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

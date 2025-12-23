@@ -34,7 +34,11 @@ interface AppConfigProps {
 // WHATSAPP BUSINESS CONFIG
 // ============================================
 
-export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="WhatsApp Business API Credentials"
@@ -57,7 +61,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
@@ -80,7 +84,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <TextareaField
             label="Message"
             value={config.message || ''}
@@ -90,7 +94,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'sendMedia' && (
+        {operation === 'sendMedia' && (
           <>
             <SelectField
               label="Media Type"
@@ -119,7 +123,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'sendLocation' && (
+        {operation === 'sendLocation' && (
           <>
             <ExpressionField
               label="Latitude"
@@ -149,7 +153,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'reply' && (
+        {operation === 'reply' && (
           <>
             <ExpressionField
               label="Message ID"
@@ -171,7 +175,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'template' && (
+    {resource === 'template' && (
       <>
         <ExpressionField
           label="Phone Number"
@@ -211,7 +215,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'media' && (
+    {resource === 'media' && (
       <>
         <SelectField
           label="Operation"
@@ -224,7 +228,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <>
             <ExpressionField
               label="File URL"
@@ -248,7 +252,7 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'delete') && (
           <ExpressionField
             label="Media ID"
             value={config.mediaId || ''}
@@ -259,13 +263,18 @@ export const WhatsAppConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // TELEGRAM CONFIG
 // ============================================
 
-export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Telegram Bot Token"
@@ -288,7 +297,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
@@ -312,7 +321,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <TextareaField
               label="Message"
@@ -354,7 +363,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {(config.operation === 'sendPhoto' || config.operation === 'sendDocument' || config.operation === 'sendVideo') && (
+        {(operation === 'sendPhoto' || config.operation === 'sendDocument' || config.operation === 'sendVideo') && (
           <>
             <ExpressionField
               label="File URL or File ID"
@@ -371,7 +380,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {(config.operation === 'edit' || config.operation === 'delete') && (
+        {(operation === 'edit' || config.operation === 'delete') && (
           <ExpressionField
             label="Message ID"
             value={config.messageId || ''}
@@ -380,7 +389,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'edit' && (
+        {operation === 'edit' && (
           <TextareaField
             label="New Message Text"
             value={config.text || ''}
@@ -392,7 +401,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'chat' && (
+    {resource === 'chat' && (
       <>
         <SelectField
           label="Operation"
@@ -414,7 +423,7 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'callback' && (
+    {resource === 'callback' && (
       <>
         <ExpressionField
           label="Callback Query ID"
@@ -437,13 +446,18 @@ export const TelegramConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // OUTLOOK CONFIG
 // ============================================
 
-export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Microsoft OAuth2 Credentials"
@@ -466,7 +480,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       required
     />
 
-    {config.resource === 'email' && (
+    {resource === 'email' && (
       <>
         <SelectField
           label="Operation"
@@ -482,7 +496,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <ExpressionField
               label="To"
@@ -535,7 +549,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'reply' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'reply' || config.operation === 'delete') && (
           <ExpressionField
             label="Email ID"
             value={config.emailId || ''}
@@ -544,7 +558,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'getAll' && (
+        {operation === 'getAll' && (
           <CollectionField
             label="Filters"
             value={config.filters || {}}
@@ -563,7 +577,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'reply' && (
+        {operation === 'reply' && (
           <TextareaField
             label="Reply Message"
             value={config.replyBody || ''}
@@ -573,7 +587,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           />
         )}
 
-        {config.operation === 'move' && (
+        {operation === 'move' && (
           <>
             <ExpressionField
               label="Email ID"
@@ -593,7 +607,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
 
-    {config.resource === 'contact' && (
+    {resource === 'contact' && (
       <>
         <SelectField
           label="Operation"
@@ -608,7 +622,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="First Name"
@@ -643,7 +657,7 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Contact ID"
             value={config.contactId || ''}
@@ -654,7 +668,8 @@ export const OutlookConfig: React.FC<AppConfigProps> = ({ config, updateConfig }
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // SMTP CONFIG
@@ -766,7 +781,10 @@ export const SMTPConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) =
 // GOOGLE FORMS CONFIG
 // ============================================
 
-export const GoogleFormsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleFormsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google OAuth2 Credentials"
@@ -796,7 +814,7 @@ export const GoogleFormsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       required
     />
 
-    {config.operation === 'getResponses' && (
+    {operation === 'getResponses' && (
       <CollectionField
         label="Options"
         value={config.options || {}}
@@ -808,7 +826,7 @@ export const GoogleFormsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       />
     )}
 
-    {config.operation === 'watchResponses' && (
+    {operation === 'watchResponses' && (
       <>
         <ExpressionField
           label="Webhook URL"
@@ -825,13 +843,18 @@ export const GoogleFormsConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // FRESHSALES CONFIG
 // ============================================
 
-export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Freshsales API Key"
@@ -863,7 +886,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       required
     />
 
-    {config.resource === 'contact' && (
+    {resource === 'contact' && (
       <>
         <SelectField
           label="Operation"
@@ -878,7 +901,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Email"
@@ -917,7 +940,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Contact ID"
             value={config.contactId || ''}
@@ -928,7 +951,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.resource === 'lead' && (
+    {resource === 'lead' && (
       <>
         <SelectField
           label="Operation"
@@ -944,7 +967,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Email"
@@ -973,7 +996,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'convert' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'convert' || config.operation === 'delete') && (
           <ExpressionField
             label="Lead ID"
             value={config.leadId || ''}
@@ -984,7 +1007,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
 
-    {config.resource === 'deal' && (
+    {resource === 'deal' && (
       <>
         <SelectField
           label="Operation"
@@ -999,7 +1022,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Deal Name"
@@ -1030,7 +1053,7 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
           </>
         )}
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Deal ID"
             value={config.dealId || ''}
@@ -1041,13 +1064,18 @@ export const FreshsalesConfig: React.FC<AppConfigProps> = ({ config, updateConfi
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // FIREBASE CONFIG
 // ============================================
 
-export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const service = config.service || '';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Firebase Service Account"
@@ -1100,7 +1128,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {(config.operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
+        {(operation === 'get' || config.operation === 'update' || config.operation === 'delete') && (
           <ExpressionField
             label="Document ID"
             value={config.documentId || ''}
@@ -1109,7 +1137,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || config.operation === 'update') && (
           <CodeField
             label="Document Data"
             value={config.data || '{}'}
@@ -1119,7 +1147,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'query' && (
+        {operation === 'query' && (
           <>
             <TextField
               label="Field"
@@ -1184,7 +1212,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {(config.operation === 'set' || config.operation === 'push' || config.operation === 'update') && (
+        {(operation === 'set' || config.operation === 'push' || config.operation === 'update') && (
           <CodeField
             label="Data"
             value={config.data || '{}'}
@@ -1225,7 +1253,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <ExpressionField
             label="File URL or Binary Data"
             value={config.fileData || ''}
@@ -1251,7 +1279,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {(config.operation === 'getUser' || config.operation === 'updateUser' || config.operation === 'deleteUser') && (
+        {(operation === 'getUser' || config.operation === 'updateUser' || config.operation === 'deleteUser') && (
           <ExpressionField
             label="User ID (UID)"
             value={config.uid || ''}
@@ -1260,7 +1288,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           />
         )}
 
-        {config.operation === 'createUser' && (
+        {operation === 'createUser' && (
           <>
             <ExpressionField
               label="Email"
@@ -1285,7 +1313,7 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'updateUser' && (
+        {operation === 'updateUser' && (
           <CollectionField
             label="Update Fields"
             value={config.updateFields || {}}
@@ -1302,13 +1330,17 @@ export const FirebaseConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // REPLICATE CONFIG
 // ============================================
 
-export const ReplicateConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const ReplicateConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Replicate API Token"
@@ -1331,7 +1363,7 @@ export const ReplicateConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       required
     />
 
-    {config.operation === 'run' && (
+    {operation === 'run' && (
       <>
         <ExpressionField
           label="Model"
@@ -1379,7 +1411,7 @@ export const ReplicateConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {(config.operation === 'get' || config.operation === 'cancel') && (
+    {(operation === 'get' || config.operation === 'cancel') && (
       <ExpressionField
         label="Prediction ID"
         value={config.predictionId || ''}
@@ -1388,7 +1420,7 @@ export const ReplicateConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       />
     )}
 
-    {config.operation === 'listModels' && (
+    {operation === 'listModels' && (
       <CollectionField
         label="Filters"
         value={config.filters || {}}
@@ -1400,7 +1432,8 @@ export const ReplicateConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       />
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

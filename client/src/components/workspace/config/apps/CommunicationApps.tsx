@@ -36,7 +36,12 @@ interface AppConfigProps {
 // SLACK ADVANCED CONFIG
 // ============================================
 
-export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const messageType = config.messageType || 'text';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Slack Credentials"
@@ -48,7 +53,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
 
     <SelectField
       label="Resource"
-      value={config.resource || 'message'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'message', label: 'Message' },
@@ -62,11 +67,11 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
       required
     />
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send' },
@@ -91,11 +96,11 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
           required
         />
 
-        {(config.operation === 'send' || config.operation === 'update') && (
+        {(operation === 'send' || operation === 'update') && (
           <>
             <SelectField
               label="Message Type"
-              value={config.messageType || 'text'}
+              value={messageType}
               onChange={(v) => updateConfig('messageType', v)}
               options={[
                 { value: 'text', label: 'Simple Text' },
@@ -104,7 +109,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
               ]}
             />
 
-            {config.messageType === 'text' && (
+            {messageType === 'text' && (
               <ExpressionField
                 label="Message Text"
                 value={config.text || ''}
@@ -114,7 +119,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
               />
             )}
 
-            {config.messageType === 'blocks' && (
+            {messageType === 'blocks' && (
               <TextareaField
                 label="Blocks JSON"
                 value={config.blocksJson || ''}
@@ -142,7 +147,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
           </>
         )}
 
-        {config.operation === 'search' && (
+        {operation === 'search' && (
           <>
             <ExpressionField
               label="Search Query"
@@ -165,11 +170,11 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
       </>
     )}
 
-    {config.resource === 'channel' && (
+    {resource === 'channel' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create' },
@@ -187,7 +192,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Channel Name"
@@ -205,7 +210,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
           </>
         )}
 
-        {(config.operation === 'invite' || config.operation === 'kick') && (
+        {(operation === 'invite' || operation === 'kick') && (
           <ResourceLocatorField
             label="User"
             value={config.user || { mode: 'list', value: '' }}
@@ -218,11 +223,11 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
       </>
     )}
 
-    {config.resource === 'file' && (
+    {resource === 'file' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'upload'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'upload', label: 'Upload' },
@@ -231,7 +236,7 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
           ]}
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <>
             <SelectField
               label="Upload Type"
@@ -259,11 +264,11 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
       </>
     )}
 
-    {config.resource === 'reaction' && (
+    {resource === 'reaction' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'add'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'add', label: 'Add' },
@@ -289,13 +294,18 @@ export const SlackAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateCo
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // DISCORD ADVANCED CONFIG
 // ============================================
 
-export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Discord Credentials"
@@ -307,7 +317,7 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
 
     <SelectField
       label="Resource"
-      value={config.resource || 'message'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'message', label: 'Message' },
@@ -318,11 +328,11 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       required
     />
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Message' },
@@ -349,7 +359,7 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <ExpressionField
               label="Message Content"
@@ -394,11 +404,11 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'channel' && (
+    {resource === 'channel' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'get'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'get', label: 'Get Channel' },
@@ -409,7 +419,7 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Channel Name"
@@ -435,11 +445,11 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'member' && (
+    {resource === 'member' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'get'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'get', label: 'Get Member' },
@@ -449,7 +459,7 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
           ]}
         />
 
-        {(config.operation === 'roleAdd' || config.operation === 'roleRemove') && (
+        {(operation === 'roleAdd' || operation === 'roleRemove') && (
           <>
             <TextField
               label="User ID"
@@ -468,11 +478,11 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
 
-    {config.resource === 'webhook' && (
+    {resource === 'webhook' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'sendMessage'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'sendMessage', label: 'Send Message' },
@@ -506,13 +516,18 @@ export const DiscordAdvancedConfig: React.FC<AppConfigProps> = ({ config, update
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // MICROSOFT TEAMS CONFIG
 // ============================================
 
-export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'chatMessage';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Microsoft Teams Credentials"
@@ -524,7 +539,7 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
 
     <SelectField
       label="Resource"
-      value={config.resource || 'chatMessage'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'chatMessage', label: 'Chat Message' },
@@ -536,11 +551,11 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
       required
     />
 
-    {config.resource === 'chatMessage' && (
+    {resource === 'chatMessage' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Message' },
@@ -557,7 +572,7 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <SelectField
               label="Message Type"
@@ -594,11 +609,11 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'channelMessage' && (
+    {resource === 'channelMessage' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Message' },
@@ -624,7 +639,7 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <ExpressionField
             label="Message"
             value={config.message || ''}
@@ -636,11 +651,11 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'task' && (
+    {resource === 'task' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create Task' },
@@ -660,7 +675,7 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
           required
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Task Title"
@@ -689,13 +704,19 @@ export const MicrosoftTeamsConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // TWILIO CONFIG (SMS, Voice, WhatsApp)
 // ============================================
 
-export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'sms';
+  const operation = config.operation || 'send';
+  const callAction = config.callAction || 'twiml';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Twilio Credentials"
@@ -707,7 +728,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
 
     <SelectField
       label="Resource"
-      value={config.resource || 'sms'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'sms', label: 'SMS' },
@@ -718,11 +739,11 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       required
     />
 
-    {(config.resource === 'sms' || config.resource === 'mms') && (
+    {(resource === 'sms' || resource === 'mms') && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Message' },
@@ -754,7 +775,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           required
         />
 
-        {config.resource === 'mms' && (
+        {resource === 'mms' && (
           <FixedCollectionField
             label="Media URLs"
             value={config.mediaUrls || []}
@@ -779,11 +800,11 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'call' && (
+    {resource === 'call' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'make'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'make', label: 'Make Call' },
@@ -808,7 +829,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
 
         <SelectField
           label="Call Action"
-          value={config.callAction || 'twiml'}
+          value={callAction}
           onChange={(v) => updateConfig('callAction', v)}
           options={[
             { value: 'twiml', label: 'TwiML Instructions' },
@@ -816,7 +837,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           ]}
         />
 
-        {config.callAction === 'twiml' && (
+        {callAction === 'twiml' && (
           <TextareaField
             label="TwiML"
             value={config.twiml || ''}
@@ -826,7 +847,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.callAction === 'url' && (
+        {callAction === 'url' && (
           <TextField
             label="TwiML URL"
             value={config.twimlUrl || ''}
@@ -837,11 +858,11 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
 
-    {config.resource === 'whatsapp' && (
+    {resource === 'whatsapp' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Message' },
@@ -865,7 +886,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <TextareaField
             label="Message"
             value={config.body || ''}
@@ -874,7 +895,7 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
           />
         )}
 
-        {config.operation === 'sendTemplate' && (
+        {operation === 'sendTemplate' && (
           <>
             <TextField
               label="Template SID"
@@ -894,13 +915,18 @@ export const TwilioConfig: React.FC<AppConfigProps> = ({ config, updateConfig })
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // SENDGRID CONFIG
 // ============================================
 
-export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'email';
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="SendGrid Credentials"
@@ -912,7 +938,7 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
 
     <SelectField
       label="Resource"
-      value={config.resource || 'email'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'email', label: 'Email' },
@@ -922,11 +948,11 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'email' && (
+    {resource === 'email' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'send'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'send', label: 'Send Email' },
@@ -957,7 +983,7 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           required
         />
 
-        {config.operation === 'send' && (
+        {operation === 'send' && (
           <>
             <ExpressionField
               label="Subject"
@@ -986,7 +1012,7 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'sendTemplate' && (
+        {operation === 'sendTemplate' && (
           <>
             <TextField
               label="Template ID"
@@ -1021,11 +1047,11 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'contact' && (
+    {resource === 'contact' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create/Update Contact' },
@@ -1035,7 +1061,7 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <ExpressionField
               label="Email"
@@ -1060,13 +1086,18 @@ export const SendGridConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // MAILCHIMP CONFIG
 // ============================================
 
-export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'member';
+  const operation = config.operation || 'create';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Mailchimp Credentials"
@@ -1078,7 +1109,7 @@ export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig
 
     <SelectField
       label="Resource"
-      value={config.resource || 'member'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'member', label: 'List Member' },
@@ -1088,11 +1119,11 @@ export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       required
     />
 
-    {config.resource === 'member' && (
+    {resource === 'member' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create/Update Member' },
@@ -1112,7 +1143,7 @@ export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           required
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || operation === 'update') && (
           <>
             <ExpressionField
               label="Email"
@@ -1155,11 +1186,11 @@ export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
 
-    {config.resource === 'campaign' && (
+    {resource === 'campaign' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create Campaign' },
@@ -1170,7 +1201,7 @@ export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <SelectField
               label="Campaign Type"
@@ -1218,13 +1249,21 @@ export const MailchimpConfig: React.FC<AppConfigProps> = ({ config, updateConfig
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // INTERCOM CONFIG
 // ============================================
 
-export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'contact';
+  const operation = config.operation || 'create';
+  const replyType = config.replyType || 'comment';
+  const messageType = config.messageType || 'inapp';
+  const sendTo = config.sendTo || 'userId';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Intercom Credentials"
@@ -1236,7 +1275,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
 
     <SelectField
       label="Resource"
-      value={config.resource || 'contact'}
+      value={resource}
       onChange={(v) => updateConfig('resource', v)}
       options={[
         { value: 'contact', label: 'Contact' },
@@ -1250,11 +1289,11 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       required
     />
 
-    {config.resource === 'contact' && (
+    {resource === 'contact' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create' },
@@ -1265,7 +1304,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {(config.operation === 'create' || config.operation === 'update') && (
+        {(operation === 'create' || operation === 'update') && (
           <>
             <SelectField
               label="Contact Role"
@@ -1311,11 +1350,11 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'conversation' && (
+    {resource === 'conversation' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'get'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'get', label: 'Get' },
@@ -1327,7 +1366,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'reply' && (
+        {operation === 'reply' && (
           <>
             <TextField
               label="Conversation ID"
@@ -1338,7 +1377,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
 
             <SelectField
               label="Reply Type"
-              value={config.replyType || 'comment'}
+              value={replyType}
               onChange={(v) => updateConfig('replyType', v)}
               options={[
                 { value: 'comment', label: 'Comment' },
@@ -1355,7 +1394,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           </>
         )}
 
-        {config.operation === 'assign' && (
+        {operation === 'assign' && (
           <>
             <TextField
               label="Conversation ID"
@@ -1374,11 +1413,11 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'message' && (
+    {resource === 'message' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create Message' },
@@ -1387,7 +1426,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
 
         <SelectField
           label="Message Type"
-          value={config.messageType || 'inapp'}
+          value={messageType}
           onChange={(v) => updateConfig('messageType', v)}
           options={[
             { value: 'inapp', label: 'In-app Message' },
@@ -1404,7 +1443,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
 
         <SelectField
           label="Send To"
-          value={config.sendTo || 'userId'}
+          value={sendTo}
           onChange={(v) => updateConfig('sendTo', v)}
           options={[
             { value: 'userId', label: 'User ID' },
@@ -1413,7 +1452,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
         />
 
         <ExpressionField
-          label={config.sendTo === 'email' ? 'Email' : 'User ID'}
+          label={sendTo === 'email' ? 'Email' : 'User ID'}
           value={config.recipient || ''}
           onChange={(v) => updateConfig('recipient', v)}
           required
@@ -1428,11 +1467,11 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
 
-    {config.resource === 'event' && (
+    {resource === 'event' && (
       <>
         <SelectField
           label="Operation"
-          value={config.operation || 'create'}
+          value={operation}
           onChange={(v) => updateConfig('operation', v)}
           options={[
             { value: 'create', label: 'Create Event' },
@@ -1440,7 +1479,7 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
           ]}
         />
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Event Name"
@@ -1469,7 +1508,8 @@ export const IntercomConfig: React.FC<AppConfigProps> = ({ config, updateConfig 
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // EXPORTS

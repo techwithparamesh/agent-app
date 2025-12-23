@@ -38,7 +38,13 @@ interface AppConfigProps {
 // OPENAI ADVANCED CONFIG (n8n style)
 // ============================================
 
-export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const operation = config.operation || 'send';
+  const imageInputType = config.imageInputType || 'url';
+  const inputType = config.inputType || 'url';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="OpenAI Credentials"
@@ -63,7 +69,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       required
     />
 
-    {config.resource === 'text' && (
+    {resource === 'text' && (
       <>
         <SelectField
           label="Operation"
@@ -76,7 +82,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'message' && (
+        {operation === 'message' && (
           <>
             <SelectField
               label="Model"
@@ -170,7 +176,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {config.operation === 'moderate' && (
+        {operation === 'moderate' && (
           <ExpressionField
             label="Input Text"
             value={config.input || ''}
@@ -181,7 +187,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'image' && (
+    {resource === 'image' && (
       <>
         <SelectField
           label="Operation"
@@ -195,7 +201,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'generate' && (
+        {operation === 'generate' && (
           <>
             <SelectField
               label="Model"
@@ -258,7 +264,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {config.operation === 'analyze' && (
+        {operation === 'analyze' && (
           <>
             <SelectField
               label="Image Input Type"
@@ -270,7 +276,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
               ]}
             />
 
-            {config.imageInputType === 'url' && (
+            {imageInputType === 'url' && (
               <ExpressionField
                 label="Image URL"
                 value={config.imageUrl || ''}
@@ -305,7 +311,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'audio' && (
+    {resource === 'audio' && (
       <>
         <SelectField
           label="Operation"
@@ -318,7 +324,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {(config.operation === 'transcribe' || config.operation === 'translate') && (
+        {(operation === 'transcribe' || config.operation === 'translate') && (
           <>
             <SelectField
               label="Input Type"
@@ -330,7 +336,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
               ]}
             />
 
-            {config.inputType === 'url' && (
+            {inputType === 'url' && (
               <ExpressionField
                 label="Audio URL"
                 value={config.audioUrl || ''}
@@ -359,7 +365,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {config.operation === 'generate' && (
+        {operation === 'generate' && (
           <>
             <SelectField
               label="Model"
@@ -411,7 +417,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'embedding' && (
+    {resource === 'embedding' && (
       <>
         <SelectField
           label="Model"
@@ -446,7 +452,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'assistant' && (
+    {resource === 'assistant' && (
       <>
         <SelectField
           label="Operation"
@@ -461,7 +467,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'message' && (
+        {operation === 'message' && (
           <>
             <ResourceLocatorField
               label="Assistant"
@@ -488,7 +494,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           </>
         )}
 
-        {config.operation === 'create' && (
+        {operation === 'create' && (
           <>
             <TextField
               label="Name"
@@ -530,7 +536,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
 
-    {config.resource === 'file' && (
+    {resource === 'file' && (
       <>
         <SelectField
           label="Operation"
@@ -543,7 +549,7 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
           ]}
         />
 
-        {config.operation === 'upload' && (
+        {operation === 'upload' && (
           <>
             <SelectField
               label="Purpose"
@@ -563,7 +569,8 @@ export const OpenAIAdvancedConfig: React.FC<AppConfigProps> = ({ config, updateC
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // ANTHROPIC CLAUDE CONFIG
@@ -692,7 +699,11 @@ export const AnthropicConfig: React.FC<AppConfigProps> = ({ config, updateConfig
 // GOOGLE GEMINI CONFIG
 // ============================================
 
-export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const resource = config.resource || 'message';
+  const imageInputType = config.imageInputType || 'url';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Google AI Credentials"
@@ -726,7 +737,7 @@ export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateCon
       ]}
     />
 
-    {config.resource === 'text' && (
+    {resource === 'text' && (
       <>
         <TextareaField
           label="System Instruction"
@@ -766,7 +777,7 @@ export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateCon
       </>
     )}
 
-    {config.resource === 'vision' && (
+    {resource === 'vision' && (
       <>
         <ExpressionField
           label="Prompt"
@@ -786,7 +797,7 @@ export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateCon
           ]}
         />
 
-        {config.imageInputType === 'url' && (
+        {imageInputType === 'url' && (
           <ExpressionField
             label="Image URL"
             value={config.imageUrl || ''}
@@ -797,7 +808,7 @@ export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateCon
       </>
     )}
 
-    {config.resource === 'embedding' && (
+    {resource === 'embedding' && (
       <>
         <SelectField
           label="Model"
@@ -852,13 +863,17 @@ export const GoogleGeminiConfig: React.FC<AppConfigProps> = ({ config, updateCon
       ]}
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // HUGGING FACE CONFIG
 // ============================================
 
-export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const task = config.task || 'text-generation';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Hugging Face Credentials"
@@ -899,7 +914,7 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       required
     />
 
-    {config.task === 'text-generation' && (
+    {task === 'text-generation' && (
       <>
         <TextareaField
           label="Prompt"
@@ -926,7 +941,7 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.task === 'text-classification' && (
+    {task === 'text-classification' && (
       <TextareaField
         label="Text to Classify"
         value={config.inputs || ''}
@@ -935,7 +950,7 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       />
     )}
 
-    {config.task === 'summarization' && (
+    {task === 'summarization' && (
       <>
         <TextareaField
           label="Text to Summarize"
@@ -956,7 +971,7 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.task === 'translation' && (
+    {task === 'translation' && (
       <>
         <TextareaField
           label="Text to Translate"
@@ -970,7 +985,7 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.task === 'question-answering' && (
+    {task === 'question-answering' && (
       <>
         <TextareaField
           label="Context"
@@ -988,7 +1003,7 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.task === 'text-to-image' && (
+    {task === 'text-to-image' && (
       <>
         <TextareaField
           label="Prompt"
@@ -1020,13 +1035,17 @@ export const HuggingFaceConfig: React.FC<AppConfigProps> = ({ config, updateConf
       description="Wait if model is loading"
     />
   </div>
-);
+  );
+};
 
 // ============================================
 // STABILITY AI CONFIG
 // ============================================
 
-export const StabilityAIConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => (
+export const StabilityAIConfig: React.FC<AppConfigProps> = ({ config, updateConfig }) => {
+  const operation = config.operation || 'send';
+  
+  return (
   <div className="space-y-4">
     <CredentialField
       label="Stability AI Credentials"
@@ -1048,7 +1067,7 @@ export const StabilityAIConfig: React.FC<AppConfigProps> = ({ config, updateConf
       ]}
     />
 
-    {config.operation === 'textToImage' && (
+    {operation === 'textToImage' && (
       <>
         <SelectField
           label="Model"
@@ -1135,7 +1154,7 @@ export const StabilityAIConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.operation === 'imageToImage' && (
+    {operation === 'imageToImage' && (
       <>
         <TextareaField
           label="Prompt"
@@ -1159,7 +1178,7 @@ export const StabilityAIConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
 
-    {config.operation === 'upscale' && (
+    {operation === 'upscale' && (
       <>
         <SelectField
           label="Upscale Engine"
@@ -1176,7 +1195,8 @@ export const StabilityAIConfig: React.FC<AppConfigProps> = ({ config, updateConf
       </>
     )}
   </div>
-);
+  );
+};
 
 // ============================================
 // PERPLEXITY CONFIG
