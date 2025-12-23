@@ -108,13 +108,19 @@ function resolveConfigComponent(
   // 4. Pattern matching
   
   const allConfigs = AllNodeConfigs;
+  
+  // DEBUG: Log what we're looking for
+  console.log('[resolveConfigComponent] Looking for:', { nodeType, triggerId, actionId, appId });
+  console.log('[resolveConfigComponent] Available config keys:', Object.keys(allConfigs).slice(0, 20));
 
   // 1. Try direct ID match
   if (triggerId && allConfigs[triggerId]) {
+    console.log('[resolveConfigComponent] Found by triggerId:', triggerId);
     return allConfigs[triggerId];
   }
   
   if (actionId && allConfigs[actionId]) {
+    console.log('[resolveConfigComponent] Found by actionId:', actionId);
     return allConfigs[actionId];
   }
   
@@ -135,13 +141,17 @@ function resolveConfigComponent(
     nodeType.replace(/_/g, '-'),
   ].filter(Boolean) as string[];
   
+  console.log('[resolveConfigComponent] Trying IDs:', idsToTry);
+  
   for (const id of idsToTry) {
     if (allConfigs[id]) {
+      console.log('[resolveConfigComponent] Found by ID:', id);
       return allConfigs[id];
     }
     // Also try lowercase
     const lowerId = id.toLowerCase();
     if (allConfigs[lowerId]) {
+      console.log('[resolveConfigComponent] Found by lowercase ID:', lowerId);
       return allConfigs[lowerId];
     }
   }
