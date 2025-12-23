@@ -445,17 +445,14 @@ export function EnhancedWorkspace() {
 
     const newId = flowActions.addNode(nodeData, canvasPosition);
 
-    // Auto-connect from source node using setTimeout to ensure node is in state
+    // Auto-connect from source node (refs are updated immediately, no setTimeout needed)
     if (sourceNodeId && newId) {
-      // Use setTimeout to ensure the node state update has been processed
-      setTimeout(() => {
-        flowActions.addConnection(
-          sourceNodeId,
-          newId,
-          sourceHandle,
-          'input'
-        );
-      }, 0);
+      flowActions.addConnection(
+        sourceNodeId,
+        newId,
+        sourceHandle,
+        'input'
+      );
     }
 
     // Select the new node and open config

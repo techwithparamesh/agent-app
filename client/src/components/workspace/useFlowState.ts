@@ -119,6 +119,14 @@ export function useFlowState(
   const [viewport, setViewportState] = useState({ x: 0, y: 0, zoom: 1 });
   const [isDirty, setIsDirty] = useState(false);
 
+  // Refs for latest state (used in callbacks to avoid stale closures)
+  const nodesRef = useRef<FlowNode[]>(initialNodes);
+  const connectionsRef = useRef<Connection[]>(initialConnections);
+
+  // Keep refs in sync with state
+  nodesRef.current = nodes;
+  connectionsRef.current = connections;
+
   // History for undo/redo
   const historyRef = useRef<HistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
@@ -166,6 +174,9 @@ export function useFlowState(
       } : nodeData.position,
     };
 
+    // Update ref immediately so connections can be validated right away
+    nodesRef.current = [...nodesRef.current, newNode];
+    
     setNodes(prev => [...prev, newNode]);
     pushHistory(`Add ${nodeData.appName} node`);
     return id;
@@ -179,6 +190,10 @@ export function useFlowState(
   }, [pushHistory]);
 
   const deleteNode = useCallback((nodeId: string) => {
+    // Update refs immediately
+    nodesRef.current = nodesRef.current.filter(n => n.id !== nodeId);
+    connectionsRef.current = connectionsRef.current.filter(c => c.sourceId !== nodeId && c.targetId !== nodeId);
+    
     setNodes(prev => prev.filter(n => n.id !== nodeId));
     setConnections(prev => prev.filter(c => c.sourceId !== nodeId && c.targetId !== nodeId));
     setSelectedNodeIds(prev => {
@@ -191,6 +206,11 @@ export function useFlowState(
 
   const deleteNodes = useCallback((nodeIds: string[]) => {
     const nodeIdSet = new Set(nodeIds);
+    
+    // Update refs immediately
+    nodesRef.current = nodesRef.current.filter(n => !nodeIdSet.has(n.id));
+    connectionsRef.current = connectionsRef.current.filter(c => !nodeIdSet.has(c.sourceId) && !nodeIdSet.has(c.targetId));
+    
     setNodes(prev => prev.filter(n => !nodeIdSet.has(n.id)));
     setConnections(prev => prev.filter(c => !nodeIdSet.has(c.sourceId) && !nodeIdSet.has(c.targetId)));
     setSelectedNodeIds(prev => {
@@ -217,6 +237,9 @@ export function useFlowState(
       status: 'incomplete',
     };
 
+    // Update ref immediately
+    nodesRef.current = [...nodesRef.current, newNode];
+    
     setNodes(prev => [...prev, newNode]);
     pushHistory(`Duplicate ${node.appName}`);
     return newId;
@@ -260,6 +283,10 @@ export function useFlowState(
       }
     });
 
+    // Update refs immediately
+    nodesRef.current = [...nodesRef.current, ...newNodes];
+    connectionsRef.current = [...connectionsRef.current, ...newConnections];
+    
     setNodes(prev => [...prev, ...newNodes]);
     setConnections(prev => [...prev, ...newConnections]);
     pushHistory(`Duplicate ${nodeIds.length} nodes`);
@@ -297,8 +324,11 @@ export function useFlowState(
       return { valid: false, reason: "Cannot connect a node to itself" };
     }
 
+    // Use ref for latest connections state
+    const currentConnections = connectionsRef.current;
+    
     // Check if connection already exists
-    const exists = connections.some(c => c.sourceId === sourceId && c.targetId === targetId);
+    const exists = currentConnections.some(c => c.sourceId === sourceId && c.targetId === targetId);
     if (exists) {
       return { valid: false, reason: "Connection already exists" };
     }
@@ -310,7 +340,7 @@ export function useFlowState(
       if (visited.has(nodeId)) return false;
       visited.add(nodeId);
       
-      const outgoing = connections.filter(c => c.sourceId === nodeId);
+      const outgoing = currentConnections.filter(c => c.sourceId === nodeId);
       return outgoing.some(c => checkCycle(c.targetId));
     };
 
@@ -318,9 +348,12 @@ export function useFlowState(
       return { valid: false, reason: "Would create a circular connection" };
     }
 
+    // Use ref for latest nodes state (important for nodes just added)
+    const currentNodes = nodesRef.current;
+    
     // Get source and target nodes
-    const sourceNode = nodes.find(n => n.id === sourceId);
-    const targetNode = nodes.find(n => n.id === targetId);
+    const sourceNode = currentNodes.find(n => n.id === sourceId);
+    const targetNode = currentNodes.find(n => n.id === targetId);
 
     if (!sourceNode || !targetNode) {
       return { valid: false, reason: "Invalid nodes" };
@@ -332,7 +365,7 @@ export function useFlowState(
     }
 
     return { valid: true };
-  }, [connections, nodes]);
+  }, []); // No dependencies needed - uses refs
 
   const addConnection = useCallback((
     sourceId: string,
@@ -357,12 +390,18 @@ export function useFlowState(
       animated: true,
     };
 
+    // Update ref immediately for subsequent validations
+    connectionsRef.current = [...connectionsRef.current, newConnection];
+    
     setConnections(prev => [...prev, newConnection]);
     pushHistory('Add connection');
     return id;
   }, [validateConnection, pushHistory]);
 
   const deleteConnection = useCallback((connectionId: string) => {
+    // Update ref immediately
+    connectionsRef.current = connectionsRef.current.filter(c => c.id !== connectionId);
+    
     setConnections(prev => prev.filter(c => c.id !== connectionId));
     setSelectedConnectionIds(prev => {
       const next = new Set(prev);
@@ -374,6 +413,10 @@ export function useFlowState(
 
   const deleteConnections = useCallback((connectionIds: string[]) => {
     const idSet = new Set(connectionIds);
+    
+    // Update ref immediately
+    connectionsRef.current = connectionsRef.current.filter(c => !idSet.has(c.id));
+    
     setConnections(prev => prev.filter(c => !idSet.has(c.id)));
     setSelectedConnectionIds(prev => {
       const next = new Set(prev);
@@ -518,8 +561,15 @@ export function useFlowState(
     const entry = historyRef.current[historyIndexRef.current];
     
     if (entry) {
-      setNodes(entry.nodes.map(n => ({ ...n })));
-      setConnections(entry.connections.map(c => ({ ...c })));
+      const restoredNodes = entry.nodes.map(n => ({ ...n }));
+      const restoredConnections = entry.connections.map(c => ({ ...c }));
+      
+      // Update refs immediately
+      nodesRef.current = restoredNodes;
+      connectionsRef.current = restoredConnections;
+      
+      setNodes(restoredNodes);
+      setConnections(restoredConnections);
     }
     
     isUndoRedoRef.current = false;
@@ -534,8 +584,15 @@ export function useFlowState(
     const entry = historyRef.current[historyIndexRef.current];
     
     if (entry) {
-      setNodes(entry.nodes.map(n => ({ ...n })));
-      setConnections(entry.connections.map(c => ({ ...c })));
+      const restoredNodes = entry.nodes.map(n => ({ ...n }));
+      const restoredConnections = entry.connections.map(c => ({ ...c }));
+      
+      // Update refs immediately
+      nodesRef.current = restoredNodes;
+      connectionsRef.current = restoredConnections;
+      
+      setNodes(restoredNodes);
+      setConnections(restoredConnections);
     }
     
     isUndoRedoRef.current = false;
@@ -550,6 +607,10 @@ export function useFlowState(
   // ============================================
 
   const clear = useCallback(() => {
+    // Update refs immediately
+    nodesRef.current = [];
+    connectionsRef.current = [];
+    
     setNodes([]);
     setConnections([]);
     setSelectedNodeIds(new Set());
@@ -560,6 +621,10 @@ export function useFlowState(
   }, []);
 
   const loadFlow = useCallback((newNodes: FlowNode[], newConnections: Connection[]) => {
+    // Update refs immediately
+    nodesRef.current = newNodes;
+    connectionsRef.current = newConnections;
+    
     setNodes(newNodes);
     setConnections(newConnections);
     setSelectedNodeIds(new Set());
