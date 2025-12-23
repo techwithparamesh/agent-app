@@ -1212,7 +1212,7 @@ function IntegrationsPageContent() {
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                     Connect your AI agents to external apps like Google Sheets, Telegram, Zapier, and 50+ more to automate your workflows.
                   </p>
-                  <Button size="lg" onClick={() => setIsCreateOpen(true)}>
+                  <Button size="lg" onClick={() => openWorkspace()}>
                     <Plus className="h-5 w-5 mr-2" />
                     Create Your First Integration
                   </Button>
