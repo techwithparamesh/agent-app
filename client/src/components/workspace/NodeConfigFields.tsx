@@ -1,16 +1,28 @@
 /**
- * Node Configuration Fields - v2
+ * Node Configuration Fields - v3
  * 
- * Comprehensive configuration UI for all node types.
- * Uses modular config components from ./config/ directory.
+ * Schema-driven dynamic configuration UI for all node types.
+ * Uses the dynamic-fields system as primary, with fallback to legacy configs.
  */
 
-import React from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings } from "lucide-react";
+import { Settings, Sparkles, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Import all configurations from the centralized config directory
+// Import dynamic field system (PRIMARY)
+import { DynamicFieldRenderer } from "./dynamic-fields/DynamicFieldRenderer";
+import { 
+  getAppById, 
+  getAppAction, 
+  schemaRegistry,
+} from "./dynamic-fields";
+import type { ActionSchema, AppSchema } from "./dynamic-fields/types";
+import { useFieldValidation } from "./dynamic-fields/ValidationSystem";
+import { useAIFields } from "./dynamic-fields/AIFieldService";
+
+// Import legacy configurations as fallback
 import {
   AllNodeConfigs,
   AllTriggerConfigs,
@@ -239,7 +251,7 @@ function resolveConfigComponent(
 }
 
 // ============================================
-// MAIN EXPORT
+// MAIN EXPORT - DYNAMIC FIELDS FIRST
 // ============================================
 
 export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
@@ -250,7 +262,99 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
   config,
   updateConfig,
 }) => {
-  // Try to resolve the best configuration component
+  // State for AI features
+  const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
+  
+  // Try to get dynamic schema first
+  const appSchema = useMemo(() => getAppById(appId), [appId]);
+  const actionSchema = useMemo(() => {
+    const actionOrTrigger = actionId || triggerId;
+    if (!actionOrTrigger) return null;
+    return getAppAction(appId, actionOrTrigger);
+  }, [appId, actionId, triggerId]);
+  
+  // Validation hook for dynamic fields
+  const { errors, validateField, clearErrors } = useFieldValidation(
+    actionSchema || { id: '', appId: '', name: '', description: '', category: '', fields: [] },
+    config,
+    { validateOnChange: true }
+  );
+  
+  // AI field features hook
+  const { fillField, getSuggestions, isLoading: isAILoading } = useAIFields();
+  
+  // Handle AI fill for a field
+  const handleAIFill = useCallback(async (fieldId: string) => {
+    if (!actionSchema) return;
+    
+    const field = actionSchema.fields?.find(f => f.id === fieldId);
+    if (!field) return;
+    
+    try {
+      const result = await fillField({
+        appId,
+        actionId: actionId || triggerId || '',
+        fieldId,
+        currentValues: config,
+        fieldSchema: field,
+        actionSchema,
+      });
+      
+      if (result.confidence > 0.3) {
+        updateConfig(fieldId, result.value);
+      }
+    } catch (error) {
+      console.error('AI fill failed:', error);
+      setAiErrors(prev => ({ ...prev, [fieldId]: 'AI fill failed' }));
+    }
+  }, [appId, actionId, triggerId, config, actionSchema, fillField, updateConfig]);
+  
+  // Handle AI suggestions
+  const handleAISuggest = useCallback(async (fieldId: string) => {
+    if (!actionSchema) return;
+    const field = actionSchema.fields?.find(f => f.id === fieldId);
+    if (!field) return;
+    
+    try {
+      const result = await getSuggestions({
+        appId,
+        actionId: actionId || triggerId || '',
+        fieldId,
+        currentValues: config,
+        fieldSchema: field,
+        actionSchema,
+      });
+      console.log('Suggestions:', result);
+    } catch (error) {
+      console.error('AI suggestions failed:', error);
+    }
+  }, [appId, actionId, triggerId, config, actionSchema, getSuggestions]);
+  
+  // PRIORITY 1: Use dynamic schema if available
+  if (actionSchema && actionSchema.fields && actionSchema.fields.length > 0) {
+    return (
+      <div className="space-y-4">
+        {/* Schema-driven header */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Sparkles className="h-4 w-4 text-violet-500" />
+          <span>Dynamic configuration powered by schema</span>
+        </div>
+        
+        {/* Render dynamic fields */}
+        <DynamicFieldRenderer
+          schema={actionSchema}
+          values={config}
+          onChange={updateConfig}
+          onAIFill={handleAIFill}
+          onAISuggest={handleAISuggest}
+          errors={{ ...errors, ...aiErrors }}
+          disabled={false}
+        />
+      </div>
+    );
+  }
+  
+  // PRIORITY 2: Try legacy config component
   const ConfigComponent = resolveConfigComponent(
     nodeType,
     triggerId,
@@ -258,12 +362,11 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
     appId
   );
   
-  // If we found a matching config component, render it
   if (ConfigComponent) {
     return <ConfigComponent config={config} updateConfig={updateConfig} />;
   }
   
-  // Fallback to default configuration
+  // PRIORITY 3: Fallback to default configuration
   return (
     <DefaultConfig 
       nodeType={nodeType} 
