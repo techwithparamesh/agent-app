@@ -325,13 +325,15 @@ export function WorkspaceCanvas({
         >
           {/* Transformable content */}
           <div
-            className="absolute"
+            className="absolute pointer-events-none"
             style={{
               transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
               transformOrigin: '0 0',
             }}
           >
-            {children}
+            <div className="pointer-events-auto">
+              {children}
+            </div>
           </div>
 
           {/* Empty state hint */}

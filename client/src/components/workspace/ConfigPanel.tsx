@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,10 +71,21 @@ export function ConfigPanel({
   availableActions = [],
 }: ConfigPanelProps) {
   const [activeTab, setActiveTab] = useState("setup");
-  const [config, setConfig] = useState<Record<string, any>>(node?.config || {});
-  const [selectedTrigger, setSelectedTrigger] = useState(node?.triggerId || "");
-  const [selectedAction, setSelectedAction] = useState(node?.actionId || "");
-  const [selectedAIModel, setSelectedAIModel] = useState(config.aiModel || "openai-gpt-4o");
+  const [config, setConfig] = useState<Record<string, any>>({});
+  const [selectedTrigger, setSelectedTrigger] = useState("");
+  const [selectedAction, setSelectedAction] = useState("");
+  const [selectedAIModel, setSelectedAIModel] = useState("openai-gpt-4o");
+
+  // Reset state when node changes
+  useEffect(() => {
+    if (node) {
+      setConfig(node.config || {});
+      setSelectedTrigger(node.triggerId || "");
+      setSelectedAction(node.actionId || "");
+      setSelectedAIModel(node.config?.aiModel || "openai-gpt-4o");
+      setActiveTab("setup");
+    }
+  }, [node?.id]);
 
   if (!isOpen || !node) {
     return null;

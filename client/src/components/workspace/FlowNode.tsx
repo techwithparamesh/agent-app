@@ -191,20 +191,20 @@ export function FlowNode({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => onDoubleClick?.()}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
                 <Settings className="h-4 w-4 mr-2" />
                 Configure
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onTest}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onTest?.(); }}>
                 <Play className="h-4 w-4 mr-2" />
                 Test this step
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onDuplicate}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}>
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(); }} className="text-destructive">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>

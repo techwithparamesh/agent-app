@@ -75,6 +75,7 @@ export function IntegrationWorkspace() {
   const [appsPanelCollapsed, setAppsPanelCollapsed] = useState(false);
   const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [showAppPicker, setShowAppPicker] = useState(false);
 
   // Flow state
   const [nodes, setNodes] = useState<FlowNodeType[]>([]);
@@ -402,7 +403,9 @@ export function IntegrationWorkspace() {
             onAppSelect={(app) => {
               // Add app at default position
               handleDrop(app, { x: 400, y: 100 + nodes.length * 200 });
+              setShowAppPicker(false);
             }}
+            highlightAddAction={showAppPicker}
           />
 
           {/* Main Canvas */}
@@ -496,7 +499,9 @@ export function IntegrationWorkspace() {
 
                   <div className="flex gap-3">
                     <AddActionNode onClick={() => {
-                      // Open app picker or show apps panel
+                      // Expand apps panel and focus on adding action
+                      setAppsPanelCollapsed(false);
+                      setShowAppPicker(true);
                     }} />
                     <AddConditionNode onClick={handleAddCondition} />
                   </div>

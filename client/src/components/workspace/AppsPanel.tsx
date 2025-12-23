@@ -197,6 +197,7 @@ interface AppsPanelProps {
   onDragStart?: (app: typeof appCatalog[0]) => void;
   onAppSelect?: (app: typeof appCatalog[0]) => void;
   recentApps?: string[];
+  highlightAddAction?: boolean;
 }
 
 export function AppsPanel({
@@ -205,6 +206,7 @@ export function AppsPanel({
   onDragStart,
   onAppSelect,
   recentApps = ['whatsapp', 'gmail', 'openai', 'slack'],
+  highlightAddAction = false,
 }: AppsPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -302,11 +304,16 @@ export function AppsPanel({
   }
 
   return (
-    <div className="w-72 h-full bg-background/95 backdrop-blur-sm border-r flex flex-col">
+    <div className={cn(
+      "w-72 h-full bg-background/95 backdrop-blur-sm border-r flex flex-col",
+      highlightAddAction && "ring-2 ring-primary ring-inset"
+    )}>
       {/* Header */}
       <div className="p-4 border-b space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-sm">Apps</h2>
+          <h2 className="font-semibold text-sm">
+            {highlightAddAction ? "Select an App" : "Apps"}
+          </h2>
           <Button
             variant="ghost"
             size="icon"
@@ -316,6 +323,14 @@ export function AppsPanel({
             <ChevronRight className="h-4 w-4 rotate-180" />
           </Button>
         </div>
+
+        {highlightAddAction && (
+          <div className="p-2 bg-primary/10 border border-primary/30 rounded-lg">
+            <p className="text-xs text-primary font-medium">
+              👆 Click an app below to add it as the next action in your flow
+            </p>
+          </div>
+        )}
         
         {/* Search */}
         <div className="relative">
@@ -325,6 +340,7 @@ export function AppsPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8 h-9 bg-muted/50"
+            autoFocus={highlightAddAction}
           />
         </div>
       </div>
