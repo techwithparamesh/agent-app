@@ -14,6 +14,9 @@ import { ActionConfigs } from "./ActionConfigs";
 import { AdditionalActionConfigs } from "./ActionConfigsMore";
 import { LogicConfigs } from "./LogicConfigs";
 
+// Import n8n-style app configurations
+import { AllAppConfigs } from "./apps";
+
 // Re-export field components for use elsewhere
 export * from "./FieldComponents";
 
@@ -59,6 +62,9 @@ export const AllLogicConfigs: Record<string, ConfigComponent> = {
  * Master config map - all node types
  */
 export const AllNodeConfigs: Record<string, ConfigComponent> = {
+  // n8n-style App Configs (highest priority)
+  ...AllAppConfigs,
+  
   // Triggers
   ...AllTriggerConfigs,
   
@@ -198,6 +204,7 @@ export {
   ActionConfigs,
   AdditionalActionConfigs,
   LogicConfigs,
+  AllAppConfigs,
 };
 
 export default AllNodeConfigs;
