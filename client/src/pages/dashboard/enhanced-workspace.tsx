@@ -114,6 +114,7 @@ export function EnhancedWorkspace() {
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     position: { x: number; y: number };
+    canvasPosition?: { x: number; y: number };
     type: 'node' | 'connection' | 'canvas';
     targetId?: string;
   } | null>(null);
@@ -350,10 +351,11 @@ export function EnhancedWorkspace() {
   }, [flowActions]);
 
   // Handle canvas context menu
-  const handleCanvasContextMenu = useCallback((e: React.MouseEvent, position: { x: number; y: number }) => {
+  const handleCanvasContextMenu = useCallback((e: React.MouseEvent, canvasPosition: { x: number; y: number }) => {
     setContextMenu({
       isOpen: true,
       position: { x: e.clientX, y: e.clientY },
+      canvasPosition,
       type: 'canvas',
     });
   }, []);
@@ -401,6 +403,11 @@ export function EnhancedWorkspace() {
   const handleQuickNodeSelect = useCallback((app: typeof appCatalog[0], nodeType: 'action' | 'condition' | 'delay' | 'loop') => {
     if (!quickNodePicker) return;
 
+    // Store connection info before clearing quickNodePicker
+    const sourceNodeId = quickNodePicker.sourceNodeId;
+    const sourceHandle = quickNodePicker.sourceHandle;
+    const canvasPosition = quickNodePicker.canvasPosition;
+
     // Create the new node at the drop position
     const nodeData: Omit<FlowNode, 'id'> = {
       type: nodeType,
@@ -413,22 +420,25 @@ export function EnhancedWorkspace() {
             nodeType === 'loop' ? 'For each item' :
             'Do this...',
       description: app.description || '',
-      position: quickNodePicker.canvasPosition,
+      position: canvasPosition,
       status: 'incomplete',
       config: {},
       connections: [],
     };
 
-    const newId = flowActions.addNode(nodeData, quickNodePicker.canvasPosition);
+    const newId = flowActions.addNode(nodeData, canvasPosition);
 
-    // Auto-connect from source node
-    if (quickNodePicker.sourceNodeId) {
-      flowActions.addConnection(
-        quickNodePicker.sourceNodeId,
-        newId,
-        quickNodePicker.sourceHandle,
-        'input'
-      );
+    // Auto-connect from source node using setTimeout to ensure node is in state
+    if (sourceNodeId && newId) {
+      // Use setTimeout to ensure the node state update has been processed
+      setTimeout(() => {
+        flowActions.addConnection(
+          sourceNodeId,
+          newId,
+          sourceHandle,
+          'input'
+        );
+      }, 0);
     }
 
     // Select the new node and open config
@@ -544,14 +554,103 @@ export function EnhancedWorkspace() {
     }
 
     return buildCanvasContextMenu({
-      onAddTrigger: () => {},
-      onAddAction: () => {},
-      onAddCondition: () => {},
+      onAddTrigger: () => {
+        const position = contextMenu.canvasPosition || { x: 400, y: 100 };
+        const nodeData: Omit<FlowNode, 'id'> = {
+          type: 'trigger',
+          appId: 'webhook',
+          appName: 'Webhook',
+          appIcon: '🔗',
+          appColor: '#6366f1',
+          name: 'When this happens...',
+          description: 'Triggers when a webhook is received',
+          position,
+          status: 'incomplete',
+          config: {},
+          connections: [],
+        };
+        const newId = flowActions.addNode(nodeData, position);
+        flowActions.selectNode(newId);
+        setConfigPanelOpen(true);
+      },
+      onAddAction: () => {
+        const position = contextMenu.canvasPosition || { x: 400, y: 200 };
+        const nodeData: Omit<FlowNode, 'id'> = {
+          type: 'action',
+          appId: 'http_request',
+          appName: 'HTTP Request',
+          appIcon: '🌐',
+          appColor: '#3b82f6',
+          name: 'Do this...',
+          description: 'Make an HTTP request',
+          position,
+          status: 'incomplete',
+          config: {},
+          connections: [],
+        };
+        const newId = flowActions.addNode(nodeData, position);
+        flowActions.selectNode(newId);
+        setConfigPanelOpen(true);
+      },
+      onAddCondition: () => {
+        const position = contextMenu.canvasPosition || { x: 400, y: 200 };
+        const nodeData: Omit<FlowNode, 'id'> = {
+          type: 'condition',
+          appId: 'condition',
+          appName: 'Condition',
+          appIcon: '🔀',
+          appColor: '#8b5cf6',
+          name: 'Check condition',
+          description: 'Branch based on true/false',
+          position,
+          status: 'incomplete',
+          config: {},
+          connections: [],
+        };
+        const newId = flowActions.addNode(nodeData, position);
+        flowActions.selectNode(newId);
+        setConfigPanelOpen(true);
+      },
+      onAddDelay: () => {
+        const position = contextMenu.canvasPosition || { x: 400, y: 200 };
+        const nodeData: Omit<FlowNode, 'id'> = {
+          type: 'delay',
+          appId: 'delay',
+          appName: 'Delay',
+          appIcon: '⏱️',
+          appColor: '#f97316',
+          name: 'Wait...',
+          description: 'Wait before continuing',
+          position,
+          status: 'incomplete',
+          config: {},
+          connections: [],
+        };
+        const newId = flowActions.addNode(nodeData, position);
+        flowActions.selectNode(newId);
+        setConfigPanelOpen(true);
+      },
       onPaste: handlePaste,
       onSelectAll: flowActions.selectAll,
       onZoomIn: flowActions.zoomIn,
       onZoomOut: flowActions.zoomOut,
       onFitView: flowActions.fitView,
+      onAutoLayout: () => {
+        // Simple auto-layout: arrange nodes vertically
+        const nodes = [...flowState.nodes];
+        nodes.sort((a, b) => {
+          // Triggers first, then by creation order
+          if (a.type === 'trigger' && b.type !== 'trigger') return -1;
+          if (a.type !== 'trigger' && b.type === 'trigger') return 1;
+          return 0;
+        });
+        
+        let y = 100;
+        nodes.forEach((node, idx) => {
+          flowActions.moveNode(node.id, { x: 400, y });
+          y += 200;
+        });
+      },
       canPaste: !!clipboard,
     });
   }, [contextMenu, flowActions, handleDelete, handleDuplicate, handleCopy, handlePaste, handleNodeTest, clipboard]);
