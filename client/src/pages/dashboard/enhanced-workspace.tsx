@@ -749,6 +749,7 @@ export function EnhancedWorkspace() {
                 selectedConnectionIds={flowState.selectedConnectionIds}
                 onConnectionClick={handleConnectionClick}
                 onConnectionContextMenu={handleConnectionContextMenu}
+                onConnectionDelete={(connectionId) => flowActions.deleteConnection(connectionId)}
                 pendingConnection={pendingConnection}
               />
 

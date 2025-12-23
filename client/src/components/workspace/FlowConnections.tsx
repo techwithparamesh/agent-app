@@ -174,6 +174,7 @@ interface SingleConnectionProps {
   isSelected: boolean;
   onClick?: (connectionId: string, e: React.MouseEvent) => void;
   onContextMenu?: (connectionId: string, e: React.MouseEvent) => void;
+  onDelete?: (connectionId: string) => void;
 }
 
 const SingleConnection: React.FC<SingleConnectionProps> = ({
@@ -183,6 +184,7 @@ const SingleConnection: React.FC<SingleConnectionProps> = ({
   isSelected,
   onClick,
   onContextMenu,
+  onDelete,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -293,7 +295,7 @@ const SingleConnection: React.FC<SingleConnectionProps> = ({
           className="cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            onClick?.(connection.id, e);
+            onDelete?.(connection.id);
           }}
         >
           <circle
@@ -389,6 +391,7 @@ export const FlowConnections: React.FC<FlowConnectionsProps> = ({
   selectedConnectionIds,
   onConnectionClick,
   onConnectionContextMenu,
+  onConnectionDelete,
   pendingConnection,
   className,
 }) => {
@@ -460,6 +463,7 @@ export const FlowConnections: React.FC<FlowConnectionsProps> = ({
               isSelected={selectedConnectionIds.has(connection.id)}
               onClick={onConnectionClick}
               onContextMenu={onConnectionContextMenu}
+              onDelete={onConnectionDelete}
             />
           );
         })}
