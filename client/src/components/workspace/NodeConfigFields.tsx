@@ -251,7 +251,7 @@ function resolveConfigComponent(
 }
 
 // ============================================
-// MAIN EXPORT - DYNAMIC FIELDS FIRST
+// MAIN EXPORT - N8N-STYLE CONFIGS FIRST
 // ============================================
 
 export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
@@ -265,7 +265,7 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
   // State for AI features
   const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
   
-  // Try to get dynamic schema first
+  // Try to get dynamic schema (for fallback)
   const appSchema = useMemo(() => getAppById(appId), [appId]);
   const actionSchema = useMemo(() => {
     const actionOrTrigger = actionId || triggerId;
@@ -330,7 +330,19 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
     }
   }, [appId, actionId, triggerId, config, actionSchema, getSuggestions]);
   
-  // PRIORITY 1: Use dynamic schema if available
+  // PRIORITY 1: Try n8n-style rich config component FIRST
+  const ConfigComponent = resolveConfigComponent(
+    nodeType,
+    triggerId,
+    actionId,
+    appId
+  );
+  
+  if (ConfigComponent) {
+    return <ConfigComponent config={config} updateConfig={updateConfig} />;
+  }
+  
+  // PRIORITY 2: Use dynamic schema if available (fallback)
   if (actionSchema && actionSchema.fields && actionSchema.fields.length > 0) {
     return (
       <div className="space-y-4">
@@ -352,18 +364,6 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
         />
       </div>
     );
-  }
-  
-  // PRIORITY 2: Try legacy config component
-  const ConfigComponent = resolveConfigComponent(
-    nodeType,
-    triggerId,
-    actionId,
-    appId
-  );
-  
-  if (ConfigComponent) {
-    return <ConfigComponent config={config} updateConfig={updateConfig} />;
   }
   
   // PRIORITY 3: Fallback to default configuration
