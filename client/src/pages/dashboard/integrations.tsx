@@ -5410,23 +5410,84 @@ function IntegrationConfigForm({
     return action?.fields || action?.templates || [];
   };
 
-  // AI Model options
+  // AI Model options - Comprehensive list with 50+ models
   const aiModelOptions = [
-    { value: 'openai-gpt-4o', label: 'OpenAI GPT-4o', provider: 'OpenAI' },
-    { value: 'openai-gpt-4o-mini', label: 'OpenAI GPT-4o Mini', provider: 'OpenAI' },
-    { value: 'openai-gpt-4-turbo', label: 'OpenAI GPT-4 Turbo', provider: 'OpenAI' },
-    { value: 'openai-gpt-3.5-turbo', label: 'OpenAI GPT-3.5 Turbo', provider: 'OpenAI' },
+    // OpenAI Models
+    { value: 'openai-gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
+    { value: 'openai-gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
+    { value: 'openai-gpt-4-turbo', label: 'GPT-4 Turbo', provider: 'OpenAI' },
+    { value: 'openai-gpt-4', label: 'GPT-4', provider: 'OpenAI' },
+    { value: 'openai-gpt-3.5-turbo', label: 'GPT-3.5 Turbo', provider: 'OpenAI' },
+    { value: 'openai-o1', label: 'O1', provider: 'OpenAI' },
+    { value: 'openai-o1-mini', label: 'O1 Mini', provider: 'OpenAI' },
+    { value: 'openai-o1-preview', label: 'O1 Preview', provider: 'OpenAI' },
+    
+    // Anthropic Models
+    { value: 'anthropic-claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
     { value: 'anthropic-claude-3-opus', label: 'Claude 3 Opus', provider: 'Anthropic' },
-    { value: 'anthropic-claude-3-sonnet', label: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+    { value: 'anthropic-claude-3-sonnet', label: 'Claude 3 Sonnet', provider: 'Anthropic' },
     { value: 'anthropic-claude-3-haiku', label: 'Claude 3 Haiku', provider: 'Anthropic' },
-    { value: 'google-gemini-pro', label: 'Gemini Pro', provider: 'Google' },
+    { value: 'anthropic-claude-3.5-haiku', label: 'Claude 3.5 Haiku', provider: 'Anthropic' },
+    
+    // Google Models
+    { value: 'google-gemini-2.0-flash', label: 'Gemini 2.0 Flash', provider: 'Google' },
     { value: 'google-gemini-1.5-pro', label: 'Gemini 1.5 Pro', provider: 'Google' },
     { value: 'google-gemini-1.5-flash', label: 'Gemini 1.5 Flash', provider: 'Google' },
+    { value: 'google-gemini-pro', label: 'Gemini Pro', provider: 'Google' },
+    { value: 'google-gemma-2', label: 'Gemma 2', provider: 'Google' },
+    
+    // Mistral Models
     { value: 'mistral-large', label: 'Mistral Large', provider: 'Mistral' },
     { value: 'mistral-medium', label: 'Mistral Medium', provider: 'Mistral' },
-    { value: 'groq-llama-3', label: 'Llama 3 (Groq)', provider: 'Groq' },
-    { value: 'groq-mixtral', label: 'Mixtral (Groq)', provider: 'Groq' },
+    { value: 'mistral-small', label: 'Mistral Small', provider: 'Mistral' },
+    { value: 'mistral-nemo', label: 'Mistral Nemo', provider: 'Mistral' },
+    { value: 'mistral-codestral', label: 'Codestral', provider: 'Mistral' },
+    { value: 'mixtral-8x7b', label: 'Mixtral 8x7B', provider: 'Mistral' },
+    { value: 'mixtral-8x22b', label: 'Mixtral 8x22B', provider: 'Mistral' },
+    
+    // Meta Llama Models
+    { value: 'meta-llama-3.2-90b', label: 'Llama 3.2 90B', provider: 'Meta' },
+    { value: 'meta-llama-3.2-11b', label: 'Llama 3.2 11B', provider: 'Meta' },
+    { value: 'meta-llama-3.1-405b', label: 'Llama 3.1 405B', provider: 'Meta' },
+    { value: 'meta-llama-3.1-70b', label: 'Llama 3.1 70B', provider: 'Meta' },
+    { value: 'meta-llama-3.1-8b', label: 'Llama 3.1 8B', provider: 'Meta' },
+    
+    // Groq (Fast Inference)
+    { value: 'groq-llama-3.2-90b', label: 'Llama 3.2 90B (Groq)', provider: 'Groq' },
+    { value: 'groq-llama-3.1-70b', label: 'Llama 3.1 70B (Groq)', provider: 'Groq' },
+    { value: 'groq-mixtral-8x7b', label: 'Mixtral 8x7B (Groq)', provider: 'Groq' },
+    { value: 'groq-gemma-7b', label: 'Gemma 7B (Groq)', provider: 'Groq' },
+    
+    // Cohere Models
     { value: 'cohere-command-r-plus', label: 'Command R+', provider: 'Cohere' },
+    { value: 'cohere-command-r', label: 'Command R', provider: 'Cohere' },
+    { value: 'cohere-command', label: 'Command', provider: 'Cohere' },
+    
+    // xAI Models
+    { value: 'xai-grok-2', label: 'Grok 2', provider: 'xAI' },
+    { value: 'xai-grok-2-mini', label: 'Grok 2 Mini', provider: 'xAI' },
+    { value: 'xai-grok-beta', label: 'Grok Beta', provider: 'xAI' },
+    
+    // Perplexity Models
+    { value: 'perplexity-sonar-large', label: 'Sonar Large', provider: 'Perplexity' },
+    { value: 'perplexity-sonar-small', label: 'Sonar Small', provider: 'Perplexity' },
+    
+    // Together AI Models
+    { value: 'together-qwen-2.5-72b', label: 'Qwen 2.5 72B', provider: 'Together' },
+    { value: 'together-deepseek-v2.5', label: 'DeepSeek V2.5', provider: 'Together' },
+    { value: 'together-yi-large', label: 'Yi Large', provider: 'Together' },
+    
+    // AWS Bedrock Models
+    { value: 'aws-titan-text', label: 'Titan Text', provider: 'AWS Bedrock' },
+    { value: 'aws-claude-3', label: 'Claude 3 (Bedrock)', provider: 'AWS Bedrock' },
+    
+    // Azure Models
+    { value: 'azure-gpt-4', label: 'GPT-4 (Azure)', provider: 'Azure' },
+    { value: 'azure-gpt-4o', label: 'GPT-4o (Azure)', provider: 'Azure' },
+    
+    // Local/Custom Options
+    { value: 'ollama-local', label: 'Ollama (Local)', provider: 'Local' },
+    { value: 'lmstudio-local', label: 'LM Studio (Local)', provider: 'Local' },
     { value: 'custom', label: 'Custom API Endpoint', provider: 'Custom' },
   ];
 
