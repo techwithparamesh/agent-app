@@ -130,7 +130,7 @@ const generateId = () => `step_${Date.now()}_${Math.random().toString(36).substr
 
 const createStep = (nodeDef: NodeDefinition): AutomationStep => ({
   id: generateId(),
-  nodeId: nodeDef.name,
+  nodeId: nodeDef.id,  // Use id to match NODE_REGISTRY keys
   name: nodeDef.displayName,
   config: {},
   status: 'idle',

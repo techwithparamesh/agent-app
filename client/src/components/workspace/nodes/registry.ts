@@ -1250,6 +1250,9 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
   
   // Apps - CRM
   'hubspot': HubSpotNode,
+
+  // OpenAI (special entry for when coming from integrations)
+  'openai': AIAgentNode,
 };
 
 // Helper to get node by ID
