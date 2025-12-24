@@ -447,18 +447,6 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={location === "/dashboard/automations"}
-                  className="gap-3"
-                >
-                  <Link href="/dashboard/automations">
-                    <Workflow className="h-5 w-5" />
-                    <span>Automations</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
                   isActive={location === "/docs"}
                   className="gap-3"
                 >

@@ -50,7 +50,6 @@ const Analytics = lazy(() => import("@/pages/dashboard/analytics"));
 const Integrations = lazy(() => import("@/pages/dashboard/integrations"));
 const IntegrationWorkspace = lazy(() => import("@/pages/dashboard/integration-workspace"));
 const EnhancedWorkspace = lazy(() => import("@/pages/dashboard/enhanced-workspace"));
-const Automations = lazy(() => import("@/pages/dashboard/automations"));
 const Docs = lazy(() => import("@/pages/docs"));
 
 // WhatsApp Business & Billing Pages - lazy loaded
@@ -98,7 +97,6 @@ function Router() {
       <Route path="/dashboard/templates">{() => <Protected><Templates /></Protected>}</Route>
       <Route path="/dashboard/analytics">{() => <Protected><Analytics /></Protected>}</Route>
       <Route path="/dashboard/integrations">{() => <Protected><Integrations /></Protected>}</Route>
-      <Route path="/dashboard/automations">{() => <Protected><Automations /></Protected>}</Route>
       <Route path="/dashboard/integrations/workspace">{() => <Protected><EnhancedWorkspace /></Protected>}</Route>
       <Route path="/dashboard/integrations/workspace/:id">{() => <Protected><EnhancedWorkspace /></Protected>}</Route>
       <Route path="/dashboard/integrations/workspace-old">{() => <Protected><IntegrationWorkspace /></Protected>}</Route>
