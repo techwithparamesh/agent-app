@@ -321,9 +321,15 @@ export function ConfigPanelV2({
       setSelectedTriggerId(node.config?.selectedTriggerId || '');
       setSelectedActionId(node.config?.selectedActionId || node.actionId || '');
       setDynamicFields(node.config?.dynamicFields || {});
-      setCurrentStep(0);
       setTestResult(null);
       setSearchQuery('');
+      
+      // If trigger type is already set (e.g., Manual Trigger), skip to next step
+      if (node.config?.triggerType) {
+        setCurrentStep(1); // Skip trigger type selection, go to Connect step
+      } else {
+        setCurrentStep(0);
+      }
       
       // Generate webhook URL if not exists
       if (node.type === 'trigger') {
