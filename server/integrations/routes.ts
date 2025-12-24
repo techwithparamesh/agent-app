@@ -8,7 +8,7 @@ import { db } from '../db';
 import { eq, and, desc } from 'drizzle-orm';
 import { integrations, integrationLogs, agents } from '@shared/schema';
 import { integrationService } from './index';
-import googleSheetsRouter from './google-sheets/api';
+import googleSheetsRouter from './google-sheets';
 
 export const integrationRoutes = Router();
 
