@@ -31,6 +31,7 @@ import {
   Target,
   AlertTriangle,
   ChevronDown,
+  Circle,
 } from "lucide-react";
 import type { FlowNode as FlowNodeType } from "./types";
 
@@ -49,6 +50,13 @@ interface FlowNodeProps {
 
 // Status icons and colors
 const statusConfig = {
+  idle: {
+    icon: Circle,
+    color: "text-gray-400",
+    bgColor: "bg-gray-500/10",
+    borderColor: "border-gray-500/30",
+    label: "Not Configured",
+  },
   incomplete: {
     icon: AlertTriangle,
     color: "text-yellow-500",
@@ -62,6 +70,13 @@ const statusConfig = {
     bgColor: "bg-green-500/10",
     borderColor: "border-green-500/30",
     label: "Configured",
+  },
+  complete: {
+    icon: CheckCircle,
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+    borderColor: "border-green-500/30",
+    label: "Complete",
   },
   error: {
     icon: AlertCircle,
@@ -102,6 +117,10 @@ const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; color: s
   code: { label: "Code", icon: Play, color: "bg-slate-500" },
   transform: { label: "Transform", icon: RotateCcw, color: "bg-lime-500" },
   wait: { label: "Wait", icon: Clock, color: "bg-orange-400" },
+  // AI Nodes
+  "ai-agent": { label: "AI Agent", icon: Target, color: "bg-purple-600" },
+  "ai-memory": { label: "Memory", icon: Clock, color: "bg-pink-600" },
+  "ai-tool": { label: "Tool", icon: Zap, color: "bg-amber-600" },
 };
 
 export function FlowNode({

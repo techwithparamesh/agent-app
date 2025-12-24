@@ -5,9 +5,38 @@ export interface Position {
   y: number;
 }
 
+export type FlowNodeType = 
+  | 'trigger' 
+  | 'action' 
+  | 'condition' 
+  | 'delay' 
+  | 'loop' 
+  | 'router' 
+  | 'error-handler' 
+  | 'switch' 
+  | 'filter' 
+  | 'merge' 
+  | 'split' 
+  | 'code' 
+  | 'transform' 
+  | 'wait'
+  // AI Nodes (first-class citizens)
+  | 'ai-agent'
+  | 'ai-memory'
+  | 'ai-tool';
+
+export type FlowNodeStatus = 
+  | 'idle'        // Just added, not configured
+  | 'incomplete'  // Partially configured
+  | 'configured'  // Fully configured, ready
+  | 'complete'    // Alias for configured (legacy)
+  | 'error'       // Has validation errors
+  | 'running'     // Currently executing
+  | 'success';    // Last execution succeeded
+
 export interface FlowNode {
   id: string;
-  type: 'trigger' | 'action' | 'condition' | 'delay' | 'loop' | 'router' | 'error-handler' | 'switch' | 'filter' | 'merge' | 'split' | 'code' | 'transform' | 'wait';
+  type: FlowNodeType;
   appId: string;
   appName: string;
   appIcon: string;
@@ -15,11 +44,17 @@ export interface FlowNode {
   name: string;
   description?: string;
   position: Position;
-  status: 'incomplete' | 'configured' | 'error' | 'running' | 'success';
+  status: FlowNodeStatus;
   config: Record<string, any>;
   triggerId?: string;
   actionId?: string;
   connections: string[]; // IDs of connected nodes
+  
+  // Schema-driven config
+  schemaId?: string; // Reference to NodeSchemas
+  
+  // Output schema for expression picker
+  outputSchema?: Record<string, any>;
 }
 
 export interface Connection {

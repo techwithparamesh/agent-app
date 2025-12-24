@@ -45,6 +45,7 @@ import {
   PowerOff,
   Eye,
   GripVertical,
+  Circle,
 } from "lucide-react";
 import type { FlowNode as FlowNodeType } from "./types";
 
@@ -89,6 +90,14 @@ const NODE_WIDTH = 260;
 
 // Status configuration
 const statusConfig = {
+  idle: {
+    icon: Circle,
+    color: "text-gray-400",
+    bgColor: "bg-gray-500/10",
+    borderColor: "border-gray-500/30",
+    label: "Not Configured",
+    pulse: false,
+  },
   incomplete: {
     icon: AlertTriangle,
     color: "text-amber-500",
@@ -103,6 +112,14 @@ const statusConfig = {
     bgColor: "bg-emerald-500/10",
     borderColor: "border-emerald-500/40",
     label: "Ready",
+    pulse: false,
+  },
+  complete: {
+    icon: CheckCircle2,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    borderColor: "border-emerald-500/40",
+    label: "Complete",
     pulse: false,
   },
   error: {
