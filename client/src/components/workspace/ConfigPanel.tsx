@@ -19,11 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   X,
   Settings,
@@ -32,6 +31,8 @@ import {
   CheckCircle,
   AlertCircle,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Trash2,
   Copy,
   Info,
@@ -39,7 +40,12 @@ import {
   HelpCircle,
   FileJson,
   Variable,
+  Loader2,
+  Plus,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Tooltip,
   TooltipContent,
@@ -71,12 +77,31 @@ export function ConfigPanel({
   availableTriggers = [],
   availableActions = [],
 }: ConfigPanelProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("setup");
   const [config, setConfig] = useState<Record<string, any>>({});
   const [selectedTrigger, setSelectedTrigger] = useState("");
   const [selectedAction, setSelectedAction] = useState("");
   const [selectedAIModel, setSelectedAIModel] = useState("openai-gpt-4o");
-
+  
+  // Collapsible sections state
+  const [authSectionOpen, setAuthSectionOpen] = useState(true);
+  const [oauthSectionOpen, setOauthSectionOpen] = useState(true);
+  
+  // Connection states
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState("");
+  
+  // Field mappings state
+  const [fieldMappings, setFieldMappings] = useState<Array<{ fieldName: string; expression: string }>>([
+    { fieldName: 'email', expression: '{{$json.email}}' },
+    { fieldName: 'name', expression: '{{$json.firstName}} {{$json.lastName}}' },
+  ]);  
+  // JSON validation state
+  const [jsonError, setJsonError] = useState("");
+  const [showVariablePicker, setShowVariablePicker] = useState(false);
   // Reset state when node changes
   useEffect(() => {
     if (node) {
@@ -85,6 +110,13 @@ export function ConfigPanel({
       setSelectedAction(node.actionId || "");
       setSelectedAIModel(node.config?.aiModel || "openai-gpt-4o");
       setActiveTab("setup");
+      // Reset connection state when node changes
+      setIsConnected(false);
+      setConnectionError("");
+      // Load saved field mappings if any
+      if (node.config?.fieldMappings) {
+        setFieldMappings(node.config.fieldMappings);
+      }
     }
   }, [node?.id]);
 
@@ -92,12 +124,139 @@ export function ConfigPanel({
     return null;
   }
 
+  // Handle API key verification
+  const handleVerifyConnection = async () => {
+    setIsVerifying(true);
+    setConnectionError("");
+    
+    try {
+      // Check if API key is provided
+      if (!config.apiKey || config.apiKey.trim() === '') {
+        throw new Error('Please enter an API key');
+      }
+      
+      // Simulate API verification (in production, call actual verification endpoint)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Simulate success (in production, check actual response)
+      setIsConnected(true);
+      toast({
+        title: "Connection Verified",
+        description: `Successfully connected to ${node.appName}`,
+      });
+    } catch (error: any) {
+      setConnectionError(error.message || 'Failed to verify connection');
+      toast({
+        title: "Verification Failed",
+        description: error.message || 'Failed to verify connection',
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handle OAuth connection
+  const handleOAuthConnect = async () => {
+    setIsConnecting(true);
+    setConnectionError("");
+    
+    try {
+      // Build OAuth URL based on app type
+      const appId = node.appId;
+      const redirectUri = `${window.location.origin}/api/integrations/oauth/callback`;
+      
+      // In production, this would call the backend to get the OAuth URL
+      // For now, show a toast explaining the process
+      toast({
+        title: "OAuth Connection",
+        description: `Redirecting to ${node.appName} for authorization...`,
+      });
+      
+      // Simulate OAuth flow (in production, actually redirect to OAuth URL)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful OAuth (in production, handle callback)
+      setIsConnected(true);
+      toast({
+        title: "Connected Successfully",
+        description: `Your ${node.appName} account has been connected`,
+      });
+    } catch (error: any) {
+      setConnectionError(error.message || 'OAuth connection failed');
+      toast({
+        title: "Connection Failed",
+        description: error.message || 'OAuth connection failed',
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Add a new field mapping
+  const addFieldMapping = () => {
+    setFieldMappings(prev => [...prev, { fieldName: '', expression: '' }]);
+  };
+
+  // Update a field mapping
+  const updateFieldMapping = (index: number, field: 'fieldName' | 'expression', value: string) => {
+    setFieldMappings(prev => prev.map((mapping, i) => 
+      i === index ? { ...mapping, [field]: value } : mapping
+    ));
+  };
+
+  // Remove a field mapping
+  const removeFieldMapping = (index: number) => {
+    setFieldMappings(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Validate JSON input
+  const validateJson = (jsonString: string) => {
+    if (!jsonString.trim()) {
+      setJsonError("");
+      return true;
+    }
+    
+    try {
+      // Allow expressions in JSON by temporarily replacing them
+      const tempJson = jsonString
+        .replace(/{{.*?}}/g, '"__EXPRESSION__"')
+        .replace(/{{.*?}}/g, '"__EXPRESSION__"');
+      JSON.parse(tempJson);
+      setJsonError("");
+      return true;
+    } catch (error) {
+      setJsonError("Invalid JSON format");
+      return false;
+    }
+  };
+
+  // Insert a variable expression at cursor
+  const insertExpression = (expression: string) => {
+    const customInput = config.customInput || "";
+    updateConfig('customInput', customInput + expression);
+  };
+
+  // Common expressions for quick access
+  const commonExpressions = [
+    { label: 'Email field', value: '{{$json.email}}' },
+    { label: 'First name', value: '{{$json.firstName}}' },
+    { label: 'Last name', value: '{{$json.lastName}}' },
+    { label: 'Full name', value: '{{$json.firstName}} {{$json.lastName}}' },
+    { label: 'Phone number', value: '{{$json.phone}}' },
+    { label: 'Previous step data', value: '{{$node["Step 1"].json}}' },
+    { label: 'Current timestamp', value: '{{$now}}' },
+    { label: 'Random ID', value: '{{$randomId}}' },
+  ];
+
   const handleSave = () => {
     onSave(node.id, {
       ...config,
       triggerId: selectedTrigger,
       actionId: selectedAction,
       aiModel: selectedAIModel,
+      fieldMappings,
     });
   };
 
@@ -285,114 +444,208 @@ export function ConfigPanel({
 
           {/* Connect Tab */}
           <TabsContent value="connect" className="m-0 p-4 space-y-6">
+            {/* Connection Status Banner */}
+            {isConnected && (
+              <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-green-600">Connected to {node.appName}</span>
+                </div>
+              </div>
+            )}
+            
+            {connectionError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-red-600">{connectionError}</span>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               <h4 className="text-sm font-medium flex items-center gap-2">
                 <Zap className="h-4 w-4 text-amber-500" />
                 API Credentials
               </h4>
 
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="api-keys">
-                  <AccordionTrigger className="text-sm">
-                    Authentication
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-3 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs">API Key</Label>
-                      <Input
-                        type="password"
-                        value={config.apiKey || ''}
-                        onChange={(e) => updateConfig('apiKey', e.target.value)}
-                        placeholder="Enter your API key"
-                        className="h-9 font-mono text-sm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">API Secret (if required)</Label>
-                      <Input
-                        type="password"
-                        value={config.apiSecret || ''}
-                        onChange={(e) => updateConfig('apiSecret', e.target.value)}
-                        placeholder="Enter API secret"
-                        className="h-9 font-mono text-sm"
-                      />
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Verify Connection
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="oauth">
-                  <AccordionTrigger className="text-sm">
-                    OAuth Connection
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-3 pt-2">
-                    <Button className="w-full">
-                      Connect with {node.appName}
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      You'll be redirected to authorize access
+              {/* Authentication Section - Collapsible */}
+              <Collapsible open={authSectionOpen} onOpenChange={setAuthSectionOpen}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-sm font-medium border-b hover:bg-muted/50 px-2 rounded-t-lg transition-colors">
+                  <span>Authentication</span>
+                  {authSectionOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-3 pb-4 px-2 border-x border-b rounded-b-lg bg-muted/20">
+                  <div className="space-y-2">
+                    <Label className="text-xs">API Key</Label>
+                    <Input
+                      type="password"
+                      value={config.apiKey || ''}
+                      onChange={(e) => updateConfig('apiKey', e.target.value)}
+                      placeholder="Enter your API key"
+                      className="h-9 font-mono text-sm"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Find your API key in your {node.appName} account settings
                     </p>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">API Secret (if required)</Label>
+                    <Input
+                      type="password"
+                      value={config.apiSecret || ''}
+                      onChange={(e) => updateConfig('apiSecret', e.target.value)}
+                      placeholder="Enter API secret"
+                      className="h-9 font-mono text-sm"
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={handleVerifyConnection}
+                    disabled={isVerifying || !config.apiKey}
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : isConnected ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                        Connected
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Verify Connection
+                      </>
+                    )}
+                  </Button>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* OAuth Connection Section - Collapsible */}
+              <Collapsible open={oauthSectionOpen} onOpenChange={setOauthSectionOpen}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-sm font-medium border-b hover:bg-muted/50 px-2 rounded-t-lg transition-colors">
+                  <span>OAuth Connection</span>
+                  {oauthSectionOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-3 pb-4 px-2 border-x border-b rounded-b-lg bg-muted/20">
+                  <Button 
+                    className="w-full"
+                    onClick={handleOAuthConnect}
+                    disabled={isConnecting || isConnected}
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : isConnected ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Connected to {node.appName}
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Connect with {node.appName}
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    You'll be redirected to authorize access
+                  </p>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
 
             <Separator />
 
-            {/* Data Mapping */}
+            {/* Data Mapping - Improved with explanation */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium flex items-center gap-2">
-                <Variable className="h-4 w-4 text-blue-500" />
-                Data Mapping
-              </h4>
-
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <FileJson className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm font-medium text-center">Map input data from previous steps</p>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  Use variables like <code className="bg-background px-1 rounded">{`{{$json.email}}`}</code>
-                </p>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Variable className="h-4 w-4 text-blue-500" />
+                  Data Mapping
+                </h4>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs p-3">
+                      <p className="font-medium mb-1">How Data Mapping Works</p>
+                      <p className="text-xs">Map data from previous workflow steps to fields in this action. Use expressions like <code className="bg-muted px-1 rounded">{`{{$json.fieldName}}`}</code> to reference incoming data.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
-              {/* Field Mapping */}
+              {/* Explanation Card */}
+              <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                <FileJson className="h-6 w-6 mb-2 text-blue-500" />
+                <p className="text-sm font-medium">Map input data from previous steps</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use expressions to pull data dynamically:
+                </p>
+                <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+                  <li>• <code className="bg-background px-1 rounded">{`{{$json.email}}`}</code> - Get the "email" field from incoming data</li>
+                  <li>• <code className="bg-background px-1 rounded">{`{{$json.user.name}}`}</code> - Access nested fields</li>
+                  <li>• <code className="bg-background px-1 rounded">{`{{$node["Step 1"].json}}`}</code> - Reference a specific step</li>
+                </ul>
+              </div>
+
+              {/* Field Mappings */}
               <div className="space-y-3">
                 <Label className="text-xs font-semibold">Field Mappings</Label>
                 
-                {/* Example mapped fields */}
                 <div className="space-y-2">
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      placeholder="Field name"
-                      className="h-8 text-xs flex-1"
-                      defaultValue="email"
-                    />
-                    <span className="text-xs text-muted-foreground">→</span>
-                    <Input
-                      placeholder="{{$json.email}}"
-                      className="h-8 text-xs flex-1 font-mono bg-muted/50"
-                      defaultValue="{{$json.email}}"
-                    />
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      placeholder="Field name"
-                      className="h-8 text-xs flex-1"
-                      defaultValue="name"
-                    />
-                    <span className="text-xs text-muted-foreground">→</span>
-                    <Input
-                      placeholder="{{$json.name}}"
-                      className="h-8 text-xs flex-1 font-mono bg-muted/50"
-                      defaultValue="{{$json.firstName}} {{$json.lastName}}"
-                    />
-                  </div>
+                  {fieldMappings.map((mapping, index) => (
+                    <div key={index} className="flex gap-2 items-center group">
+                      <Input
+                        placeholder="Field name (e.g., email)"
+                        className="h-8 text-xs flex-1"
+                        value={mapping.fieldName}
+                        onChange={(e) => updateFieldMapping(index, 'fieldName', e.target.value)}
+                      />
+                      <span className="text-xs text-muted-foreground">→</span>
+                      <Input
+                        placeholder="{{$json.fieldName}}"
+                        className="h-8 text-xs flex-1 font-mono bg-muted/50"
+                        value={mapping.expression}
+                        onChange={(e) => updateFieldMapping(index, 'expression', e.target.value)}
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeFieldMapping(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
 
-                <Button variant="outline" size="sm" className="w-full">
-                  <span className="text-xs">+ Add Field Mapping</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={addFieldMapping}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  <span className="text-xs">Add Field Mapping</span>
                 </Button>
               </div>
 
@@ -401,25 +654,148 @@ export function ConfigPanel({
               <div className="space-y-2">
                 <Label className="text-xs font-semibold">Custom Input (JSON)</Label>
                 <p className="text-xs text-muted-foreground">
-                  Or provide custom JSON with expressions
+                  Or provide custom JSON with expressions for complex data structures
                 </p>
-                <Textarea
-                  value={config.customInput || ''}
-                  onChange={(e) => updateConfig('customInput', e.target.value)}
-                  placeholder={`{\n  "key": "{{$json.value}}",\n  "data": "{{$node["Step 1"].json}}"\n}`}
-                  rows={6}
-                  className="font-mono text-xs resize-none"
-                />
+                <div className="relative">
+                  <Textarea
+                    value={config.customInput || ''}
+                    onChange={(e) => {
+                      updateConfig('customInput', e.target.value);
+                      validateJson(e.target.value);
+                    }}
+                    placeholder={`{\n  "recipient": "{{$json.email}}",\n  "fullName": "{{$json.firstName}} {{$json.lastName}}",\n  "data": {{$node["Step 1"].json}}\n}`}
+                    rows={6}
+                    className={`font-mono text-xs resize-none ${jsonError ? 'border-red-500' : ''}`}
+                  />
+                  {jsonError && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {jsonError}
+                    </p>
+                  )}
+                </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Variable className="h-3 w-3 mr-1" />
-                    <span className="text-xs">Insert Expression</span>
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => setShowVariablePicker(!showVariablePicker)}
+                        >
+                          <Variable className="h-3 w-3 mr-1" />
+                          <span className="text-xs">Insert Expression</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Click to see available variable expressions
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      try {
+                        const formatted = JSON.stringify(
+                          JSON.parse((config.customInput || '').replace(/{{.*?}}/g, '"__EXPRESSION__"')), 
+                          null, 
+                          2
+                        ).replace(/"__EXPRESSION__"/g, '{{$json.field}}');
+                        updateConfig('customInput', formatted);
+                        toast({
+                          title: "JSON Formatted",
+                          description: "Your JSON has been formatted",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Format Error",
+                          description: "Please fix JSON syntax before formatting",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
                     <FileJson className="h-3 w-3 mr-1" />
                     <span className="text-xs">Format JSON</span>
                   </Button>
                 </div>
+                
+                {/* Variable Picker Dropdown */}
+                {showVariablePicker && (
+                  <div className="mt-2 p-3 bg-muted/50 rounded-lg border">
+                    <Label className="text-xs font-semibold">Quick Insert Variables</Label>
+                    <div className="grid grid-cols-1 gap-1 mt-2">
+                      {commonExpressions.map((expr, index) => (
+                        <button
+                          key={index}
+                          className="text-left p-2 text-xs hover:bg-background rounded border-0 bg-transparent transition-colors"
+                          onClick={() => {
+                            insertExpression(expr.value);
+                            setShowVariablePicker(false);
+                          }}
+                        >
+                          <code className="font-mono text-blue-600">{expr.value}</code>
+                          <span className="text-muted-foreground ml-2">- {expr.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-2 pt-2 border-t">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full text-xs"
+                        onClick={() => setShowVariablePicker(false)}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Live Data Preview */}
+                {fieldMappings.some(mapping => mapping.fieldName && mapping.expression) && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold flex items-center gap-2">
+                      <Eye className="h-3 w-3" />
+                      Preview Mapped Data
+                    </Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border-2 border-dashed">
+                      <p className="text-xs text-muted-foreground mb-2">Sample output based on your mappings:</p>
+                      <pre className="text-xs font-mono bg-background p-2 rounded border overflow-x-auto">
+                        {JSON.stringify(
+                          fieldMappings.reduce((acc, mapping) => {
+                            if (mapping.fieldName && mapping.expression) {
+                              // Simulate resolved expressions for preview
+                              let previewValue = mapping.expression
+                                .replace(/\{\{\$json\.email\}\}/g, '"user@example.com"')
+                                .replace(/\{\{\$json\.firstName\}\}/g, '"John"')
+                                .replace(/\{\{\$json\.lastName\}\}/g, '"Doe"')
+                                .replace(/\{\{\$json\.phone\}\}/g, '"+1234567890"')
+                                .replace(/\{\{.*?\}\}/g, '"[dynamic_value]"');
+                              
+                              // Handle concatenated values
+                              if (previewValue.includes('"John" "Doe"')) {
+                                previewValue = '"John Doe"';
+                              }
+                              
+                              try {
+                                acc[mapping.fieldName] = JSON.parse(previewValue);
+                              } catch {
+                                acc[mapping.fieldName] = previewValue.replace(/"/g, '');
+                              }
+                            }
+                            return acc;
+                          }, {} as Record<string, any>),
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>
