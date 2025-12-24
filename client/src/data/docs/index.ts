@@ -13,6 +13,7 @@ import { ecommerceDocs } from './ecommerce';
 import { productivityDocs } from './productivity';
 import { developerDocs } from './developer';
 import { googleDocs } from './google';
+import { aiDocs } from './ai';
 
 // Export individual category arrays
 export {
@@ -25,6 +26,7 @@ export {
   productivityDocs,
   developerDocs,
   googleDocs,
+  aiDocs,
 };
 
 // Combined array of all integrations
@@ -38,6 +40,7 @@ export const allIntegrationDocs: IntegrationDoc[] = [
   ...productivityDocs,
   ...developerDocs,
   ...googleDocs,
+  ...aiDocs,
 ];
 
 // Helper function to get integration by ID

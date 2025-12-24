@@ -79,7 +79,8 @@ export type IntegrationCategory =
   | 'ecommerce'
   | 'productivity'
   | 'developer'
-  | 'google';
+  | 'google'
+  | 'ai';
 
 export const categoryLabels: Record<IntegrationCategory, string> = {
   communication: 'Communication',
@@ -91,6 +92,7 @@ export const categoryLabels: Record<IntegrationCategory, string> = {
   productivity: 'Productivity',
   developer: 'Developer Tools',
   google: 'Google Suite',
+  ai: 'AI & Machine Learning',
 };
 
 export const categoryIcons: Record<IntegrationCategory, string> = {
@@ -98,6 +100,7 @@ export const categoryIcons: Record<IntegrationCategory, string> = {
   email: '📧',
   crm: '👥',
   automation: '⚡',
+  ai: '🤖',
   storage: '🗄️',
   ecommerce: '🛒',
   productivity: '📋',
