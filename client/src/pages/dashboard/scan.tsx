@@ -73,6 +73,16 @@ export default function WebsiteScanner() {
   const [currentUrl, setCurrentUrl] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  // Cleanup EventSource on component unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
+
   // Get agent from URL params if present
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const preselectedAgent = searchParams.get("agent");

@@ -12,6 +12,7 @@ import { toolEngine } from './toolEngine';
 import { knowledgeInjection } from './knowledgeInjection';
 import { responseComposer } from './responseComposer';
 import { whatsappDispatcher } from './whatsappDispatcher';
+import { decrypt } from '../utils/encryption';
 import type {
   NormalizedMessage,
   AIDecision,
@@ -115,9 +116,13 @@ export class AgentRuntime {
 
       // Step 6: Send response
       if (response) {
+        // Decrypt access token before use
+        const encryptedToken = resolvedAgent.whatsappConfig?.accessToken || '';
+        const accessToken = encryptedToken ? decrypt(encryptedToken) : '';
+        
         const sendResult = await whatsappDispatcher.send(response, {
           phoneNumberId: resolvedAgent.whatsappConfig?.whatsappPhoneNumberId || '',
-          accessToken: resolvedAgent.whatsappConfig?.accessToken || '',
+          accessToken,
         });
 
         if (sendResult.success) {

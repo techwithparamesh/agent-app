@@ -215,6 +215,17 @@ export default function BillingPage() {
                 <div className="h-8 bg-muted rounded w-1/4"></div>
                 <div className="h-4 bg-muted rounded w-1/2"></div>
               </div>
+            ) : statusError ? (
+              <div className="flex flex-col items-center justify-center py-6">
+                <AlertCircle className="h-10 w-10 text-destructive mb-3" />
+                <h3 className="text-lg font-semibold mb-1">Unable to Load Subscription</h3>
+                <p className="text-muted-foreground text-sm text-center mb-4">
+                  {statusError instanceof Error ? statusError.message : "There was an error loading your subscription status."}
+                </p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
             ) : subscriptionStatus ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -460,6 +471,19 @@ export default function BillingPage() {
                   ))}
                 </TableBody>
               </Table>
+            </Card>
+          ) : invoicesError ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Unable to Load Invoices</h3>
+                <p className="text-muted-foreground text-center">
+                  {invoicesError instanceof Error ? invoicesError.message : "There was an error loading your billing history."}
+                </p>
+                <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </CardContent>
             </Card>
           ) : (
             <Card>

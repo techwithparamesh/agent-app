@@ -8,8 +8,69 @@ import { agentRuntime } from './agentRuntime';
 import { db } from '../db';
 import { eq, and } from 'drizzle-orm';
 import { agentWhatsappConfig, agents } from '@shared/schema';
+import { encrypt, decrypt, verifyHmacSignature } from '../utils/encryption';
 
 const router = Router();
+
+/**
+ * Verify webhook signature from 360Dialog/Meta
+ * The signature is sent in the X-Hub-Signature-256 header
+ */
+function verifyWebhookSignature(req: Request, secret: string): boolean {
+  const signature = req.headers['x-hub-signature-256'] as string;
+  
+  if (!signature) {
+    console.warn('[WhatsApp Webhook] Missing signature header');
+    return false;
+  }
+  
+  // Signature format: sha256=<hash>
+  const [algorithm, hash] = signature.split('=');
+  if (algorithm !== 'sha256' || !hash) {
+    console.warn('[WhatsApp Webhook] Invalid signature format');
+    return false;
+  }
+  
+  // Get raw body for verification
+  const rawBody = JSON.stringify(req.body);
+  
+  return verifyHmacSignature(rawBody, hash, secret);
+}
+
+/**
+ * Auth middleware to verify user owns the agent
+ */
+async function verifyAgentOwnership(req: Request, res: Response, next: Function) {
+  // Extract userId from session or auth claims (consistent with other routes)
+  const userId = (req as any).user?.claims?.sub || (req as any).session?.userId;
+  const { agentId } = req.params;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  
+  if (!agentId) {
+    return res.status(400).json({ message: 'Agent ID required' });
+  }
+  
+  try {
+    const [agent] = await db
+      .select()
+      .from(agents)
+      .where(and(eq(agents.id, agentId), eq(agents.userId, userId)))
+      .limit(1);
+    
+    if (!agent) {
+      return res.status(403).json({ message: 'Access denied: You do not own this agent' });
+    }
+    
+    (req as any).agent = agent;
+    next();
+  } catch (error) {
+    console.error('[WhatsApp Routes] Auth error:', error);
+    res.status(500).json({ message: 'Authentication failed' });
+  }
+}
 
 /**
  * Webhook Verification Endpoint (GET)
@@ -75,10 +136,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
 /**
  * WhatsApp Configuration Management Routes
+ * All these routes require authentication
  */
 
 // Get WhatsApp config for an agent
-router.get('/agents/:agentId/whatsapp-config', async (req: Request, res: Response) => {
+router.get('/agents/:agentId/whatsapp-config', verifyAgentOwnership, async (req: Request, res: Response) => {
   try {
     const { agentId } = req.params;
 
@@ -110,7 +172,7 @@ router.get('/agents/:agentId/whatsapp-config', async (req: Request, res: Respons
 });
 
 // Create or update WhatsApp config for an agent
-router.post('/agents/:agentId/whatsapp-config', async (req: Request, res: Response) => {
+router.post('/agents/:agentId/whatsapp-config', verifyAgentOwnership, async (req: Request, res: Response) => {
   try {
     const { agentId } = req.params;
     const {
@@ -145,14 +207,16 @@ router.post('/agents/:agentId/whatsapp-config', async (req: Request, res: Respon
       .limit(1);
 
     if (existing) {
-      // Update existing config
+      // Update existing config - encrypt the access token
+      const encryptedToken = accessToken ? encrypt(accessToken) : undefined;
+      
       await db
         .update(agentWhatsappConfig)
         .set({
           whatsappBusinessId,
           whatsappPhoneNumberId,
           whatsappPhoneNumber,
-          accessToken,
+          accessToken: encryptedToken || existing.accessToken,
           verifyToken: verifyToken || existing.verifyToken,
           updatedAt: new Date(),
         })
@@ -167,9 +231,10 @@ router.post('/agents/:agentId/whatsapp-config', async (req: Request, res: Respon
       return res.json(updated);
     }
 
-    // Create new config
+    // Create new config - encrypt the access token
     const configId = crypto.randomUUID();
     const generatedVerifyToken = verifyToken || crypto.randomUUID().replace(/-/g, '');
+    const encryptedToken = accessToken ? encrypt(accessToken) : null;
 
     await db.insert(agentWhatsappConfig).values({
       id: configId,
@@ -177,7 +242,7 @@ router.post('/agents/:agentId/whatsapp-config', async (req: Request, res: Respon
       whatsappBusinessId,
       whatsappPhoneNumberId,
       whatsappPhoneNumber,
-      accessToken,
+      accessToken: encryptedToken,
       verifyToken: generatedVerifyToken,
       isVerified: false,
       isActive: true,
@@ -197,7 +262,7 @@ router.post('/agents/:agentId/whatsapp-config', async (req: Request, res: Respon
 });
 
 // Delete WhatsApp config
-router.delete('/agents/:agentId/whatsapp-config', async (req: Request, res: Response) => {
+router.delete('/agents/:agentId/whatsapp-config', verifyAgentOwnership, async (req: Request, res: Response) => {
   try {
     const { agentId } = req.params;
 
@@ -213,7 +278,7 @@ router.delete('/agents/:agentId/whatsapp-config', async (req: Request, res: Resp
 });
 
 // Verify webhook setup
-router.post('/agents/:agentId/whatsapp-config/verify', async (req: Request, res: Response) => {
+router.post('/agents/:agentId/whatsapp-config/verify', verifyAgentOwnership, async (req: Request, res: Response) => {
   try {
     const { agentId } = req.params;
 

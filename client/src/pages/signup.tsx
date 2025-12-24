@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,40 +11,45 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 
+const signupSchema = z.object({
+  firstName: z.string().min(1, "First name is required").max(255, "First name is too long"),
+  lastName: z.string().min(1, "Last name is required").max(255, "Last name is too long"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type SignupFormData = z.infer<typeof signupSchema>;
+
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const onSubmit = async (formData: SignupFormData) => {
     setIsLoading(true);
 
     try {
@@ -75,10 +83,11 @@ export default function Signup() {
 
       // Redirect to dashboard
       setLocation("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An error occurred";
       toast({
         title: "Signup failed",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -95,7 +104,7 @@ export default function Signup() {
             Get started with your AI-powered assistant
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -104,10 +113,15 @@ export default function Signup() {
                   id="firstName"
                   type="text"
                   placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  required
+                  {...register("firstName")}
+                  aria-invalid={errors.firstName ? "true" : "false"}
+                  aria-describedby={errors.firstName ? "firstName-error" : undefined}
                 />
+                {errors.firstName && (
+                  <p id="firstName-error" className="text-sm text-destructive" role="alert">
+                    {errors.firstName.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
@@ -115,10 +129,15 @@ export default function Signup() {
                   id="lastName"
                   type="text"
                   placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  required
+                  {...register("lastName")}
+                  aria-invalid={errors.lastName ? "true" : "false"}
+                  aria-describedby={errors.lastName ? "lastName-error" : undefined}
                 />
+                {errors.lastName && (
+                  <p id="lastName-error" className="text-sm text-destructive" role="alert">
+                    {errors.lastName.message}
+                  </p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -127,10 +146,15 @@ export default function Signup() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
+                {...register("email")}
+                aria-invalid={errors.email ? "true" : "false"}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
+              {errors.email && (
+                <p id="email-error" className="text-sm text-destructive" role="alert">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -138,10 +162,15 @@ export default function Signup() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
+                {...register("password")}
+                aria-invalid={errors.password ? "true" : "false"}
+                aria-describedby={errors.password ? "password-error" : undefined}
               />
+              {errors.password && (
+                <p id="password-error" className="text-sm text-destructive" role="alert">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -149,10 +178,15 @@ export default function Signup() {
                 id="confirmPassword"
                 type="password"
                 placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
+                {...register("confirmPassword")}
+                aria-invalid={errors.confirmPassword ? "true" : "false"}
+                aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
               />
+              {errors.confirmPassword && (
+                <p id="confirmPassword-error" className="text-sm text-destructive" role="alert">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

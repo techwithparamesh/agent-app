@@ -48,7 +48,13 @@ import {
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+  setPasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  clearPasswordResetToken(userId: string): Promise<void>;
+  updateUserProfile(userId: string, data: { firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User | undefined>;
 
   // Agents
   getAgentsByUserId(userId: string): Promise<Agent[]>;
@@ -58,7 +64,8 @@ export interface IStorage {
   deleteAgent(id: string): Promise<void>;
 
   // Knowledge Base
-  getKnowledgeByAgentId(agentId: string): Promise<KnowledgeBase[]>;
+  getKnowledgeByAgentId(agentId: string, options?: { limit?: number; offset?: number }): Promise<KnowledgeBase[]>;
+  getKnowledgeCountByAgentId(agentId: string): Promise<number>;
   getKnowledgeById(id: string): Promise<KnowledgeBase | undefined>;
   createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase>;
   deleteKnowledgeEntry(id: string): Promise<void>;
@@ -117,6 +124,56 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async setPasswordResetToken(userId: string, token: string, expires: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        resetPasswordToken: token, 
+        resetPasswordExpires: expires,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.resetPasswordToken, token),
+          gte(users.resetPasswordExpires, new Date())
+        )
+      );
+    return user;
+  }
+
+  async clearPasswordResetToken(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        resetPasswordToken: null, 
+        resetPasswordExpires: null,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserProfile(userId: string, data: { firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User | undefined> {
+    await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+    return this.getUser(userId);
+  }
+
   // Agents
   async getAgentsByUserId(userId: string): Promise<Agent[]> {
     return db
@@ -152,12 +209,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Knowledge Base
-  async getKnowledgeByAgentId(agentId: string): Promise<KnowledgeBase[]> {
+  async getKnowledgeByAgentId(
+    agentId: string, 
+    options?: { limit?: number; offset?: number }
+  ): Promise<KnowledgeBase[]> {
+    const limit = options?.limit || 100; // Default limit to prevent unbounded queries
+    const offset = options?.offset || 0;
+    
     return db
       .select()
       .from(knowledgeBase)
       .where(eq(knowledgeBase.agentId, agentId))
-      .orderBy(desc(knowledgeBase.createdAt));
+      .orderBy(desc(knowledgeBase.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+  
+  async getKnowledgeCountByAgentId(agentId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.agentId, agentId));
+    return result?.count || 0;
   }
 
   async getKnowledgeById(id: string): Promise<KnowledgeBase | undefined> {

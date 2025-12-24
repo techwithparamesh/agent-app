@@ -322,10 +322,26 @@ export function ConfigPanelV2({
       setSelectedActionId(node.config?.selectedActionId || node.actionId || '');
       setDynamicFields(node.config?.dynamicFields || {});
       
-      // If trigger type is already set, skip to Connect step (step 1)
-      // This avoids showing trigger type selection again when editing
-      const hasTriggerType = node.type === 'trigger' && node.config?.triggerType;
-      setCurrentStep(hasTriggerType ? 1 : 0);
+      // Smart step navigation based on trigger type
+      if (node.type === 'trigger') {
+        const nodeTriggerType = node.config?.triggerType;
+        
+        if (nodeTriggerType === 'manual') {
+          // Manual triggers use simplified steps [Settings, Test]
+          // Start at Settings (step 0) or Test (step 1) 
+          setIsAuthenticated(true); // Manual triggers don't need auth
+          setCurrentStep(0); // Show Settings step for manual triggers
+        } else if (nodeTriggerType) {
+          // Other trigger types - skip to Connect step (step 1 in standard flow)
+          setCurrentStep(1);
+        } else {
+          // No trigger type set - start at step 0
+          setCurrentStep(0);
+        }
+      } else {
+        // Action nodes - start at step 0
+        setCurrentStep(0);
+      }
       
       setTestResult(null);
       setSearchQuery('');
@@ -339,8 +355,31 @@ export function ConfigPanelV2({
 
   if (!isOpen || !node) return null;
 
-  // Define wizard steps based on node type
-  const triggerSteps: StepConfig[] = [
+  // Check if this is a manual trigger (which has simplified config)
+  const isManualTrigger = node.type === 'trigger' && (triggerType === 'manual' || node.config?.triggerType === 'manual');
+
+  // Define wizard steps based on node type and trigger type
+  // Manual triggers have a simplified flow - just Settings and Test
+  const manualTriggerSteps: StepConfig[] = [
+    {
+      id: 'settings',
+      title: 'Settings',
+      subtitle: 'Configure manual trigger',
+      icon: <Settings className="h-4 w-4" />,
+      isComplete: true, // Manual triggers are always ready
+      isRequired: false,
+    },
+    {
+      id: 'test',
+      title: 'Test',
+      subtitle: 'Run the workflow',
+      icon: <Play className="h-4 w-4" />,
+      isComplete: testResult === 'success',
+      isRequired: false,
+    },
+  ];
+
+  const standardTriggerSteps: StepConfig[] = [
     {
       id: 'trigger-type',
       title: 'Trigger Type',
@@ -374,6 +413,9 @@ export function ConfigPanelV2({
       isRequired: false,
     },
   ];
+
+  // Use simplified steps for manual triggers
+  const triggerSteps = isManualTrigger ? manualTriggerSteps : standardTriggerSteps;
 
   const actionSteps: StepConfig[] = [
     {

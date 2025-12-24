@@ -7,6 +7,28 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
+// Validate critical environment variables in production
+if (process.env.NODE_ENV === "production") {
+  const requiredEnvVars = [
+    'DATABASE_URL',
+    'SESSION_SECRET',
+  ];
+  
+  const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+  if (missingVars.length > 0) {
+    console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+    process.exit(1);
+  }
+  
+  // Warn about optional but recommended vars
+  const recommendedVars = ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY'];
+  recommendedVars.forEach(v => {
+    if (!process.env[v]) {
+      console.warn(`⚠️  Warning: ${v} not set - related features will be disabled`);
+    }
+  });
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;

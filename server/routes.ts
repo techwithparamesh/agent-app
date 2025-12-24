@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertAgentSchema, insertKnowledgeBaseSchema, insertGeneratedPageSchema, type KnowledgeBase } from "@shared/schema";
+import { insertAgentSchema, insertKnowledgeBaseSchema, type KnowledgeBase, leads } from "@shared/schema";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
@@ -13,6 +14,13 @@ import billingRoutes from "./billing/routes";
 import { integrationRoutes } from "./integrations/routes";
 import { stripeService } from "./billing/stripe";
 import express from "express";
+import { 
+  authRateLimiter, 
+  signupRateLimiter, 
+  passwordResetRateLimiter 
+} from "./middleware/rateLimit";
+import { v4 as uuidv4 } from "uuid";
+import rateLimit from "express-rate-limit";
 
 // Schema for updating agents - only allow safe fields
 const updateAgentSchema = z.object({
@@ -102,8 +110,8 @@ export async function registerRoutes(
 
   // ========== AUTH ROUTES ==========
   
-  // Signup route
-  app.post("/api/auth/signup", async (req: any, res) => {
+  // Signup route (rate limited to prevent mass account creation)
+  app.post("/api/auth/signup", signupRateLimiter, async (req: any, res) => {
     try {
       const { email, password, firstName, lastName } = signupSchema.parse(req.body);
       
@@ -144,8 +152,8 @@ export async function registerRoutes(
     }
   });
 
-  // Login route
-  app.post("/api/auth/login", async (req: any, res) => {
+  // Login route (rate limited to prevent brute force attacks)
+  app.post("/api/auth/login", authRateLimiter, async (req: any, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
       
@@ -190,6 +198,76 @@ export async function registerRoutes(
     });
   });
 
+  // Request password reset (rate limited to prevent email spam)
+  app.post("/api/auth/reset-password", passwordResetRateLimiter, async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email.toLowerCase().trim());
+      
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.json({ message: "If the email exists, a reset link has been sent" });
+      }
+
+      // Generate secure token
+      const token = crypto.randomBytes(32).toString("hex");
+      const expires = new Date(Date.now() + 3600000); // 1 hour from now
+
+      await storage.setPasswordResetToken(user.id, token, expires);
+
+      // Send password reset email
+      const resetUrl = `${process.env.APP_URL || 'http://localhost:5000'}/reset-password?token=${token}`;
+      
+      // TODO: Implement email service (SendGrid, AWS SES, etc.)
+      // For now, log that we would send an email (without exposing token)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV ONLY] Password reset requested for: ${email}`);
+        console.log(`[DEV ONLY] Reset URL: ${resetUrl}`);
+      }
+      
+      // In production, use email service:
+      // await emailService.sendPasswordResetEmail(email, resetUrl);
+
+      res.json({ message: "If the email exists, a reset link has been sent" });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ message: "Failed to process reset request" });
+    }
+  });
+
+  // Confirm password reset (rate limited)
+  app.post("/api/auth/reset-password/confirm", authRateLimiter, async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ message: "Reset token is required" });
+      }
+      if (!password || typeof password !== "string" || password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      const user = await storage.getUserByResetToken(token);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Hash new password and update
+      const hashedPassword = await bcrypt.hash(password, 12);
+      await storage.updateUserPassword(user.id, hashedPassword);
+      await storage.clearPasswordResetToken(user.id);
+
+      res.json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Password reset confirm error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
   // Get current user
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
@@ -220,6 +298,141 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Update user profile
+  app.patch("/api/auth/user", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { firstName, lastName, profileImageUrl } = req.body;
+      
+      // Validate input
+      const updateData: { firstName?: string; lastName?: string; profileImageUrl?: string } = {};
+      if (firstName !== undefined) {
+        if (typeof firstName !== "string" || firstName.length > 255) {
+          return res.status(400).json({ message: "Invalid first name" });
+        }
+        updateData.firstName = firstName.trim();
+      }
+      if (lastName !== undefined) {
+        if (typeof lastName !== "string" || lastName.length > 255) {
+          return res.status(400).json({ message: "Invalid last name" });
+        }
+        updateData.lastName = lastName.trim();
+      }
+      if (profileImageUrl !== undefined) {
+        if (typeof profileImageUrl !== "string" || profileImageUrl.length > 500) {
+          return res.status(400).json({ message: "Invalid profile image URL" });
+        }
+        updateData.profileImageUrl = profileImageUrl;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+
+      const updatedUser = await storage.updateUserProfile(userId, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { password: _, ...userWithoutPassword } = updatedUser as any;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Change password (for logged-in users)
+  app.post("/api/auth/change-password", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || typeof currentPassword !== "string") {
+        return res.status(400).json({ message: "Current password is required" });
+      }
+      if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Verify current password
+      const isValidPassword = await bcrypt.compare(currentPassword, (user as any).password || "");
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Hash and save new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await storage.updateUserPassword(userId, hashedPassword);
+
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
+  // ========== CONTACT FORM ==========
+  // Public contact form submission (rate limited)
+  const contactRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 submissions per 15 minutes
+    message: "Too many contact form submissions. Please try again later."
+  });
+
+  app.post("/api/contact", contactRateLimiter, async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+
+      // Basic validation
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+
+      // Store the contact submission in leads table with type "contact"
+      const leadId = uuidv4();
+      await db.insert(leads).values({
+        id: leadId,
+        agentId: 'website', // Special ID for website contact form
+        name,
+        email,
+        status: 'new',
+        source: 'contact_form',
+        notes: `Subject: ${subject}\n\nMessage: ${message}`,
+        metadata: JSON.stringify({ subject, formType: 'contact', submittedAt: new Date().toISOString() }),
+      });
+
+      console.log(`Contact form submission stored: ${leadId} from ${email}`);
+
+      // Optional: Send notification email to admin (can be configured)
+      // For now, we just store in DB
+      
+      res.json({ success: true, message: "Thank you for your message. We'll get back to you soon!" });
+    } catch (error) {
+      console.error("Error processing contact form:", error);
+      res.status(500).json({ message: "Failed to submit contact form. Please try again." });
     }
   });
 
@@ -275,6 +488,110 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching agent:", error);
       res.status(500).json({ message: "Failed to fetch agent" });
+    }
+  });
+
+  // Get agent analytics/performance metrics
+  app.get("/api/agents/:id/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const agent = await storage.getAgentById(req.params.id);
+      
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      if (agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Get conversation stats
+      const conversations = await storage.getConversationsByAgentId(agent.id);
+      const totalConversations = conversations.length;
+      const last7Days = conversations.filter(c => 
+        c.createdAt && new Date(c.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      ).length;
+      const last30Days = conversations.filter(c =>
+        c.createdAt && new Date(c.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      ).length;
+
+      // Get message count
+      let totalMessages = 0;
+      for (const conv of conversations) {
+        const messages = await storage.getMessagesByConversationId(conv.id);
+        totalMessages += messages.length;
+      }
+
+      // Calculate average response time (placeholder - would need actual timestamps)
+      const avgResponseTime = 2.5; // seconds (placeholder)
+
+      res.json({
+        totalConversations,
+        conversationsLast7Days: last7Days,
+        conversationsLast30Days: last30Days,
+        totalMessages,
+        avgMessagesPerConversation: totalConversations > 0 ? (totalMessages / totalConversations).toFixed(1) : 0,
+        avgResponseTime,
+        knowledgeBaseCount: (await storage.getKnowledgeByAgentId(agent.id)).length,
+        isActive: agent.isActive,
+        lastScannedAt: agent.lastScannedAt,
+      });
+    } catch (error) {
+      console.error("Error fetching agent analytics:", error);
+      res.status(500).json({ message: "Failed to fetch agent analytics" });
+    }
+  });
+
+  // Duplicate an agent
+  app.post("/api/agents/:id/duplicate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const originalAgent = await storage.getAgentById(req.params.id);
+      
+      if (!originalAgent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      if (originalAgent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Create a copy of the agent
+      const newAgentData = {
+        name: `${originalAgent.name} (Copy)`,
+        websiteUrl: originalAgent.websiteUrl,
+        description: originalAgent.description,
+        systemPrompt: originalAgent.systemPrompt,
+        toneOfVoice: originalAgent.toneOfVoice,
+        purpose: originalAgent.purpose,
+        welcomeMessage: originalAgent.welcomeMessage,
+        suggestedQuestions: originalAgent.suggestedQuestions,
+        agentType: originalAgent.agentType,
+        businessCategory: originalAgent.businessCategory,
+        capabilities: originalAgent.capabilities,
+        businessInfo: originalAgent.businessInfo,
+        language: originalAgent.language,
+        widgetConfig: originalAgent.widgetConfig,
+      };
+
+      const newAgent = await storage.createAgent(userId, newAgentData);
+
+      // Optionally copy knowledge base entries
+      if (req.body.copyKnowledge) {
+        const knowledgeEntries = await storage.getKnowledgeByAgentId(originalAgent.id);
+        for (const entry of knowledgeEntries) {
+          await storage.createKnowledge({
+            agentId: newAgent.id,
+            sourceUrl: entry.sourceUrl,
+            title: entry.title,
+            section: entry.section,
+            content: entry.content,
+          });
+        }
+      }
+
+      res.status(201).json(newAgent);
+    } catch (error) {
+      console.error("Error duplicating agent:", error);
+      res.status(500).json({ message: "Failed to duplicate agent" });
     }
   });
 
@@ -576,17 +893,22 @@ export async function registerRoutes(
         
         if (!browser) {
           try {
-            // Use the verified Chrome path directly
-            const executablePath = '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome';
-            
-            // Check if it exists, fall back to auto-detection if not
+            // Use environment variable or common Chrome paths
             const fs = await import('fs');
-            const chromePath = fs.existsSync(executablePath) ? executablePath : undefined;
+            const possiblePaths = [
+              process.env.CHROME_PATH,
+              '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome',
+              '/usr/bin/google-chrome',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+            ].filter(Boolean) as string[];
+            
+            const chromePath = possiblePaths.find(p => fs.existsSync(p)) || undefined;
             
             if (chromePath) {
               console.log(`Using Chrome at: ${chromePath}`);
             } else {
-              console.log('Chrome not found at expected path, using auto-detection');
+              console.log('Chrome not found at expected paths, using Puppeteer auto-detection');
             }
             
             // Puppeteer launch options optimized for Linux VPS as root with stealth
@@ -1871,17 +2193,22 @@ export async function registerRoutes(
         
         if (!browser) {
           try {
-            // Use the verified Chrome path directly
-            const executablePath = '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome';
-            
-            // Check if it exists, fall back to auto-detection if not
+            // Use environment variable or common Chrome paths
             const fs = await import('fs');
-            const chromePath = fs.existsSync(executablePath) ? executablePath : undefined;
+            const possiblePaths = [
+              process.env.CHROME_PATH,
+              '/root/.cache/puppeteer/chrome/linux-143.0.7499.42/chrome-linux64/chrome',
+              '/usr/bin/google-chrome',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+            ].filter(Boolean) as string[];
+            
+            const chromePath = possiblePaths.find(p => fs.existsSync(p)) || undefined;
             
             if (chromePath) {
               console.log(`Using Chrome at: ${chromePath}`);
             } else {
-              console.log('Chrome not found at expected path, using auto-detection');
+              console.log('Chrome not found at expected paths, using Puppeteer auto-detection');
             }
             
             // Puppeteer launch options optimized for Linux VPS as root with stealth
@@ -2904,8 +3231,15 @@ export async function registerRoutes(
     return relevant;
   }
   
+  // Widget rate limiter - 30 requests per minute per IP
+  const widgetRateLimiter = createRateLimiter({
+    windowMs: 60 * 1000,
+    maxRequests: 30,
+    message: 'Too many chat requests. Please wait a moment.',
+  });
+  
   // ========== WIDGET CHAT (for embedded chatbots - no auth required) ==========
-  app.post("/api/widget/chat", async (req: any, res) => {
+  app.post("/api/widget/chat", widgetRateLimiter, async (req: any, res) => {
     // Enable CORS for widget
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");

@@ -88,10 +88,10 @@ const integrationCatalog = {
         id: 'whatsapp', 
         name: 'WhatsApp Business', 
         icon: '💬',
-        description: 'Send messages, templates, and media via WhatsApp',
+        description: 'Send messages, templates, and media via WhatsApp Cloud API',
         category: 'communication',
         popular: true,
-        fields: ['apiKey', 'phoneNumberId', 'businessAccountId'],
+        fields: ['accessToken', 'phoneNumberId', 'wabaId', 'webhookVerifyToken'],
       },
       { 
         id: 'telegram', 
@@ -100,7 +100,7 @@ const integrationCatalog = {
         description: 'Send messages and files to Telegram chats/channels',
         category: 'communication',
         popular: true,
-        fields: ['botToken', 'chatId'],
+        fields: ['botToken', 'chatId', 'parseMode'],
       },
       { 
         id: 'slack', 
@@ -108,7 +108,15 @@ const integrationCatalog = {
         icon: '💼',
         description: 'Post messages to Slack channels',
         category: 'communication',
-        fields: ['webhookUrl', 'channel'],
+        fields: ['webhookUrl'],
+      },
+      { 
+        id: 'slack_bot', 
+        name: 'Slack Bot', 
+        icon: '🤖',
+        description: 'Full Slack API access with bot token',
+        category: 'communication',
+        fields: ['botToken', 'signingSecret', 'appToken'],
       },
       { 
         id: 'discord', 
@@ -119,12 +127,20 @@ const integrationCatalog = {
         fields: ['webhookUrl'],
       },
       { 
+        id: 'discord_bot', 
+        name: 'Discord Bot', 
+        icon: '🎮',
+        description: 'Full Discord API access with bot',
+        category: 'communication',
+        fields: ['botToken', 'applicationId', 'publicKey'],
+      },
+      { 
         id: 'sms_twilio', 
         name: 'Twilio SMS', 
         icon: '📱',
         description: 'Send SMS messages via Twilio',
         category: 'communication',
-        fields: ['accountSid', 'authToken', 'fromNumber'],
+        fields: ['accountSid', 'authToken', 'fromNumber', 'messagingServiceSid'],
       },
       { 
         id: 'microsoft_teams', 
@@ -147,7 +163,7 @@ const integrationCatalog = {
         id: 'gmail', 
         name: 'Gmail', 
         icon: '📧',
-        description: 'Send emails via Gmail API',
+        description: 'Send emails via Gmail API (OAuth)',
         category: 'email',
         popular: true,
         fields: ['clientId', 'clientSecret', 'refreshToken'],
@@ -156,9 +172,9 @@ const integrationCatalog = {
         id: 'outlook', 
         name: 'Microsoft Outlook', 
         icon: '📨',
-        description: 'Send emails via Outlook/Office 365',
+        description: 'Send emails via Outlook/Office 365 (OAuth)',
         category: 'email',
-        fields: ['clientId', 'clientSecret', 'tenantId'],
+        fields: ['clientId', 'clientSecret', 'tenantId', 'refreshToken'],
       },
       { 
         id: 'smtp', 
@@ -166,7 +182,7 @@ const integrationCatalog = {
         icon: '✉️',
         description: 'Send emails via any SMTP server',
         category: 'email',
-        fields: ['smtpHost', 'smtpPort', 'smtpUser', 'smtpPass'],
+        fields: ['smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'fromEmail', 'fromName', 'secure'],
       },
       { 
         id: 'sendgrid', 
@@ -174,7 +190,8 @@ const integrationCatalog = {
         icon: '📤',
         description: 'Send transactional emails via SendGrid',
         category: 'email',
-        fields: ['apiKey'],
+        popular: true,
+        fields: ['apiKey', 'fromEmail', 'fromName'],
       },
       { 
         id: 'mailchimp', 
@@ -182,7 +199,15 @@ const integrationCatalog = {
         icon: '🐵',
         description: 'Add contacts to Mailchimp lists',
         category: 'email',
-        fields: ['apiKey', 'audienceId'],
+        fields: ['apiKey', 'audienceId', 'datacenter'],
+      },
+      { 
+        id: 'mailgun', 
+        name: 'Mailgun', 
+        icon: '📬',
+        description: 'Send emails via Mailgun',
+        category: 'email',
+        fields: ['apiKey', 'domain', 'fromEmail'],
       },
     ]
   },
@@ -200,7 +225,7 @@ const integrationCatalog = {
         description: 'Read/write data to Google Sheets',
         category: 'google',
         popular: true,
-        fields: ['spreadsheetId', 'sheetName', 'credentials'],
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'spreadsheetId', 'sheetName'],
       },
       { 
         id: 'google_drive', 
@@ -209,7 +234,7 @@ const integrationCatalog = {
         description: 'Upload and manage files in Google Drive',
         category: 'google',
         popular: true,
-        fields: ['folderId', 'credentials'],
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'folderId'],
       },
       { 
         id: 'google_calendar', 
@@ -217,7 +242,7 @@ const integrationCatalog = {
         icon: '📅',
         description: 'Create and manage calendar events',
         category: 'google',
-        fields: ['calendarId', 'credentials'],
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'calendarId'],
       },
       { 
         id: 'google_docs', 
@@ -225,7 +250,7 @@ const integrationCatalog = {
         icon: '📝',
         description: 'Create and edit Google Docs',
         category: 'google',
-        fields: ['credentials'],
+        fields: ['clientId', 'clientSecret', 'refreshToken'],
       },
       { 
         id: 'google_forms', 
@@ -233,7 +258,7 @@ const integrationCatalog = {
         icon: '📋',
         description: 'Receive form submissions',
         category: 'google',
-        fields: ['formId', 'credentials'],
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'formId'],
       },
     ]
   },
@@ -251,7 +276,15 @@ const integrationCatalog = {
         description: 'Manage contacts, deals, and tickets',
         category: 'crm',
         popular: true,
-        fields: ['apiKey'],
+        fields: ['privateAppToken'],
+      },
+      { 
+        id: 'hubspot_oauth', 
+        name: 'HubSpot (OAuth)', 
+        icon: '🧲',
+        description: 'HubSpot with full OAuth 2.0 access',
+        category: 'crm',
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'accessToken'],
       },
       { 
         id: 'salesforce', 
@@ -259,7 +292,7 @@ const integrationCatalog = {
         icon: '☁️',
         description: 'Sync with Salesforce CRM',
         category: 'crm',
-        fields: ['instanceUrl', 'accessToken'],
+        fields: ['instanceUrl', 'clientId', 'clientSecret', 'refreshToken', 'accessToken'],
       },
       { 
         id: 'pipedrive', 
@@ -267,7 +300,7 @@ const integrationCatalog = {
         icon: '🔧',
         description: 'Manage deals and contacts',
         category: 'crm',
-        fields: ['apiToken'],
+        fields: ['apiToken', 'companyDomain'],
       },
       { 
         id: 'zoho_crm', 
@@ -275,7 +308,7 @@ const integrationCatalog = {
         icon: '📈',
         description: 'Sync leads and contacts',
         category: 'crm',
-        fields: ['clientId', 'clientSecret', 'refreshToken'],
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'datacenter'],
       },
       { 
         id: 'freshsales', 
@@ -318,7 +351,7 @@ const integrationCatalog = {
         icon: '🔗',
         description: 'Trigger n8n workflows',
         category: 'automation',
-        fields: ['webhookUrl'],
+        fields: ['webhookUrl', 'authHeader', 'authValue'],
       },
       { 
         id: 'ifttt', 
@@ -352,7 +385,7 @@ const integrationCatalog = {
         description: 'Read/write to Airtable bases',
         category: 'storage',
         popular: true,
-        fields: ['apiKey', 'baseId', 'tableId'],
+        fields: ['personalAccessToken', 'baseId', 'tableId'],
       },
       { 
         id: 'notion', 
@@ -361,7 +394,7 @@ const integrationCatalog = {
         description: 'Create pages and database entries',
         category: 'storage',
         popular: true,
-        fields: ['apiKey', 'databaseId'],
+        fields: ['integrationToken', 'databaseId'],
       },
       { 
         id: 'firebase', 
@@ -369,7 +402,7 @@ const integrationCatalog = {
         icon: '🔥',
         description: 'Store data in Firestore',
         category: 'storage',
-        fields: ['projectId', 'credentials'],
+        fields: ['projectId', 'privateKey', 'clientEmail', 'databaseUrl'],
       },
       { 
         id: 'supabase', 
@@ -377,7 +410,7 @@ const integrationCatalog = {
         icon: '⚡',
         description: 'Store data in Supabase',
         category: 'storage',
-        fields: ['url', 'apiKey'],
+        fields: ['url', 'apiKey', 'serviceRoleKey'],
       },
       { 
         id: 'mongodb', 
@@ -393,7 +426,7 @@ const integrationCatalog = {
         icon: '📦',
         description: 'Upload files to Dropbox',
         category: 'storage',
-        fields: ['accessToken'],
+        fields: ['accessToken', 'refreshToken', 'appKey', 'appSecret'],
       },
       { 
         id: 'aws_s3', 
@@ -401,7 +434,7 @@ const integrationCatalog = {
         icon: '☁️',
         description: 'Store files in S3 buckets',
         category: 'storage',
-        fields: ['accessKeyId', 'secretAccessKey', 'bucket', 'region'],
+        fields: ['accessKeyId', 'secretAccessKey', 'bucket', 'region', 'endpoint'],
       },
       {
         id: 'redis',
@@ -409,7 +442,7 @@ const integrationCatalog = {
         icon: '⚡',
         description: 'Read/write key-value data in Redis',
         category: 'storage',
-        fields: ['host', 'port', 'password'],
+        fields: ['host', 'port', 'password', 'username', 'tls'],
       },
       {
         id: 'elasticsearch',
@@ -417,7 +450,7 @@ const integrationCatalog = {
         icon: '🔎',
         description: 'Index and search documents using Elasticsearch/OpenSearch',
         category: 'storage',
-        fields: ['endpoint', 'username', 'password', 'index'],
+        fields: ['endpoint', 'username', 'password', 'index', 'apiKey', 'cloudId'],
       },
     ]
   },
@@ -435,7 +468,7 @@ const integrationCatalog = {
         description: 'Process payments and manage customers',
         category: 'ecommerce',
         popular: true,
-        fields: ['secretKey'],
+        fields: ['secretKey', 'webhookSecret', 'publishableKey'],
       },
       { 
         id: 'razorpay', 
@@ -444,7 +477,7 @@ const integrationCatalog = {
         description: 'Process payments via Razorpay',
         category: 'ecommerce',
         popular: true,
-        fields: ['keyId', 'keySecret'],
+        fields: ['keyId', 'keySecret', 'webhookSecret'],
       },
       { 
         id: 'shopify', 
@@ -452,7 +485,7 @@ const integrationCatalog = {
         icon: '🛒',
         description: 'Manage Shopify orders and products',
         category: 'ecommerce',
-        fields: ['shopDomain', 'accessToken'],
+        fields: ['shopDomain', 'accessToken', 'apiVersion'],
       },
       { 
         id: 'woocommerce', 
@@ -460,7 +493,7 @@ const integrationCatalog = {
         icon: '🛍️',
         description: 'Manage WooCommerce orders',
         category: 'ecommerce',
-        fields: ['siteUrl', 'consumerKey', 'consumerSecret'],
+        fields: ['siteUrl', 'consumerKey', 'consumerSecret', 'version'],
       },
       { 
         id: 'paypal', 
@@ -468,7 +501,15 @@ const integrationCatalog = {
         icon: '🅿️',
         description: 'Process PayPal payments',
         category: 'ecommerce',
-        fields: ['clientId', 'clientSecret'],
+        fields: ['clientId', 'clientSecret', 'mode'],
+      },
+      { 
+        id: 'square', 
+        name: 'Square', 
+        icon: '⬜',
+        description: 'Process payments via Square',
+        category: 'ecommerce',
+        fields: ['accessToken', 'locationId', 'environment'],
       },
     ]
   },
@@ -509,7 +550,7 @@ const integrationCatalog = {
         icon: '📊',
         description: 'Create items in Monday boards',
         category: 'productivity',
-        fields: ['apiKey', 'boardId'],
+        fields: ['apiToken', 'boardId'],
       },
       { 
         id: 'clickup', 
@@ -517,7 +558,7 @@ const integrationCatalog = {
         icon: '🎯',
         description: 'Create tasks in ClickUp',
         category: 'productivity',
-        fields: ['apiKey', 'listId'],
+        fields: ['accessToken', 'listId'],
       },
       { 
         id: 'calendly', 
@@ -525,7 +566,15 @@ const integrationCatalog = {
         icon: '📆',
         description: 'Schedule meetings via Calendly',
         category: 'productivity',
-        fields: ['apiKey'],
+        fields: ['personalAccessToken', 'organizationUri', 'userUri'],
+      },
+      { 
+        id: 'linear', 
+        name: 'Linear', 
+        icon: '📐',
+        description: 'Create and manage Linear issues',
+        category: 'productivity',
+        fields: ['apiKey', 'teamId'],
       },
     ]
   },
@@ -544,7 +593,7 @@ const integrationCatalog = {
         category: 'developer',
         popular: true,
         isCustom: true,
-        fields: ['webhookUrl', 'method', 'headers', 'bodyTemplate'],
+        fields: ['webhookUrl', 'method', 'headers', 'bodyTemplate', 'timeout', 'retryCount'],
       },
       { 
         id: 'webhook', 
@@ -553,7 +602,7 @@ const integrationCatalog = {
         description: 'Receive data from external services via webhook',
         category: 'developer',
         popular: true,
-        fields: ['webhookUrl', 'method', 'headers'],
+        fields: ['webhookUrl', 'method', 'headers', 'secretKey'],
       },
       { 
         id: 'webhook_outgoing', 
@@ -561,7 +610,7 @@ const integrationCatalog = {
         icon: '📤',
         description: 'Send data to any HTTP endpoint when triggered',
         category: 'developer',
-        fields: ['webhookUrl', 'method', 'headers', 'bodyTemplate'],
+        fields: ['webhookUrl', 'method', 'headers', 'bodyTemplate', 'timeout'],
       },
       { 
         id: 'custom_api', 
@@ -569,7 +618,7 @@ const integrationCatalog = {
         icon: '🌐',
         description: 'Call any REST API endpoint',
         category: 'developer',
-        fields: ['apiUrl', 'method', 'headers', 'apiKey'],
+        fields: ['apiUrl', 'method', 'headers', 'authType', 'apiKey', 'timeout'],
       },
       { 
         id: 'graphql', 
@@ -577,7 +626,7 @@ const integrationCatalog = {
         icon: '◼️',
         description: 'Execute GraphQL queries',
         category: 'developer',
-        fields: ['endpoint', 'headers'],
+        fields: ['endpoint', 'headers', 'authToken'],
       },
       { 
         id: 'github', 
@@ -593,7 +642,7 @@ const integrationCatalog = {
         icon: '🦊',
         description: 'Create issues, trigger pipelines and interact with GitLab APIs',
         category: 'developer',
-        fields: ['accessToken', 'projectId'],
+        fields: ['accessToken', 'projectId', 'baseUrl'],
       },
       {
         id: 'bitbucket',
@@ -601,7 +650,7 @@ const integrationCatalog = {
         icon: '🧩',
         description: 'Create issues and trigger pipelines in Bitbucket',
         category: 'developer',
-        fields: ['username', 'appPassword', 'repoSlug'],
+        fields: ['username', 'appPassword', 'workspace', 'repoSlug'],
       },
     ]
   },
@@ -619,7 +668,7 @@ const integrationCatalog = {
         description: 'GPT-4, DALL-E, Whisper and more AI capabilities',
         category: 'ai',
         popular: true,
-        fields: ['apiKey', 'model', 'maxTokens'],
+        fields: ['apiKey', 'model', 'maxTokens', 'temperature', 'organizationId'],
       },
       {
         id: 'anthropic',
@@ -628,7 +677,7 @@ const integrationCatalog = {
         description: 'Claude AI for advanced conversations and analysis',
         category: 'ai',
         popular: true,
-        fields: ['apiKey', 'model'],
+        fields: ['apiKey', 'model', 'maxTokens'],
       },
       {
         id: 'google_ai',
@@ -636,7 +685,7 @@ const integrationCatalog = {
         icon: '✨',
         description: 'Google Gemini models for multimodal AI',
         category: 'ai',
-        fields: ['apiKey', 'model'],
+        fields: ['apiKey', 'model', 'projectId'],
       },
       {
         id: 'elevenlabs',
@@ -644,7 +693,23 @@ const integrationCatalog = {
         icon: '🎙️',
         description: 'AI voice synthesis and text-to-speech',
         category: 'ai',
-        fields: ['apiKey', 'voiceId'],
+        fields: ['apiKey', 'voiceId', 'modelId', 'stability', 'similarityBoost'],
+      },
+      {
+        id: 'azure_openai',
+        name: 'Azure OpenAI',
+        icon: '☁️',
+        description: 'OpenAI models hosted on Azure',
+        category: 'ai',
+        fields: ['apiKey', 'endpoint', 'deploymentName', 'apiVersion'],
+      },
+      {
+        id: 'replicate',
+        name: 'Replicate',
+        icon: '🔄',
+        description: 'Run open-source ML models via API',
+        category: 'ai',
+        fields: ['apiToken', 'modelVersion'],
       },
     ]
   },
@@ -659,9 +724,9 @@ const integrationCatalog = {
         id: 'google_analytics',
         name: 'Google Analytics',
         icon: '📊',
-        description: 'Track and analyze website traffic',
+        description: 'Track and analyze website traffic (GA4 Data API)',
         category: 'marketing',
-        fields: ['measurementId', 'apiSecret'],
+        fields: ['propertyId', 'clientEmail', 'privateKey'],
       },
       {
         id: 'facebook_ads',
@@ -669,7 +734,7 @@ const integrationCatalog = {
         icon: '📘',
         description: 'Manage Facebook advertising campaigns',
         category: 'marketing',
-        fields: ['accessToken', 'adAccountId'],
+        fields: ['accessToken', 'adAccountId', 'appId', 'appSecret'],
       },
       {
         id: 'google_ads',
@@ -677,7 +742,7 @@ const integrationCatalog = {
         icon: '🎯',
         description: 'Manage Google advertising campaigns',
         category: 'marketing',
-        fields: ['clientId', 'clientSecret', 'refreshToken', 'customerId'],
+        fields: ['clientId', 'clientSecret', 'developerToken', 'refreshToken', 'customerId', 'loginCustomerId'],
       },
       {
         id: 'intercom',
@@ -686,7 +751,7 @@ const integrationCatalog = {
         description: 'Customer messaging and engagement platform',
         category: 'marketing',
         popular: true,
-        fields: ['accessToken'],
+        fields: ['accessToken', 'appId'],
       },
       {
         id: 'linkedin',
@@ -694,7 +759,31 @@ const integrationCatalog = {
         icon: '💼',
         description: 'Post content and manage LinkedIn presence',
         category: 'marketing',
-        fields: ['accessToken', 'organizationId'],
+        fields: ['clientId', 'clientSecret', 'accessToken', 'refreshToken', 'organizationId'],
+      },
+      {
+        id: 'hubspot_marketing',
+        name: 'HubSpot Marketing',
+        icon: '🧲',
+        description: 'Marketing automation and email campaigns',
+        category: 'marketing',
+        fields: ['privateAppToken', 'portalId'],
+      },
+      {
+        id: 'segment',
+        name: 'Segment',
+        icon: '📊',
+        description: 'Customer data platform',
+        category: 'marketing',
+        fields: ['writeKey', 'sourceId'],
+      },
+      {
+        id: 'mixpanel',
+        name: 'Mixpanel',
+        icon: '📈',
+        description: 'Product analytics and user tracking',
+        category: 'marketing',
+        fields: ['projectToken', 'apiSecret', 'serviceAccountUsername', 'serviceAccountPassword'],
       },
     ]
   },
@@ -744,7 +833,31 @@ const integrationCatalog = {
         icon: '🔍',
         description: 'Manage conversations and help desk',
         category: 'support',
-        fields: ['apiKey', 'mailboxId'],
+        fields: ['apiKey', 'appId', 'appSecret', 'mailboxId'],
+      },
+      {
+        id: 'crisp',
+        name: 'Crisp',
+        icon: '💭',
+        description: 'Customer messaging platform',
+        category: 'support',
+        fields: ['websiteId', 'tokenId', 'tokenKey'],
+      },
+      {
+        id: 'drift',
+        name: 'Drift',
+        icon: '🌊',
+        description: 'Conversational marketing and sales',
+        category: 'support',
+        fields: ['accessToken'],
+      },
+      {
+        id: 'tawk',
+        name: 'Tawk.to',
+        icon: '💬',
+        description: 'Free live chat software',
+        category: 'support',
+        fields: ['apiKey', 'propertyId', 'widgetId'],
       },
     ]
   },
@@ -761,7 +874,7 @@ const integrationCatalog = {
         icon: '🐘',
         description: 'Connect to PostgreSQL databases',
         category: 'database',
-        fields: ['host', 'port', 'database', 'user', 'password'],
+        fields: ['host', 'port', 'database', 'user', 'password', 'ssl'],
       },
       {
         id: 'mysql',
@@ -769,7 +882,7 @@ const integrationCatalog = {
         icon: '🐬',
         description: 'Connect to MySQL databases',
         category: 'database',
-        fields: ['host', 'port', 'database', 'user', 'password'],
+        fields: ['host', 'port', 'database', 'user', 'password', 'ssl'],
       },
       {
         id: 'dynamodb',
@@ -778,6 +891,22 @@ const integrationCatalog = {
         description: 'NoSQL database on AWS',
         category: 'database',
         fields: ['accessKeyId', 'secretAccessKey', 'region', 'tableName'],
+      },
+      {
+        id: 'cosmosdb',
+        name: 'Azure Cosmos DB',
+        icon: '🌌',
+        description: 'Globally distributed multi-model database',
+        category: 'database',
+        fields: ['endpoint', 'primaryKey', 'databaseId', 'containerId'],
+      },
+      {
+        id: 'bigquery',
+        name: 'Google BigQuery',
+        icon: '📊',
+        description: 'Serverless data warehouse',
+        category: 'database',
+        fields: ['projectId', 'clientEmail', 'privateKey', 'datasetId'],
       },
     ]
   },
@@ -792,17 +921,17 @@ const integrationCatalog = {
         id: 'twitter',
         name: 'Twitter/X',
         icon: '🐦',
-        description: 'Post tweets and manage Twitter presence',
+        description: 'Post tweets and manage Twitter presence (API v2)',
         category: 'social',
-        fields: ['apiKey', 'apiSecret', 'accessToken', 'accessTokenSecret'],
+        fields: ['apiKey', 'apiSecret', 'accessToken', 'accessTokenSecret', 'bearerToken'],
       },
       {
         id: 'instagram',
         name: 'Instagram',
         icon: '📸',
-        description: 'Post content to Instagram',
+        description: 'Post content to Instagram (Graph API)',
         category: 'social',
-        fields: ['accessToken', 'businessAccountId'],
+        fields: ['accessToken', 'refreshToken', 'businessAccountId', 'appId', 'appSecret'],
       },
       {
         id: 'youtube',
@@ -810,15 +939,15 @@ const integrationCatalog = {
         icon: '▶️',
         description: 'Upload videos and manage channel',
         category: 'social',
-        fields: ['clientId', 'clientSecret', 'refreshToken'],
+        fields: ['clientId', 'clientSecret', 'refreshToken', 'channelId'],
       },
       {
         id: 'tiktok',
         name: 'TikTok',
         icon: '🎵',
-        description: 'Post content to TikTok',
+        description: 'Post content to TikTok (Content Posting API)',
         category: 'social',
-        fields: ['accessToken'],
+        fields: ['clientKey', 'clientSecret', 'accessToken', 'refreshToken', 'openId'],
       },
       {
         id: 'pinterest',
@@ -826,7 +955,31 @@ const integrationCatalog = {
         icon: '📌',
         description: 'Create pins and manage boards',
         category: 'social',
-        fields: ['accessToken', 'boardId'],
+        fields: ['accessToken', 'refreshToken', 'appId', 'appSecret', 'boardId'],
+      },
+      {
+        id: 'snapchat',
+        name: 'Snapchat',
+        icon: '👻',
+        description: 'Manage Snapchat Ads and marketing',
+        category: 'social',
+        fields: ['clientId', 'clientSecret', 'accessToken', 'refreshToken', 'adAccountId'],
+      },
+      {
+        id: 'reddit',
+        name: 'Reddit',
+        icon: '🤖',
+        description: 'Post to subreddits and manage Reddit presence',
+        category: 'social',
+        fields: ['clientId', 'clientSecret', 'username', 'password', 'userAgent'],
+      },
+      {
+        id: 'mastodon',
+        name: 'Mastodon',
+        icon: '🐘',
+        description: 'Post to Mastodon instances',
+        category: 'social',
+        fields: ['instanceUrl', 'accessToken'],
       },
     ]
   },
@@ -959,6 +1112,15 @@ function IntegrationsPageContent() {
       sessionStorage.setItem('workspace_initial_app', JSON.stringify(integration));
     }
     setLocation('/dashboard/integrations/workspace');
+  };
+
+  // Navigate to automations to create automation with selected app
+  const openAutomation = (integration?: any) => {
+    if (integration) {
+      // Store selected app in sessionStorage for automations to pick up
+      sessionStorage.setItem('automation_initial_app', JSON.stringify(integration));
+    }
+    setLocation('/dashboard/automations');
   };
 
   // Filter integrations based on search and category
@@ -1113,6 +1275,10 @@ function IntegrationsPageContent() {
             <Button variant="outline" size="lg" onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-5 w-5 mr-2" />
               Quick Setup
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => setLocation('/dashboard/automations')}>
+              <Workflow className="h-5 w-5 mr-2" />
+              Automations
             </Button>
             <Button size="lg" onClick={() => openWorkspace()} className="bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90">
               <Layout className="h-5 w-5 mr-2" />

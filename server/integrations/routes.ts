@@ -18,7 +18,11 @@ integrationRoutes.use('/google-sheets', googleSheetsRouter);
 // Get all integrations for user
 integrationRoutes.get('/', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     
     const userIntegrations = await db
       .select()
@@ -36,8 +40,12 @@ integrationRoutes.get('/', async (req, res) => {
 // Get integrations for a specific agent
 integrationRoutes.get('/agent/:agentId', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
     const { agentId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Verify agent ownership
     const [agent] = await db
@@ -66,8 +74,12 @@ integrationRoutes.get('/agent/:agentId', async (req, res) => {
 // Create a new integration
 integrationRoutes.post('/', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
     const { agentId, type, name, description, config, triggers } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     if (!type || !name) {
       return res.status(400).json({ error: 'Type and name are required' });
@@ -114,9 +126,13 @@ integrationRoutes.post('/', async (req, res) => {
 // Update an integration
 integrationRoutes.put('/:id', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
     const { id } = req.params;
     const { name, description, config, triggers, isActive } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Verify ownership
     const [existing] = await db
@@ -157,8 +173,12 @@ integrationRoutes.put('/:id', async (req, res) => {
 // Delete an integration
 integrationRoutes.delete('/:id', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
     const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Verify ownership
     const [existing] = await db
@@ -187,8 +207,12 @@ integrationRoutes.delete('/:id', async (req, res) => {
 // Test an integration
 integrationRoutes.post('/:id/test', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
     const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Verify ownership
     const [existing] = await db
@@ -212,9 +236,13 @@ integrationRoutes.post('/:id/test', async (req, res) => {
 // Get integration logs
 integrationRoutes.get('/:id/logs', async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.claims?.sub;
     const { id } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Verify ownership
     const [existing] = await db

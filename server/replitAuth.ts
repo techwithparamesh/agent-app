@@ -36,8 +36,21 @@ export function getSession() {
   
   const isProduction = process.env.NODE_ENV === "production";
   
+  // Session secret MUST be set in environment
+  const sessionSecret = process.env.SESSION_SECRET;
+  
+  if (!sessionSecret) {
+    if (isProduction) {
+      throw new Error("SESSION_SECRET environment variable is required in production");
+    }
+    console.warn("[SECURITY WARNING] SESSION_SECRET not set. Using default for development only.");
+  }
+  
+  // Use a stable default for development (not random) to preserve sessions across restarts
+  const secret = sessionSecret || "dev-session-secret-change-in-production";
+  
   return session({
-    secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
+    secret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

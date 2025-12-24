@@ -34,6 +34,9 @@ export const users = mysqlTable("users", {
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
+  // Password reset fields
+  resetPasswordToken: varchar("reset_password_token", { length: 255 }),
+  resetPasswordExpires: timestamp("reset_password_expires"),
   // Subscription & Usage tracking
   plan: varchar("plan", { length: 50 }).default("free"), // free, starter, pro, enterprise
   messageCount: int("message_count").default(0), // Total messages used
@@ -946,6 +949,26 @@ export const webhookEventsRelations = relations(webhookEvents, ({ one }) => ({
   phoneNumber: one(phoneNumbers, {
     fields: [webhookEvents.phoneNumberId],
     references: [phoneNumbers.id],
+  }),
+}));
+
+// Integrations Relations
+export const integrationsRelations = relations(integrations, ({ one, many }) => ({
+  user: one(users, {
+    fields: [integrations.userId],
+    references: [users.id],
+  }),
+  agent: one(agents, {
+    fields: [integrations.agentId],
+    references: [agents.id],
+  }),
+  logs: many(integrationLogs),
+}));
+
+export const integrationLogsRelations = relations(integrationLogs, ({ one }) => ({
+  integration: one(integrations, {
+    fields: [integrationLogs.integrationId],
+    references: [integrations.id],
   }),
 }));
 

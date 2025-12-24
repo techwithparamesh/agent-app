@@ -9,15 +9,15 @@ const footerLinks = {
     { href: "/contact", label: "Contact" },
   ],
   resources: [
-    { href: "#", label: "Documentation" },
-    { href: "#", label: "API Reference" },
-    { href: "#", label: "Blog" },
-    { href: "#", label: "Changelog" },
+    { href: "/docs", label: "Documentation" },
+    { href: "/docs#api", label: "API Reference" },
+    { href: "/about#blog", label: "Blog" },
+    { href: "/docs#changelog", label: "Changelog" },
   ],
   legal: [
-    { href: "#", label: "Privacy Policy" },
-    { href: "#", label: "Terms of Service" },
-    { href: "#", label: "Cookie Policy" },
+    { href: "/privacy", label: "Privacy Policy" },
+    { href: "/terms", label: "Terms of Service" },
+    { href: "/cookies", label: "Cookie Policy" },
   ],
 };
 
@@ -42,21 +42,27 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-3">
               <a
-                href="#"
+                href="https://twitter.com/agentforge"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center transition-all hover:bg-primary/20 hover:scale-110 hover:text-primary"
                 data-testid="link-twitter"
               >
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://github.com/agentforge"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center transition-all hover:bg-primary/20 hover:scale-110 hover:text-primary"
                 data-testid="link-github"
               >
                 <Github className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://linkedin.com/company/agentforge"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center transition-all hover:bg-primary/20 hover:scale-110 hover:text-primary"
                 data-testid="link-linkedin"
               >
@@ -116,7 +122,7 @@ export function Footer() {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 AgentForge. All rights reserved.
+            © {new Date().getFullYear()} AgentForge. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
             Made with <Heart className="h-3 w-3 text-destructive fill-destructive animate-pulse-soft" /> and AI

@@ -153,9 +153,10 @@ export function IntegrationWorkspace() {
         name: 'Manual Trigger',
         description: 'Trigger workflow manually',
         position: { x: 400, y: 100 },
-        status: 'incomplete',
+        status: 'configured', // Manual triggers are already configured!
         config: {
-          triggerType: 'manual', // Pre-set the trigger type
+          triggerType: 'manual',
+          isAuthenticated: true, // Manual triggers don't need auth
         },
         connections: [],
       };
@@ -266,6 +267,9 @@ export function IntegrationWorkspace() {
   const handleNodeSave = (nodeId: string, config: Record<string, any>) => {
     setNodes(prev => prev.map(node => {
       if (node.id === nodeId) {
+        // Manual triggers are always configured (no auth needed)
+        const isManualTrigger = node.type === 'trigger' && config.triggerType === 'manual';
+        
         // Determine if the node is properly configured
         const isTriggerConfigured = node.type === 'trigger' && (
           config.triggerType || config.selectedTriggerId || config.triggerId
@@ -273,12 +277,15 @@ export function IntegrationWorkspace() {
         const isActionConfigured = node.type === 'action' && (
           config.selectedActionId || config.actionId
         );
-        const isAuthenticated = config.isAuthenticated;
+        const isAuthenticated = config.isAuthenticated || isManualTrigger;
         const isConfigured = (isTriggerConfigured || isActionConfigured) && isAuthenticated;
         
         return {
           ...node,
-          config,
+          config: {
+            ...config,
+            isAuthenticated, // Ensure this is saved
+          },
           name: config.name || node.name,
           description: config.description || node.description,
           triggerId: config.triggerId || config.selectedTriggerId,

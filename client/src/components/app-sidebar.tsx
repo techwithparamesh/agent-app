@@ -58,6 +58,7 @@ import {
   CreditCard,
   Phone,
   FileText,
+  Workflow,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -440,6 +441,18 @@ export function AppSidebar() {
                   <Link href="/dashboard/integrations">
                     <LinkIcon className="h-5 w-5" />
                     <span>Integrations</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/automations"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/automations">
+                    <Workflow className="h-5 w-5" />
+                    <span>Automations</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
