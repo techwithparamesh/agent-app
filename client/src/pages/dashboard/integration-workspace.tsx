@@ -224,14 +224,24 @@ export function IntegrationWorkspace() {
   const handleNodeSave = (nodeId: string, config: Record<string, any>) => {
     setNodes(prev => prev.map(node => {
       if (node.id === nodeId) {
+        // Determine if the node is properly configured
+        const isTriggerConfigured = node.type === 'trigger' && (
+          config.triggerType || config.selectedTriggerId || config.triggerId
+        );
+        const isActionConfigured = node.type === 'action' && (
+          config.selectedActionId || config.actionId
+        );
+        const isAuthenticated = config.isAuthenticated;
+        const isConfigured = (isTriggerConfigured || isActionConfigured) && isAuthenticated;
+        
         return {
           ...node,
           config,
           name: config.name || node.name,
           description: config.description || node.description,
-          triggerId: config.triggerId,
-          actionId: config.actionId,
-          status: config.triggerId || config.actionId ? 'configured' : 'incomplete',
+          triggerId: config.triggerId || config.selectedTriggerId,
+          actionId: config.actionId || config.selectedActionId,
+          status: isConfigured ? 'configured' : 'incomplete',
         };
       }
       return node;

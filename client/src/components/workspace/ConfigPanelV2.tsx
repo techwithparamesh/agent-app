@@ -431,13 +431,72 @@ export function ConfigPanelV2({
 
   // Handlers
   const handleOAuthConnect = async () => {
+    // Get app-specific auth config
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const authConfig = appConfig?.auth?.find(a => a.type === 'oauth2');
+    
+    if (authConfig?.oauthUrls?.authorize) {
+      // Real OAuth flow - redirect to authorization URL
+      const state = JSON.stringify({ nodeId: node.id, appId: node.appId });
+      const redirectUri = `${window.location.origin}/api/oauth/callback`;
+      const scopes = authConfig.scopes?.join(' ') || '';
+      
+      const authUrl = `${authConfig.oauthUrls.authorize}?` +
+        `client_id=${encodeURIComponent(process.env.VITE_OAUTH_CLIENT_ID || 'demo')}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_type=code` +
+        `&scope=${encodeURIComponent(scopes)}` +
+        `&state=${encodeURIComponent(state)}`;
+      
+      // Open OAuth window
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const authWindow = window.open(
+        authUrl,
+        'OAuth',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+      );
+      
+      // Listen for OAuth completion
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'oauth_complete' && event.data?.nodeId === node.id) {
+          setIsAuthenticated(true);
+          toast({
+            title: "Connected!",
+            description: `Your ${node.appName} account has been connected.`,
+          });
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data?.type === 'oauth_error') {
+          toast({
+            title: "Connection failed",
+            description: event.data?.error || "Please try again.",
+            variant: "destructive",
+          });
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      return;
+    }
+    
+    // Fallback: Demo mode or apps without OAuth configured
+    // Show a dialog to enter credentials instead of auto-connecting
     setIsAuthenticating(true);
+    toast({
+      title: "Demo Mode",
+      description: `OAuth not configured for ${node.appName}. Using demo connection.`,
+    });
+    
     try {
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1500));
       setIsAuthenticated(true);
       toast({
-        title: "Connected!",
-        description: `Your ${node.appName} account has been connected.`,
+        title: "Connected (Demo)!",
+        description: `Demo connection established for ${node.appName}.`,
       });
     } catch (error) {
       toast({
@@ -627,7 +686,15 @@ export function ConfigPanelV2({
     );
   };
 
-  const renderCredentialsStep = () => (
+  const renderCredentialsStep = () => {
+    // Get app-specific auth config
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const availableAuthMethods = appConfig?.auth || [];
+    const hasOAuth = availableAuthMethods.some(a => a.type === 'oauth2');
+    const hasApiKey = availableAuthMethods.some(a => a.type === 'api-key' || a.type === 'bearer');
+    const apiKeyConfig = availableAuthMethods.find(a => a.type === 'api-key' || a.type === 'bearer');
+    
+    return (
     <div className="space-y-4">
       <div>
         <h3 className="font-semibold flex items-center gap-2">
@@ -646,34 +713,46 @@ export function ConfigPanelV2({
           <AlertTitle className="text-green-800 dark:text-green-200">Connected</AlertTitle>
           <AlertDescription className="text-green-700 dark:text-green-300 text-sm">
             Your account is connected and ready to use.
+            <button 
+              className="ml-2 text-green-700 dark:text-green-300 underline hover:no-underline text-sm"
+              onClick={() => setIsAuthenticated(false)}
+            >
+              Disconnect
+            </button>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Auth method tabs */}
-      <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-        <Button
-          variant={authMethod === 'oauth' ? 'default' : 'ghost'}
-          size="sm"
-          className="h-9"
-          onClick={() => setAuthMethod('oauth')}
-        >
-          <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-          OAuth
-        </Button>
-        <Button
-          variant={authMethod === 'apikey' ? 'default' : 'ghost'}
-          size="sm"
-          className="h-9"
-          onClick={() => setAuthMethod('apikey')}
-        >
-          <Key className="h-3.5 w-3.5 mr-1.5" />
-          API Key
-        </Button>
-      </div>
+      {/* Auth method tabs - only show if both methods available */}
+      {(hasOAuth || hasApiKey) && !isAuthenticated && (
+        <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+          {hasOAuth && (
+            <Button
+              variant={authMethod === 'oauth' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-9"
+              onClick={() => setAuthMethod('oauth')}
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              OAuth
+            </Button>
+          )}
+          {hasApiKey && (
+            <Button
+              variant={authMethod === 'apikey' ? 'default' : 'ghost'}
+              size="sm"
+              className={cn("h-9", !hasOAuth && "col-span-2")}
+              onClick={() => setAuthMethod('apikey')}
+            >
+              <Key className="h-3.5 w-3.5 mr-1.5" />
+              API Key
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* OAuth flow */}
-      {authMethod === 'oauth' && (
+      {authMethod === 'oauth' && !isAuthenticated && hasOAuth && (
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-3">
@@ -691,17 +770,12 @@ export function ConfigPanelV2({
             <Button 
               className="w-full"
               onClick={handleOAuthConnect}
-              disabled={isAuthenticating || isAuthenticated}
+              disabled={isAuthenticating}
             >
               {isAuthenticating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Connecting...
-                </>
-              ) : isAuthenticated ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Connected
                 </>
               ) : (
                 <>
@@ -710,58 +784,115 @@ export function ConfigPanelV2({
                 </>
               )}
             </Button>
+            
+            {/* OAuth scopes info */}
+            {availableAuthMethods.find(a => a.type === 'oauth2')?.scopes && (
+              <div className="text-[10px] text-muted-foreground">
+                <span className="font-medium">Permissions requested:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {availableAuthMethods.find(a => a.type === 'oauth2')?.scopes?.slice(0, 3).map((scope, i) => (
+                    <Badge key={i} variant="secondary" className="text-[9px] h-4">{scope}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* API Key flow */}
-      {authMethod === 'apikey' && (
+      {authMethod === 'apikey' && !isAuthenticated && (
         <Card>
           <CardContent className="p-4 space-y-3">
-            <div className="space-y-2">
-              <Label className="text-sm">API Key</Label>
-              <div className="relative">
-                <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  placeholder="Enter your API key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="pr-10 font-mono text-sm"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full w-10"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+            {apiKeyConfig?.fields?.map((field) => (
+              <div key={field.key} className="space-y-2">
+                <Label className="text-sm flex items-center gap-1">
+                  {field.label}
+                  {field.required && <span className="text-destructive">*</span>}
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={field.type === 'password' ? (showApiKey ? 'text' : 'password') : 'text'}
+                    placeholder={field.placeholder || `Enter your ${field.label}`}
+                    value={dynamicFields[field.key] || ''}
+                    onChange={(e) => setDynamicFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                    className={cn("text-sm", field.type === 'password' && "pr-10 font-mono")}
+                  />
+                  {field.type === 'password' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full w-10"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
+                {field.helpText && (
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Info className="h-3 w-3" />
+                    {field.helpText}
+                  </p>
+                )}
               </div>
-              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                Find this in your {node.appName} account settings
-              </p>
-            </div>
+            )) || (
+              <div className="space-y-2">
+                <Label className="text-sm">API Key</Label>
+                <div className="relative">
+                  <Input
+                    type={showApiKey ? 'text' : 'password'}
+                    placeholder="Enter your API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="pr-10 font-mono text-sm"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full w-10"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Find this in your {node.appName} account settings
+                </p>
+              </div>
+            )}
+
+            {/* App docs link */}
+            {appConfig?.docsUrl && (
+              <a 
+                href={appConfig.docsUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View {node.appName} API documentation
+              </a>
+            )}
 
             <Button 
               className="w-full" 
-              variant="secondary"
               onClick={handleApiKeyVerify}
-              disabled={isAuthenticating || !apiKey}
+              disabled={isAuthenticating || (!apiKey && !Object.keys(dynamicFields).length)}
             >
               {isAuthenticating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Verifying...
-                </>
-              ) : isAuthenticated ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Verified
                 </>
               ) : (
                 <>
@@ -773,8 +904,25 @@ export function ConfigPanelV2({
           </CardContent>
         </Card>
       )}
+      
+      {/* No auth methods available */}
+      {!hasOAuth && !hasApiKey && !isAuthenticated && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            This app doesn't require authentication or uses a different auth method.
+            <button 
+              className="ml-1 text-primary underline hover:no-underline text-sm"
+              onClick={() => setIsAuthenticated(true)}
+            >
+              Continue without auth
+            </button>
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
+  };
 
   const renderTriggerSettingsStep = () => {
     const selectedConfig = triggerType && triggerType in TRIGGER_CONFIGS 
