@@ -28,6 +28,9 @@ import {
   SectionHeader,
 } from "../FieldComponents";
 
+// Import new dynamic Google Sheets config
+import GoogleSheetsConfig from "../GoogleSheetsConfig";
+
 interface AppConfigProps {
   config: Record<string, any>;
   updateConfig: (key: string, value: any) => void;
@@ -1232,11 +1235,11 @@ export const GoogleDocsConfig: React.FC<AppConfigProps> = ({ config, updateConfi
 // ============================================
 
 export const GoogleAppConfigs: Record<string, React.FC<AppConfigProps>> = {
-  // Google Sheets
-  google_sheets_advanced: GoogleSheetsAdvancedConfig,
-  google_sheets: GoogleSheetsAdvancedConfig,
-  googlesheets: GoogleSheetsAdvancedConfig,
-  sheets: GoogleSheetsAdvancedConfig,
+  // Google Sheets - NEW DYNAMIC CONFIG WITH RESOURCE LOADING
+  google_sheets_advanced: GoogleSheetsConfig,
+  google_sheets: GoogleSheetsConfig,
+  googlesheets: GoogleSheetsConfig,
+  sheets: GoogleSheetsConfig,
   
   // Google Drive
   google_drive: GoogleDriveConfig,
