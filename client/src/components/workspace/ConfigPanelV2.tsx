@@ -510,12 +510,33 @@ export function ConfigPanelV2({
   };
 
   const handleApiKeyVerify = async () => {
-    if (!apiKey) {
+    // Get app config and auth methods
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const authMethods = appConfig?.auth || [];
+    const apiKeyConfig = authMethods.find((a: any) => a.type === 'api-key' || a.type === 'bearer');
+    
+    // Check if using dynamic fields or simple apiKey state
+    if (apiKeyConfig?.fields?.length) {
+      // Check all required fields are filled
+      const missingFields = apiKeyConfig.fields
+        .filter((f: any) => f.required && !dynamicFields[f.key])
+        .map((f: any) => f.label);
+      
+      if (missingFields.length > 0) {
+        toast({ 
+          title: `${missingFields[0]} required`, 
+          variant: "destructive" 
+        });
+        return;
+      }
+    } else if (!apiKey) {
       toast({ title: "API Key required", variant: "destructive" });
       return;
     }
+    
     setIsAuthenticating(true);
     try {
+      // TODO: Add real API verification here
       await new Promise(r => setTimeout(r, 1500));
       setIsAuthenticated(true);
       toast({ title: "API Key verified!", description: "Connection established." });
@@ -887,7 +908,11 @@ export function ConfigPanelV2({
             <Button 
               className="w-full" 
               onClick={handleApiKeyVerify}
-              disabled={isAuthenticating || (!apiKey && !Object.keys(dynamicFields).length)}
+              disabled={isAuthenticating || (
+                apiKeyConfig?.fields?.length 
+                  ? apiKeyConfig.fields.some(f => f.required && !dynamicFields[f.key])
+                  : !apiKey
+              )}
             >
               {isAuthenticating ? (
                 <>
