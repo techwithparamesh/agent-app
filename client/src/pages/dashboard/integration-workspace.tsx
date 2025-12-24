@@ -42,6 +42,7 @@ import { WorkspaceCanvas } from "@/components/workspace/WorkspaceCanvas";
 import { FlowNode, AddActionNode, AddConditionNode } from "@/components/workspace/FlowNode";
 import { ConfigPanelV2 } from "@/components/workspace/ConfigPanelV2";
 import { validateWorkflow, WorkflowStatus } from "@/components/workspace/WorkflowValidator";
+import { getAppConfig } from "@/components/workspace/AppConfigurations";
 import type { FlowNode as FlowNodeType, Connection } from "@/components/workspace/types";
 
 // Sample triggers/actions for demo
@@ -106,6 +107,16 @@ export function IntegrationWorkspace() {
           category: app.category,
         };
         
+        // Check if app supports triggers
+        const appConfig = getAppConfig(appForWorkspace.id);
+        const hasTriggers = appConfig?.triggers && appConfig.triggers.length > 0;
+        
+        if (!hasTriggers) {
+          // Action-only app - show alert and don't create node
+          alert(`⚠️ ${appForWorkspace.name} is an action-only app.\n\nWorkflows must start with a trigger.\n\nPlease choose a trigger app like Webhook or Schedule from the apps panel.`);
+          return;
+        }
+        
         // Auto-create the first trigger node
         const newNode: FlowNodeType = {
           id: generateId(),
@@ -137,8 +148,18 @@ export function IntegrationWorkspace() {
   const handleDrop = useCallback((appData: typeof appCatalog[0], position: { x: number; y: number }) => {
     const isFirstNode = nodes.length === 0;
     
-    // n8n-style enforcement: First node must be a trigger
+    // Get app config to check if it supports triggers
+    const appConfig = appData.id ? getAppConfig(appData.id) : null;
+    const hasTriggers = appConfig?.triggers && appConfig.triggers.length > 0;
+    
+    // n8n-style enforcement: First node must be a trigger app
     if (isFirstNode) {
+      if (!hasTriggers) {
+        // This app doesn't support triggers - can't be first node
+        alert(`⚠️ ${appData.name} is an action-only app.\n\nWorkflows must start with a trigger (like Webhook or Schedule).\n\n1️⃣ Add a trigger app first\n2️⃣ Then add ${appData.name} as an action`);
+        return;
+      }
+      
       const newNode: FlowNodeType = {
         id: generateId(),
         type: 'trigger',
