@@ -321,15 +321,14 @@ export function ConfigPanelV2({
       setSelectedTriggerId(node.config?.selectedTriggerId || '');
       setSelectedActionId(node.config?.selectedActionId || node.actionId || '');
       setDynamicFields(node.config?.dynamicFields || {});
+      
+      // If trigger type is already set, skip to Connect step (step 1)
+      // This avoids showing trigger type selection again when editing
+      const hasTriggerType = node.type === 'trigger' && node.config?.triggerType;
+      setCurrentStep(hasTriggerType ? 1 : 0);
+      
       setTestResult(null);
       setSearchQuery('');
-      
-      // If trigger type is already set (e.g., Manual Trigger), skip to next step
-      if (node.config?.triggerType) {
-        setCurrentStep(1); // Skip trigger type selection, go to Connect step
-      } else {
-        setCurrentStep(0);
-      }
       
       // Generate webhook URL if not exists
       if (node.type === 'trigger') {
@@ -621,11 +620,6 @@ export function ConfigPanelV2({
   // ============================================================================
 
   const renderTriggerTypeStep = () => {
-    // Get app-specific triggers if available
-    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
-    const appTriggers = appConfig?.triggers || [];
-    const hasAppTriggers = appTriggers.length > 0;
-    
     const selectedConfig = triggerType && triggerType in TRIGGER_CONFIGS 
       ? TRIGGER_CONFIGS[triggerType as TriggerConfigKey] 
       : null;
@@ -640,60 +634,15 @@ export function ConfigPanelV2({
           <div>
             <h3 className="font-semibold">Configure {node.appName} Trigger</h3>
             <p className="text-sm text-muted-foreground">
-              {hasAppTriggers ? 'Select what triggers this workflow' : 'How should this workflow be triggered?'}
+              How should this workflow be triggered?
             </p>
           </div>
         </div>
 
-        {/* Show app-specific triggers OR generic trigger types */}
-        {hasAppTriggers ? (
-          <RadioGroup value={selectedTriggerId || ''} onValueChange={setSelectedTriggerId}>
-            <div className="space-y-2">
-              {appTriggers.map((trigger) => (
-                <Card 
-                  key={trigger.id}
-                  className={cn(
-                    "cursor-pointer transition-all duration-200",
-                    "hover:border-primary/50 hover:shadow-sm",
-                    selectedTriggerId === trigger.id && "ring-2 ring-primary border-primary shadow-sm"
-                  )}
-                  onClick={() => {
-                    setSelectedTriggerId(trigger.id);
-                    // Auto-advance to next step after selection
-                    setTimeout(() => setCurrentStep(1), 300);
-                  }}
-                >
-                  <CardHeader className="p-4">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem 
-                        value={trigger.id} 
-                        id={trigger.id}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor={trigger.id} className="font-semibold cursor-pointer">
-                            {trigger.name}
-                          </Label>
-                        </div>
-                        <CardDescription className="text-xs">
-                          {trigger.description}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          </RadioGroup>
-        ) : (
-          <RadioGroup value={triggerType || ''} onValueChange={(v) => {
-            setTriggerType(v as TriggerType);
-            // Auto-advance to next step after selection
-            setTimeout(() => setCurrentStep(1), 300);
-          }}>
-            <div className="space-y-2">
-              {Object.values(TRIGGER_CONFIGS).map((config) => {
+        {/* Trigger type selection */}
+        <RadioGroup value={triggerType || ''} onValueChange={(v) => setTriggerType(v as TriggerType)}>
+          <div className="space-y-2">
+            {Object.values(TRIGGER_CONFIGS).map((config) => {
               const Icon = config.icon;
               const isSelected = triggerType === config.id;
 
@@ -736,7 +685,6 @@ export function ConfigPanelV2({
             })}
           </div>
         </RadioGroup>
-        )}
 
         {/* Selected trigger info */}
         {selectedConfig && (
