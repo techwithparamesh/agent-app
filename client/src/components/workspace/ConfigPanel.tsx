@@ -55,6 +55,7 @@ import {
 import type { FlowNode } from "./types";
 import { AI_MODELS, AI_MODELS_BY_PROVIDER } from "./types";
 import { NodeConfigFields } from "./NodeConfigFields";
+import { TriggerSetupWizard, type TriggerType } from "./TriggerSetupWizard";
 
 interface ConfigPanelProps {
   node: FlowNode | null;
@@ -84,6 +85,10 @@ export function ConfigPanel({
   const [selectedAction, setSelectedAction] = useState("");
   const [selectedAIModel, setSelectedAIModel] = useState("openai-gpt-4o");
   
+  // Trigger setup wizard state (n8n-style flow)
+  const [triggerType, setTriggerType] = useState<TriggerType | null>(null);
+  const [showTriggerWizard, setShowTriggerWizard] = useState(false);
+  
   // Collapsible sections state
   const [authSectionOpen, setAuthSectionOpen] = useState(true);
   const [oauthSectionOpen, setOauthSectionOpen] = useState(true);
@@ -109,7 +114,19 @@ export function ConfigPanel({
       setSelectedTrigger(node.triggerId || "");
       setSelectedAction(node.actionId || "");
       setSelectedAIModel(node.config?.aiModel || "openai-gpt-4o");
-      setActiveTab("setup");
+      
+      // Load trigger type if exists
+      setTriggerType(node.config?.triggerType || null);
+      
+      // Show trigger wizard for trigger nodes without trigger type configured
+      if (node.type === 'trigger' && !node.config?.triggerType) {
+        setShowTriggerWizard(true);
+        setActiveTab("setup");
+      } else {
+        setShowTriggerWizard(false);
+        setActiveTab("setup");
+      }
+      
       // Reset connection state when node changes
       setIsConnected(false);
       setConnectionError("");
@@ -123,6 +140,17 @@ export function ConfigPanel({
   if (!isOpen || !node) {
     return null;
   }
+
+  // Handle trigger wizard completion
+  const handleTriggerTypeSelected = (type: TriggerType) => {
+    setTriggerType(type);
+    setShowTriggerWizard(false);
+    updateConfig('triggerType', type);
+    toast({
+      title: "Trigger Type Selected",
+      description: `Trigger type set to: ${type}`,
+    });
+  };
 
   // Handle API key verification
   const handleVerifyConnection = async () => {
@@ -284,6 +312,11 @@ export function ConfigPanel({
           <div>
             <h3 className="font-semibold text-sm">{node.appName}</h3>
             <p className="text-xs text-muted-foreground capitalize">{node.type}</p>
+            {triggerType && (
+              <Badge variant="secondary" className="text-xs mt-0.5">
+                {triggerType}
+              </Badge>
+            )}
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
@@ -291,24 +324,34 @@ export function ConfigPanel({
         </Button>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-4 pt-3 flex-shrink-0">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="setup" className="text-xs">
-              <Settings className="h-3.5 w-3.5 mr-1.5" />
-              Setup
-            </TabsTrigger>
-            <TabsTrigger value="connect" className="text-xs">
-              <Zap className="h-3.5 w-3.5 mr-1.5" />
-              Connect
-            </TabsTrigger>
-            <TabsTrigger value="test" className="text-xs">
-              <Play className="h-3.5 w-3.5 mr-1.5" />
-              Test
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Show Trigger Setup Wizard for unconfigured trigger nodes */}
+      {showTriggerWizard && node.type === 'trigger' ? (
+        <TriggerSetupWizard
+          appName={node.appName}
+          appIcon={node.appIcon}
+          onComplete={handleTriggerTypeSelected}
+          onSkip={() => setShowTriggerWizard(false)}
+        />
+      ) : (
+        <>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-4 pt-3 flex-shrink-0">
+              <TabsList className="w-full grid grid-cols-3">
+                <TabsTrigger value="setup" className="text-xs">
+                  <Settings className="h-3.5 w-3.5 mr-1.5" />
+                  Setup
+                </TabsTrigger>
+                <TabsTrigger value="connect" className="text-xs">
+                  <Zap className="h-3.5 w-3.5 mr-1.5" />
+                  Connect
+                </TabsTrigger>
+                <TabsTrigger value="test" className="text-xs">
+                  <Play className="h-3.5 w-3.5 mr-1.5" />
+                  Test
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
         <div className="flex-1 overflow-y-auto">
           {/* Setup Tab */}
@@ -893,6 +936,8 @@ export function ConfigPanel({
           </Button>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

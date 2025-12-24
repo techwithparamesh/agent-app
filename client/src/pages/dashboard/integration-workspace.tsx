@@ -41,6 +41,7 @@ import { AppsPanel, appCatalog } from "@/components/workspace/AppsPanel";
 import { WorkspaceCanvas } from "@/components/workspace/WorkspaceCanvas";
 import { FlowNode, AddActionNode, AddConditionNode } from "@/components/workspace/FlowNode";
 import { ConfigPanel } from "@/components/workspace/ConfigPanel";
+import { validateWorkflow, WorkflowStatus } from "@/components/workspace/WorkflowValidator";
 import type { FlowNode as FlowNodeType, Connection } from "@/components/workspace/types";
 
 // Sample triggers/actions for demo
@@ -80,6 +81,9 @@ export function IntegrationWorkspace() {
   // Flow state
   const [nodes, setNodes] = useState<FlowNodeType[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
+  
+  // Validate workflow whenever nodes change
+  const workflowValidation = validateWorkflow(nodes);
 
   // Generate unique ID
   const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -133,21 +137,73 @@ export function IntegrationWorkspace() {
   const handleDrop = useCallback((appData: typeof appCatalog[0], position: { x: number; y: number }) => {
     const isFirstNode = nodes.length === 0;
     
+    // n8n-style enforcement: First node must be a trigger
+    if (isFirstNode) {
+      const newNode: FlowNodeType = {
+        id: generateId(),
+        type: 'trigger',
+        appId: appData.id,
+        appName: appData.name,
+        appIcon: appData.icon,
+        appColor: appData.color,
+        name: 'When this happens...',
+        description: appData.description,
+        position: { x: 400, y: 100 },
+        status: 'incomplete',
+        config: {},
+        connections: [],
+      };
+      
+      setNodes([newNode]);
+      setFlowName(`${appData.name} Flow`);
+      setSelectedNodeId(newNode.id);
+      setConfigPanelOpen(true);
+      setIsSaved(false);
+      return;
+    }
+    
+    // n8n-style enforcement: Can only add actions if trigger is configured
+    const hasTriggerWithType = nodes.some(n => n.type === 'trigger' && n.config?.triggerType);
+    if (!hasTriggerWithType) {
+      // Show toast warning
+      return;
+    }
+    
     const newNode: FlowNodeType = {
       id: generateId(),
-      type: isFirstNode ? 'trigger' : 'action',
+      type: 'action',
       appId: appData.id,
       appName: appData.name,
       appIcon: appData.icon,
       appColor: appData.color,
-      name: isFirstNode ? 'When this happens...' : 'Do this...',
+      name: 'Do this...',
       description: appData.description,
-      position: {
-        x: isFirstNode ? 400 : position.x,
-        y: isFirstNode ? 100 : position.y,
-      },
+      position,
       status: 'incomplete',
       config: {},
+      connections: [],
+    };
+    
+    setNodes(prev => [...prev, newNode]);
+    setIsSaved(false);
+
+    // Auto-connect to previous node
+    if (nodes.length > 0) {
+      const lastNode = nodes[nodes.length - 1];
+      const newConnection: Connection = {
+        id: `conn_${Date.now()}`,
+        sourceId: lastNode.id,
+        targetId: newNode.id,
+        type: 'default',
+        animated: true,
+      };
+      setConnections(prev => [...prev, newConnection]);
+    }
+
+    // Open config panel for new node
+    setSelectedNodeId(newNode.id);
+    setConfigPanelOpen(true);
+  }, [nodes]);
       connections: [],
     };
 
@@ -334,6 +390,7 @@ export function IntegrationWorkspace() {
               variant="outline" 
               size="sm" 
               className="gap-2"
+              disabled={!workflowValidation.canExecute}
               onClick={() => {
                 // Test flow logic
               }}
@@ -413,6 +470,11 @@ export function IntegrationWorkspace() {
             onDrop={handleDrop}
             className="bg-muted/30"
           >
+            {/* Workflow Status Panel - Bottom Left */}
+            <div className="absolute bottom-6 left-6 z-10 w-80">
+              <WorkflowStatus validation={workflowValidation} />
+            </div>
+
             {/* Render nodes */}
             <div className="relative">
               {nodes.map((node, index) => (
