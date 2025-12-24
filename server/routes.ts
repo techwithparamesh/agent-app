@@ -3232,10 +3232,12 @@ export async function registerRoutes(
   }
   
   // Widget rate limiter - 30 requests per minute per IP
-  const widgetRateLimiter = createRateLimiter({
+  const widgetRateLimiter = rateLimit({
     windowMs: 60 * 1000,
-    maxRequests: 30,
-    message: 'Too many chat requests. Please wait a moment.',
+    max: 30,
+    message: { message: 'Too many chat requests. Please wait a moment.' },
+    standardHeaders: true,
+    legacyHeaders: false,
   });
   
   // ========== WIDGET CHAT (for embedded chatbots - no auth required) ==========
