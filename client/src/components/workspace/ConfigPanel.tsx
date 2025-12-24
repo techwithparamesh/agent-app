@@ -57,6 +57,13 @@ import { AI_MODELS, AI_MODELS_BY_PROVIDER } from "./types";
 import { NodeConfigFields } from "./NodeConfigFields";
 import { TriggerSetupWizard, type TriggerType } from "./TriggerSetupWizard";
 
+interface TriggerConfig {
+  event: string;
+  method: TriggerType;
+  eventName: string;
+  methodName: string;
+}
+
 interface ConfigPanelProps {
   node: FlowNode | null;
   isOpen: boolean;
@@ -87,6 +94,9 @@ export function ConfigPanel({
   
   // Trigger setup wizard state (n8n-style flow)
   const [triggerType, setTriggerType] = useState<TriggerType | null>(null);
+  const [triggerEvent, setTriggerEvent] = useState<string | null>(null);
+  const [triggerEventName, setTriggerEventName] = useState<string>('');
+  const [triggerMethodName, setTriggerMethodName] = useState<string>('');
   const [showTriggerWizard, setShowTriggerWizard] = useState(false);
   
   // Collapsible sections state
@@ -115,11 +125,14 @@ export function ConfigPanel({
       setSelectedAction(node.actionId || "");
       setSelectedAIModel(node.config?.aiModel || "openai-gpt-4o");
       
-      // Load trigger type if exists
+      // Load trigger config if exists
       setTriggerType(node.config?.triggerType || null);
+      setTriggerEvent(node.config?.triggerEvent || null);
+      setTriggerEventName(node.config?.triggerEventName || '');
+      setTriggerMethodName(node.config?.triggerMethodName || '');
       
-      // Show trigger wizard for trigger nodes without trigger type configured
-      if (node.type === 'trigger' && !node.config?.triggerType) {
+      // Show trigger wizard for trigger nodes without trigger configured
+      if (node.type === 'trigger' && (!node.config?.triggerType || !node.config?.triggerEvent)) {
         setShowTriggerWizard(true);
         setActiveTab("setup");
       } else {
@@ -142,13 +155,19 @@ export function ConfigPanel({
   }
 
   // Handle trigger wizard completion
-  const handleTriggerTypeSelected = (type: TriggerType) => {
-    setTriggerType(type);
+  const handleTriggerTypeSelected = (triggerConfig: TriggerConfig) => {
+    setTriggerType(triggerConfig.method);
+    setTriggerEvent(triggerConfig.event);
+    setTriggerEventName(triggerConfig.eventName);
+    setTriggerMethodName(triggerConfig.methodName);
     setShowTriggerWizard(false);
-    updateConfig('triggerType', type);
+    updateConfig('triggerType', triggerConfig.method);
+    updateConfig('triggerEvent', triggerConfig.event);
+    updateConfig('triggerEventName', triggerConfig.eventName);
+    updateConfig('triggerMethodName', triggerConfig.methodName);
     toast({
-      title: "Trigger Type Selected",
-      description: `Trigger type set to: ${type}`,
+      title: "Trigger Configured",
+      description: `${triggerConfig.eventName} via ${triggerConfig.methodName}`,
     });
   };
 
@@ -312,10 +331,16 @@ export function ConfigPanel({
           <div>
             <h3 className="font-semibold text-sm">{node.appName}</h3>
             <p className="text-xs text-muted-foreground capitalize">{node.type}</p>
-            {triggerType && (
-              <Badge variant="secondary" className="text-xs mt-0.5">
-                {triggerType}
-              </Badge>
+            {triggerEventName && triggerMethodName && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Badge variant="secondary" className="text-xs">
+                  {triggerEventName}
+                </Badge>
+                <span className="text-xs text-muted-foreground">•</span>
+                <Badge variant="outline" className="text-xs">
+                  {triggerMethodName}
+                </Badge>
+              </div>
             )}
           </div>
         </div>
@@ -329,6 +354,7 @@ export function ConfigPanel({
         <TriggerSetupWizard
           appName={node.appName}
           appIcon={node.appIcon}
+          appId={node.appId}
           onComplete={handleTriggerTypeSelected}
           onSkip={() => setShowTriggerWizard(false)}
         />
