@@ -89,6 +89,31 @@ export function IntegrationWorkspace() {
   // Generate unique ID
   const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // Initialize with default Manual Trigger (like n8n)
+  useEffect(() => {
+    // Only create default trigger if workspace is completely empty and no initial app data
+    const initialAppData = sessionStorage.getItem('workspace_initial_app');
+    if (nodes.length === 0 && !initialAppData) {
+      const defaultTrigger: FlowNodeType = {
+        id: generateId(),
+        type: 'trigger',
+        appId: 'manual-trigger',
+        appName: 'Manual Trigger',
+        appIcon: '👆',
+        appColor: '#F59E0B',
+        name: 'When this happens...',
+        description: 'Trigger workflow manually',
+        position: { x: 400, y: 100 },
+        status: 'incomplete',
+        config: { triggerType: 'manual' },
+        connections: [],
+      };
+      setNodes([defaultTrigger]);
+      setSelectedNodeId(defaultTrigger.id);
+      setConfigPanelOpen(true);
+    }
+  }, []);
+
   // Check for initial app passed from integrations page
   useEffect(() => {
     const initialAppData = sessionStorage.getItem('workspace_initial_app');
