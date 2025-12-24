@@ -3,6 +3,41 @@
 ## Overview
 This implementation brings **n8n-inspired** workflow automation to our integration workspace, enforcing a proper trigger → configure → execute pattern similar to n8n's architecture.
 
+## 🆕 Updated: ConfigPanelV2 - Step-Based Wizard
+
+### Key UX Improvements
+The new `ConfigPanelV2` component completely redesigns the configuration experience:
+
+1. **Step-by-Step Wizard Flow** - Users progress through clearly defined steps
+2. **Visual Progress Indicator** - Shows completion status of each step
+3. **Contextual Guidance** - Rich examples and help at every step
+4. **Progressive Disclosure** - Only shows relevant options at each stage
+5. **Better Authentication UX** - Clear OAuth vs API key selection
+
+### Wizard Steps (Trigger Nodes)
+| Step | Title | Purpose |
+|------|-------|---------|
+| 1 | Trigger Type | Choose how workflow starts (Webhook/Polling/Schedule/App Event/Manual) |
+| 2 | Connect | Authenticate via OAuth or API key |
+| 3 | Settings | Configure trigger-specific options |
+| 4 | Test | Verify configuration works correctly |
+
+### Wizard Steps (Action Nodes)
+| Step | Title | Purpose |
+|------|-------|---------|
+| 1 | Operation | Select the action to perform |
+| 2 | Connect | Authenticate with the service |
+| 3 | Data | Map input data from previous steps |
+| 4 | Test | Verify configuration works correctly |
+
+### Files Changed
+- `client/src/components/workspace/ConfigPanelV2.tsx` - New step-based wizard component
+- `client/src/components/workspace/NodeConfigWizard.tsx` - Reusable wizard configuration component
+- `client/src/pages/dashboard/integration-workspace.tsx` - Uses ConfigPanelV2
+- `client/src/pages/dashboard/enhanced-workspace.tsx` - Uses ConfigPanelV2
+
+---
+
 ## Key Features Implemented
 
 ### 1. **Trigger-First Architecture**

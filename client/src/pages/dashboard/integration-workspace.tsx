@@ -40,7 +40,7 @@ import {
 import { AppsPanel, appCatalog } from "@/components/workspace/AppsPanel";
 import { WorkspaceCanvas } from "@/components/workspace/WorkspaceCanvas";
 import { FlowNode, AddActionNode, AddConditionNode } from "@/components/workspace/FlowNode";
-import { ConfigPanel } from "@/components/workspace/ConfigPanel";
+import { ConfigPanelV2 } from "@/components/workspace/ConfigPanelV2";
 import { validateWorkflow, WorkflowStatus } from "@/components/workspace/WorkflowValidator";
 import type { FlowNode as FlowNodeType, Connection } from "@/components/workspace/types";
 
@@ -204,29 +204,6 @@ export function IntegrationWorkspace() {
     setSelectedNodeId(newNode.id);
     setConfigPanelOpen(true);
   }, [nodes]);
-      connections: [],
-    };
-
-    setNodes(prev => [...prev, newNode]);
-    setIsSaved(false);
-
-    // Auto-connect to previous node if not first
-    if (!isFirstNode && nodes.length > 0) {
-      const lastNode = nodes[nodes.length - 1];
-      const newConnection: Connection = {
-        id: `conn_${Date.now()}`,
-        sourceId: lastNode.id,
-        targetId: newNode.id,
-        type: 'default',
-        animated: true,
-      };
-      setConnections(prev => [...prev, newConnection]);
-    }
-
-    // Open config panel for new node
-    setSelectedNodeId(newNode.id);
-    setConfigPanelOpen(true);
-  }, [nodes]);
 
   // Handle node selection
   const handleNodeClick = (nodeId: string) => {
@@ -320,6 +297,35 @@ export function IntegrationWorkspace() {
   };
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
+  
+  // Get nodes that come before the selected node (for data mapping context)
+  const getPreviousNodes = useCallback((nodeId: string | null): FlowNodeType[] => {
+    if (!nodeId) return [];
+    
+    const result: FlowNodeType[] = [];
+    const visited = new Set<string>();
+    
+    // Find all nodes that connect TO this node
+    const findPrevious = (targetId: string) => {
+      connections
+        .filter(c => c.targetId === targetId)
+        .forEach(conn => {
+          if (!visited.has(conn.sourceId)) {
+            visited.add(conn.sourceId);
+            const sourceNode = nodes.find(n => n.id === conn.sourceId);
+            if (sourceNode) {
+              result.push(sourceNode);
+              findPrevious(conn.sourceId);
+            }
+          }
+        });
+    };
+    
+    findPrevious(nodeId);
+    return result.reverse(); // Order from first to last in the chain
+  }, [nodes, connections]);
+  
+  const previousNodes = getPreviousNodes(selectedNodeId);
 
   return (
     <TooltipProvider>
@@ -572,16 +578,15 @@ export function IntegrationWorkspace() {
             </div>
           </WorkspaceCanvas>
 
-          {/* Right Config Panel */}
-          <ConfigPanel
+          {/* Right Config Panel - n8n-style wizard flow */}
+          <ConfigPanelV2
             node={selectedNode}
             isOpen={configPanelOpen}
             onClose={() => setConfigPanelOpen(false)}
             onSave={handleNodeSave}
             onDelete={handleNodeDelete}
             onTest={handleNodeTest}
-            availableTriggers={selectedNode?.type === 'trigger' ? sampleTriggers : []}
-            availableActions={selectedNode?.type === 'action' ? sampleActions : []}
+            previousNodes={previousNodes}
           />
         </div>
       </div>

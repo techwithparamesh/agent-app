@@ -54,7 +54,7 @@ import { AppsPanel, appCatalog } from "@/components/workspace/AppsPanel";
 import { FlowCanvas, type FlowCanvasRef } from "@/components/workspace/FlowCanvas";
 import { FlowConnections } from "@/components/workspace/FlowConnections";
 import { EnhancedFlowNode } from "@/components/workspace/EnhancedFlowNode";
-import { ConfigPanel } from "@/components/workspace/ConfigPanel";
+import { ConfigPanelV2 } from "@/components/workspace/ConfigPanelV2";
 import { ExecutionPanel } from "@/components/workspace/ExecutionPanel";
 import { 
   ContextMenu, 
@@ -942,16 +942,14 @@ export function EnhancedWorkspace() {
             </FlowCanvas>
           </div>
 
-          {/* Right Config Panel */}
-          <ConfigPanel
+          {/* Right Config Panel - n8n-style wizard */}
+          <ConfigPanelV2
             node={selectedNode}
             isOpen={configPanelOpen}
             onClose={() => setConfigPanelOpen(false)}
             onSave={handleNodeSave}
             onDelete={(id) => flowActions.deleteNode(id)}
             onTest={handleNodeTest}
-            availableTriggers={selectedNode?.type === 'trigger' ? sampleTriggers : []}
-            availableActions={selectedNode?.type === 'action' ? sampleActions : []}
           />
 
           {/* Execution Panel */}
