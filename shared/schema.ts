@@ -654,6 +654,13 @@ export const integrations = mysqlTable("integrations", {
     headerRow?: number;
     credentials?: string; // Encrypted service account JSON
     
+    // OAuth tokens for integrations (Google, etc.)
+    oauth?: {
+      accessToken?: string;
+      refreshToken?: string;
+      expiresAt?: number;
+    };
+    
     // Webhook
     webhookUrl?: string;
     webhookHeaders?: Record<string, string>;

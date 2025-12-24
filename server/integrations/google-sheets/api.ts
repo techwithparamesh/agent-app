@@ -83,12 +83,19 @@ router.get('/callback', async (req, res) => {
     
     // If we have an integrationId, update it with the tokens
     if (stateData.integrationId) {
+      // Get current config to merge with OAuth tokens
+      const [existing] = await db.select().from(integrations).where(eq(integrations.id, stateData.integrationId)).limit(1);
+      const currentConfig = (existing?.config || {}) as Record<string, any>;
+      
       await db.update(integrations)
         .set({
-          credentials: {
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-            expiresAt: Date.now() + (tokens.expires_in * 1000),
+          config: {
+            ...currentConfig,
+            oauth: {
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token,
+              expiresAt: Date.now() + (tokens.expires_in * 1000),
+            },
           },
         })
         .where(eq(integrations.id, stateData.integrationId));
@@ -129,7 +136,8 @@ router.get('/spreadsheets', async (req, res) => {
       return res.status(404).json({ error: 'Integration not found' });
     }
 
-    const credentials = integration.credentials as any;
+    const config = integration.config as Record<string, any> || {};
+    const credentials = config.oauth as any;
     if (!credentials?.accessToken) {
       return res.status(401).json({ error: 'Not authenticated with Google' });
     }
@@ -274,7 +282,8 @@ router.post('/spreadsheets/:spreadsheetId/append', async (req, res) => {
  * Helper: Ensure we have a valid access token, refresh if needed
  */
 async function ensureValidToken(integration: any): Promise<string> {
-  const credentials = integration.credentials as any;
+  const config = integration.config as Record<string, any> || {};
+  const credentials = config.oauth as any;
   
   if (!credentials?.accessToken) {
     throw new Error('No access token available');
@@ -302,13 +311,16 @@ async function ensureValidToken(integration: any): Promise<string> {
 
     const tokens = await response.json();
 
-    // Update stored credentials
+    // Update stored credentials in config.oauth
     await db.update(integrations)
       .set({
-        credentials: {
-          ...credentials,
-          accessToken: tokens.access_token,
-          expiresAt: Date.now() + (tokens.expires_in * 1000),
+        config: {
+          ...config,
+          oauth: {
+            ...credentials,
+            accessToken: tokens.access_token,
+            expiresAt: Date.now() + (tokens.expires_in * 1000),
+          },
         },
       })
       .where(eq(integrations.id, integration.id));
