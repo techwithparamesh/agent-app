@@ -189,11 +189,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgent(userId: string, agentData: InsertAgent): Promise<Agent> {
+    console.log("=== STORAGE: createAgent ===");
+    console.log("userId:", userId);
+    console.log("agentData:", JSON.stringify(agentData, null, 2));
+    
     const id = crypto.randomUUID();
-    await db
-      .insert(agents)
-      .values({ ...agentData, id, userId });
-    return this.getAgentById(id) as Promise<Agent>;
+    console.log("Generated agent ID:", id);
+    
+    try {
+      await db
+        .insert(agents)
+        .values({ ...agentData, id, userId });
+      console.log("Insert successful, fetching agent...");
+      return this.getAgentById(id) as Promise<Agent>;
+    } catch (dbError: any) {
+      console.error("=== DATABASE INSERT ERROR ===");
+      console.error("Error code:", dbError?.code);
+      console.error("Error errno:", dbError?.errno);
+      console.error("Error sqlMessage:", dbError?.sqlMessage);
+      console.error("Error sql:", dbError?.sql);
+      throw dbError;
+    }
   }
 
   async updateAgent(id: string, agentData: Partial<InsertAgent>): Promise<Agent | undefined> {

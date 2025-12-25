@@ -88,7 +88,7 @@ const templateSubItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   
   // Persist dropdown states in localStorage so they don't reset on navigation
   const [dashboardOpen, setDashboardOpen] = useState(() => {
@@ -492,12 +492,15 @@ export function AppSidebar() {
             </p>
           </div>
         </div>
-        <a href="/api/logout" className="w-full">
-          <Button variant="ghost" className="w-full justify-start gap-3" data-testid="button-logout">
-            <LogOut className="h-4 w-4" />
-            Log Out
-          </Button>
-        </a>
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start gap-3" 
+          data-testid="button-logout"
+          onClick={logout}
+        >
+          <LogOut className="h-4 w-4" />
+          Log Out
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

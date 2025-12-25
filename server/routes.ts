@@ -614,19 +614,29 @@ export async function registerRoutes(
   app.post("/api/agents", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      console.log("Creating agent for user:", userId);
+      console.log("=== CREATE AGENT REQUEST ===");
+      console.log("User ID:", userId);
+      console.log("User ID Type:", typeof userId);
       console.log("Request body:", JSON.stringify(req.body, null, 2));
+      
       const validated = insertAgentSchema.parse(req.body);
       console.log("Validated data:", JSON.stringify(validated, null, 2));
+      
+      console.log("Calling storage.createAgent...");
       const agent = await storage.createAgent(userId, validated);
-      console.log("Agent created:", JSON.stringify(agent, null, 2));
+      console.log("Agent created successfully:", JSON.stringify(agent, null, 2));
       res.status(201).json(agent);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("=== AGENT CREATION ERROR ===");
+      console.error("Error name:", error?.name);
+      console.error("Error message:", error?.message);
+      console.error("Error code:", error?.code);
+      console.error("Error stack:", error?.stack);
+      
       if (error instanceof z.ZodError) {
-        console.error("Validation error:", JSON.stringify(error.errors, null, 2));
+        console.error("Validation error details:", JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      console.error("Error creating agent:", error);
       res.status(500).json({ message: "Failed to create agent" });
     }
   });
