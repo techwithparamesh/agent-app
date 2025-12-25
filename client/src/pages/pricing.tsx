@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Check, X, HelpCircle, Zap, Loader2, MessageSquare, Bot, Phone, FileText } from "lucide-react";
+import { Check, X, HelpCircle, Zap, Loader2, MessageSquare, Bot, Phone } from "lucide-react";
 import { usePlans, formatPrice, getYearlySavings, fallbackPlans, type SubscriptionPlan } from "@/hooks/usePlans";
 
 const faqs = [
@@ -50,7 +50,6 @@ function buildFeatureList(plan: SubscriptionPlan) {
     { name: messageText, included: true, icon: MessageSquare },
     { name: phoneText, included: plan.phoneNumberLimit > 0 || plan.phoneNumberLimit === -1, icon: Phone },
     { name: `${plan.features.websiteScanning.charAt(0).toUpperCase() + plan.features.websiteScanning.slice(1)} website scanning`, included: true },
-    { name: "Landing page generator", included: plan.features.landingPages, icon: FileText },
     { name: "Custom branding", included: plan.features.customBranding },
     { name: "Analytics dashboard", included: plan.features.analytics },
     { name: "API access", included: plan.features.apiAccess },

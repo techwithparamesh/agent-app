@@ -3,6 +3,12 @@
  * 
  * Schema-driven dynamic configuration UI for all node types.
  * Uses the dynamic-fields system as primary, with fallback to legacy configs.
+ * 
+ * Priority Order:
+ * 1. N8n-style Resource → Operation → Fields (if schema exists)
+ * 2. Legacy rich config components
+ * 3. Dynamic schema fields
+ * 4. Default JSON config
  */
 
 import React, { useState, useCallback, useMemo } from "react";
@@ -10,6 +16,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Settings, Sparkles, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Import n8n-style configuration (HIGHEST PRIORITY)
+import { N8nConfigPanel } from "./N8nConfigPanel";
+import { n8nSchemaRegistry } from "./n8n-schemas";
 
 // Import dynamic field system (PRIMARY)
 import { DynamicFieldRenderer } from "./dynamic-fields/DynamicFieldRenderer";
@@ -285,7 +295,7 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
   
   // Validation hook for dynamic fields
   const { errors, validateField, clearErrors } = useFieldValidation(
-    actionSchema || { id: '', appId: '', name: '', description: '', category: '', fields: [] },
+    actionSchema || { id: '', appId: '', name: '', description: '', category: '', value: '', action: '', fields: [] },
     config,
     { validateOnChange: true }
   );
@@ -340,7 +350,34 @@ export const NodeConfigFields: React.FC<ConfigFieldsProps> = ({
     }
   }, [appId, actionId, triggerId, config, actionSchema, getSuggestions]);
   
-  // PRIORITY 1: Try n8n-style rich config component FIRST
+  // Check if n8n schema exists for this app
+  const hasN8nSchema = useMemo(() => {
+    return n8nSchemaRegistry.getApp(appId) !== undefined;
+  }, [appId]);
+  
+  // PRIORITY 0: Use n8n-style Resource → Operation → Fields (HIGHEST PRIORITY)
+  if (hasN8nSchema) {
+    return (
+      <N8nConfigPanel
+        appId={appId}
+        initialValues={{
+          resource: config.resource,
+          operation: config.operation,
+          fields: config.fields || config,
+        }}
+        onChange={(newConfig) => {
+          updateConfig('resource', newConfig.resource);
+          updateConfig('operation', newConfig.operation);
+          // Spread field values at root level for backward compatibility
+          Object.entries(newConfig.fields).forEach(([key, value]) => {
+            updateConfig(key, value);
+          });
+        }}
+      />
+    );
+  }
+  
+  // PRIORITY 1: Try legacy rich config component
   const ConfigComponent = resolveConfigComponent(
     nodeType,
     triggerId,

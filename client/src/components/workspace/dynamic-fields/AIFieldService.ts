@@ -9,8 +9,11 @@
  */
 
 import type { 
-  FieldSchema, 
-  ActionSchema, 
+  N8nField as FieldSchema,
+  N8nOperation as ActionSchema,
+} from '../n8n-schemas/types';
+
+import type {
   AIFieldSuggestion, 
   AIValidationResult,
   FormState 

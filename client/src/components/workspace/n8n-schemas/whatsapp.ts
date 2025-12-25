@@ -1,0 +1,1218 @@
+/**
+ * WhatsApp Business n8n-Style Schema
+ * 
+ * Resources: Message, Template, Media, Contact
+ * Based on: WhatsApp Business API capabilities
+ */
+
+import { N8nAppSchema } from './types';
+
+export const whatsappSchema: N8nAppSchema = {
+  id: 'whatsapp',
+  name: 'WhatsApp Business',
+  icon: 'whatsapp',
+  color: '#25D366',
+  description: 'Send messages, templates, and media via WhatsApp Business API',
+  version: '1.0',
+  subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
+  group: ['communication', 'messaging'],
+  documentationUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api',
+
+  credentials: [
+    {
+      id: 'whatsapp_business_api',
+      name: 'WhatsApp Business API',
+      type: 'apiKey',
+      fields: [
+        {
+          id: 'access_token',
+          displayName: 'Access Token',
+          name: 'accessToken',
+          type: 'password',
+          required: true,
+          description: 'Your WhatsApp Business API access token',
+        },
+        {
+          id: 'phone_number_id',
+          displayName: 'Phone Number ID',
+          name: 'phoneNumberId',
+          type: 'string',
+          required: true,
+          description: 'Your WhatsApp Business phone number ID',
+          placeholder: '1234567890',
+        },
+        {
+          id: 'business_account_id',
+          displayName: 'Business Account ID',
+          name: 'businessAccountId',
+          type: 'string',
+          required: true,
+          description: 'Your WhatsApp Business Account ID',
+        },
+      ],
+    },
+    {
+      id: '360dialog',
+      name: '360dialog',
+      type: 'apiKey',
+      fields: [
+        {
+          id: 'api_key',
+          displayName: 'API Key',
+          name: 'apiKey',
+          type: 'password',
+          required: true,
+        },
+        {
+          id: 'channel_id',
+          displayName: 'Channel ID',
+          name: 'channelId',
+          type: 'string',
+          required: true,
+        },
+      ],
+    },
+  ],
+
+  resources: [
+    // ========================================
+    // MESSAGE RESOURCE
+    // ========================================
+    {
+      id: 'message',
+      name: 'Message',
+      value: 'message',
+      description: 'Send and manage messages',
+      operations: [
+        {
+          id: 'send_text',
+          name: 'Send Text',
+          value: 'sendText',
+          description: 'Send a text message',
+          action: 'Send a text message',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              description: 'Recipient phone number with country code',
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'text',
+              displayName: 'Message',
+              name: 'text',
+              type: 'text',
+              required: true,
+              description: 'The message text to send',
+              placeholder: 'Hello! How can I help you today?',
+              typeOptions: {
+                rows: 4,
+              },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'preview_url',
+              displayName: 'Preview URL',
+              name: 'previewUrl',
+              type: 'boolean',
+              default: false,
+              description: 'Enable link preview for URLs in the message',
+            },
+            {
+              id: 'reply_to',
+              displayName: 'Reply To Message ID',
+              name: 'replyTo',
+              type: 'string',
+              description: 'Message ID to reply to (for threading)',
+              placeholder: 'wamid.xxxxx',
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_image',
+          name: 'Send Image',
+          value: 'sendImage',
+          description: 'Send an image message',
+          action: 'Send an image',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'image_source',
+              displayName: 'Image Source',
+              name: 'imageSource',
+              type: 'options',
+              required: true,
+              default: 'url',
+              options: [
+                { name: 'URL', value: 'url', description: 'Image from URL' },
+                { name: 'Media ID', value: 'id', description: 'Previously uploaded media' },
+              ],
+            },
+            {
+              id: 'image_url',
+              displayName: 'Image URL',
+              name: 'imageUrl',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { imageSource: ['url'] } },
+              placeholder: 'https://example.com/image.jpg',
+            },
+            {
+              id: 'media_id',
+              displayName: 'Media ID',
+              name: 'mediaId',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { imageSource: ['id'] } },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'caption',
+              displayName: 'Caption',
+              name: 'caption',
+              type: 'text',
+              description: 'Image caption (max 1024 characters)',
+              validation: { maxLength: 1024 },
+              typeOptions: { rows: 2 },
+            },
+            {
+              id: 'reply_to',
+              displayName: 'Reply To Message ID',
+              name: 'replyTo',
+              type: 'string',
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_document',
+          name: 'Send Document',
+          value: 'sendDocument',
+          description: 'Send a document message',
+          action: 'Send a document',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'document_source',
+              displayName: 'Document Source',
+              name: 'documentSource',
+              type: 'options',
+              required: true,
+              default: 'url',
+              options: [
+                { name: 'URL', value: 'url' },
+                { name: 'Media ID', value: 'id' },
+              ],
+            },
+            {
+              id: 'document_url',
+              displayName: 'Document URL',
+              name: 'documentUrl',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { documentSource: ['url'] } },
+              placeholder: 'https://example.com/file.pdf',
+            },
+            {
+              id: 'media_id',
+              displayName: 'Media ID',
+              name: 'mediaId',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { documentSource: ['id'] } },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'filename',
+              displayName: 'Filename',
+              name: 'filename',
+              type: 'string',
+              description: 'Filename to display',
+              placeholder: 'invoice.pdf',
+            },
+            {
+              id: 'caption',
+              displayName: 'Caption',
+              name: 'caption',
+              type: 'text',
+              validation: { maxLength: 1024 },
+              typeOptions: { rows: 2 },
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_audio',
+          name: 'Send Audio',
+          value: 'sendAudio',
+          description: 'Send an audio message',
+          action: 'Send an audio',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'audio_source',
+              displayName: 'Audio Source',
+              name: 'audioSource',
+              type: 'options',
+              required: true,
+              default: 'url',
+              options: [
+                { name: 'URL', value: 'url' },
+                { name: 'Media ID', value: 'id' },
+              ],
+            },
+            {
+              id: 'audio_url',
+              displayName: 'Audio URL',
+              name: 'audioUrl',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { audioSource: ['url'] } },
+            },
+            {
+              id: 'media_id',
+              displayName: 'Media ID',
+              name: 'mediaId',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { audioSource: ['id'] } },
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_video',
+          name: 'Send Video',
+          value: 'sendVideo',
+          description: 'Send a video message',
+          action: 'Send a video',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'video_source',
+              displayName: 'Video Source',
+              name: 'videoSource',
+              type: 'options',
+              required: true,
+              default: 'url',
+              options: [
+                { name: 'URL', value: 'url' },
+                { name: 'Media ID', value: 'id' },
+              ],
+            },
+            {
+              id: 'video_url',
+              displayName: 'Video URL',
+              name: 'videoUrl',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { videoSource: ['url'] } },
+            },
+            {
+              id: 'media_id',
+              displayName: 'Media ID',
+              name: 'mediaId',
+              type: 'string',
+              required: true,
+              displayOptions: { show: { videoSource: ['id'] } },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'caption',
+              displayName: 'Caption',
+              name: 'caption',
+              type: 'text',
+              validation: { maxLength: 1024 },
+              typeOptions: { rows: 2 },
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_location',
+          name: 'Send Location',
+          value: 'sendLocation',
+          description: 'Send a location message',
+          action: 'Send a location',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'latitude',
+              displayName: 'Latitude',
+              name: 'latitude',
+              type: 'number',
+              required: true,
+              placeholder: '37.7749',
+            },
+            {
+              id: 'longitude',
+              displayName: 'Longitude',
+              name: 'longitude',
+              type: 'number',
+              required: true,
+              placeholder: '-122.4194',
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'name',
+              displayName: 'Location Name',
+              name: 'name',
+              type: 'string',
+              placeholder: 'Golden Gate Bridge',
+            },
+            {
+              id: 'address',
+              displayName: 'Address',
+              name: 'address',
+              type: 'string',
+              placeholder: 'Golden Gate Bridge, San Francisco, CA',
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_contact',
+          name: 'Send Contact',
+          value: 'sendContact',
+          description: 'Send a contact card',
+          action: 'Send a contact',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'first_name',
+              displayName: 'First Name',
+              name: 'firstName',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'last_name',
+              displayName: 'Last Name',
+              name: 'lastName',
+              type: 'string',
+            },
+            {
+              id: 'phone',
+              displayName: 'Phone Number',
+              name: 'phone',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'email',
+              displayName: 'Email',
+              name: 'email',
+              type: 'string',
+            },
+            {
+              id: 'company',
+              displayName: 'Company',
+              name: 'company',
+              type: 'string',
+            },
+            {
+              id: 'title',
+              displayName: 'Job Title',
+              name: 'title',
+              type: 'string',
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_interactive',
+          name: 'Send Interactive',
+          value: 'sendInteractive',
+          description: 'Send an interactive message with buttons or list',
+          action: 'Send interactive message',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'interactive_type',
+              displayName: 'Interactive Type',
+              name: 'interactiveType',
+              type: 'options',
+              required: true,
+              options: [
+                { name: 'Button', value: 'button', description: 'Quick reply buttons (max 3)' },
+                { name: 'List', value: 'list', description: 'List with sections' },
+                { name: 'Product', value: 'product', description: 'Single product' },
+                { name: 'Product List', value: 'product_list', description: 'Multiple products' },
+                { name: 'CTA URL', value: 'cta_url', description: 'Call-to-action URL button' },
+              ],
+            },
+            {
+              id: 'body_text',
+              displayName: 'Body Text',
+              name: 'bodyText',
+              type: 'text',
+              required: true,
+              description: 'Main message text',
+              typeOptions: { rows: 3 },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'header_type',
+              displayName: 'Header Type',
+              name: 'headerType',
+              type: 'options',
+              options: [
+                { name: 'None', value: 'none' },
+                { name: 'Text', value: 'text' },
+                { name: 'Image', value: 'image' },
+                { name: 'Video', value: 'video' },
+                { name: 'Document', value: 'document' },
+              ],
+            },
+            {
+              id: 'header_text',
+              displayName: 'Header Text',
+              name: 'headerText',
+              type: 'string',
+              displayOptions: { show: { headerType: ['text'] } },
+            },
+            {
+              id: 'footer_text',
+              displayName: 'Footer Text',
+              name: 'footerText',
+              type: 'string',
+              description: 'Optional footer text',
+            },
+            {
+              id: 'buttons_json',
+              displayName: 'Buttons (JSON)',
+              name: 'buttonsJson',
+              type: 'json',
+              description: 'Button configuration as JSON array',
+              displayOptions: { show: { interactiveType: ['button'] } },
+              typeOptions: { alwaysOpenEditWindow: true },
+            },
+            {
+              id: 'list_sections_json',
+              displayName: 'List Sections (JSON)',
+              name: 'listSectionsJson',
+              type: 'json',
+              description: 'List sections configuration as JSON',
+              displayOptions: { show: { interactiveType: ['list'] } },
+              typeOptions: { alwaysOpenEditWindow: true },
+            },
+            {
+              id: 'action_button_text',
+              displayName: 'Action Button Text',
+              name: 'actionButtonText',
+              type: 'string',
+              displayOptions: { show: { interactiveType: ['list'] } },
+              placeholder: 'View Options',
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'mark_read',
+          name: 'Mark as Read',
+          value: 'markRead',
+          description: 'Mark a message as read',
+          action: 'Mark message as read',
+          fields: [
+            {
+              id: 'message_id',
+              displayName: 'Message ID',
+              name: 'messageId',
+              type: 'string',
+              required: true,
+              description: 'The message ID to mark as read',
+              placeholder: 'wamid.xxxxx',
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'send_reaction',
+          name: 'Send Reaction',
+          value: 'sendReaction',
+          description: 'React to a message with an emoji',
+          action: 'Send a reaction',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'message_id',
+              displayName: 'Message ID',
+              name: 'messageId',
+              type: 'string',
+              required: true,
+              description: 'The message ID to react to',
+              placeholder: 'wamid.xxxxx',
+            },
+            {
+              id: 'emoji',
+              displayName: 'Emoji',
+              name: 'emoji',
+              type: 'string',
+              required: true,
+              description: 'The emoji to react with',
+              placeholder: '👍',
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+      ],
+    },
+
+    // ========================================
+    // TEMPLATE RESOURCE
+    // ========================================
+    {
+      id: 'template',
+      name: 'Template',
+      value: 'template',
+      description: 'Send and manage message templates',
+      operations: [
+        {
+          id: 'send_template',
+          name: 'Send',
+          value: 'send',
+          description: 'Send a template message',
+          action: 'Send a template message',
+          fields: [
+            {
+              id: 'to',
+              displayName: 'To',
+              name: 'to',
+              type: 'string',
+              required: true,
+              placeholder: '+1234567890',
+            },
+            {
+              id: 'template_name',
+              displayName: 'Template Name',
+              name: 'templateName',
+              type: 'options',
+              required: true,
+              description: 'Select a pre-approved template',
+              typeOptions: {
+                loadOptionsMethod: 'getTemplates',
+              },
+            },
+            {
+              id: 'language',
+              displayName: 'Language',
+              name: 'language',
+              type: 'options',
+              required: true,
+              default: 'en_US',
+              options: [
+                { name: 'English (US)', value: 'en_US' },
+                { name: 'English (UK)', value: 'en_GB' },
+                { name: 'Spanish', value: 'es' },
+                { name: 'Spanish (Mexico)', value: 'es_MX' },
+                { name: 'Portuguese (Brazil)', value: 'pt_BR' },
+                { name: 'French', value: 'fr' },
+                { name: 'German', value: 'de' },
+                { name: 'Italian', value: 'it' },
+                { name: 'Hindi', value: 'hi' },
+                { name: 'Arabic', value: 'ar' },
+                { name: 'Chinese (Simplified)', value: 'zh_CN' },
+                { name: 'Japanese', value: 'ja' },
+                { name: 'Korean', value: 'ko' },
+              ],
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'header_type',
+              displayName: 'Header Type',
+              name: 'headerType',
+              type: 'options',
+              options: [
+                { name: 'None', value: 'none' },
+                { name: 'Text', value: 'text' },
+                { name: 'Image', value: 'image' },
+                { name: 'Document', value: 'document' },
+                { name: 'Video', value: 'video' },
+              ],
+            },
+            {
+              id: 'header_text',
+              displayName: 'Header Text',
+              name: 'headerText',
+              type: 'string',
+              displayOptions: { show: { headerType: ['text'] } },
+            },
+            {
+              id: 'header_media_url',
+              displayName: 'Header Media URL',
+              name: 'headerMediaUrl',
+              type: 'string',
+              displayOptions: { show: { headerType: ['image', 'document', 'video'] } },
+            },
+            {
+              id: 'body_variables',
+              displayName: 'Body Variables',
+              name: 'bodyVariables',
+              type: 'fixedCollection',
+              description: 'Variables to replace {{1}}, {{2}}, etc. in the template body',
+              fixedCollectionFields: [
+                {
+                  id: 'variable',
+                  displayName: 'Variable Value',
+                  name: 'variable',
+                  type: 'string',
+                  required: true,
+                },
+              ],
+            },
+            {
+              id: 'button_parameters',
+              displayName: 'Button Parameters (JSON)',
+              name: 'buttonParameters',
+              type: 'json',
+              description: 'Dynamic button parameters (for URL buttons with variables)',
+              typeOptions: { alwaysOpenEditWindow: true },
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/messages',
+            },
+          },
+        },
+        {
+          id: 'get_many_templates',
+          name: 'Get Many',
+          value: 'getMany',
+          description: 'Get all approved templates',
+          action: 'Get all templates',
+          fields: [],
+          optionalFields: [
+            {
+              id: 'status',
+              displayName: 'Status',
+              name: 'status',
+              type: 'options',
+              options: [
+                { name: 'All', value: '' },
+                { name: 'Approved', value: 'APPROVED' },
+                { name: 'Pending', value: 'PENDING' },
+                { name: 'Rejected', value: 'REJECTED' },
+              ],
+            },
+            {
+              id: 'category',
+              displayName: 'Category',
+              name: 'category',
+              type: 'options',
+              options: [
+                { name: 'All', value: '' },
+                { name: 'Marketing', value: 'MARKETING' },
+                { name: 'Utility', value: 'UTILITY' },
+                { name: 'Authentication', value: 'AUTHENTICATION' },
+              ],
+            },
+            {
+              id: 'limit',
+              displayName: 'Limit',
+              name: 'limit',
+              type: 'number',
+              default: 100,
+            },
+          ],
+          routing: {
+            request: {
+              method: 'GET',
+              url: '/message_templates',
+            },
+          },
+        },
+        {
+          id: 'create_template',
+          name: 'Create',
+          value: 'create',
+          description: 'Create a new message template',
+          action: 'Create a template',
+          fields: [
+            {
+              id: 'name',
+              displayName: 'Template Name',
+              name: 'name',
+              type: 'string',
+              required: true,
+              description: 'Lowercase letters, numbers, underscores only',
+              placeholder: 'order_confirmation',
+              validation: {
+                pattern: '^[a-z0-9_]+$',
+                patternMessage: 'Only lowercase letters, numbers, and underscores allowed',
+              },
+            },
+            {
+              id: 'category',
+              displayName: 'Category',
+              name: 'category',
+              type: 'options',
+              required: true,
+              options: [
+                { name: 'Marketing', value: 'MARKETING' },
+                { name: 'Utility', value: 'UTILITY' },
+                { name: 'Authentication', value: 'AUTHENTICATION' },
+              ],
+            },
+            {
+              id: 'language',
+              displayName: 'Language',
+              name: 'language',
+              type: 'options',
+              required: true,
+              default: 'en_US',
+              options: [
+                { name: 'English (US)', value: 'en_US' },
+                { name: 'English (UK)', value: 'en_GB' },
+                { name: 'Spanish', value: 'es' },
+                { name: 'Portuguese (Brazil)', value: 'pt_BR' },
+                { name: 'French', value: 'fr' },
+                { name: 'German', value: 'de' },
+              ],
+            },
+            {
+              id: 'body_text',
+              displayName: 'Body Text',
+              name: 'bodyText',
+              type: 'text',
+              required: true,
+              description: 'Use {{1}}, {{2}} for variables',
+              placeholder: 'Hello {{1}}, your order {{2}} has been shipped!',
+              typeOptions: { rows: 4 },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'header_type',
+              displayName: 'Header Type',
+              name: 'headerType',
+              type: 'options',
+              options: [
+                { name: 'None', value: 'none' },
+                { name: 'Text', value: 'TEXT' },
+                { name: 'Image', value: 'IMAGE' },
+                { name: 'Document', value: 'DOCUMENT' },
+                { name: 'Video', value: 'VIDEO' },
+              ],
+            },
+            {
+              id: 'header_text',
+              displayName: 'Header Text',
+              name: 'headerText',
+              type: 'string',
+              displayOptions: { show: { headerType: ['TEXT'] } },
+            },
+            {
+              id: 'footer_text',
+              displayName: 'Footer Text',
+              name: 'footerText',
+              type: 'string',
+              validation: { maxLength: 60 },
+            },
+            {
+              id: 'buttons_type',
+              displayName: 'Buttons',
+              name: 'buttonsType',
+              type: 'options',
+              options: [
+                { name: 'None', value: 'none' },
+                { name: 'Call to Action', value: 'cta' },
+                { name: 'Quick Reply', value: 'quick_reply' },
+              ],
+            },
+            {
+              id: 'buttons_json',
+              displayName: 'Buttons Configuration (JSON)',
+              name: 'buttonsJson',
+              type: 'json',
+              displayOptions: { show: { buttonsType: ['cta', 'quick_reply'] } },
+              typeOptions: { alwaysOpenEditWindow: true },
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/message_templates',
+            },
+          },
+        },
+        {
+          id: 'delete_template',
+          name: 'Delete',
+          value: 'delete',
+          description: 'Delete a message template',
+          action: 'Delete a template',
+          fields: [
+            {
+              id: 'template_name',
+              displayName: 'Template Name',
+              name: 'templateName',
+              type: 'string',
+              required: true,
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'DELETE',
+              url: '/message_templates',
+            },
+          },
+        },
+      ],
+    },
+
+    // ========================================
+    // MEDIA RESOURCE
+    // ========================================
+    {
+      id: 'media',
+      name: 'Media',
+      value: 'media',
+      description: 'Upload and manage media files',
+      operations: [
+        {
+          id: 'upload_media',
+          name: 'Upload',
+          value: 'upload',
+          description: 'Upload a media file',
+          action: 'Upload media',
+          fields: [
+            {
+              id: 'media_type',
+              displayName: 'Media Type',
+              name: 'mediaType',
+              type: 'options',
+              required: true,
+              options: [
+                { name: 'Image', value: 'image' },
+                { name: 'Document', value: 'document' },
+                { name: 'Audio', value: 'audio' },
+                { name: 'Video', value: 'video' },
+                { name: 'Sticker', value: 'sticker' },
+              ],
+            },
+            {
+              id: 'file_url',
+              displayName: 'File URL',
+              name: 'fileUrl',
+              type: 'string',
+              required: true,
+              description: 'URL of the file to upload',
+              placeholder: 'https://example.com/file.jpg',
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/media',
+            },
+          },
+        },
+        {
+          id: 'get_media',
+          name: 'Get',
+          value: 'get',
+          description: 'Get media URL by ID',
+          action: 'Get media URL',
+          fields: [
+            {
+              id: 'media_id',
+              displayName: 'Media ID',
+              name: 'mediaId',
+              type: 'string',
+              required: true,
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'GET',
+              url: '/media/{mediaId}',
+            },
+          },
+        },
+        {
+          id: 'delete_media',
+          name: 'Delete',
+          value: 'delete',
+          description: 'Delete a media file',
+          action: 'Delete media',
+          fields: [
+            {
+              id: 'media_id',
+              displayName: 'Media ID',
+              name: 'mediaId',
+              type: 'string',
+              required: true,
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'DELETE',
+              url: '/media/{mediaId}',
+            },
+          },
+        },
+      ],
+    },
+
+    // ========================================
+    // PHONE NUMBER RESOURCE
+    // ========================================
+    {
+      id: 'phoneNumber',
+      name: 'Phone Number',
+      value: 'phoneNumber',
+      description: 'Manage business phone numbers',
+      operations: [
+        {
+          id: 'get_phone_numbers',
+          name: 'Get Many',
+          value: 'getMany',
+          description: 'Get all phone numbers',
+          action: 'Get phone numbers',
+          fields: [],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'GET',
+              url: '/phone_numbers',
+            },
+          },
+        },
+        {
+          id: 'get_phone_number',
+          name: 'Get',
+          value: 'get',
+          description: 'Get phone number details',
+          action: 'Get phone number',
+          fields: [
+            {
+              id: 'phone_number_id',
+              displayName: 'Phone Number ID',
+              name: 'phoneNumberId',
+              type: 'string',
+              required: true,
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'GET',
+              url: '/phone_numbers/{phoneNumberId}',
+            },
+          },
+        },
+        {
+          id: 'update_business_profile',
+          name: 'Update Profile',
+          value: 'updateProfile',
+          description: 'Update business profile',
+          action: 'Update business profile',
+          fields: [],
+          optionalFields: [
+            {
+              id: 'about',
+              displayName: 'About',
+              name: 'about',
+              type: 'text',
+              description: 'Business description (max 139 characters)',
+              validation: { maxLength: 139 },
+              typeOptions: { rows: 2 },
+            },
+            {
+              id: 'address',
+              displayName: 'Address',
+              name: 'address',
+              type: 'string',
+            },
+            {
+              id: 'description',
+              displayName: 'Description',
+              name: 'description',
+              type: 'text',
+              typeOptions: { rows: 3 },
+            },
+            {
+              id: 'email',
+              displayName: 'Email',
+              name: 'email',
+              type: 'string',
+            },
+            {
+              id: 'websites',
+              displayName: 'Websites',
+              name: 'websites',
+              type: 'string',
+              description: 'Comma-separated list of websites',
+            },
+            {
+              id: 'vertical',
+              displayName: 'Industry',
+              name: 'vertical',
+              type: 'options',
+              options: [
+                { name: 'Automotive', value: 'AUTO' },
+                { name: 'Beauty & Spa', value: 'BEAUTY' },
+                { name: 'Clothing & Apparel', value: 'APPAREL' },
+                { name: 'Education', value: 'EDU' },
+                { name: 'Entertainment', value: 'ENTERTAIN' },
+                { name: 'Event Planning', value: 'EVENT_PLAN' },
+                { name: 'Finance & Banking', value: 'FINANCE' },
+                { name: 'Food & Grocery', value: 'GROCERY' },
+                { name: 'Government', value: 'GOVT' },
+                { name: 'Healthcare', value: 'HEALTH' },
+                { name: 'Hotel & Lodging', value: 'HOTEL' },
+                { name: 'Non-profit', value: 'NOT_A_BIZ' },
+                { name: 'Professional Services', value: 'PROF_SERVICES' },
+                { name: 'Restaurant', value: 'RESTAURANT' },
+                { name: 'Retail', value: 'RETAIL' },
+                { name: 'Travel & Transportation', value: 'TRAVEL' },
+                { name: 'Other', value: 'OTHER' },
+              ],
+            },
+          ],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/whatsapp_business_profile',
+            },
+          },
+        },
+      ],
+    },
+  ],
+
+  defaults: {
+    name: 'WhatsApp Business',
+  },
+};
+
+export default whatsappSchema;

@@ -84,17 +84,6 @@ const mainFeatures = [
     ],
   },
   {
-    icon: FileText,
-    title: "Landing Page Generator",
-    description: "Generate professional, conversion-optimized landing pages with AI-powered copywriting.",
-    benefits: [
-      "AI-generated copy",
-      "SEO optimization",
-      "Multiple sections",
-      "Export to HTML",
-    ],
-  },
-  {
     icon: Code,
     title: "API Access",
     description: "Full API access to integrate AgentForge capabilities into your existing applications.",

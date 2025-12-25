@@ -36,11 +36,6 @@ const features = [
     description: "Deploy context-aware chatbots that understand your content and engage visitors 24/7.",
   },
   {
-    icon: FileText,
-    title: "Landing Page Generator",
-    description: "Generate professional landing pages with AI-powered copywriting and design suggestions.",
-  },
-  {
     icon: Zap,
     title: "Instant Integration",
     description: "Embed chatbots anywhere with a simple script tag. Works with any website or platform.",
@@ -80,7 +75,7 @@ const testimonials = [
   {
     name: "Lakshmi",
     role: "Freelancer",
-    content: "The landing page generator saved us weeks of work. Our conversion rate increased by 35%.",
+    content: "The AI chatbot integration saved us weeks of work. Customer engagement increased by 35%.",
     avatar: "L",
   },
   {
@@ -133,7 +128,7 @@ export default function Home() {
               </h1>
               
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s' }}>
-                Create intelligent chatbots, scan websites, build knowledge bases, and generate landing pages - all powered by cutting-edge AI technology.
+                Create intelligent chatbots, scan websites, and build knowledge bases - all powered by cutting-edge AI technology.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up opacity-0" style={{ animationDelay: '0.4s' }}>

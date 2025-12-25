@@ -32,6 +32,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   ArrowLeft,
   Save,
   Play,
@@ -47,6 +53,12 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Keyboard,
+  StickyNote,
+  Map,
+  Key,
+  Pin,
+  Layout,
+  Database,
 } from "lucide-react";
 
 // Workspace components
@@ -75,6 +87,16 @@ import {
 import { useFlowState } from "@/components/workspace/useFlowState";
 import { useKeyboardShortcuts, buildFlowShortcuts, SHORTCUT_CATEGORIES } from "@/components/workspace/useKeyboardShortcuts";
 import type { FlowNode, Connection } from "@/components/workspace/types";
+
+// New n8n-style components
+import { StickyNoteLayer, type StickyNoteData } from "@/components/workspace/StickyNote";
+import { CanvasMiniMap } from "@/components/workspace/CanvasMiniMap";
+import { CredentialManager, type Credential } from "@/components/workspace/CredentialManager";
+import { DataPinningPanel, type PinnedData } from "@/components/workspace/DataPinningPanel";
+import { TemplatesGallery, type WorkflowTemplate } from "@/components/workspace/TemplatesGallery";
+
+// n8n Schema registry for apps
+import { n8nSchemaRegistry, getAllN8nApps } from "@/components/workspace/n8n-schemas";
 
 // ============================================
 // SAMPLE DATA
@@ -118,6 +140,22 @@ export function EnhancedWorkspace() {
   const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+
+  // New panel states
+  const [credentialsPanelOpen, setCredentialsPanelOpen] = useState(false);
+  const [dataPinningPanelOpen, setDataPinningPanelOpen] = useState(false);
+  const [templatesGalleryOpen, setTemplatesGalleryOpen] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(true);
+
+  // Sticky notes state
+  const [stickyNotes, setStickyNotes] = useState<StickyNoteData[]>([]);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  // Credentials state (would be persisted to backend)
+  const [credentials, setCredentials] = useState<Credential[]>([]);
+
+  // Pinned data state (for testing)
+  const [pinnedData, setPinnedData] = useState<PinnedData[]>([]);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -586,6 +624,110 @@ export function EnhancedWorkspace() {
     setIsSaving(false);
   }, []);
 
+  // Handle template import
+  const handleImportTemplate = useCallback((template: WorkflowTemplate) => {
+    // Clear existing nodes
+    flowState.nodes.forEach(node => flowActions.deleteNode(node.id));
+    
+    // Create nodes from template
+    const nodeIdMap: Record<string, string> = {};
+    
+    template.nodes.forEach((templateNode) => {
+      const nodeData: Omit<FlowNode, 'id'> = {
+        type: templateNode.type.includes('trigger') ? 'trigger' : 'action',
+        appId: templateNode.type,
+        appName: templateNode.name,
+        appIcon: '⚡',
+        appColor: '#6366f1',
+        name: templateNode.name,
+        description: '',
+        position: templateNode.position,
+        status: 'incomplete',
+        config: templateNode.parameters || {},
+        connections: [],
+      };
+      
+      const newId = flowActions.addNode(nodeData, templateNode.position);
+      nodeIdMap[templateNode.id] = newId;
+    });
+    
+    // Create connections
+    template.connections.forEach((conn) => {
+      const sourceId = nodeIdMap[conn.sourceNodeId];
+      const targetId = nodeIdMap[conn.targetNodeId];
+      if (sourceId && targetId) {
+        flowActions.addConnection(sourceId, targetId);
+      }
+    });
+    
+    setFlowName(template.name);
+    setTemplatesGalleryOpen(false);
+  }, [flowState.nodes, flowActions]);
+
+  // Credential handlers (async with Promise returns for CredentialManager interface)
+  const handleCreateCredential = useCallback(async (cred: Omit<Credential, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Credential> => {
+    const newCred: Credential = {
+      ...cred,
+      id: `cred_${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: 'untested',
+    };
+    setCredentials(prev => [...prev, newCred]);
+    return newCred;
+  }, []);
+
+  const handleUpdateCredential = useCallback(async (id: string, updates: Partial<Credential>): Promise<void> => {
+    setCredentials(prev => prev.map(c => c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c));
+  }, []);
+
+  const handleDeleteCredential = useCallback(async (id: string): Promise<void> => {
+    setCredentials(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  const handleTestCredential = useCallback(async (id: string): Promise<{ success: boolean; message?: string }> => {
+    // Simulate credential test
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    const credential = credentials.find(c => c.id === id);
+    if (!credential) {
+      return { success: false, message: 'Credential not found' };
+    }
+    // Simulate 80% success rate
+    const success = Math.random() > 0.2;
+    setCredentials(prev => prev.map(c => 
+      c.id === id ? { ...c, status: success ? 'valid' : 'invalid', lastTestedAt: new Date() } : c
+    ));
+    return { 
+      success, 
+      message: success ? 'Connection successful!' : 'Invalid credentials. Please check your API key.' 
+    };
+  }, [credentials]);
+
+  // Data pinning handlers
+  const handlePinData = useCallback((nodeId: string, items: any[]) => {
+    const node = flowActions.getNode(nodeId);
+    if (!node) return;
+    
+    const pinData: PinnedData = {
+      nodeId,
+      nodeName: node.name,
+      nodeIcon: node.appIcon,
+      nodeType: node.appId,
+      items: items.map((item, idx) => ({ id: `item_${idx}`, json: item })),
+      pinnedAt: new Date(),
+      source: 'manual',
+    };
+    
+    setPinnedData(prev => {
+      const filtered = prev.filter(p => p.nodeId !== nodeId);
+      return [...filtered, pinData];
+    });
+  }, [flowActions]);
+
+  const handleUnpinData = useCallback((nodeId: string) => {
+    setPinnedData(prev => prev.filter(p => p.nodeId !== nodeId));
+  }, []);
+
   // ============================================
   // KEYBOARD SHORTCUTS
   // ============================================
@@ -797,6 +939,67 @@ export function EnhancedWorkspace() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  variant={showMiniMap ? "secondary" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setShowMiniMap(!showMiniMap)}
+                >
+                  <Map className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Toggle Mini Map</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCredentialsPanelOpen(true)}
+                >
+                  <Key className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Credentials</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={pinnedData.length > 0 ? "secondary" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setDataPinningPanelOpen(true)}
+                >
+                  <Pin className="h-4 w-4" />
+                  {pinnedData.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-[10px] rounded-full flex items-center justify-center text-primary-foreground">
+                      {pinnedData.length}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Pinned Data ({pinnedData.length})</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setTemplatesGalleryOpen(true)}
+                >
+                  <Layout className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Templates</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
@@ -887,6 +1090,34 @@ export function EnhancedWorkspace() {
               onUndo={flowActions.undo}
               onRedo={flowActions.redo}
             >
+              {/* Sticky Notes Layer */}
+              <StickyNoteLayer
+                notes={stickyNotes}
+                selectedNoteId={selectedNoteId}
+                zoom={flowState.viewport.zoom || 1}
+                onSelectNote={setSelectedNoteId}
+                onUpdateNote={(noteId, updates) => {
+                  setStickyNotes(prev => prev.map(n => 
+                    n.id === noteId ? { ...n, ...updates } : n
+                  ));
+                }}
+                onDuplicateNote={(noteId) => {
+                  const note = stickyNotes.find(n => n.id === noteId);
+                  if (note) {
+                    const newNote: StickyNoteData = {
+                      ...note,
+                      id: `note_${Date.now()}`,
+                      position: { x: note.position.x + 20, y: note.position.y + 20 },
+                    };
+                    setStickyNotes(prev => [...prev, newNote]);
+                  }
+                }}
+                onDeleteNote={(noteId) => {
+                  setStickyNotes(prev => prev.filter(n => n.id !== noteId));
+                  if (selectedNoteId === noteId) setSelectedNoteId(null);
+                }}
+              />
+
               {/* Connections Layer */}
               <FlowConnections
                 nodes={flowState.nodes}
@@ -940,6 +1171,39 @@ export function EnhancedWorkspace() {
                 </div>
               ))}
             </FlowCanvas>
+
+            {/* Mini Map */}
+            {showMiniMap && (
+              <div className="absolute bottom-4 right-4 z-20">
+                <CanvasMiniMap
+                  nodes={flowState.nodes.map(n => ({
+                    id: n.id,
+                    position: n.position,
+                    type: n.type,
+                    color: n.appColor,
+                  }))}
+                  stickyNotes={stickyNotes}
+                  viewport={{
+                    x: flowState.viewport.x,
+                    y: flowState.viewport.y,
+                    width: 800,
+                    height: 600,
+                    zoom: flowState.viewport.zoom || 1,
+                  }}
+                  containerSize={{ width: 800, height: 600 }}
+                  onViewportChange={(viewport) => flowActions.setViewport({ 
+                    ...flowState.viewport, 
+                    x: viewport.x, 
+                    y: viewport.y 
+                  })}
+                  onNodeClick={(nodeId) => {
+                    flowActions.selectNode(nodeId);
+                    flowActions.centerOnNode(nodeId);
+                  }}
+                  className="shadow-lg"
+                />
+              </div>
+            )}
           </div>
 
           {/* Right Config Panel - n8n-style wizard */}
@@ -1027,6 +1291,57 @@ export function EnhancedWorkspace() {
                 </div>
               ))}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Credentials Panel */}
+        <Sheet open={credentialsPanelOpen} onOpenChange={setCredentialsPanelOpen}>
+          <SheetContent side="right" className="w-[500px] sm:w-[600px] p-0">
+            <CredentialManager
+              credentials={credentials}
+              templates={[]}
+              onCreateCredential={handleCreateCredential}
+              onUpdateCredential={handleUpdateCredential}
+              onDeleteCredential={handleDeleteCredential}
+              onTestCredential={handleTestCredential}
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Data Pinning Panel */}
+        <Sheet open={dataPinningPanelOpen} onOpenChange={setDataPinningPanelOpen}>
+          <SheetContent side="right" className="w-[500px] sm:w-[600px] p-0">
+            <DataPinningPanel
+              pinnedData={pinnedData}
+              selectedNodeId={selectedNode?.id}
+              onPinData={handlePinData}
+              onUnpinData={handleUnpinData}
+              onUpdatePinnedData={(nodeId, items) => {
+                setPinnedData(prev => prev.map(p => 
+                  p.nodeId === nodeId 
+                    ? { ...p, items: items.map((item, idx) => ({ id: `item_${idx}`, json: item.json || item })) }
+                    : p
+                ));
+              }}
+              onClearAllPins={() => setPinnedData([])}
+              onNodeSelect={(nodeId) => {
+                flowActions.selectNode(nodeId);
+                flowActions.centerOnNode(nodeId);
+                setDataPinningPanelOpen(false);
+              }}
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Templates Gallery */}
+        <Dialog open={templatesGalleryOpen} onOpenChange={setTemplatesGalleryOpen}>
+          <DialogContent className="max-w-5xl h-[80vh] p-0">
+            <TemplatesGallery
+              onImportTemplate={handleImportTemplate}
+              onPreviewTemplate={(template) => {
+                console.log('Preview template:', template);
+              }}
+            />
           </DialogContent>
         </Dialog>
       </div>

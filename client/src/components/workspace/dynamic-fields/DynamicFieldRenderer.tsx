@@ -45,12 +45,20 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { 
-  FieldSchema, 
-  ActionSchema, 
-  FieldGroup, 
-  FormState,
-  FieldValidation 
-} from './types';
+  N8nField as FieldSchema,
+  N8nOperation as ActionSchema,
+  FieldValidation,
+} from '../n8n-schemas/types';
+import type { FormState } from './types';
+
+// Field group type for grouping fields
+interface FieldGroup {
+  id: string;
+  name: string;
+  description?: string;
+  collapsed?: boolean;
+  order?: number;
+}
 
 // ============================================
 // TYPES
@@ -285,7 +293,11 @@ const SelectFieldRenderer: React.FC<FieldRendererProps> = ({
   error,
   disabled,
 }) => {
-  const options = field.options || [];
+  const options = (field.options || []).map(opt => ({
+    ...opt,
+    value: String(opt.value ?? opt.name ?? ''),
+    label: opt.label || opt.name || String(opt.value ?? ''),
+  }));
   
   return (
     <Select
@@ -320,7 +332,11 @@ const MultiSelectFieldRenderer: React.FC<FieldRendererProps> = ({
   onChange,
   disabled,
 }) => {
-  const options = field.options || [];
+  const options = (field.options || []).map(opt => ({
+    ...opt,
+    value: String(opt.value ?? opt.name ?? ''),
+    label: opt.label || opt.name || String(opt.value ?? ''),
+  }));
   const selected: string[] = value || [];
   
   const toggleOption = (optionValue: string) => {
@@ -1018,7 +1034,13 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
   className,
 }) => {
   // Get field groups or create a default one
-  const fieldGroups = schema.fieldGroups || [];
+  const fieldGroups: FieldGroup[] = (schema.fieldGroups || []).map(g => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    collapsed: g.collapsed,
+    order: g.order,
+  }));
   const fields = schema.fields || [];
   
   // Group fields by their group ID
@@ -1026,7 +1048,7 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
     const groups: Record<string, FieldSchema[]> = {};
     const ungrouped: FieldSchema[] = [];
     
-    fields.forEach(field => {
+    fields.forEach((field: FieldSchema) => {
       if (field.group) {
         if (!groups[field.group]) {
           groups[field.group] = [];
@@ -1042,7 +1064,7 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
   
   // Filter visible ungrouped fields
   const visibleUngroupedFields = groupedFields.ungrouped.filter(
-    field => isFieldVisible(field, values)
+    (field: FieldSchema) => isFieldVisible(field, values)
   );
   
   return (

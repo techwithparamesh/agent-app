@@ -1,177 +1,223 @@
 /**
- * App Schema Registry - Index
+ * Dynamic Fields - Index
  * 
- * Central registry for all app schemas
+ * This module now uses n8n-schemas as the single source of truth.
+ * It provides compatibility wrappers and AI features on top of n8n schemas.
  */
 
-import type { AppSchema, ActionSchema, SchemaRegistry } from './types';
+// Re-export n8n schema registry as the primary source
+import { 
+  n8nSchemaRegistry, 
+  getAllN8nApps,
+  getN8nAppsByGroup,
+} from '../n8n-schemas';
 
-// Import all schema collections
-import { aiAppSchemas } from './schemas/ai-apps';
-import { communicationAppSchemas } from './schemas/communication-apps';
-import { productivityAppSchemas } from './schemas/productivity-apps';
-import { developerAppSchemas } from './schemas/developer-apps';
-import { businessAppSchemas } from './schemas/business-apps';
+import type { 
+  N8nAppSchema, 
+  N8nResource, 
+  N8nOperation,
+  N8nField,
+  N8nSchemaRegistry,
+} from '../n8n-schemas/types';
 
-// Combine all schemas into a single array
-const allSchemas: AppSchema[] = [
-  ...aiAppSchemas,
-  ...communicationAppSchemas,
-  ...productivityAppSchemas,
-  ...developerAppSchemas,
-  ...businessAppSchemas,
-];
+// Re-export types for backward compatibility
+export type { 
+  N8nAppSchema as AppSchema,
+  N8nOperation as ActionSchema,
+  N8nField as FieldSchema,
+  N8nSchemaRegistry as SchemaRegistry,
+} from '../n8n-schemas/types';
 
-// Build the apps map
-const appsMap = new Map<string, AppSchema>();
-allSchemas.forEach(schema => {
-  appsMap.set(schema.id, schema);
-});
+// Re-export local types
+export type { 
+  FormState, 
+  FieldState, 
+  AIFieldSuggestion,
+  AIValidationResult,
+  AIGenerationRequest,
+  AIGenerationResponse,
+  ExecutionContext,
+  ExecutionResult,
+} from './types';
 
-// Build actions map for quick lookup
-const actionsMap = new Map<string, ActionSchema>();
-allSchemas.forEach(app => {
-  app.actions?.forEach(action => {
-    actionsMap.set(action.id, action);
-  });
-  app.triggers?.forEach(trigger => {
-    actionsMap.set(trigger.id, trigger);
-  });
-});
+// ============================================
+// SCHEMA REGISTRY (wraps n8n-schemas)
+// ============================================
 
-// Schema Registry Implementation
-export const schemaRegistry: SchemaRegistry = {
-  apps: appsMap,
+export const schemaRegistry = {
+  apps: n8nSchemaRegistry.apps,
   
-  getApp(appId: string): AppSchema | undefined {
-    return appsMap.get(appId);
+  getApp(appId: string): N8nAppSchema | undefined {
+    return n8nSchemaRegistry.getApp(appId);
   },
   
-  getAction(actionId: string): ActionSchema | undefined {
-    return actionsMap.get(actionId);
+  getAction(actionId: string): N8nOperation | undefined {
+    // Search through all apps for an operation with this ID
+    for (const app of getAllN8nApps()) {
+      for (const resource of app.resources) {
+        const operation = resource.operations.find(op => op.id === actionId);
+        if (operation) return operation;
+      }
+    }
+    return undefined;
   },
   
-  searchApps(query: string): AppSchema[] {
-    const lowerQuery = query.toLowerCase();
-    return allSchemas.filter(app => 
-      app.name.toLowerCase().includes(lowerQuery) ||
-      app.description.toLowerCase().includes(lowerQuery) ||
-      app.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-      app.category.toLowerCase().includes(lowerQuery)
-    );
+  searchApps(query: string): N8nAppSchema[] {
+    return n8nSchemaRegistry.searchApps(query);
   },
   
-  getAppsByCategory(category: string): AppSchema[] {
-    return allSchemas.filter(app => app.category === category);
+  getAppsByCategory(category: string): N8nAppSchema[] {
+    return getN8nAppsByGroup(category);
   },
 };
 
-// Helper functions for common operations
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 
 /**
  * Get all available apps
  */
-export function getAllApps(): AppSchema[] {
-  return allSchemas;
+export function getAllApps(): N8nAppSchema[] {
+  return getAllN8nApps();
 }
 
 /**
- * Get all unique categories
+ * Get all unique categories/groups
  */
 export function getCategories(): string[] {
   const categories = new Set<string>();
-  allSchemas.forEach(app => categories.add(app.category));
+  getAllN8nApps().forEach(app => {
+    app.group.forEach(g => categories.add(g));
+  });
   return Array.from(categories).sort();
 }
 
 /**
  * Get app by ID
  */
-export function getAppById(appId: string): AppSchema | undefined {
-  return appsMap.get(appId);
+export function getAppById(appId: string): N8nAppSchema | undefined {
+  return n8nSchemaRegistry.getApp(appId);
 }
 
 /**
- * Get action by ID
+ * Get action/operation by ID
  */
-export function getActionById(actionId: string): ActionSchema | undefined {
-  return actionsMap.get(actionId);
+export function getActionById(actionId: string): N8nOperation | undefined {
+  return schemaRegistry.getAction(actionId);
 }
 
 /**
- * Get action for a specific app
+ * Get operation for a specific app and resource
  */
-export function getAppAction(appId: string, actionId: string): ActionSchema | undefined {
-  const app = appsMap.get(appId);
+export function getAppAction(appId: string, actionId: string): N8nOperation | undefined {
+  const app = n8nSchemaRegistry.getApp(appId);
   if (!app) return undefined;
   
-  return app.actions?.find(a => a.id === actionId) || 
-         app.triggers?.find(t => t.id === actionId);
+  for (const resource of app.resources) {
+    const operation = resource.operations.find(op => op.id === actionId || op.value === actionId);
+    if (operation) return operation;
+  }
+  return undefined;
 }
 
 /**
- * Get all actions for an app
+ * Get all operations for an app (flattened)
  */
-export function getAppActions(appId: string): ActionSchema[] {
-  const app = appsMap.get(appId);
+export function getAppActions(appId: string): N8nOperation[] {
+  const app = n8nSchemaRegistry.getApp(appId);
   if (!app) return [];
-  return [...(app.triggers || []), ...(app.actions || [])];
-}
-
-/**
- * Get all triggers for an app
- */
-export function getAppTriggers(appId: string): ActionSchema[] {
-  const app = appsMap.get(appId);
-  if (!app) return [];
-  return app.triggers || [];
-}
-
-/**
- * Get actions grouped by category for an app
- */
-export function getAppActionsGrouped(appId: string): Record<string, ActionSchema[]> {
-  const actions = getAppActions(appId);
-  const grouped: Record<string, ActionSchema[]> = {};
   
-  actions.forEach(action => {
-    const category = action.category || 'General';
-    if (!grouped[category]) {
-      grouped[category] = [];
-    }
-    grouped[category].push(action);
+  const operations: N8nOperation[] = [];
+  app.resources.forEach(resource => {
+    operations.push(...resource.operations);
   });
+  return operations;
+}
+
+/**
+ * Get all resources for an app
+ */
+export function getAppResources(appId: string): N8nResource[] {
+  const app = n8nSchemaRegistry.getApp(appId);
+  if (!app) return [];
+  return app.resources;
+}
+
+/**
+ * Get operations for a specific resource
+ */
+export function getResourceOperations(appId: string, resourceId: string): N8nOperation[] {
+  const resource = n8nSchemaRegistry.getResource(appId, resourceId);
+  if (!resource) return [];
+  return resource.operations;
+}
+
+/**
+ * Get triggers for an app (operations that act as triggers)
+ * In n8n-schema, triggers are typically resources/operations with webhook support
+ */
+export function getAppTriggers(appId: string): N8nOperation[] {
+  const app = n8nSchemaRegistry.getApp(appId);
+  if (!app) return [];
   
+  const triggers: N8nOperation[] = [];
+  app.resources.forEach(resource => {
+    // Look for operations that seem like triggers
+    resource.operations.forEach(op => {
+      const isTrigger = 
+        op.name.toLowerCase().includes('trigger') ||
+        op.name.toLowerCase().includes('receive') ||
+        op.name.toLowerCase().includes('webhook') ||
+        op.name.toLowerCase().includes('listen') ||
+        op.value.toLowerCase().includes('trigger');
+      if (isTrigger) {
+        triggers.push(op);
+      }
+    });
+  });
+  return triggers;
+}
+
+/**
+ * Get operations grouped by resource
+ */
+export function getAppActionsGrouped(appId: string): Record<string, N8nOperation[]> {
+  const app = n8nSchemaRegistry.getApp(appId);
+  if (!app) return {};
+  
+  const grouped: Record<string, N8nOperation[]> = {};
+  app.resources.forEach(resource => {
+    grouped[resource.name] = resource.operations;
+  });
   return grouped;
 }
 
 /**
- * Map legacy app IDs to new schema IDs
+ * Map legacy app IDs to n8n schema IDs
  */
 const appIdAliases: Record<string, string> = {
   'openai': 'openai',
   'chatgpt': 'openai',
   'gpt': 'openai',
   'claude': 'anthropic',
-  'google-ai': 'google_ai',
-  'gemini': 'google_ai',
+  'google-ai': 'google-ai',
+  'gemini': 'google-ai',
   'whatsapp-business': 'whatsapp',
   'gmail-api': 'gmail',
-  'google-sheets': 'google_sheets',
-  'google-calendar': 'google_calendar',
-  'google-drive': 'google_drive',
-  'http': 'http_request',
-  'rest-api': 'http_request',
-  'api-call': 'http_request',
-  'webhook-trigger': 'webhook',
-  'cron': 'scheduler',
-  'schedule': 'scheduler',
-  'if-condition': 'flow_control',
-  'switch-case': 'flow_control',
-  'condition': 'flow_control',
-  'postgres': 'database',
-  'mysql': 'database',
-  'sql': 'database',
+  'google-sheets': 'google-sheets',
+  'google-calendar': 'google-calendar',
+  'google-drive': 'google-drive',
+  'http': 'rest-api',
+  'rest-api': 'rest-api',
+  'api-call': 'rest-api',
+  'webhook-trigger': 'webhooks',
+  'webhooks': 'webhooks',
+  'postgres': 'postgresql',
+  'mysql': 'mysql',
+  'sql': 'postgresql',
+  'microsoft-teams': 'microsoft-teams',
+  'teams': 'microsoft-teams',
 };
 
 /**
@@ -184,40 +230,45 @@ export function resolveAppId(appIdOrAlias: string): string {
 /**
  * Get app by ID or alias
  */
-export function getAppByIdOrAlias(appIdOrAlias: string): AppSchema | undefined {
+export function getAppByIdOrAlias(appIdOrAlias: string): N8nAppSchema | undefined {
   const resolvedId = resolveAppId(appIdOrAlias);
-  return appsMap.get(resolvedId);
+  return n8nSchemaRegistry.getApp(resolvedId);
 }
 
 // Category icons for UI display
 export const categoryIcons: Record<string, string> = {
   'AI': '🤖',
+  'ai': '🤖',
   'Communication': '💬',
+  'communication': '💬',
+  'messaging': '💬',
   'Email': '📧',
+  'email': '📧',
   'Productivity': '📊',
+  'productivity': '📊',
   'Storage': '📁',
+  'storage': '📁',
+  'database': '🗄️',
   'Developer': '⚙️',
+  'developer': '⚙️',
+  'transform': '🔄',
   'CRM': '👥',
+  'crm': '👥',
   'E-commerce': '🛒',
+  'ecommerce': '🛒',
   'Marketing': '📣',
+  'marketing': '📣',
   'Support': '🎧',
+  'support': '🎧',
+  'social': '📱',
 };
 
 /**
  * Get icon for a category
  */
 export function getCategoryIcon(category: string): string {
-  return categoryIcons[category] || '📦';
+  return categoryIcons[category] || categoryIcons[category.toLowerCase()] || '📦';
 }
 
-// Export schemas for direct access if needed
-export {
-  aiAppSchemas,
-  communicationAppSchemas,
-  productivityAppSchemas,
-  developerAppSchemas,
-  businessAppSchemas,
-};
-
-// Export types
-export type { AppSchema, ActionSchema } from './types';
+// Export n8n registry for direct access
+export { n8nSchemaRegistry, getAllN8nApps, getN8nAppsByGroup };

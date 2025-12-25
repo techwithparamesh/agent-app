@@ -5,6 +5,7 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
+// @ts-ignore - no type declarations available
 import MySQLStoreFactory from "express-mysql-session";
 import { storage } from "./storage";
 import { pool } from "./db";

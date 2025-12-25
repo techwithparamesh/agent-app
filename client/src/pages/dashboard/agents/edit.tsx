@@ -305,6 +305,7 @@ const whatsappFormSchema = z.object({
   toneOfVoice: z.string().optional(),
   purpose: z.string().optional(),
   welcomeMessage: z.string().max(500).optional(),
+  suggestedQuestions: z.string().max(1000).optional(),
   isActive: z.boolean().optional(),
   // Business Info
   businessName: z.string().optional(),

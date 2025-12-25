@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -33,6 +34,18 @@ const updateAgentSchema = z.object({
   welcomeMessage: z.string().max(500).optional().nullable(),
   suggestedQuestions: z.string().max(2000).optional().nullable(),
   isActive: z.boolean().optional(),
+  // WhatsApp agent fields
+  agentType: z.string().max(50).optional(),
+  businessCategory: z.string().max(100).optional(),
+  capabilities: z.array(z.string()).optional(),
+  businessInfo: z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    address: z.string().optional(),
+    workingHours: z.string().optional(),
+  }).optional().nullable(),
+  language: z.string().max(10).optional(),
   // Widget customization
   widgetConfig: z.object({
     displayName: z.string().max(100).optional().nullable(),
@@ -413,15 +426,18 @@ export async function registerRoutes(
 
       // Store the contact submission in leads table with type "contact"
       const leadId = uuidv4();
+      // Note: Using a placeholder for agentId and phone since leads table requires them
+      // The contact form doesn't have an agent context
       await db.insert(leads).values({
         id: leadId,
-        agentId: 'website', // Special ID for website contact form
+        agentId: '00000000-0000-0000-0000-000000000000', // Placeholder for website contact form
+        phone: 'contact_form', // Placeholder since phone is required
         name,
         email,
         status: 'new',
         source: 'contact_form',
         notes: `Subject: ${subject}\n\nMessage: ${message}`,
-        metadata: JSON.stringify({ subject, formType: 'contact', submittedAt: new Date().toISOString() }),
+        customFields: { subject, formType: 'contact', submittedAt: new Date().toISOString() },
       });
 
       console.log(`Contact form submission stored: ${leadId} from ${email}`);
@@ -578,7 +594,7 @@ export async function registerRoutes(
       if (req.body.copyKnowledge) {
         const knowledgeEntries = await storage.getKnowledgeByAgentId(originalAgent.id);
         for (const entry of knowledgeEntries) {
-          await storage.createKnowledge({
+          await storage.createKnowledgeEntry({
             agentId: newAgent.id,
             sourceUrl: entry.sourceUrl,
             title: entry.title,
@@ -626,7 +642,7 @@ export async function registerRoutes(
       }
       // Validate update payload - only allow safe fields
       const validated = updateAgentSchema.parse(req.body);
-      const updated = await storage.updateAgent(req.params.id, validated);
+      const updated = await storage.updateAgent(req.params.id, validated as any);
       res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2449,6 +2465,37 @@ export async function registerRoutes(
         return false;
       };
       
+      // Simple website type detection - for logging and SPA detection
+      const detectWebsiteType = (html: string): { type: string; needsJS: boolean } => {
+        const lowerHtml = html.toLowerCase();
+        
+        if (lowerHtml.includes('wp-content') || lowerHtml.includes('wordpress')) {
+          return { type: 'wordpress', needsJS: true };
+        }
+        if (lowerHtml.includes('shopify') || lowerHtml.includes('cdn.shopify')) {
+          return { type: 'shopify', needsJS: true };
+        }
+        if (lowerHtml.includes('wix.com') || lowerHtml.includes('wixsite')) {
+          return { type: 'wix', needsJS: true };
+        }
+        if (lowerHtml.includes('squarespace')) {
+          return { type: 'squarespace', needsJS: true };
+        }
+        if (lowerHtml.includes('webflow')) {
+          return { type: 'webflow', needsJS: true };
+        }
+        if (lowerHtml.includes('__next_data__') || lowerHtml.includes('_next/')) {
+          return { type: 'nextjs', needsJS: true };
+        }
+        if (lowerHtml.includes('__nuxt') || lowerHtml.includes('_nuxt/')) {
+          return { type: 'nuxtjs', needsJS: true };
+        }
+        if (lowerHtml.includes('id="root"') || lowerHtml.includes('id="app"')) {
+          return { type: 'spa', needsJS: true };
+        }
+        return { type: 'static', needsJS: false };
+      };
+      
       // Universal route discovery - extract only REAL links from HTML, no guessing
       const getCommonSPARoutes = (html: string, baseUrl: string): string[] => {
         const routes: string[] = [];
@@ -3098,7 +3145,7 @@ export async function registerRoutes(
               source: "web_scan", 
               pageUrl: page.url,
               scannedAt: new Date().toISOString(),
-            },
+            } as any,
           });
           entriesCreated++;
         }
@@ -3118,12 +3165,7 @@ export async function registerRoutes(
         scannedUrls: scannedPages.map(p => ({ url: p.url, title: p.title })),
       });
     } catch (error) {
-      // Ensure Puppeteer browser is closed on error
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (e) {}
-      }
+      // Browser cleanup is already done in the try block above
       console.error("Error scanning website:", error);
       res.status(500).json({ message: "Failed to scan website" });
     }

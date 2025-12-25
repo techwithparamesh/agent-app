@@ -7,7 +7,7 @@
 export { AppsPanel, appCatalog } from './AppsPanel';
 export { WorkspaceCanvas } from './WorkspaceCanvas';
 export { FlowNode, AddActionNode, AddConditionNode } from './FlowNode';
-export { ConfigPanel } from './ConfigPanel';
+export { ConfigPanelV2 as ConfigPanel } from './ConfigPanelV2';
 
 // Schema-Driven Architecture
 export {
@@ -59,6 +59,48 @@ export {
 
 // AI Node Panel
 export { AINodePanel } from './AINodePanel';
+
+// N8n-Style Editor Components
+export {
+  StickyNote,
+  StickyNoteLayer,
+  type StickyNoteData,
+  type StickyNoteColor,
+} from './StickyNote';
+
+export {
+  CanvasMiniMap,
+  type MiniMapNode,
+  type MiniMapViewport,
+} from './CanvasMiniMap';
+
+export {
+  ExpressionEditor,
+  ExpressionBadge,
+  type ExpressionVariable as ExpressionEditorVariable,
+  type ExpressionContext,
+} from './ExpressionEditor';
+
+export {
+  CredentialManager,
+  type Credential,
+  type CredentialTemplate,
+  type CredentialField,
+} from './CredentialManager';
+
+export {
+  DataPinningPanel,
+  type PinnedData,
+  type PinnedDataItem,
+} from './DataPinningPanel';
+
+export {
+  TemplatesGallery,
+  type WorkflowTemplate,
+  type TemplateCategory,
+  type TemplateNode,
+  type TemplateConnection,
+} from './TemplatesGallery';
 
 // Types & Models
 export { AI_MODELS, AI_MODELS_BY_PROVIDER } from './types';

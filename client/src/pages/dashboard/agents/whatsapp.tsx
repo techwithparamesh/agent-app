@@ -271,7 +271,7 @@ const businessCategories = [
   },
 ];
 
-// Form schema (customFields is NOT validated)
+// Form schema
 const formSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   businessCategory: z.string().min(1, "Please select a category"),
@@ -282,6 +282,7 @@ const formSchema = z.object({
   description: z.string().max(500).optional(),
   capabilities: z.array(z.string()).min(1, "Select at least one capability"),
   customPrompt: z.string().optional(),
+  customFields: z.record(z.string(), z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;

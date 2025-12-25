@@ -9,11 +9,12 @@
  */
 
 import type { 
-  FieldSchema, 
-  ActionSchema, 
+  N8nField as FieldSchema,
+  N8nOperation as ActionSchema,
   FieldValidation,
-  AIValidationResult 
-} from './types';
+} from '../n8n-schemas/types';
+
+import type { AIValidationResult } from './types';
 
 // ============================================
 // TYPES

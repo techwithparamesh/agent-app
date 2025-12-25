@@ -1136,7 +1136,7 @@ function IntegrationsPageContent() {
 
   // Popular integrations
   const popularIntegrations = useMemo(() => {
-    return allIntegrations.filter(int => int.popular);
+    return allIntegrations.filter(int => 'popular' in int && int.popular);
   }, []);
 
   // Fetch user's configured integrations
@@ -1821,6 +1821,7 @@ interface IntegrationTrigger {
   name: string;
   icon: string;
   description: string;
+  category?: string; // Optional category for grouping
   dataFields: string[]; // What data comes with this trigger
 }
 
@@ -1832,8 +1833,8 @@ interface IntegrationAction {
   fields: Array<{ 
     key: string; 
     label: string; 
-    type: 'text' | 'textarea' | 'email' | 'number' | 'select'; 
-    placeholder: string; 
+    type: 'text' | 'textarea' | 'email' | 'number' | 'select' | 'password'; 
+    placeholder?: string; 
     helpText?: string; 
     default?: string;
     options?: string[];
@@ -5448,20 +5449,21 @@ function IntegrationConfigForm({
   };
 
   // Add step to a condition branch (TRUE or FALSE path)
-  const addStepToBranch = (conditionStepId: string, branch: 'true' | 'false', appId: string, actionId: string) => {
-    const appData = availableApps.find(a => a.id === appId);
+  const addStepToBranch = (conditionStepId: string, branch: 'true' | 'false', actionId: string, actionName: string, appIcon: string) => {
+    // Find the app that contains this action
+    const appData = availableApps.find(a => a.actions.some((act: any) => act.id === actionId));
     const action = appData?.actions.find((a: any) => a.id === actionId);
     
-    if (!appData || !action) return;
+    if (!action) return;
 
     const newStep: WorkflowStep = {
       id: `step_${Date.now()}`,
       type: 'action',
-      appId,
-      appName: appData.name,
-      appIcon: appData.icon,
+      appId: appData?.id,
+      appName: appData?.name,
+      appIcon: appIcon || appData?.icon,
       actionId,
-      actionName: action.name,
+      actionName: actionName || action.name,
       actionIcon: action.icon,
       config: {},
     };
@@ -5483,7 +5485,7 @@ function IntegrationConfigForm({
     
     toast({
       title: "Step Added to Branch",
-      description: `${appData.icon} ${action.name} added to ${branch.toUpperCase()} path`,
+      description: `${appIcon} ${actionName} added to ${branch.toUpperCase()} path`,
       duration: 2000,
     });
   };
@@ -5711,7 +5713,7 @@ function IntegrationConfigForm({
   };
 
   // Field configurations for different integration types
-  const fieldConfigs: Record<string, Array<{ key: string; label: string; type: string; placeholder: string; required?: boolean; helpText?: string }>> = {
+  const fieldConfigs: Record<string, Array<{ key: string; label: string; type: string; placeholder?: string; required?: boolean; helpText?: string; options?: string[] }>> = {
     // Communication
     whatsapp: [
       { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'Your WhatsApp API key', required: true },
@@ -8253,7 +8255,7 @@ function IntegrationConfigForm({
                           value={editingStep.delayUnit || 'minutes'} 
                           onValueChange={(v) => {
                             setWorkflowSteps(workflowSteps.map(s => 
-                              s.id === editingStep.id ? { ...s, delayUnit: v } : s
+                              s.id === editingStep.id ? { ...s, delayUnit: v as 'seconds' | 'minutes' | 'hours' | 'days' } : s
                             ));
                           }}
                         >
