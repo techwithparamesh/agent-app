@@ -102,6 +102,10 @@ import { useToast } from "@/hooks/use-toast";
 // n8n Schema registry for apps
 import { n8nSchemaRegistry, getAllN8nApps } from "@/components/workspace/n8n-schemas";
 
+// n8n-style node configuration components
+import { N8nNodeConfigModal } from "@/components/workspace/N8nNodeConfigModal";
+import { EmptyCanvasTriggerSelector } from "@/components/workspace/EmptyCanvasTriggerSelector";
+
 // ============================================
 // SAMPLE DATA
 // ============================================
@@ -150,6 +154,10 @@ export function EnhancedWorkspace() {
   const [dataPinningPanelOpen, setDataPinningPanelOpen] = useState(false);
   const [templatesGalleryOpen, setTemplatesGalleryOpen] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(true);
+
+  // n8n-style modal state
+  const [n8nModalOpen, setN8nModalOpen] = useState(false);
+  const [n8nModalNodeId, setN8nModalNodeId] = useState<string | null>(null);
 
   // Sticky notes state
   const [stickyNotes, setStickyNotes] = useState<StickyNoteData[]>([]);
@@ -301,10 +309,11 @@ export function EnhancedWorkspace() {
     flowActions.selectNode(nodeId, addToSelection);
   }, [flowActions]);
 
-  // Handle node double click
+  // Handle node double click - open n8n-style modal
   const handleNodeDoubleClick = useCallback((nodeId: string) => {
     flowActions.selectNode(nodeId);
-    setConfigPanelOpen(true);
+    setN8nModalNodeId(nodeId);
+    setN8nModalOpen(true);
   }, [flowActions]);
 
   // Handle node drag start
@@ -614,6 +623,120 @@ export function EnhancedWorkspace() {
     setAddNodePicker(null);
   }, [addNodePicker, flowActions]);
 
+  // Handle trigger selection from empty canvas selector
+  const handleEmptyCanvasTriggerSelect = useCallback((triggerId: string, appId?: string) => {
+    // Map trigger IDs to proper node configuration
+    const triggerConfigs: Record<string, { 
+      name: string; 
+      icon: string; 
+      color: string; 
+      description: string;
+    }> = {
+      manual: { 
+        name: 'Manual Trigger', 
+        icon: '👆', 
+        color: '#6b7280', 
+        description: 'Manually trigger this workflow' 
+      },
+      schedule: { 
+        name: 'Schedule Trigger', 
+        icon: '⏰', 
+        color: '#f59e0b', 
+        description: 'Run on a schedule' 
+      },
+      webhook: { 
+        name: 'Webhook', 
+        icon: '🔗', 
+        color: '#3b82f6', 
+        description: 'Trigger via HTTP request' 
+      },
+      form: { 
+        name: 'Form Submission', 
+        icon: '📝', 
+        color: '#10b981', 
+        description: 'When form is submitted' 
+      },
+      execute_workflow: { 
+        name: 'Execute Workflow', 
+        icon: '🔄', 
+        color: '#8b5cf6', 
+        description: 'When executed by another workflow' 
+      },
+      chat_trigger: { 
+        name: 'Chat Trigger', 
+        icon: '💬', 
+        color: '#ec4899', 
+        description: 'When chat message received' 
+      },
+      // App events
+      whatsapp: { 
+        name: 'WhatsApp', 
+        icon: '📱', 
+        color: '#25d366', 
+        description: 'WhatsApp message trigger' 
+      },
+      telegram: { 
+        name: 'Telegram', 
+        icon: '✈️', 
+        color: '#0088cc', 
+        description: 'Telegram message trigger' 
+      },
+      slack: { 
+        name: 'Slack', 
+        icon: '💼', 
+        color: '#4a154b', 
+        description: 'Slack event trigger' 
+      },
+      gmail: { 
+        name: 'Gmail', 
+        icon: '📧', 
+        color: '#ea4335', 
+        description: 'Gmail trigger' 
+      },
+      notion: { 
+        name: 'Notion', 
+        icon: '📓', 
+        color: '#000000', 
+        description: 'Notion trigger' 
+      },
+      stripe: { 
+        name: 'Stripe', 
+        icon: '💳', 
+        color: '#635bff', 
+        description: 'Stripe event trigger' 
+      },
+    };
+
+    const config = triggerConfigs[appId || triggerId] || {
+      name: 'Trigger',
+      icon: '⚡',
+      color: '#6b7280',
+      description: 'Workflow trigger',
+    };
+
+    const nodeData: Omit<FlowNode, 'id'> = {
+      type: 'trigger',
+      appId: appId || triggerId,
+      appName: config.name,
+      appIcon: config.icon,
+      appColor: config.color,
+      name: 'When this happens...',
+      description: config.description,
+      position: { x: 400, y: 200 },
+      status: 'incomplete',
+      config: {},
+      connections: [],
+      triggerId: appId || triggerId,
+    };
+
+    const newId = flowActions.addNode(nodeData, { x: 400, y: 200 });
+    flowActions.selectNode(newId);
+    
+    // Open the n8n-style config modal
+    setN8nModalNodeId(newId);
+    setN8nModalOpen(true);
+  }, [flowActions]);
+
   // Handle node test
   const handleNodeTest = useCallback((nodeId: string) => {
     flowActions.updateNode(nodeId, { status: 'running' });
@@ -876,7 +999,12 @@ export function EnhancedWorkspace() {
     if (contextMenu.type === 'node' && contextMenu.targetId) {
       const node = flowActions.getNode(contextMenu.targetId);
       return buildNodeContextMenu({
-        onConfigure: () => setConfigPanelOpen(true),
+        onConfigure: () => {
+          if (node) {
+            setN8nModalNodeId(node.id);
+            setN8nModalOpen(true);
+          }
+        },
         onTest: () => node && handleNodeTest(node.id),
         onRename: () => {},
         onDuplicate: handleDuplicate,
@@ -1271,7 +1399,8 @@ export function EnhancedWorkspace() {
                     onConnectionEnd={() => handleConnectionEnd(node.id)}
                     onConfigure={() => {
                       flowActions.selectNode(node.id);
-                      setConfigPanelOpen(true);
+                      setN8nModalNodeId(node.id);
+                      setN8nModalOpen(true);
                     }}
                     onDuplicate={() => {
                       flowActions.selectNode(node.id);
@@ -1315,6 +1444,13 @@ export function EnhancedWorkspace() {
                   className="shadow-lg"
                 />
               </div>
+            )}
+
+            {/* Empty Canvas Trigger Selector - n8n style */}
+            {flowState.nodes.length === 0 && (
+              <EmptyCanvasTriggerSelector
+                onSelectTrigger={handleEmptyCanvasTriggerSelect}
+              />
             )}
           </div>
 
@@ -1456,6 +1592,37 @@ export function EnhancedWorkspace() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* n8n-Style Node Configuration Modal */}
+        {n8nModalNodeId && (
+          <N8nNodeConfigModal
+            isOpen={n8nModalOpen}
+            node={flowActions.getNode(n8nModalNodeId) || undefined}
+            onClose={() => {
+              setN8nModalOpen(false);
+              setN8nModalNodeId(null);
+            }}
+            onSave={(nodeId, config, settings) => {
+              // Update node with config
+              flowActions.updateNode(nodeId, {
+                config: { ...config, ...settings },
+                status: 'configured',
+              });
+              setN8nModalOpen(false);
+              setN8nModalNodeId(null);
+            }}
+            onDelete={(nodeId) => {
+              flowActions.deleteNode(nodeId);
+              setN8nModalOpen(false);
+              setN8nModalNodeId(null);
+            }}
+            onTest={async (nodeId) => {
+              handleNodeTest(nodeId);
+              // Simulate test result
+              return { success: true, data: { message: 'Test completed' } };
+            }}
+          />
+        )}
       </div>
     </TooltipProvider>
   );
