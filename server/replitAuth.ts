@@ -185,7 +185,13 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   // Development mode: bypass authentication if REPL_ID is not set
+  // BUT respect if user has explicitly logged out
   if (!process.env.REPL_ID && process.env.NODE_ENV === "development") {
+    // Check if user has explicitly logged out - don't auto-login
+    if ((req as any).session?.loggedOut) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
     // Import storage dynamically to avoid circular dependency
     const { storage } = await import("./storage");
     

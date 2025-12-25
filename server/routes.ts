@@ -146,8 +146,9 @@ export async function registerRoutes(
         profileImageUrl: `https://ui-avatars.com/api/?name=${firstName}+${lastName}`,
       });
       
-      // Set session and save it
+      // Set session and save it (clear loggedOut flag if set)
       req.session.userId = user.id;
+      req.session.loggedOut = false;
       req.session.save((err: any) => {
         if (err) {
           console.error("Session save error:", err);
@@ -182,8 +183,9 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid email or password" });
       }
       
-      // Set session and save it
+      // Set session and save it (clear loggedOut flag if set)
       req.session.userId = user.id;
+      req.session.loggedOut = false;
       req.session.save((err: any) => {
         if (err) {
           console.error("Session save error:", err);
@@ -203,10 +205,26 @@ export async function registerRoutes(
 
   // Logout route
   app.post("/api/auth/logout", (req: any, res) => {
+    // In dev mode, set a flag to prevent auto-login from re-authenticating
+    if (!process.env.REPL_ID && process.env.NODE_ENV === "development") {
+      req.session.userId = null;
+      req.session.loggedOut = true;
+      req.session.save((err: any) => {
+        if (err) {
+          console.error("Logout error:", err);
+          return res.status(500).json({ message: "Failed to logout" });
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: "Logged out successfully" });
+      });
+      return;
+    }
+    
     req.session.destroy((err: any) => {
       if (err) {
         return res.status(500).json({ message: "Failed to logout" });
       }
+      res.clearCookie('connect.sid');
       res.json({ message: "Logged out successfully" });
     });
   });
