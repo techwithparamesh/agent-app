@@ -124,6 +124,94 @@ export const messages = mysqlTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ========== INTEGRATION & WORKFLOW TABLES ==========
+
+// User credentials for third-party integrations (encrypted)
+export const integrationCredentials = mysqlTable("integration_credentials", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(), // User-friendly name like "My OpenAI Key"
+  appId: varchar("app_id", { length: 100 }).notNull(), // e.g., 'openai', 'slack', 'gmail'
+  credentialType: varchar("credential_type", { length: 50 }).notNull(), // 'api_key', 'oauth2', 'basic_auth'
+  // Encrypted credential data - stores API keys, tokens, etc.
+  encryptedData: text("encrypted_data").notNull(),
+  // OAuth2 specific fields
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  // Metadata
+  scopes: json("scopes").$type<string[]>(),
+  isValid: boolean("is_valid").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  lastValidatedAt: timestamp("last_validated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  userAppIdx: index("idx_credentials_user_app").on(table.userId, table.appId),
+}));
+
+// Integration workflows (like n8n workflows)
+export const integrationWorkflows = mysqlTable("integration_workflows", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  // Workflow definition (nodes, connections, etc.)
+  nodes: json("nodes").$type<any[]>(),
+  connections: json("connections").$type<any[]>(),
+  // Settings
+  isActive: boolean("is_active").default(false),
+  triggerType: varchar("trigger_type", { length: 50 }), // 'webhook', 'schedule', 'manual', 'event'
+  triggerConfig: json("trigger_config").$type<Record<string, any>>(),
+  // Webhook specific
+  webhookId: varchar("webhook_id", { length: 100 }).unique(),
+  webhookUrl: varchar("webhook_url", { length: 500 }),
+  // Schedule specific
+  cronExpression: varchar("cron_expression", { length: 100 }),
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
+  // Statistics
+  executionCount: int("execution_count").default(0),
+  lastExecutedAt: timestamp("last_executed_at"),
+  lastExecutionStatus: varchar("last_execution_status", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  userIdx: index("idx_workflows_user").on(table.userId),
+  webhookIdx: index("idx_workflows_webhook").on(table.webhookId),
+}));
+
+// Workflow execution history
+export const workflowExecutions = mysqlTable("workflow_executions", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  workflowId: varchar("workflow_id", { length: 36 }).notNull().references(() => integrationWorkflows.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, running, success, error, cancelled
+  triggerType: varchar("trigger_type", { length: 50 }), // what triggered this execution
+  triggerData: json("trigger_data").$type<Record<string, any>>(), // input data
+  // Execution details
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  duration: int("duration"), // milliseconds
+  // Results
+  outputData: json("output_data").$type<Record<string, any>>(),
+  errorMessage: text("error_message"),
+  errorStack: text("error_stack"),
+  // Node-level execution data
+  nodeExecutions: json("node_executions").$type<Array<{
+    nodeId: string;
+    nodeName: string;
+    status: string;
+    inputData?: any;
+    outputData?: any;
+    error?: string;
+    startedAt?: string;
+    completedAt?: string;
+  }>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  workflowIdx: index("idx_executions_workflow").on(table.workflowId),
+  statusIdx: index("idx_executions_status").on(table.status),
+}));
+
 // ========== WHATSAPP AGENT TABLES ==========
 
 // WhatsApp Configuration for agents
@@ -743,6 +831,33 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   billingEvents: many(messageBillingEvents),
   subscription: one(userSubscriptions),
   invoices: many(invoices),
+  credentials: many(integrationCredentials),
+  workflows: many(integrationWorkflows),
+}));
+
+// Integration credentials relations
+export const integrationCredentialsRelations = relations(integrationCredentials, ({ one }) => ({
+  user: one(users, {
+    fields: [integrationCredentials.userId],
+    references: [users.id],
+  }),
+}));
+
+// Integration workflows relations
+export const integrationWorkflowsRelations = relations(integrationWorkflows, ({ one, many }) => ({
+  user: one(users, {
+    fields: [integrationWorkflows.userId],
+    references: [users.id],
+  }),
+  executions: many(workflowExecutions),
+}));
+
+// Workflow executions relations
+export const workflowExecutionsRelations = relations(workflowExecutions, ({ one }) => ({
+  workflow: one(integrationWorkflows, {
+    fields: [workflowExecutions.workflowId],
+    references: [integrationWorkflows.id],
+  }),
 }));
 
 export const agentsRelations = relations(agents, ({ one, many }) => ({
@@ -1044,6 +1159,24 @@ export const insertHandoffQueueSchema = createInsertSchema(handoffQueue).omit({
   updatedAt: true,
 });
 
+// Integration schemas
+export const insertIntegrationCredentialSchema = createInsertSchema(integrationCredentials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertIntegrationWorkflowSchema = createInsertSchema(integrationWorkflows).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkflowExecutionSchema = createInsertSchema(workflowExecutions).omit({
+  id: true,
+  createdAt: true,
+});
+
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -1164,4 +1297,12 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InsertWebhookEvent = z.infer<typeof insertWebhookEventSchema>;
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 
+// Integration types
+export type InsertIntegrationCredential = z.infer<typeof insertIntegrationCredentialSchema>;
+export type IntegrationCredential = typeof integrationCredentials.$inferSelect;
 
+export type InsertIntegrationWorkflow = z.infer<typeof insertIntegrationWorkflowSchema>;
+export type IntegrationWorkflow = typeof integrationWorkflows.$inferSelect;
+
+export type InsertWorkflowExecution = z.infer<typeof insertWorkflowExecutionSchema>;
+export type WorkflowExecution = typeof workflowExecutions.$inferSelect;

@@ -13,6 +13,7 @@ import whatsappRoutes from "./whatsapp/routes";
 import bspRoutes from "./bsp/routes";
 import billingRoutes from "./billing/routes";
 import { integrationRoutes } from "./integrations/routes";
+import credentialsRoutes from "./integrations/credentialsRoutes";
 import { stripeService } from "./billing/stripe";
 import express from "express";
 import { 
@@ -120,6 +121,9 @@ export async function registerRoutes(
   // ========== INTEGRATION ROUTES ==========
   // Mount integration routes for Google Sheets, Webhooks, etc.
   app.use("/api/integrations", isAuthenticated, integrationRoutes);
+  
+  // Mount credentials & workflow routes
+  app.use("/api/integrations", credentialsRoutes);
 
   // ========== AUTH ROUTES ==========
   

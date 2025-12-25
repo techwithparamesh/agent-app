@@ -95,6 +95,10 @@ import { CredentialManager, type Credential } from "@/components/workspace/Crede
 import { DataPinningPanel, type PinnedData } from "@/components/workspace/DataPinningPanel";
 import { TemplatesGallery, type WorkflowTemplate } from "@/components/workspace/TemplatesGallery";
 
+// API hooks for backend sync
+import { useCredentialsApi, useWorkflowsApi } from "@/hooks/useWorkflowApi";
+import { useToast } from "@/hooks/use-toast";
+
 // n8n Schema registry for apps
 import { n8nSchemaRegistry, getAllN8nApps } from "@/components/workspace/n8n-schemas";
 
@@ -151,8 +155,13 @@ export function EnhancedWorkspace() {
   const [stickyNotes, setStickyNotes] = useState<StickyNoteData[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
-  // Credentials state (would be persisted to backend)
-  const [credentials, setCredentials] = useState<Credential[]>([]);
+  // API Hooks for backend sync
+  const { toast } = useToast();
+  const credentialsApi = useCredentialsApi();
+  const workflowsApi = useWorkflowsApi();
+  
+  // Current workflow ID (for save/update)
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
 
   // Pinned data state (for testing)
   const [pinnedData, setPinnedData] = useState<PinnedData[]>([]);
@@ -207,21 +216,55 @@ export function EnhancedWorkspace() {
     return flowActions.getNode(nodeId) || null;
   }, [flowState.selectedNodeIds, flowActions]);
 
+  // Load workflows list on mount (for workflow selector later)
+  useEffect(() => {
+    workflowsApi.loadWorkflows();
+  }, []);
+
   // ============================================
   // HANDLERS
   // ============================================
 
-  // Handle app drop from panel
+  // Handle app drop from panel - determine node type based on app capabilities
   const handleAppDrop = useCallback((appData: typeof appCatalog[0], position: { x: number; y: number }) => {
     const isFirstNode = flowState.nodes.length === 0;
+    const hasTrigger = flowState.nodes.some(n => n.type === 'trigger');
+    
+    // Determine node type based on app capabilities and workflow state
+    let nodeType: 'trigger' | 'action' = 'action';
+    let nodeName = 'Do this...';
+    
+    // Check if app can be a trigger
+    const canBeTrigger = appData.nodeTypes === 'trigger' || appData.nodeTypes === 'both';
+    const canBeAction = appData.nodeTypes === 'action' || appData.nodeTypes === 'both';
+    
+    if (isFirstNode || !hasTrigger) {
+      // First node or no trigger yet - prefer trigger if app supports it
+      if (canBeTrigger) {
+        nodeType = 'trigger';
+        nodeName = 'When this happens...';
+      } else {
+        nodeType = 'action';
+        nodeName = appData.actions?.[0]?.name || 'Do this...';
+      }
+    } else {
+      // Already have a trigger - must be action
+      if (!canBeAction) {
+        // App is trigger-only, can't add it
+        console.warn(`${appData.name} can only be used as a trigger`);
+        return;
+      }
+      nodeType = 'action';
+      nodeName = appData.actions?.[0]?.name || 'Do this...';
+    }
     
     const nodeData: Omit<FlowNode, 'id'> = {
-      type: isFirstNode ? 'trigger' : 'action',
+      type: nodeType,
       appId: appData.id,
       appName: appData.name,
       appIcon: appData.icon,
       appColor: appData.color,
-      name: isFirstNode ? 'When this happens...' : 'Do this...',
+      name: nodeName,
       description: appData.description,
       position,
       status: 'incomplete',
@@ -616,13 +659,49 @@ export function EnhancedWorkspace() {
     flowActions.selectNodes(newIds);
   }, [flowState.selectedNodeIds, flowActions]);
 
-  // Save flow
+  // Save flow to backend
   const handleSave = useCallback(async () => {
     setIsSaving(true);
-    // Simulate save
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-  }, []);
+    try {
+      // Extract connections from nodes
+      const connections: Array<{ sourceId: string; targetId: string }> = [];
+      flowState.nodes.forEach(node => {
+        node.connections.forEach(targetId => {
+          connections.push({ sourceId: node.id, targetId });
+        });
+      });
+
+      // Get trigger config from first node if it's a trigger
+      const triggerNode = flowState.nodes.find(n => n.type === 'trigger');
+      const triggerConfig = triggerNode?.config || {};
+
+      const result = await workflowsApi.saveWorkflow({
+        name: flowName,
+        description: '',
+        nodes: flowState.nodes,
+        connections,
+        triggerConfig,
+        isActive,
+      }, currentWorkflowId || undefined);
+
+      if (result) {
+        setCurrentWorkflowId(result.id);
+        toast({
+          title: "Workflow saved",
+          description: `"${flowName}" has been saved successfully.`,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save workflow:', err);
+      toast({
+        title: "Save failed",
+        description: "Failed to save workflow. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [flowState.nodes, flowName, isActive, currentWorkflowId, workflowsApi, toast]);
 
   // Handle template import
   const handleImportTemplate = useCallback((template: WorkflowTemplate) => {
@@ -664,44 +743,77 @@ export function EnhancedWorkspace() {
     setTemplatesGalleryOpen(false);
   }, [flowState.nodes, flowActions]);
 
-  // Credential handlers (async with Promise returns for CredentialManager interface)
+  // Credential handlers - connected to backend API
   const handleCreateCredential = useCallback(async (cred: Omit<Credential, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Credential> => {
-    const newCred: Credential = {
-      ...cred,
-      id: `cred_${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: 'untested',
-    };
-    setCredentials(prev => [...prev, newCred]);
-    return newCred;
-  }, []);
+    try {
+      const newCred = await credentialsApi.createCredential(cred);
+      toast({
+        title: "Credential created",
+        description: `"${cred.name}" has been saved securely.`,
+      });
+      return newCred;
+    } catch (err) {
+      toast({
+        title: "Create failed",
+        description: "Failed to create credential.",
+        variant: "destructive",
+      });
+      throw err;
+    }
+  }, [credentialsApi, toast]);
 
   const handleUpdateCredential = useCallback(async (id: string, updates: Partial<Credential>): Promise<void> => {
-    setCredentials(prev => prev.map(c => c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c));
-  }, []);
+    try {
+      await credentialsApi.updateCredential(id, updates);
+      toast({
+        title: "Credential updated",
+        description: "Your changes have been saved.",
+      });
+    } catch (err) {
+      toast({
+        title: "Update failed",
+        description: "Failed to update credential.",
+        variant: "destructive",
+      });
+      throw err;
+    }
+  }, [credentialsApi, toast]);
 
   const handleDeleteCredential = useCallback(async (id: string): Promise<void> => {
-    setCredentials(prev => prev.filter(c => c.id !== id));
-  }, []);
+    try {
+      await credentialsApi.deleteCredential(id);
+      toast({
+        title: "Credential deleted",
+        description: "The credential has been removed.",
+      });
+    } catch (err) {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete credential.",
+        variant: "destructive",
+      });
+      throw err;
+    }
+  }, [credentialsApi, toast]);
 
   const handleTestCredential = useCallback(async (id: string): Promise<{ success: boolean; message?: string }> => {
-    // Simulate credential test
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const credential = credentials.find(c => c.id === id);
-    if (!credential) {
-      return { success: false, message: 'Credential not found' };
+    try {
+      const result = await credentialsApi.testCredential(id);
+      toast({
+        title: result.success ? "Connection successful" : "Connection failed",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+      return result;
+    } catch (err) {
+      toast({
+        title: "Test failed",
+        description: "Failed to test credential.",
+        variant: "destructive",
+      });
+      return { success: false, message: 'Failed to test credential' };
     }
-    // Simulate 80% success rate
-    const success = Math.random() > 0.2;
-    setCredentials(prev => prev.map(c => 
-      c.id === id ? { ...c, status: success ? 'valid' : 'invalid', lastTestedAt: new Date() } : c
-    ));
-    return { 
-      success, 
-      message: success ? 'Connection successful!' : 'Invalid credentials. Please check your API key.' 
-    };
-  }, [credentials]);
+  }, [credentialsApi, toast]);
 
   // Data pinning handlers
   const handlePinData = useCallback((nodeId: string, items: any[]) => {
@@ -1298,7 +1410,7 @@ export function EnhancedWorkspace() {
         <Sheet open={credentialsPanelOpen} onOpenChange={setCredentialsPanelOpen}>
           <SheetContent side="right" className="w-[500px] sm:w-[600px] p-0">
             <CredentialManager
-              credentials={credentials}
+              credentials={credentialsApi.credentials}
               templates={[]}
               onCreateCredential={handleCreateCredential}
               onUpdateCredential={handleUpdateCredential}

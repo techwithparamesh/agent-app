@@ -15,6 +15,9 @@ import {
   userSubscriptions,
   invoices,
   webhookEvents,
+  integrationCredentials,
+  integrationWorkflows,
+  workflowExecutions,
   type User,
   type UpsertUser,
   type Agent,
@@ -43,6 +46,12 @@ import {
   type InsertInvoice,
   type WebhookEvent,
   type InsertWebhookEvent,
+  type IntegrationCredential,
+  type InsertIntegrationCredential,
+  type IntegrationWorkflow,
+  type InsertIntegrationWorkflow,
+  type WorkflowExecution,
+  type InsertWorkflowExecution,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -79,6 +88,28 @@ export interface IStorage {
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
   getMessagesByConversationId(conversationId: string): Promise<Message[]>;
+
+  // Integration Credentials
+  getCredentialsByUserId(userId: string): Promise<IntegrationCredential[]>;
+  getCredentialById(id: string): Promise<IntegrationCredential | undefined>;
+  getCredentialByUserAndApp(userId: string, appId: string): Promise<IntegrationCredential | undefined>;
+  createCredential(userId: string, credential: Omit<InsertIntegrationCredential, 'userId'>): Promise<IntegrationCredential>;
+  updateCredential(id: string, data: Partial<InsertIntegrationCredential>): Promise<IntegrationCredential | undefined>;
+  deleteCredential(id: string): Promise<void>;
+
+  // Integration Workflows
+  getWorkflowsByUserId(userId: string): Promise<IntegrationWorkflow[]>;
+  getWorkflowById(id: string): Promise<IntegrationWorkflow | undefined>;
+  getWorkflowByWebhookId(webhookId: string): Promise<IntegrationWorkflow | undefined>;
+  createWorkflow(userId: string, workflow: Omit<InsertIntegrationWorkflow, 'userId'>): Promise<IntegrationWorkflow>;
+  updateWorkflow(id: string, data: Partial<InsertIntegrationWorkflow>): Promise<IntegrationWorkflow | undefined>;
+  deleteWorkflow(id: string): Promise<void>;
+
+  // Workflow Executions
+  getExecutionsByWorkflowId(workflowId: string, limit?: number): Promise<WorkflowExecution[]>;
+  getExecutionById(id: string): Promise<WorkflowExecution | undefined>;
+  createExecution(execution: InsertWorkflowExecution): Promise<WorkflowExecution>;
+  updateExecution(id: string, data: Partial<InsertWorkflowExecution>): Promise<WorkflowExecution | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -830,6 +861,136 @@ export class DatabaseStorage implements IStorage {
       .where(eq(webhookEvents.status, 'failed'))
       .orderBy(desc(webhookEvents.createdAt))
       .limit(limit);
+  }
+
+  // ========== INTEGRATION CREDENTIALS ==========
+  async getCredentialsByUserId(userId: string): Promise<IntegrationCredential[]> {
+    return db
+      .select()
+      .from(integrationCredentials)
+      .where(eq(integrationCredentials.userId, userId))
+      .orderBy(desc(integrationCredentials.createdAt));
+  }
+
+  async getCredentialById(id: string): Promise<IntegrationCredential | undefined> {
+    const [credential] = await db
+      .select()
+      .from(integrationCredentials)
+      .where(eq(integrationCredentials.id, id));
+    return credential;
+  }
+
+  async getCredentialByUserAndApp(userId: string, appId: string): Promise<IntegrationCredential | undefined> {
+    const [credential] = await db
+      .select()
+      .from(integrationCredentials)
+      .where(
+        and(
+          eq(integrationCredentials.userId, userId),
+          eq(integrationCredentials.appId, appId)
+        )
+      );
+    return credential;
+  }
+
+  async createCredential(userId: string, data: Omit<InsertIntegrationCredential, 'userId'>): Promise<IntegrationCredential> {
+    const id = crypto.randomUUID();
+    await db.insert(integrationCredentials).values({ ...data, id, userId });
+    return this.getCredentialById(id) as Promise<IntegrationCredential>;
+  }
+
+  async updateCredential(id: string, data: Partial<InsertIntegrationCredential>): Promise<IntegrationCredential | undefined> {
+    await db
+      .update(integrationCredentials)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(integrationCredentials.id, id));
+    return this.getCredentialById(id);
+  }
+
+  async deleteCredential(id: string): Promise<void> {
+    await db.delete(integrationCredentials).where(eq(integrationCredentials.id, id));
+  }
+
+  // ========== INTEGRATION WORKFLOWS ==========
+  async getWorkflowsByUserId(userId: string): Promise<IntegrationWorkflow[]> {
+    return db
+      .select()
+      .from(integrationWorkflows)
+      .where(eq(integrationWorkflows.userId, userId))
+      .orderBy(desc(integrationWorkflows.updatedAt));
+  }
+
+  async getWorkflowById(id: string): Promise<IntegrationWorkflow | undefined> {
+    const [workflow] = await db
+      .select()
+      .from(integrationWorkflows)
+      .where(eq(integrationWorkflows.id, id));
+    return workflow;
+  }
+
+  async getWorkflowByWebhookId(webhookId: string): Promise<IntegrationWorkflow | undefined> {
+    const [workflow] = await db
+      .select()
+      .from(integrationWorkflows)
+      .where(eq(integrationWorkflows.webhookId, webhookId));
+    return workflow;
+  }
+
+  async createWorkflow(userId: string, data: Omit<InsertIntegrationWorkflow, 'userId'>): Promise<IntegrationWorkflow> {
+    const id = crypto.randomUUID();
+    const webhookId = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+    await db.insert(integrationWorkflows).values({ 
+      ...data, 
+      id, 
+      userId,
+      webhookId,
+      webhookUrl: `/api/webhooks/workflow/${webhookId}`,
+    });
+    return this.getWorkflowById(id) as Promise<IntegrationWorkflow>;
+  }
+
+  async updateWorkflow(id: string, data: Partial<InsertIntegrationWorkflow>): Promise<IntegrationWorkflow | undefined> {
+    await db
+      .update(integrationWorkflows)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(integrationWorkflows.id, id));
+    return this.getWorkflowById(id);
+  }
+
+  async deleteWorkflow(id: string): Promise<void> {
+    await db.delete(integrationWorkflows).where(eq(integrationWorkflows.id, id));
+  }
+
+  // ========== WORKFLOW EXECUTIONS ==========
+  async getExecutionsByWorkflowId(workflowId: string, limit: number = 50): Promise<WorkflowExecution[]> {
+    return db
+      .select()
+      .from(workflowExecutions)
+      .where(eq(workflowExecutions.workflowId, workflowId))
+      .orderBy(desc(workflowExecutions.createdAt))
+      .limit(limit);
+  }
+
+  async getExecutionById(id: string): Promise<WorkflowExecution | undefined> {
+    const [execution] = await db
+      .select()
+      .from(workflowExecutions)
+      .where(eq(workflowExecutions.id, id));
+    return execution;
+  }
+
+  async createExecution(data: InsertWorkflowExecution): Promise<WorkflowExecution> {
+    const id = crypto.randomUUID();
+    await db.insert(workflowExecutions).values({ ...data, id });
+    return this.getExecutionById(id) as Promise<WorkflowExecution>;
+  }
+
+  async updateExecution(id: string, data: Partial<InsertWorkflowExecution>): Promise<WorkflowExecution | undefined> {
+    await db
+      .update(workflowExecutions)
+      .set(data)
+      .where(eq(workflowExecutions.id, id));
+    return this.getExecutionById(id);
   }
 }
 
