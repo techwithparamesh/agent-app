@@ -251,7 +251,7 @@ export function EmptyCanvasTriggerSelector({
                   <TriggerItem
                     key={trigger.id}
                     trigger={trigger}
-                    onClick={() => onSelectTrigger(trigger.id, trigger.id.split('_')[0])}
+                    onClick={() => onSelectTrigger(trigger.id)}
                   />
                 ))}
               </>
