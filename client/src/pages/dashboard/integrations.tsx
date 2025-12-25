@@ -1276,10 +1276,6 @@ function IntegrationsPageContent() {
               <Plus className="h-5 w-5 mr-2" />
               Quick Setup
             </Button>
-            <Button variant="outline" size="lg" onClick={() => setLocation('/dashboard/automations')}>
-              <Workflow className="h-5 w-5 mr-2" />
-              Automations
-            </Button>
             <Button size="lg" onClick={() => openWorkspace()} className="bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90">
               <Layout className="h-5 w-5 mr-2" />
               Open Flow Builder
