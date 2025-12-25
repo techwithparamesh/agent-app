@@ -186,10 +186,29 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   // Development mode: bypass authentication if REPL_ID is not set
   if (!process.env.REPL_ID && process.env.NODE_ENV === "development") {
-    // Create a mock user for development (skip database in dev mode)
+    // Import storage dynamically to avoid circular dependency
+    const { storage } = await import("./storage");
+    
+    // Check if dev user exists in database, create if not
+    const DEV_USER_ID = "dev-user-001";
+    let devUser = await storage.getUser(DEV_USER_ID);
+    
+    if (!devUser) {
+      // Create the dev user in the database
+      console.log("Creating development user in database...");
+      devUser = await storage.upsertUser({
+        id: DEV_USER_ID,
+        email: "dev@example.com",
+        firstName: "Development",
+        lastName: "User",
+        profileImageUrl: "https://ui-avatars.com/api/?name=Dev+User",
+      });
+      console.log("Development user created:", devUser?.id);
+    }
+    
     const mockUser = {
       claims: {
-        sub: "dev-user-001",
+        sub: DEV_USER_ID,
         email: "dev@example.com",
         name: "Development User",
         profile_image_url: "https://ui-avatars.com/api/?name=Dev+User"
