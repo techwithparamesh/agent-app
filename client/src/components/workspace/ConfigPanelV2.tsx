@@ -530,30 +530,15 @@ export function ConfigPanelV2({
       return;
     }
     
-    // Fallback: Demo mode or apps without OAuth configured
-    // Show a dialog to enter credentials instead of auto-connecting
-    setIsAuthenticating(true);
+    // Fallback: OAuth not configured - switch to API key auth method
     toast({
-      title: "Demo Mode",
-      description: `OAuth not configured for ${node.appName}. Using demo connection.`,
+      title: "OAuth Not Configured",
+      description: `Please use API Key authentication for ${node.appName}.`,
+      variant: "default",
     });
     
-    try {
-      await new Promise(r => setTimeout(r, 1500));
-      setIsAuthenticated(true);
-      toast({
-        title: "Connected (Demo)!",
-        description: `Demo connection established for ${node.appName}.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Connection failed",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAuthenticating(false);
-    }
+    // Switch to API key method instead of auto-connecting
+    setAuthMethod('apikey');
   };
 
   const handleApiKeyVerify = async () => {
@@ -662,6 +647,17 @@ export function ConfigPanelV2({
   // ============================================================================
 
   const renderTriggerTypeStep = () => {
+    // Check if app has specific triggers
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const appTriggers = appConfig?.triggers || [];
+    const hasAppTriggers = appTriggers.length > 0;
+    
+    // If app has specific triggers, show ONLY app-specific triggers (skip generic types)
+    if (hasAppTriggers) {
+      return renderAppSpecificTriggerStep();
+    }
+    
+    // Otherwise show generic trigger types
     const selectedConfig = triggerType && triggerType in TRIGGER_CONFIGS 
       ? TRIGGER_CONFIGS[triggerType as TriggerConfigKey] 
       : null;
@@ -747,9 +743,123 @@ export function ConfigPanelV2({
             </CardContent>
           </Card>
         )}
+      </div>
+    );
+  };
+  
+  // App-specific trigger step - shows only the app's triggers without generic types
+  const renderAppSpecificTriggerStep = () => {
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const triggers = appConfig?.triggers || [];
 
-        {/* App-specific trigger selector */}
-        {renderAppTriggerSelector()}
+    const filteredTriggers = triggers.filter(trigger =>
+      trigger.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trigger.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const selectedTrigger = triggers.find(t => t.id === selectedTriggerId);
+
+    return (
+      <div className="space-y-4">
+        {/* Header with context */}
+        <div className="flex items-center gap-3 pb-2">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50">
+            <span className="text-2xl">{node.appIcon}</span>
+          </div>
+          <div>
+            <h3 className="font-semibold">Select {node.appName} Trigger</h3>
+            <p className="text-sm text-muted-foreground">
+              Choose which event should trigger this workflow
+            </p>
+          </div>
+        </div>
+        
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={`Search ${node.appName} triggers...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
+        </div>
+
+        {/* Trigger list */}
+        <ScrollArea className="h-[320px]">
+          <div className="space-y-2 pr-2">
+            {filteredTriggers.map((trigger) => {
+              const isSelected = selectedTriggerId === trigger.id;
+              return (
+                <Card
+                  key={trigger.id}
+                  className={cn(
+                    "cursor-pointer transition-all duration-200",
+                    "hover:border-primary/50 hover:shadow-sm",
+                    isSelected && "ring-2 ring-primary border-primary shadow-sm"
+                  )}
+                  onClick={() => {
+                    setSelectedTriggerId(trigger.id);
+                    if (trigger.defaultTriggerType) {
+                      setTriggerType(trigger.defaultTriggerType as TriggerType);
+                    } else if (trigger.triggerTypes?.[0]) {
+                      setTriggerType(trigger.triggerTypes[0] as TriggerType);
+                    }
+                    setDynamicFields({});
+                  }}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                        isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
+                      )}>
+                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm">{trigger.name}</p>
+                          {trigger.triggerTypes && (
+                            <Badge variant="outline" className="text-[10px] h-5">
+                              {trigger.triggerTypes[0]}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {trigger.description}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {filteredTriggers.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No triggers found</p>
+                <p className="text-xs">Try a different search term</p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Trigger config fields */}
+        {selectedTrigger && selectedTrigger.fields && selectedTrigger.fields.length > 0 && (
+          <div className="space-y-3 pt-3 border-t">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Settings className="h-3.5 w-3.5" />
+              Configure Trigger
+            </Label>
+            <div className="space-y-3">
+              {selectedTrigger.fields.map(field => renderDynamicField(field))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -791,8 +901,8 @@ export function ConfigPanelV2({
         </Alert>
       )}
 
-      {/* Auth method tabs - only show if both methods available */}
-      {(hasOAuth || hasApiKey) && !isAuthenticated && (
+      {/* Auth method tabs - always show since API key is always available */}
+      {!isAuthenticated && (
         <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
           {hasOAuth && (
             <Button
@@ -805,17 +915,15 @@ export function ConfigPanelV2({
               OAuth
             </Button>
           )}
-          {hasApiKey && (
-            <Button
-              variant={authMethod === 'apikey' ? 'default' : 'ghost'}
-              size="sm"
-              className={cn("h-9", !hasOAuth && "col-span-2")}
-              onClick={() => setAuthMethod('apikey')}
-            >
-              <Key className="h-3.5 w-3.5 mr-1.5" />
-              API Key
-            </Button>
-          )}
+          <Button
+            variant={authMethod === 'apikey' ? 'default' : 'ghost'}
+            size="sm"
+            className={cn("h-9", !hasOAuth && "col-span-2")}
+            onClick={() => setAuthMethod('apikey')}
+          >
+            <Key className="h-3.5 w-3.5 mr-1.5" />
+            API Key
+          </Button>
         </div>
       )}
 
@@ -868,7 +976,7 @@ export function ConfigPanelV2({
         </Card>
       )}
 
-      {/* API Key flow */}
+      {/* API Key flow - always available */}
       {authMethod === 'apikey' && !isAuthenticated && (
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -977,21 +1085,6 @@ export function ConfigPanelV2({
         </Card>
       )}
       
-      {/* No auth methods available */}
-      {!hasOAuth && !hasApiKey && !isAuthenticated && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            This app doesn't require authentication or uses a different auth method.
-            <button 
-              className="ml-1 text-primary underline hover:no-underline text-sm"
-              onClick={() => setIsAuthenticated(true)}
-            >
-              Continue without auth
-            </button>
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
   };

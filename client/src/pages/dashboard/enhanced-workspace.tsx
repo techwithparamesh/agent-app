@@ -668,42 +668,66 @@ export function EnhancedWorkspace() {
         color: '#ec4899', 
         description: 'When chat message received' 
       },
-      // App events
-      whatsapp: { 
+      // App events - using IDs that match EmptyCanvasTriggerSelector
+      whatsapp_message: { 
         name: 'WhatsApp', 
-        icon: '📱', 
+        icon: '💬', 
         color: '#25d366', 
         description: 'WhatsApp message trigger' 
       },
-      telegram: { 
+      telegram_message: { 
         name: 'Telegram', 
         icon: '✈️', 
         color: '#0088cc', 
         description: 'Telegram message trigger' 
       },
-      slack: { 
+      slack_message: { 
         name: 'Slack', 
         icon: '💼', 
         color: '#4a154b', 
         description: 'Slack event trigger' 
       },
-      gmail: { 
+      gmail_received: { 
         name: 'Gmail', 
         icon: '📧', 
         color: '#ea4335', 
         description: 'Gmail trigger' 
       },
-      notion: { 
+      notion_page: { 
         name: 'Notion', 
         icon: '📓', 
         color: '#000000', 
         description: 'Notion trigger' 
       },
-      stripe: { 
+      stripe_payment: { 
         name: 'Stripe', 
         icon: '💳', 
         color: '#635bff', 
         description: 'Stripe event trigger' 
+      },
+      airtable_record: {
+        name: 'Airtable',
+        icon: '📑',
+        color: '#FCBF49',
+        description: 'Airtable record trigger'
+      },
+      hubspot_contact: {
+        name: 'HubSpot',
+        icon: '🧲',
+        color: '#FF7A59',
+        description: 'HubSpot contact trigger'
+      },
+      google_sheet_row: {
+        name: 'Google Sheets',
+        icon: '📊',
+        color: '#34A853',
+        description: 'Google Sheets row trigger'
+      },
+      github_event: {
+        name: 'GitHub',
+        icon: '🐙',
+        color: '#181717',
+        description: 'GitHub event trigger'
       },
     };
 
@@ -732,9 +756,8 @@ export function EnhancedWorkspace() {
     const newId = flowActions.addNode(nodeData, { x: 400, y: 200 });
     flowActions.selectNode(newId);
     
-    // Open the n8n-style config modal
-    setN8nModalNodeId(newId);
-    setN8nModalOpen(true);
+    // Open the side panel for configuration (better UX than full screen)
+    setConfigPanelOpen(true);
   }, [flowActions]);
 
   // Handle node test

@@ -208,9 +208,9 @@ export function EmptyCanvasTriggerSelector({
   };
 
   return (
-    <div className={cn("absolute inset-0 flex items-center justify-center pointer-events-none", className)}>
+    <div className={cn("absolute inset-0 flex items-center justify-end pr-6 pointer-events-none", className)}>
       {/* Right side - Trigger selector panel */}
-      <div className="w-96 bg-background border rounded-lg shadow-lg overflow-hidden pointer-events-auto">
+      <div className="w-96 bg-background border rounded-lg shadow-lg overflow-hidden pointer-events-auto max-h-[80vh]">
         <div className="p-4 border-b">
           <h3 className="font-semibold text-lg">
             {showAppEvents ? 'Select an app' : 'What triggers this workflow?'}

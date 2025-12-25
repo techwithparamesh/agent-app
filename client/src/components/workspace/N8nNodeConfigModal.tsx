@@ -74,6 +74,7 @@ export interface NodeOptionalField {
   type: NodeParameter['type'];
   description?: string;
   default?: any;
+  placeholder?: string;
   options?: { value: string; label: string }[];
   showWhen?: { field: string; value: any };
 }
@@ -219,16 +220,16 @@ export const triggerConfigs: Record<string, TriggerNodeConfig> = {
       },
       {
         key: 'makeAvailableInChat',
-        label: 'Make Available in n8n Chat',
+        label: 'Make Available in Agent Hub',
         type: 'boolean',
-        description: 'Choose whether to make the agent available to Chat Hub',
+        description: 'Choose whether to make the agent available in your Agent Hub',
         default: false,
       },
       {
         key: 'agentName',
         label: 'Agent Name',
         type: 'string',
-        description: 'The name of the agent on Chat Hub',
+        description: 'The display name of the agent in Agent Hub',
         placeholder: 'My AI Assistant',
         dependsOn: { field: 'makeAvailableInChat', value: true },
       },
@@ -621,6 +622,202 @@ export const triggerConfigs: Record<string, TriggerNodeConfig> = {
     optionalFields: [],
     defaultMockData: [
       { json: { id: "page123", title: "New Page", properties: {}, created_time: new Date().toISOString() } },
+    ],
+  },
+
+  airtable_record: {
+    id: 'airtable_record',
+    name: 'Airtable Trigger',
+    description: 'Trigger when a record is created or updated in Airtable',
+    icon: '📑',
+    color: '#FCBF49',
+    version: '1.0',
+    testable: true,
+    testButtonLabel: 'Test trigger',
+    parameters: [
+      {
+        key: 'credential',
+        label: 'Airtable Account',
+        type: 'credential',
+        description: 'Select your Airtable API credentials',
+        required: true,
+      },
+      {
+        key: 'baseId',
+        label: 'Base',
+        type: 'string',
+        description: 'Select the Airtable base to watch',
+        required: true,
+        placeholder: 'app...',
+      },
+      {
+        key: 'tableId',
+        label: 'Table',
+        type: 'string',
+        description: 'Select the table to watch',
+        required: true,
+        placeholder: 'tbl...',
+      },
+      {
+        key: 'triggerOn',
+        label: 'Trigger On',
+        type: 'select',
+        options: [
+          { value: 'newRecord', label: 'New Record Created' },
+          { value: 'updatedRecord', label: 'Record Updated' },
+          { value: 'newOrUpdated', label: 'New or Updated Record' },
+        ],
+        default: 'newRecord',
+      },
+    ],
+    optionalFields: [
+      { key: 'viewId', label: 'View (optional)', type: 'string', placeholder: 'viw...' },
+      { key: 'filterFormula', label: 'Filter Formula', type: 'string' },
+    ],
+    defaultMockData: [
+      { json: { id: "rec123", fields: { Name: "New Record", Status: "Active" }, createdTime: new Date().toISOString() } },
+    ],
+  },
+
+  hubspot_contact: {
+    id: 'hubspot_contact',
+    name: 'HubSpot Trigger',
+    description: 'Trigger when a contact is created or updated in HubSpot',
+    icon: '🧲',
+    color: '#FF7A59',
+    version: '1.0',
+    testable: true,
+    testButtonLabel: 'Test trigger',
+    parameters: [
+      {
+        key: 'credential',
+        label: 'HubSpot Account',
+        type: 'credential',
+        description: 'Select your HubSpot credentials',
+        required: true,
+      },
+      {
+        key: 'event',
+        label: 'Event Type',
+        type: 'select',
+        options: [
+          { value: 'contact.created', label: 'Contact Created' },
+          { value: 'contact.updated', label: 'Contact Updated' },
+          { value: 'deal.created', label: 'Deal Created' },
+          { value: 'deal.updated', label: 'Deal Updated' },
+          { value: 'company.created', label: 'Company Created' },
+        ],
+        default: 'contact.created',
+      },
+    ],
+    optionalFields: [
+      { key: 'properties', label: 'Properties to Include', type: 'string', description: 'Comma-separated list of properties' },
+    ],
+    defaultMockData: [
+      { json: { id: "123456", properties: { email: "john@example.com", firstname: "John", lastname: "Doe" } } },
+    ],
+  },
+
+  google_sheet_row: {
+    id: 'google_sheet_row',
+    name: 'Google Sheets Trigger',
+    description: 'Trigger when a row is added or updated in Google Sheets',
+    icon: '📊',
+    color: '#34A853',
+    version: '1.0',
+    testable: true,
+    testButtonLabel: 'Test trigger',
+    parameters: [
+      {
+        key: 'credential',
+        label: 'Google Account',
+        type: 'credential',
+        description: 'Select your Google account credentials',
+        required: true,
+      },
+      {
+        key: 'spreadsheetId',
+        label: 'Spreadsheet',
+        type: 'string',
+        description: 'Select the spreadsheet to watch',
+        required: true,
+        placeholder: 'Select spreadsheet...',
+      },
+      {
+        key: 'sheetName',
+        label: 'Sheet',
+        type: 'string',
+        description: 'Select the sheet tab',
+        required: true,
+        placeholder: 'Sheet1',
+      },
+      {
+        key: 'triggerOn',
+        label: 'Trigger On',
+        type: 'select',
+        options: [
+          { value: 'newRow', label: 'New Row Added' },
+          { value: 'rowUpdated', label: 'Row Updated' },
+          { value: 'newOrUpdated', label: 'New or Updated Row' },
+        ],
+        default: 'newRow',
+      },
+    ],
+    optionalFields: [
+      { key: 'headerRow', label: 'Header Row Number', type: 'number', default: 1 },
+      { key: 'range', label: 'Range (e.g., A:Z)', type: 'string' },
+    ],
+    defaultMockData: [
+      { json: { row_number: 5, Name: "John Doe", Email: "john@example.com", Date: "2024-01-15" } },
+    ],
+  },
+
+  github_event: {
+    id: 'github_event',
+    name: 'GitHub Trigger',
+    description: 'Trigger on GitHub repository events',
+    icon: '🐙',
+    color: '#181717',
+    version: '1.0',
+    testable: true,
+    testButtonLabel: 'Test webhook',
+    parameters: [
+      {
+        key: 'credential',
+        label: 'GitHub Account',
+        type: 'credential',
+        description: 'Select your GitHub credentials',
+        required: true,
+      },
+      {
+        key: 'repository',
+        label: 'Repository',
+        type: 'string',
+        description: 'Repository in format owner/repo',
+        required: true,
+        placeholder: 'owner/repository',
+      },
+      {
+        key: 'events',
+        label: 'Events to Watch',
+        type: 'multiSelect',
+        options: [
+          { value: 'push', label: 'Push' },
+          { value: 'pull_request', label: 'Pull Request' },
+          { value: 'issues', label: 'Issues' },
+          { value: 'issue_comment', label: 'Issue Comments' },
+          { value: 'release', label: 'Releases' },
+          { value: 'star', label: 'Stars' },
+          { value: 'fork', label: 'Forks' },
+        ],
+        default: ['push'],
+      },
+    ],
+    optionalFields: [
+      { key: 'branch', label: 'Branch Filter', type: 'string', placeholder: 'main' },
+    ],
+    defaultMockData: [
+      { json: { action: "opened", repository: { full_name: "owner/repo" }, sender: { login: "developer" } } },
     ],
   },
 
@@ -6220,6 +6417,20 @@ export function N8nNodeConfigModal({
                               onChange={(value) => setConfig(prev => ({ ...prev, [param.key]: value }))}
                             />
                           ))}
+                        
+                        {/* Empty state for triggers with no parameters */}
+                        {effectiveConfig.parameters.filter(isParameterVisible).length === 0 && (
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="p-3 rounded-full bg-muted mb-4">
+                              <Zap className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                            <h3 className="font-medium text-sm mb-1">No parameters needed</h3>
+                            <p className="text-xs text-muted-foreground max-w-[250px]">
+                              This trigger doesn't require any configuration. 
+                              Click "Execute workflow" to run it manually.
+                            </p>
+                          </div>
+                        )}
                       </>
                     )}
                   </>
