@@ -169,7 +169,7 @@ export function EnhancedWorkspace() {
   const workflowsApi = useWorkflowsApi();
   
   // Current workflow ID (for save/update)
-  const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
 
   // Pinned data state (for testing)
   const [pinnedData, setPinnedData] = useState<PinnedData[]>([]);
@@ -278,6 +278,8 @@ export function EnhancedWorkspace() {
       status: 'incomplete',
       config: {},
       connections: [],
+      // Set triggerId for trigger nodes to match N8nNodeConfigModal lookup
+      triggerId: nodeType === 'trigger' ? appData.id : undefined,
     };
 
     const newId = flowActions.addNode(nodeData, position);
@@ -288,7 +290,7 @@ export function EnhancedWorkspace() {
       flowActions.addConnection(lastNode.id, newId);
     }
 
-    // Select and configure
+    // Select and open right-side configuration panel (n8n-like)
     flowActions.selectNode(newId);
     setConfigPanelOpen(true);
   }, [flowState.nodes, flowActions]);
@@ -309,11 +311,10 @@ export function EnhancedWorkspace() {
     flowActions.selectNode(nodeId, addToSelection);
   }, [flowActions]);
 
-  // Handle node double click - open n8n-style modal
+  // Handle node double click - open right-side configuration panel (n8n-like)
   const handleNodeDoubleClick = useCallback((nodeId: string) => {
     flowActions.selectNode(nodeId);
-    setN8nModalNodeId(nodeId);
-    setN8nModalOpen(true);
+    setConfigPanelOpen(true);
   }, [flowActions]);
 
   // Handle node drag start
@@ -545,7 +546,7 @@ export function EnhancedWorkspace() {
       );
     }
 
-    // Select the new node and open config
+    // Select the new node and open right-side config panel
     flowActions.selectNode(newId);
     setConfigPanelOpen(true);
     setQuickNodePicker(null);
@@ -738,6 +739,9 @@ export function EnhancedWorkspace() {
       description: 'Workflow trigger',
     };
 
+    // For generic triggers, set triggerType in config so panel skips trigger-type step
+    const GENERIC_TRIGGER_TYPES = ['manual', 'schedule', 'webhook', 'form', 'execute_workflow', 'chat_trigger'];
+    const isGeneric = GENERIC_TRIGGER_TYPES.includes(triggerId);
     const nodeData: Omit<FlowNode, 'id'> = {
       type: 'trigger',
       appId: appId || triggerId,
@@ -748,7 +752,7 @@ export function EnhancedWorkspace() {
       description: config.description,
       position: { x: 400, y: 200 },
       status: 'incomplete',
-      config: {},
+      config: isGeneric ? { triggerType: triggerId } : {},
       connections: [],
       triggerId: appId || triggerId,
     };
@@ -756,7 +760,7 @@ export function EnhancedWorkspace() {
     const newId = flowActions.addNode(nodeData, { x: 400, y: 200 });
     flowActions.selectNode(newId);
     
-    // Open the side panel for configuration (better UX than full screen)
+    // Open right-side configuration panel
     setConfigPanelOpen(true);
   }, [flowActions]);
 
@@ -1024,8 +1028,8 @@ export function EnhancedWorkspace() {
       return buildNodeContextMenu({
         onConfigure: () => {
           if (node) {
-            setN8nModalNodeId(node.id);
-            setN8nModalOpen(true);
+            flowActions.selectNode(node.id);
+            setConfigPanelOpen(true);
           }
         },
         onTest: () => node && handleNodeTest(node.id),
@@ -1197,20 +1201,6 @@ export function EnhancedWorkspace() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Keyboard Shortcuts</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={showMiniMap ? "secondary" : "outline"}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setShowMiniMap(!showMiniMap)}
-                >
-                  <Map className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle Mini Map</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -1422,8 +1412,7 @@ export function EnhancedWorkspace() {
                     onConnectionEnd={() => handleConnectionEnd(node.id)}
                     onConfigure={() => {
                       flowActions.selectNode(node.id);
-                      setN8nModalNodeId(node.id);
-                      setN8nModalOpen(true);
+                      setConfigPanelOpen(true);
                     }}
                     onDuplicate={() => {
                       flowActions.selectNode(node.id);
@@ -1435,46 +1424,6 @@ export function EnhancedWorkspace() {
                 </div>
               ))}
             </FlowCanvas>
-
-            {/* Mini Map */}
-            {showMiniMap && (
-              <div className="absolute bottom-4 right-4 z-20">
-                <CanvasMiniMap
-                  nodes={flowState.nodes.map(n => ({
-                    id: n.id,
-                    position: n.position,
-                    type: n.type,
-                    color: n.appColor,
-                  }))}
-                  stickyNotes={stickyNotes}
-                  viewport={{
-                    x: flowState.viewport.x,
-                    y: flowState.viewport.y,
-                    width: 800,
-                    height: 600,
-                    zoom: flowState.viewport.zoom || 1,
-                  }}
-                  containerSize={{ width: 800, height: 600 }}
-                  onViewportChange={(viewport) => flowActions.setViewport({ 
-                    ...flowState.viewport, 
-                    x: viewport.x, 
-                    y: viewport.y 
-                  })}
-                  onNodeClick={(nodeId) => {
-                    flowActions.selectNode(nodeId);
-                    flowActions.centerOnNode(nodeId);
-                  }}
-                  className="shadow-lg"
-                />
-              </div>
-            )}
-
-            {/* Empty Canvas Trigger Selector - n8n style */}
-            {flowState.nodes.length === 0 && (
-              <EmptyCanvasTriggerSelector
-                onSelectTrigger={handleEmptyCanvasTriggerSelect}
-              />
-            )}
           </div>
 
           {/* Right Config Panel - n8n-style wizard */}
@@ -1485,6 +1434,7 @@ export function EnhancedWorkspace() {
             onSave={handleNodeSave}
             onDelete={(id) => flowActions.deleteNode(id)}
             onTest={handleNodeTest}
+            onCredentialsChanged={() => credentialsApi.loadCredentials()}
           />
 
           {/* Execution Panel */}

@@ -13,7 +13,7 @@ import type { Credential } from '@/components/workspace/CredentialManager';
 // ============================================
 
 export interface WorkflowData {
-  id: number;
+  id: string;
   userId: string;
   name: string;
   description: string | null;
@@ -21,33 +21,34 @@ export interface WorkflowData {
   connections: any[];
   triggerConfig: Record<string, any> | null;
   isActive: boolean;
-  lastExecutedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  lastExecutedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ExecutionData {
-  id: number;
-  workflowId: number;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  startedAt: Date;
-  completedAt: Date | null;
-  error: string | null;
-  executionData: Record<string, any> | null;
-  triggeredBy: string;
+  id: string;
+  workflowId: string;
+  status: 'pending' | 'running' | 'success' | 'error' | 'cancelled';
+  startedAt: string | null;
+  completedAt: string | null;
+  duration?: number | null;
+  outputData?: Record<string, any> | null;
+  errorMessage?: string | null;
+  errorStack?: string | null;
 }
 
 export interface ApiCredential {
-  id: number;
-  userId: string;
-  appId: string;
+  id: string;
   name: string;
+  appId: string;
   credentialType: string;
-  encryptedData: string;
-  status: 'valid' | 'invalid' | 'untested';
-  lastTestedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  preview?: string;
+  isValid: boolean;
+  lastUsedAt?: string | null;
+  lastValidatedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // ============================================
@@ -89,24 +90,26 @@ export async function createCredentialApi(data: {
 }
 
 export async function updateCredentialApi(
-  id: number,
+  id: string,
   data: Partial<{
     name: string;
     credentialData: Record<string, string>;
-    status: string;
   }>
 ): Promise<ApiCredential> {
   const response = await fetch(`${API_BASE}/credentials/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...(data.name ? { name: data.name } : {}),
+      ...(data.credentialData ? { credentials: data.credentialData } : {}),
+    }),
   });
   if (!response.ok) throw new Error('Failed to update credential');
   return response.json();
 }
 
-export async function deleteCredentialApi(id: number): Promise<void> {
+export async function deleteCredentialApi(id: string): Promise<void> {
   const response = await fetch(`${API_BASE}/credentials/${id}`, {
     method: 'DELETE',
     credentials: 'include',
@@ -114,7 +117,7 @@ export async function deleteCredentialApi(id: number): Promise<void> {
   if (!response.ok) throw new Error('Failed to delete credential');
 }
 
-export async function testCredentialApi(id: number): Promise<{ success: boolean; message: string }> {
+export async function testCredentialApi(id: string): Promise<{ success: boolean; message: string }> {
   const response = await fetch(`${API_BASE}/credentials/${id}/verify`, {
     method: 'POST',
     credentials: 'include',
@@ -139,7 +142,7 @@ export async function fetchWorkflows(): Promise<WorkflowData[]> {
   return Array.isArray(data) ? data : (data.workflows || []);
 }
 
-export async function fetchWorkflow(id: number): Promise<WorkflowData> {
+export async function fetchWorkflow(id: string): Promise<WorkflowData> {
   const response = await fetch(`${API_BASE}/workflows/${id}`, {
     credentials: 'include',
   });
@@ -166,7 +169,7 @@ export async function createWorkflowApi(data: {
 }
 
 export async function updateWorkflowApi(
-  id: number,
+  id: string,
   data: Partial<{
     name: string;
     description: string;
@@ -186,7 +189,7 @@ export async function updateWorkflowApi(
   return response.json();
 }
 
-export async function deleteWorkflowApi(id: number): Promise<void> {
+export async function deleteWorkflowApi(id: string): Promise<void> {
   const response = await fetch(`${API_BASE}/workflows/${id}`, {
     method: 'DELETE',
     credentials: 'include',
@@ -194,7 +197,7 @@ export async function deleteWorkflowApi(id: number): Promise<void> {
   if (!response.ok) throw new Error('Failed to delete workflow');
 }
 
-export async function executeWorkflowApi(id: number, inputData?: any): Promise<ExecutionData> {
+export async function executeWorkflowApi(id: string, inputData?: any): Promise<ExecutionData> {
   const response = await fetch(`${API_BASE}/workflows/${id}/execute`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -219,16 +222,16 @@ export function useCredentialsApi() {
 
   // Convert API credential to frontend format
   const toFrontendCredential = (api: ApiCredential): Credential => ({
-    id: String(api.id),
+    id: api.id,
     name: api.name,
     appId: api.appId,
     appName: api.appId.charAt(0).toUpperCase() + api.appId.slice(1),
     type: api.credentialType as any,
-    status: api.status as any,
+    status: api.isValid ? 'valid' : (api.lastValidatedAt ? 'invalid' : 'untested'),
     data: {}, // Data is encrypted on backend, not returned
     createdAt: new Date(api.createdAt),
-    updatedAt: new Date(api.updatedAt),
-    lastTestedAt: api.lastTestedAt ? new Date(api.lastTestedAt) : undefined,
+    updatedAt: new Date(api.updatedAt || api.createdAt),
+    lastTestedAt: api.lastValidatedAt ? new Date(api.lastValidatedAt) : undefined,
   });
 
   // Load credentials on mount
@@ -274,10 +277,9 @@ export function useCredentialsApi() {
     updates: Partial<Credential>
   ): Promise<void> => {
     try {
-      const api = await updateCredentialApi(Number(id), {
+      const api = await updateCredentialApi(id, {
         name: updates.name,
         credentialData: updates.data,
-        status: updates.status,
       });
       setCredentials(prev => prev.map(c => 
         c.id === id ? toFrontendCredential(api) : c
@@ -290,7 +292,7 @@ export function useCredentialsApi() {
 
   const deleteCredential = useCallback(async (id: string): Promise<void> => {
     try {
-      await deleteCredentialApi(Number(id));
+      await deleteCredentialApi(id);
       setCredentials(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Failed to delete credential:', err);
@@ -307,7 +309,7 @@ export function useCredentialsApi() {
         c.id === id ? { ...c, status: 'testing' as const } : c
       ));
 
-      const result = await testCredentialApi(Number(id));
+      const result = await testCredentialApi(id);
       
       // Update status based on result
       setCredentials(prev => prev.map(c => 
@@ -366,7 +368,7 @@ export function useWorkflowsApi() {
   }, []);
 
   // Load a specific workflow
-  const loadWorkflow = useCallback(async (id: number) => {
+  const loadWorkflow = useCallback(async (id: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -392,7 +394,7 @@ export function useWorkflowsApi() {
       triggerConfig?: Record<string, any>;
       isActive?: boolean;
     },
-    workflowId?: number
+    workflowId?: string
   ): Promise<WorkflowData | null> => {
     try {
       setIsSaving(true);
@@ -427,7 +429,7 @@ export function useWorkflowsApi() {
   }, []);
 
   // Delete workflow
-  const deleteWorkflow = useCallback(async (id: number): Promise<boolean> => {
+  const deleteWorkflow = useCallback(async (id: string): Promise<boolean> => {
     try {
       await deleteWorkflowApi(id);
       setWorkflows(prev => prev.filter(w => w.id !== id));
@@ -444,7 +446,7 @@ export function useWorkflowsApi() {
 
   // Execute workflow
   const executeWorkflow = useCallback(async (
-    id: number,
+    id: string,
     inputData?: any
   ): Promise<ExecutionData | null> => {
     try {

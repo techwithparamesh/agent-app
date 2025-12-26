@@ -152,6 +152,18 @@ export const appCatalog: AppDefinition[] = [
     triggers: [{ id: 'sms_received', name: 'SMS Received', description: 'When SMS is received' }],
     actions: [{ id: 'send_sms', name: 'Send SMS', description: 'Send an SMS message' }]
   },
+  { id: 'slack_bot', name: 'Slack Bot', icon: '🤖', category: 'communication', color: '#4A154B', description: 'Slack bot token integration', nodeTypes: 'both',
+    triggers: [{ id: 'reaction_added', name: 'Reaction Added', description: 'When a reaction is added' }],
+    actions: [{ id: 'post_message', name: 'Post Message', description: 'Post a message to a channel' }]
+  },
+  { id: 'discord_bot', name: 'Discord Bot', icon: '🎮', category: 'communication', color: '#5865F2', description: 'Discord bot token integration', nodeTypes: 'both',
+    triggers: [{ id: 'interaction', name: 'Interaction', description: 'When an interaction is received' }],
+    actions: [{ id: 'send_message', name: 'Send Message', description: 'Send a message to a channel' }]
+  },
+  { id: 'sms_twilio', name: 'Twilio SMS (Alt ID)', icon: '📱', category: 'communication', color: '#F22F46', description: 'Twilio SMS (catalog alias)', nodeTypes: 'both',
+    triggers: [{ id: 'sms_received', name: 'SMS Received', description: 'When SMS is received' }],
+    actions: [{ id: 'send_sms', name: 'Send SMS', description: 'Send an SMS message' }]
+  },
   
   // Email - triggers for receiving, actions for sending
   { 
@@ -174,6 +186,9 @@ export const appCatalog: AppDefinition[] = [
   },
   { id: 'sendgrid', name: 'SendGrid', icon: '📤', category: 'email', color: '#1A82E2', description: 'Transactional emails', nodeTypes: 'action',
     actions: [{ id: 'send_email', name: 'Send Email', description: 'Send via SendGrid' }]
+  },
+  { id: 'mailgun', name: 'Mailgun', icon: '📬', category: 'email', color: '#DC2626', description: 'Send emails via Mailgun', nodeTypes: 'action',
+    actions: [{ id: 'send_email', name: 'Send Email', description: 'Send via Mailgun' }]
   },
   { id: 'mailchimp', name: 'Mailchimp', icon: '🐵', category: 'email', color: '#FFE01B', description: 'Email marketing', nodeTypes: 'both',
     triggers: [{ id: 'subscriber_added', name: 'Subscriber Added', description: 'When subscriber joins' }],
@@ -228,6 +243,13 @@ export const appCatalog: AppDefinition[] = [
       { id: 'create_deal', name: 'Create Deal', description: 'Create a deal' },
     ]
   },
+  { id: 'hubspot_oauth', name: 'HubSpot (OAuth)', icon: '🧡', category: 'crm', color: '#FF7A59', description: 'HubSpot via OAuth', nodeTypes: 'both',
+    triggers: [{ id: 'new_contact', name: 'New Contact', description: 'When contact is created' }],
+    actions: [{ id: 'create_contact', name: 'Create Contact', description: 'Create a contact' }]
+  },
+  { id: 'hubspot_marketing', name: 'HubSpot Marketing', icon: '📣', category: 'crm', color: '#FF7A59', description: 'HubSpot marketing tools', nodeTypes: 'action',
+    actions: [{ id: 'add_to_list', name: 'Add To List', description: 'Add a contact to a list' }]
+  },
   { id: 'salesforce', name: 'Salesforce', icon: '☁️', category: 'crm', color: '#00A1E0', description: 'Enterprise CRM', nodeTypes: 'both',
     triggers: [{ id: 'new_lead', name: 'New Lead', description: 'When lead is created' }],
     actions: [{ id: 'create_lead', name: 'Create Lead', description: 'Create a lead' }, { id: 'update_record', name: 'Update Record', description: 'Update any record' }]
@@ -274,6 +296,9 @@ export const appCatalog: AppDefinition[] = [
   { id: 'zapier', name: 'Zapier', icon: '⚡', category: 'automation', color: '#FF4A00', popular: true, description: 'Connect 5000+ apps', nodeTypes: 'action',
     actions: [{ id: 'trigger_zap', name: 'Trigger Zap', description: 'Trigger a Zapier workflow' }]
   },
+  { id: 'ifttt', name: 'IFTTT', icon: '🤖', category: 'automation', color: '#FF4A00', description: 'Applet webhooks', nodeTypes: 'action',
+    actions: [{ id: 'trigger_event', name: 'Trigger Event', description: 'Trigger an IFTTT Webhooks event' }]
+  },
   { id: 'make', name: 'Make', icon: '🔄', category: 'automation', color: '#6F2DA8', popular: true, description: 'Visual automation', nodeTypes: 'action',
     actions: [{ id: 'trigger_scenario', name: 'Trigger Scenario', description: 'Trigger a Make scenario' }]
   },
@@ -307,8 +332,29 @@ export const appCatalog: AppDefinition[] = [
     triggers: [{ id: 'new_row', name: 'New Row', description: 'When row is inserted' }],
     actions: [{ id: 'insert_row', name: 'Insert Row', description: 'Insert a row' }]
   },
+  { id: 'postgresql', name: 'PostgreSQL', icon: '🐘', category: 'storage', color: '#10B981', description: 'Postgres database', nodeTypes: 'action',
+    actions: [{ id: 'query', name: 'Query', description: 'Run a SQL query' }]
+  },
+  { id: 'mysql', name: 'MySQL', icon: '🐬', category: 'storage', color: '#10B981', description: 'MySQL database', nodeTypes: 'action',
+    actions: [{ id: 'query', name: 'Query', description: 'Run a SQL query' }]
+  },
+  { id: 'redis', name: 'Redis', icon: '🧱', category: 'storage', color: '#DC2626', description: 'Key-value store', nodeTypes: 'action',
+    actions: [{ id: 'set', name: 'Set Key', description: 'Set a key value' }]
+  },
   { id: 'mongodb', name: 'MongoDB', icon: '🍃', category: 'storage', color: '#47A248', description: 'NoSQL database', nodeTypes: 'action',
     actions: [{ id: 'insert_document', name: 'Insert Document', description: 'Insert document' }, { id: 'find_documents', name: 'Find Documents', description: 'Query documents' }]
+  },
+  { id: 'dynamodb', name: 'DynamoDB', icon: '🗄️', category: 'storage', color: '#8B5CF6', description: 'AWS NoSQL DB', nodeTypes: 'action',
+    actions: [{ id: 'put_item', name: 'Put Item', description: 'Insert or replace an item' }]
+  },
+  { id: 'elasticsearch', name: 'Elasticsearch', icon: '🔎', category: 'storage', color: '#6B7280', description: 'Search & indexing', nodeTypes: 'action',
+    actions: [{ id: 'search', name: 'Search', description: 'Search an index' }]
+  },
+  { id: 'bigquery', name: 'BigQuery', icon: '🔷', category: 'storage', color: '#4285F4', description: 'Run SQL queries on BigQuery', nodeTypes: 'action',
+    actions: [{ id: 'query', name: 'Run Query', description: 'Execute a SQL query' }]
+  },
+  { id: 'cosmosdb', name: 'Cosmos DB', icon: '🪐', category: 'storage', color: '#0078D4', description: 'Azure Cosmos DB operations', nodeTypes: 'action',
+    actions: [{ id: 'query', name: 'Query', description: 'Query a container' }]
   },
   { id: 'aws_s3', name: 'AWS S3', icon: '☁️', category: 'storage', color: '#FF9900', description: 'Cloud storage', nodeTypes: 'action',
     actions: [{ id: 'upload_file', name: 'Upload File', description: 'Upload to S3' }]
@@ -347,6 +393,10 @@ export const appCatalog: AppDefinition[] = [
     triggers: [{ id: 'payment_received', name: 'Payment Received', description: 'When payment received' }],
     actions: [{ id: 'send_money', name: 'Send Money', description: 'Send payment' }]
   },
+  { id: 'square', name: 'Square', icon: '⬛', category: 'ecommerce', color: '#111827', description: 'Payments and orders', nodeTypes: 'both',
+    triggers: [{ id: 'payment_received', name: 'Payment Received', description: 'When payment is received' }],
+    actions: [{ id: 'create_payment', name: 'Create Payment', description: 'Create a payment' }]
+  },
   
   // Productivity - mostly both
   { id: 'trello', name: 'Trello', icon: '📋', category: 'productivity', color: '#0079BF', description: 'Kanban boards', nodeTypes: 'both',
@@ -382,6 +432,15 @@ export const appCatalog: AppDefinition[] = [
       { id: 'http_request', name: 'HTTP Request', description: 'Make HTTP request' },
     ]
   },
+  { id: 'custom_api', name: 'Custom API', icon: '🧰', category: 'developer', color: '#10B981', description: 'Call any REST API', nodeTypes: 'action',
+    actions: [{ id: 'request', name: 'Send Request', description: 'Send a request' }]
+  },
+  { id: 'custom_integration', name: 'Custom Integration', icon: '✨', category: 'developer', color: '#8B5CF6', description: 'Define your own integration', nodeTypes: 'action',
+    actions: [{ id: 'define', name: 'Define Integration', description: 'Define a custom integration' }]
+  },
+  { id: 'webhook_outgoing', name: 'Outgoing Webhook', icon: '📤', category: 'developer', color: '#6366F1', description: 'Send HTTP requests to external systems', nodeTypes: 'action',
+    actions: [{ id: 'send', name: 'Send Webhook', description: 'Send an HTTP request' }]
+  },
   { id: 'graphql', name: 'GraphQL', icon: '◼️', category: 'developer', color: '#E535AB', description: 'GraphQL queries', nodeTypes: 'action',
     actions: [{ id: 'query', name: 'Execute Query', description: 'Execute GraphQL query' }]
   },
@@ -409,6 +468,9 @@ export const appCatalog: AppDefinition[] = [
       { id: 'create_image', name: 'Create Image', description: 'Generate image with DALL-E' },
       { id: 'transcribe', name: 'Transcribe Audio', description: 'Transcribe with Whisper' },
     ]
+  },
+  { id: 'azure_openai', name: 'Azure OpenAI', icon: '🧩', category: 'ai', color: '#0078D4', description: 'Azure-hosted OpenAI models', nodeTypes: 'action',
+    actions: [{ id: 'chat_completion', name: 'Chat Completion', description: 'Generate chat response' }]
   },
   { 
     id: 'anthropic', name: 'Claude', icon: '🧠', category: 'ai', color: '#C96442', popular: true, 
@@ -448,6 +510,36 @@ export const appCatalog: AppDefinition[] = [
   { id: 'linkedin', name: 'LinkedIn', icon: '💼', category: 'marketing', color: '#0A66C2', description: 'B2B marketing', nodeTypes: 'action',
     actions: [{ id: 'create_post', name: 'Create Post', description: 'Post to LinkedIn' }]
   },
+  { id: 'twitter', name: 'Twitter / X', icon: '🐦', category: 'marketing', color: '#0A66C2', description: 'Social posting', nodeTypes: 'action',
+    actions: [{ id: 'create_tweet', name: 'Create Tweet', description: 'Publish a tweet' }]
+  },
+  { id: 'instagram', name: 'Instagram', icon: '📸', category: 'marketing', color: '#EA4B71', description: 'Social media', nodeTypes: 'action',
+    actions: [{ id: 'create_post', name: 'Create Post', description: 'Publish a post' }]
+  },
+  { id: 'youtube', name: 'YouTube', icon: '📺', category: 'marketing', color: '#DC2626', description: 'Video platform', nodeTypes: 'action',
+    actions: [{ id: 'upload_video', name: 'Upload Video', description: 'Upload a video' }]
+  },
+  { id: 'tiktok', name: 'TikTok', icon: '🎵', category: 'marketing', color: '#000000', description: 'Short video', nodeTypes: 'action',
+    actions: [{ id: 'create_post', name: 'Create Post', description: 'Publish a post' }]
+  },
+  { id: 'pinterest', name: 'Pinterest', icon: '📌', category: 'marketing', color: '#DC2626', description: 'Pins & boards', nodeTypes: 'action',
+    actions: [{ id: 'create_pin', name: 'Create Pin', description: 'Create a new pin' }]
+  },
+  { id: 'reddit', name: 'Reddit', icon: '👽', category: 'marketing', color: '#FF4500', description: 'Reddit posting automation', nodeTypes: 'action',
+    actions: [{ id: 'create_post', name: 'Create Post', description: 'Create a subreddit post' }]
+  },
+  { id: 'mastodon', name: 'Mastodon', icon: '🐘', category: 'marketing', color: '#6364FF', description: 'Post updates to Mastodon', nodeTypes: 'action',
+    actions: [{ id: 'create_status', name: 'Create Status', description: 'Post a status' }]
+  },
+  { id: 'snapchat', name: 'Snapchat', icon: '👻', category: 'marketing', color: '#FDE047', description: 'Snapchat marketing', nodeTypes: 'action',
+    actions: [{ id: 'create_post', name: 'Create Post', description: 'Create a post' }]
+  },
+  { id: 'mixpanel', name: 'Mixpanel', icon: '📈', category: 'marketing', color: '#8B5CF6', description: 'Product analytics tracking', nodeTypes: 'action',
+    actions: [{ id: 'track', name: 'Track Event', description: 'Track an event' }]
+  },
+  { id: 'segment', name: 'Segment', icon: '🧩', category: 'marketing', color: '#111827', description: 'Customer data platform', nodeTypes: 'action',
+    actions: [{ id: 'track', name: 'Track', description: 'Send a track call' }]
+  },
   
   // Support - mostly triggers for tickets
   { id: 'zendesk', name: 'Zendesk', icon: '🎧', category: 'support', color: '#03363D', description: 'Customer support', nodeTypes: 'both',
@@ -458,8 +550,20 @@ export const appCatalog: AppDefinition[] = [
     triggers: [{ id: 'ticket_created', name: 'Ticket Created', description: 'When ticket is created' }],
     actions: [{ id: 'create_ticket', name: 'Create Ticket', description: 'Create a ticket' }]
   },
+  { id: 'liveagent', name: 'LiveAgent', icon: '🎧', category: 'support', color: '#03363D', description: 'Help desk', nodeTypes: 'both',
+    triggers: [{ id: 'ticket_created', name: 'Ticket Created', description: 'When ticket is created' }],
+    actions: [{ id: 'create_ticket', name: 'Create Ticket', description: 'Create a ticket' }]
+  },
+  { id: 'helpscout', name: 'Help Scout', icon: '🛟', category: 'support', color: '#1292EE', description: 'Shared inbox', nodeTypes: 'both',
+    triggers: [{ id: 'conversation_created', name: 'Conversation Created', description: 'When conversation is created' }],
+    actions: [{ id: 'create_conversation', name: 'Create Conversation', description: 'Create a conversation' }]
+  },
   { id: 'crisp', name: 'Crisp', icon: '💬', category: 'support', color: '#4B5CFA', description: 'Live chat', nodeTypes: 'both',
     triggers: [{ id: 'new_message', name: 'New Message', description: 'When message received' }],
+    actions: [{ id: 'send_message', name: 'Send Message', description: 'Send a message' }]
+  },
+  { id: 'drift', name: 'Drift', icon: '💬', category: 'support', color: '#111827', description: 'Customer chat and messaging', nodeTypes: 'both',
+    triggers: [{ id: 'new_message', name: 'New Message', description: 'When a message is received' }],
     actions: [{ id: 'send_message', name: 'Send Message', description: 'Send a message' }]
   },
   { id: 'tawk', name: 'Tawk.to', icon: '💭', category: 'support', color: '#03A84E', description: 'Free live chat', nodeTypes: 'trigger',

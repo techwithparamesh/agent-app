@@ -14,6 +14,8 @@ import bspRoutes from "./bsp/routes";
 import billingRoutes from "./billing/routes";
 import { integrationRoutes } from "./integrations/routes";
 import credentialsRoutes from "./integrations/credentialsRoutes";
+import workflowWebhookRoutes from "./integrations/workflowWebhooks";
+import { startIntegrationTriggerEngine } from "./integrations/triggerEngine";
 import { stripeService } from "./billing/stripe";
 import express from "express";
 import { 
@@ -98,6 +100,10 @@ export async function registerRoutes(
     }
   );
 
+  // ========== WORKFLOW WEBHOOK ROUTES (public) ==========
+  // Workflow-specific webhooks are public and keyed by an unguessable webhookId.
+  app.use('/api/webhooks', workflowWebhookRoutes);
+
   // ========== BSP/SAAS ROUTES ==========
   // Mount BSP routes for WhatsApp Business Account management
   app.use("/api/bsp", isAuthenticated, bspRoutes);
@@ -124,6 +130,9 @@ export async function registerRoutes(
   
   // Mount credentials & workflow routes
   app.use("/api/integrations", credentialsRoutes);
+
+  // Start polling triggers (Google Drive/Calendar)
+  startIntegrationTriggerEngine();
 
   // ========== AUTH ROUTES ==========
   

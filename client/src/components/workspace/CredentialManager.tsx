@@ -184,6 +184,7 @@ const appIconMap: Record<string, React.ElementType> = {
   whatsapp: MessageCircle,
   gmail: Mail,
   slack: MessageCircle,
+  slack_bot: MessageCircle,
   default: Globe,
 };
 
@@ -234,6 +235,16 @@ const defaultTemplates: CredentialTemplate[] = [
       tokenUrl: 'https://slack.com/api/oauth.v2.access',
       scopes: ['chat:write', 'channels:read'],
     },
+  },
+  {
+    appId: 'slack_bot',
+    appName: 'Slack (Bot Token)',
+    appIcon: '💼',
+    type: 'bearer_token',
+    fields: [
+      { key: 'botToken', label: 'Bot Token', type: 'password', required: true, placeholder: 'xoxb-...' },
+    ],
+    helpUrl: 'https://api.slack.com/authentication/token-types',
   },
   {
     appId: 'openai',

@@ -8,7 +8,7 @@
  * 4. Visual feedback - clear indicators of progress and status
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,13 @@ import {
   type ConfigField,
   type AuthConfig
 } from "./AppConfigurations";
+import {
+  createCredentialApi,
+  deleteCredentialApi,
+  fetchCredentials,
+  testCredentialApi,
+  type ApiCredential,
+} from "@/hooks/useWorkflowApi";
 
 // ============================================================================
 // Types
@@ -103,6 +110,7 @@ interface ConfigPanelV2Props {
   onDelete: (nodeId: string) => void;
   onTest: (nodeId: string) => void;
   previousNodes?: FlowNode[];
+  onCredentialsChanged?: () => void;
 }
 
 interface FieldMapping {
@@ -268,6 +276,7 @@ export function ConfigPanelV2({
   onDelete,
   onTest,
   previousNodes = [],
+  onCredentialsChanged,
 }: ConfigPanelV2Props) {
   const { toast } = useToast();
   const isTrigger = node?.type === 'trigger';
@@ -288,7 +297,10 @@ export function ConfigPanelV2({
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [credentialId, setCredentialId] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [availableCredentials, setAvailableCredentials] = useState<ApiCredential[]>([]);
+  const [isLoadingCredentials, setIsLoadingCredentials] = useState(false);
   
   // Data mapping state
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
@@ -300,10 +312,146 @@ export function ConfigPanelV2({
   const [stepDescription, setStepDescription] = useState('');
   
   // App-specific config
+  const [selectedResource, setSelectedResource] = useState<string>('');
   const [selectedTriggerId, setSelectedTriggerId] = useState<string>('');
   const [selectedActionId, setSelectedActionId] = useState<string>('');
   const [dynamicFields, setDynamicFields] = useState<Record<string, any>>({});
+  const [asyncFieldOptions, setAsyncFieldOptions] = useState<Record<string, {
+    loading: boolean;
+    options: { value: string; label: string; description?: string }[];
+    error?: string;
+    signature?: string;
+  }>>({});
+  const asyncFieldOptionsRef = useRef(asyncFieldOptions);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const resolveLoadOptionsPath = useCallback((path: string) => {
+    if (!path) return path;
+    if (/^https?:\/\//i.test(path)) return path;
+    if (path.startsWith('/api/')) return path;
+
+    const appId = node?.appId;
+    if (!appId) return path;
+
+    if (path.startsWith('/')) {
+      return `/api/integrations/options/${appId}${path}`;
+    }
+    return `/api/integrations/options/${appId}/${path}`;
+  }, [node?.appId]);
+
+  useEffect(() => {
+    asyncFieldOptionsRef.current = asyncFieldOptions;
+  }, [asyncFieldOptions]);
+
+  const fetchOptionsForField = useCallback(async (field: any) => {
+    if (!field?.loadOptions?.path) return;
+
+    const method = field.loadOptions.method || 'POST';
+    const dependsOn: string[] = field.loadOptions.dependsOn || [];
+    const authKeys: string[] = field.loadOptions.authKeys || [];
+
+    const url = resolveLoadOptionsPath(field.loadOptions.path);
+
+    const missingDep = dependsOn.find((k) => !dynamicFields[k]);
+    const resolvedCredentialId = credentialId || node?.config?.credentialId;
+    const missingAuth = authKeys.find((k) => !dynamicFields[k]);
+    if (missingDep) return;
+    if (missingAuth && !resolvedCredentialId) return;
+
+    const payload: Record<string, any> = {};
+    // Send any auth fields the user typed, but prefer server-side resolution via credentialId.
+    for (const k of authKeys) {
+      if (dynamicFields[k] !== undefined && dynamicFields[k] !== null && String(dynamicFields[k]).length > 0) {
+        payload[k] = dynamicFields[k];
+      }
+    }
+    for (const k of dependsOn) payload[k] = dynamicFields[k];
+
+    if (resolvedCredentialId) {
+      payload.credentialId = resolvedCredentialId;
+      payload.authKeys = authKeys;
+    }
+
+    const signature = `${url}::${method}::${JSON.stringify(payload)}`;
+    const current = asyncFieldOptionsRef.current[field.key];
+    if (current?.signature === signature && (current.options?.length || 0) > 0) return;
+
+    setAsyncFieldOptions((prev) => ({
+      ...prev,
+      [field.key]: {
+        loading: true,
+        options: prev[field.key]?.options || [],
+        error: undefined,
+        signature,
+      },
+    }));
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: method === 'GET' ? undefined : JSON.stringify(payload),
+      });
+
+      // Unimplemented server-side options loaders should not surface as user-facing errors.
+      if (res.status === 404 || res.status === 501) {
+        setAsyncFieldOptions((prev) => ({
+          ...prev,
+          [field.key]: {
+            loading: false,
+            options: [],
+            error: undefined,
+            signature,
+          },
+        }));
+        return;
+      }
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || `Failed to load options (${res.status})`);
+      }
+
+      const data = await res.json();
+      const options = Array.isArray(data?.options) ? data.options : [];
+
+      setAsyncFieldOptions((prev) => ({
+        ...prev,
+        [field.key]: {
+          loading: false,
+          options,
+          error: undefined,
+          signature,
+        },
+      }));
+    } catch (e: any) {
+      setAsyncFieldOptions((prev) => ({
+        ...prev,
+        [field.key]: {
+          loading: false,
+          options: prev[field.key]?.options || [],
+          error: e?.message || 'Failed to load options',
+          signature,
+        },
+      }));
+    }
+  }, [dynamicFields, resolveLoadOptionsPath]);
+
+  // When selected trigger/action changes or dependency values change, refresh any loadOptions fields.
+  useEffect(() => {
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const selectedAction = appConfig?.actions?.find((a) => a.id === selectedActionId);
+    const selectedTrigger = appConfig?.triggers?.find((t) => t.id === selectedTriggerId);
+
+    const fieldsToLoad = [
+      ...(selectedAction?.fields || []),
+      ...(selectedTrigger?.fields || []),
+    ].filter((f: any) => f?.loadOptions?.path);
+
+    for (const f of fieldsToLoad) {
+      void fetchOptionsForField(f);
+    }
+  }, [node?.appId, selectedActionId, selectedTriggerId, fetchOptionsForField, dynamicFields]);
   
   // Testing state
   const [isTesting, setIsTesting] = useState(false);
@@ -312,15 +460,29 @@ export function ConfigPanelV2({
   // Reset state when node changes
   useEffect(() => {
     if (node) {
+      const initialActionId = node.config?.selectedActionId || node.actionId || '';
       setStepName(node.config?.name || node.name || '');
       setStepDescription(node.config?.description || '');
       setTriggerType(node.config?.triggerType || null);
       setPollingInterval(node.config?.pollingInterval || '5');
       setIsAuthenticated(node.config?.isAuthenticated || false);
+      setCredentialId(node.config?.credentialId || null);
       setFieldMappings(node.config?.fieldMappings || []);
       setSelectedTriggerId(node.config?.selectedTriggerId || '');
-      setSelectedActionId(node.config?.selectedActionId || node.actionId || '');
+      setSelectedActionId(initialActionId);
+      // Prefer persisted resource; otherwise hydrate from the selected action schema (when available)
+      const persistedResource = node.config?.resource || '';
+      if (persistedResource) {
+        setSelectedResource(persistedResource);
+      } else if (node.appId && initialActionId) {
+        const appConfig = getAppConfig(node.appId);
+        const selectedAction = appConfig?.actions?.find((a) => a.id === initialActionId);
+        setSelectedResource(selectedAction?.resource || '');
+      } else {
+        setSelectedResource('');
+      }
       setDynamicFields(node.config?.dynamicFields || {});
+      setAsyncFieldOptions({});
       
       // Smart step navigation based on trigger type
       if (node.type === 'trigger') {
@@ -353,10 +515,108 @@ export function ConfigPanelV2({
     }
   }, [node?.id]);
 
+  const refreshCredentials = useCallback(async () => {
+    if (!node?.appId) {
+      setAvailableCredentials([]);
+      return;
+    }
+
+    setIsLoadingCredentials(true);
+    try {
+      const all = await fetchCredentials();
+
+      const appId = node.appId;
+      const acceptedAppIds = new Set<string>([appId]);
+      // Lightweight aliases for common cases
+      if (appId === 'slack') acceptedAppIds.add('slack_bot');
+      if (appId === 'slack_bot') acceptedAppIds.add('slack');
+      if (appId === 'openai') acceptedAppIds.add('azure_openai');
+      if (appId === 'azure_openai') acceptedAppIds.add('openai');
+
+      const filtered = all
+        .filter((c) => acceptedAppIds.has(c.appId))
+        .sort((a, b) => {
+          // Prefer verified credentials first
+          const aScore = a.isValid ? 0 : 1;
+          const bScore = b.isValid ? 0 : 1;
+          if (aScore !== bScore) return aScore - bScore;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+      setAvailableCredentials(filtered);
+    } catch {
+      setAvailableCredentials([]);
+    } finally {
+      setIsLoadingCredentials(false);
+    }
+  }, [node?.appId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    void refreshCredentials();
+  }, [isOpen, refreshCredentials]);
+
   if (!isOpen || !node) return null;
 
   // Check if this is a manual trigger (which has simplified config)
   const isManualTrigger = node.type === 'trigger' && (triggerType === 'manual' || node.config?.triggerType === 'manual');
+
+  // ============================================================================
+  // n8n-like helpers: resource/operation parsing + required checks
+  // ============================================================================
+
+  const parseActionMeta = useCallback((actionId: string): { operation: string; resource: string } => {
+    const parts = (actionId || '').split('_').filter(Boolean);
+    if (parts.length === 0) return { operation: '', resource: '' };
+    if (parts.length === 1) return { operation: parts[0], resource: '' };
+    return { operation: parts[0], resource: parts.slice(1).join('_') };
+  }, []);
+
+  const isFieldVisible = useCallback((field: ConfigField): boolean => {
+    if (!field.dependsOn) return true;
+    const currentValue = dynamicFields[field.dependsOn.field];
+    const expected = field.dependsOn.value;
+    if (Array.isArray(expected)) return expected.includes(currentValue);
+    return currentValue === expected;
+  }, [dynamicFields]);
+
+  const getMissingRequiredFields = useCallback((fields: ConfigField[]): string[] => {
+    return (fields || [])
+      .filter((f) => !!f.required)
+      .filter((f) => isFieldVisible(f))
+      .filter((f) => {
+        const value = dynamicFields[f.key];
+        if (value === null || value === undefined) return true;
+        if (typeof value === 'string') return value.trim().length === 0;
+        if (Array.isArray(value)) return value.length === 0;
+        return false;
+      })
+      .map((f) => f.label);
+  }, [dynamicFields, isFieldVisible]);
+
+  const isSelectedActionConfigured = useCallback((): boolean => {
+    if (!node?.appId || !selectedActionId) return false;
+    const appConfig = getAppConfig(node.appId);
+    const selectedAction = appConfig?.actions?.find((a) => a.id === selectedActionId);
+    if (!selectedAction) return false;
+    return getMissingRequiredFields(selectedAction.fields || []).length === 0;
+  }, [node?.appId, selectedActionId, getMissingRequiredFields]);
+
+  const missingActionFields = useMemo(() => {
+    if (!node?.appId || !selectedActionId) return [] as string[];
+    const appConfig = getAppConfig(node.appId);
+    const selectedAction = appConfig?.actions?.find((a) => a.id === selectedActionId);
+    if (!selectedAction) return [] as string[];
+    return getMissingRequiredFields(selectedAction.fields || []);
+  }, [node?.appId, selectedActionId, getMissingRequiredFields]);
+
+  const missingTriggerFields = useMemo(() => {
+    if (!node?.appId || !selectedTriggerId) return [] as string[];
+    const appConfig = getAppConfig(node.appId);
+    const selectedTrigger = appConfig?.triggers?.find((t) => t.id === selectedTriggerId);
+    if (!selectedTrigger) return [] as string[];
+    return getMissingRequiredFields(selectedTrigger.fields || []);
+  }, [node?.appId, selectedTriggerId, getMissingRequiredFields]);
 
   // Define wizard steps based on node type and trigger type
   // Manual triggers have a simplified flow - just Settings and Test
@@ -423,7 +683,7 @@ export function ConfigPanelV2({
       title: 'Operation',
       subtitle: 'What action to perform?',
       icon: <Settings className="h-4 w-4" />,
-      isComplete: !!selectedActionId,
+      isComplete: !!selectedActionId && isSelectedActionConfigured(),
       isRequired: true,
     },
     {
@@ -463,9 +723,13 @@ export function ConfigPanelV2({
         return !!pollingInterval;
       case 'schedule':
         return !!schedulePreset || !!customCron;
+      // When configuring an app trigger (WhatsApp/Sheets/etc), required fields live on the selectedTrigger.
+      // If a node does use generic app-event, keep eventType as a fallback.
       case 'app-event':
-        return !!eventType;
+        return (!!selectedTriggerId && missingTriggerFields.length === 0) || !!eventType;
       default:
+        // Also enforce required fields for app-specific triggers (even when defaultTriggerType is webhook/poll/schedule)
+        if (selectedTriggerId) return missingTriggerFields.length === 0;
         return true;
     }
   }
@@ -568,10 +832,39 @@ export function ConfigPanelV2({
     
     setIsAuthenticating(true);
     try {
-      // TODO: Add real API verification here
-      await new Promise(r => setTimeout(r, 1500));
+      const appId = node?.appId || 'unknown';
+      const credentialData: Record<string, string> = apiKeyConfig?.fields?.length
+        ? apiKeyConfig.fields.reduce((acc: Record<string, string>, field: any) => {
+            acc[field.key] = String(dynamicFields[field.key] || '');
+            return acc;
+          }, {})
+        : { apiKey };
+
+      const credentialType = apiKeyConfig?.type === 'bearer' ? 'bearer_token' : 'api_key';
+
+      const created = await createCredentialApi({
+        appId,
+        name: `${node?.appName || 'Connection'} (${new Date().toLocaleString()})`,
+        credentialType,
+        credentialData,
+      });
+
+      const result = await testCredentialApi(created.id);
+      if (!result.success) {
+        await deleteCredentialApi(created.id);
+        toast({
+          title: 'Verification failed',
+          description: result.message || 'Invalid credentials',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setCredentialId(created.id);
       setIsAuthenticated(true);
-      toast({ title: "API Key verified!", description: "Connection established." });
+      onCredentialsChanged?.();
+      void refreshCredentials();
+      toast({ title: 'Connected!', description: result.message || 'Connection established.' });
     } catch (error) {
       toast({ title: "Verification failed", variant: "destructive" });
     } finally {
@@ -623,6 +916,29 @@ export function ConfigPanelV2({
   };
 
   const handleSave = () => {
+    const derivedActionMeta = selectedActionId ? parseActionMeta(selectedActionId) : { operation: '', resource: '' };
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const selectedAction = appConfig?.actions?.find((a) => a.id === selectedActionId);
+
+    // Never persist secrets onto nodes. Strip auth fields from dynamicFields and store only credentialId.
+    const authMethods = appConfig?.auth || [];
+    const apiKeyAuth = authMethods.find((a: any) => a.type === 'api-key' || a.type === 'bearer');
+    const authFieldKeys = new Set<string>((apiKeyAuth?.fields || []).map((f: any) => f.key));
+    authFieldKeys.add('apiKey');
+    const sanitizedDynamicFields: Record<string, any> = { ...dynamicFields };
+    for (const key of authFieldKeys) {
+      delete sanitizedDynamicFields[key];
+    }
+
+    const resourceToPersist =
+      selectedResource ||
+      selectedAction?.resource ||
+      derivedActionMeta.resource;
+
+    const operationToPersist =
+      selectedAction?.operation ||
+      derivedActionMeta.operation;
+
     const config = {
       name: stepName,
       description: stepDescription,
@@ -632,10 +948,14 @@ export function ConfigPanelV2({
       customCron,
       eventType,
       isAuthenticated,
+      credentialId: isAuthenticated ? credentialId : null,
       fieldMappings,
       selectedTriggerId,
       selectedActionId,
-      dynamicFields,
+      // n8n-like: persist resource/operation split for app actions
+      resource: resourceToPersist,
+      operation: operationToPersist,
+      dynamicFields: sanitizedDynamicFields,
     };
     onSave(node.id, config);
     toast({ title: "Saved!", description: "Configuration has been saved." });
@@ -872,6 +1192,17 @@ export function ConfigPanelV2({
     const hasApiKey = availableAuthMethods.some(a => a.type === 'api-key' || a.type === 'bearer');
     const apiKeyConfig = availableAuthMethods.find(a => a.type === 'api-key' || a.type === 'bearer');
     
+    const resolvedCredentialId = credentialId || node?.config?.credentialId;
+    const credentialSelectValue = resolvedCredentialId || '__none__';
+
+    const selectedCredential = resolvedCredentialId
+      ? availableCredentials.find((c) => c.id === resolvedCredentialId)
+      : undefined;
+
+    const connectedLabel = selectedCredential
+      ? `${selectedCredential.name}${selectedCredential.preview ? ` — ${selectedCredential.preview}` : ''}`
+      : 'Connected';
+
     return (
     <div className="space-y-4">
       <div>
@@ -888,17 +1219,72 @@ export function ConfigPanelV2({
       {isAuthenticated && (
         <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/50">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800 dark:text-green-200">Connected</AlertTitle>
+          <AlertTitle className="text-green-800 dark:text-green-200">{connectedLabel}</AlertTitle>
           <AlertDescription className="text-green-700 dark:text-green-300 text-sm">
             Your account is connected and ready to use.
             <button 
               className="ml-2 text-green-700 dark:text-green-300 underline hover:no-underline text-sm"
-              onClick={() => setIsAuthenticated(false)}
+              onClick={() => {
+                setIsAuthenticated(false);
+                setCredentialId(null);
+              }}
             >
               Disconnect
             </button>
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Existing connections */}
+      {availableCredentials.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Use an existing connection</Label>
+              {isLoadingCredentials && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading
+                </span>
+              )}
+            </div>
+            <Select
+              value={credentialSelectValue}
+              onValueChange={(value) => {
+                if (value === '__none__') {
+                  setCredentialId(null);
+                  setIsAuthenticated(false);
+                  return;
+                }
+                const selected = availableCredentials.find((c) => c.id === value);
+                setCredentialId(value);
+                setIsAuthenticated(Boolean(selected?.isValid));
+                if (selected && !selected.isValid) {
+                  toast({
+                    title: 'Connection not verified',
+                    description: 'Select a verified connection or create a new one.',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a connection" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Create / connect a new one…</SelectItem>
+                {availableCredentials.map((c) => (
+                  <SelectItem key={c.id} value={c.id} disabled={!c.isValid}>
+                    {c.name}{c.preview ? ` — ${c.preview}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Verified connections are selectable. Create a new connection below if needed.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Auth method tabs - always show since API key is always available */}
@@ -1408,31 +1794,44 @@ export function ConfigPanelV2({
         );
 
       case 'select':
+        const loadedSelect = field.loadOptions ? asyncFieldOptions[field.key] : null;
+        const selectOptions = field.loadOptions ? (loadedSelect?.options || []) : (field.options || []);
         return (
           <div key={field.key} className="space-y-1.5">
             {fieldLabel}
             <Select value={value?.toString() || ''} onValueChange={updateField}>
               <SelectTrigger className="h-9">
-                <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
+                <SelectValue
+                  placeholder={
+                    loadedSelect?.loading
+                      ? 'Loading…'
+                      : field.placeholder || `Select ${field.label}`
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {field.options?.map((opt) => (
+                {selectOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {loadedSelect?.error && (
+              <p className="text-[10px] text-destructive">{loadedSelect.error}</p>
+            )}
           </div>
         );
 
       case 'multiselect':
         const selectedValues = Array.isArray(value) ? value : [];
+        const loadedMulti = field.loadOptions ? asyncFieldOptions[field.key] : null;
+        const multiOptions = field.loadOptions ? (loadedMulti?.options || []) : (field.options || []);
         return (
           <div key={field.key} className="space-y-1.5">
             {fieldLabel}
             <div className="border rounded-md p-2 space-y-1 max-h-32 overflow-y-auto">
-              {field.options?.map((opt) => (
+              {multiOptions.map((opt) => (
                 <div key={opt.value} className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1453,6 +1852,12 @@ export function ConfigPanelV2({
                 </div>
               ))}
             </div>
+            {loadedMulti?.loading && (
+              <p className="text-[10px] text-muted-foreground">Loading…</p>
+            )}
+            {loadedMulti?.error && (
+              <p className="text-[10px] text-destructive">{loadedMulti.error}</p>
+            )}
           </div>
         );
 
@@ -1522,14 +1927,27 @@ export function ConfigPanelV2({
   const renderOperationStep = () => {
     const appConfig = node?.appId ? getAppConfig(node.appId) : null;
     const actions = appConfig?.actions || [];
-    
-    // Filter actions based on search
-    const filteredActions = actions.filter(action =>
-      action.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      action.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
-    const selectedAction = actions.find(a => a.id === selectedActionId);
+    const actionsWithMeta = actions.map((a) => {
+      const meta = parseActionMeta(a.id);
+      return {
+        action: a,
+        resource: a.resource || meta.resource || 'General',
+        operation: a.operation || meta.operation || a.id,
+      };
+    });
+
+    const resources = Array.from(new Set(actionsWithMeta.map((x) => x.resource))).sort();
+
+    // Ensure we always have a resource selected when possible
+    const effectiveResource = selectedResource || (resources.length === 1 ? resources[0] : '');
+
+    const actionsForResource = effectiveResource
+      ? actionsWithMeta.filter((x) => x.resource === effectiveResource)
+      : actionsWithMeta;
+
+    const selectedAction = actions.find((a) => a.id === selectedActionId);
+    const selectedActionMissing = selectedAction ? getMissingRequiredFields(selectedAction.fields || []) : [];
 
     return (
       <div className="space-y-4">
@@ -1545,74 +1963,71 @@ export function ConfigPanelV2({
           </div>
         </div>
 
-        {/* Search box */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search actions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
-
-        {/* Actions list */}
+        {/* Resource + Operation (n8n-like) */}
         {appConfig ? (
-          <ScrollArea className="h-[280px]">
-            <div className="space-y-2 pr-2">
-              {filteredActions.length > 0 ? filteredActions.map((action) => {
-                const isSelected = selectedActionId === action.id;
-                return (
-                  <Card
-                    key={action.id}
-                    className={cn(
-                      "cursor-pointer transition-all duration-200",
-                      "hover:border-primary/50 hover:shadow-sm",
-                      isSelected && "ring-2 ring-primary border-primary shadow-sm"
-                    )}
-                    onClick={() => {
-                      setSelectedActionId(action.id);
-                      setDynamicFields({});
-                    }}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                          isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
-                        )}>
-                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{action.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                            {action.description}
-                          </p>
-                          {action.fields.length > 0 && (
-                            <div className="flex items-center gap-1 mt-2">
-                              <Badge variant="outline" className="text-[10px] h-4">
-                                {action.fields.length} fields
-                              </Badge>
-                              {action.fields.filter(f => f.required).length > 0 && (
-                                <Badge variant="secondary" className="text-[10px] h-4">
-                                  {action.fields.filter(f => f.required).length} required
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              }) : (
-                <div className="text-center py-8">
-                  <Search className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">No actions found</p>
-                </div>
+          <div className="space-y-3">
+            {resources.length > 1 && (
+              <div className="space-y-2">
+                <Label className="text-sm">Resource</Label>
+                <Select
+                  value={effectiveResource}
+                  onValueChange={(v) => {
+                    setSelectedResource(v);
+                    setSelectedActionId('');
+                    setDynamicFields({});
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a resource" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {resources.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm">Operation</Label>
+              <Select
+                value={selectedActionId}
+                onValueChange={(v) => {
+                  setSelectedActionId(v);
+                  setDynamicFields({});
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an operation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {actionsForResource.map(({ action }) => (
+                    <SelectItem key={action.id} value={action.id}>
+                      {action.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedAction && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedAction.description}
+                </p>
               )}
             </div>
-          </ScrollArea>
+
+            {selectedAction && selectedActionMissing.length > 0 && (
+              <Alert className="bg-amber-50/50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+                <Info className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+                  Missing required: {selectedActionMissing.slice(0, 3).join(', ')}
+                  {selectedActionMissing.length > 3 ? '…' : ''}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         ) : (
           <Alert>
             <Info className="h-4 w-4" />

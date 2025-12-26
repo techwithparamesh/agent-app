@@ -1268,7 +1268,7 @@ function IntegrationsPageContent() {
               Integrations
             </h1>
             <p className="text-muted-foreground mt-1">
-              Connect 50+ apps and automate your workflows like n8n
+              Connect 95 apps and automate your workflows like n8n
             </p>
           </div>
           <div className="flex gap-2">
@@ -1346,7 +1346,7 @@ function IntegrationsPageContent() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="my-integrations" className="space-y-4">
+        <Tabs defaultValue="browse" className="space-y-4">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="my-integrations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -1495,7 +1495,7 @@ function IntegrationsPageContent() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search 50+ integrations..."
+                  placeholder="Search 95 integrations..."
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

@@ -23,6 +23,22 @@ export interface ConfigField {
   required?: boolean;
   default?: string | number | boolean;
   options?: { value: string; label: string; description?: string }[];
+  loadOptions?: {
+    /**
+     * API path (relative to the app origin), e.g. `/api/integrations/options/trello/boards`
+     */
+    path: string;
+    method?: 'GET' | 'POST';
+    /**
+     * Dynamic field keys required to load options (e.g. `boardId`).
+     * If any are missing, the loader will not run.
+     */
+    dependsOn?: string[];
+    /**
+     * Auth keys to send from `dynamicFields` (e.g. `apiKey`, `token`).
+     */
+    authKeys?: string[];
+  };
   validation?: {
     pattern?: string;
     min?: number;
@@ -49,6 +65,9 @@ export interface TriggerConfig {
 
 export interface ActionConfig {
   id: string;
+  // n8n-like metadata (optional): drive Resource → Operation UI
+  resource?: string;
+  operation?: string;
   name: string;
   description: string;
   icon?: string;
@@ -180,6 +199,8 @@ export const whatsappConfig: AppConfig = {
   actions: [
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send a text message via WhatsApp',
       icon: '📤',
@@ -191,6 +212,8 @@ export const whatsappConfig: AppConfig = {
     },
     {
       id: 'send_template',
+      resource: 'Message',
+      operation: 'Send Template',
       name: 'Send Template Message',
       description: 'Send a pre-approved template message',
       icon: '📋',
@@ -203,6 +226,8 @@ export const whatsappConfig: AppConfig = {
     },
     {
       id: 'send_media',
+      resource: 'Media',
+      operation: 'Send',
       name: 'Send Media',
       description: 'Send image, video, or document',
       icon: '🖼️',
@@ -221,6 +246,8 @@ export const whatsappConfig: AppConfig = {
     },
     {
       id: 'send_interactive',
+      resource: 'Message',
+      operation: 'Send Interactive',
       name: 'Send Interactive Message',
       description: 'Send buttons or list message',
       icon: '🔘',
@@ -238,6 +265,8 @@ export const whatsappConfig: AppConfig = {
     },
     {
       id: 'mark_read',
+      resource: 'Message',
+      operation: 'Mark Read',
       name: 'Mark as Read',
       description: 'Mark a message as read',
       icon: '👁️',
@@ -304,12 +333,17 @@ export const telegramConfig: AppConfig = {
       description: 'Triggers when someone joins a group',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'chatId', label: 'Chat ID (optional)', type: 'text', placeholder: 'Only trigger for a specific chat/group' },
+        { key: 'includeBots', label: 'Include Bots', type: 'boolean', default: false, helpText: 'If disabled, bot accounts joining will be ignored' },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send a text message',
       fields: [
@@ -326,6 +360,8 @@ export const telegramConfig: AppConfig = {
     },
     {
       id: 'send_photo',
+      resource: 'Media',
+      operation: 'Send Photo',
       name: 'Send Photo',
       description: 'Send a photo',
       fields: [
@@ -336,6 +372,8 @@ export const telegramConfig: AppConfig = {
     },
     {
       id: 'send_document',
+      resource: 'Media',
+      operation: 'Send Document',
       name: 'Send Document',
       description: 'Send a file/document',
       fields: [
@@ -347,6 +385,8 @@ export const telegramConfig: AppConfig = {
     },
     {
       id: 'send_buttons',
+      resource: 'Message',
+      operation: 'Send with Buttons',
       name: 'Send with Buttons',
       description: 'Send message with inline buttons',
       fields: [
@@ -357,6 +397,8 @@ export const telegramConfig: AppConfig = {
     },
     {
       id: 'edit_message',
+      resource: 'Message',
+      operation: 'Edit',
       name: 'Edit Message',
       description: 'Edit an existing message',
       fields: [
@@ -367,6 +409,8 @@ export const telegramConfig: AppConfig = {
     },
     {
       id: 'delete_message',
+      resource: 'Message',
+      operation: 'Delete',
       name: 'Delete Message',
       description: 'Delete a message',
       fields: [
@@ -429,12 +473,17 @@ export const slackConfig: AppConfig = {
       description: 'Triggers when your bot is mentioned',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'channel', label: 'Channel (optional)', type: 'text', placeholder: '#general or Channel ID' },
+        { key: 'keyword', label: 'Keyword Filter (optional)', type: 'text', placeholder: 'Only trigger if message contains this text' },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Post a message to a channel',
       fields: [
@@ -447,6 +496,8 @@ export const slackConfig: AppConfig = {
     },
     {
       id: 'send_blocks',
+      resource: 'Message',
+      operation: 'Send Rich',
       name: 'Send Rich Message',
       description: 'Send a message with blocks (rich formatting)',
       fields: [
@@ -457,6 +508,8 @@ export const slackConfig: AppConfig = {
     },
     {
       id: 'send_dm',
+      resource: 'Message',
+      operation: 'Send DM',
       name: 'Send Direct Message',
       description: 'Send a DM to a user',
       fields: [
@@ -466,6 +519,8 @@ export const slackConfig: AppConfig = {
     },
     {
       id: 'add_reaction',
+      resource: 'Reaction',
+      operation: 'Add',
       name: 'Add Reaction',
       description: 'Add an emoji reaction to a message',
       fields: [
@@ -476,6 +531,8 @@ export const slackConfig: AppConfig = {
     },
     {
       id: 'update_message',
+      resource: 'Message',
+      operation: 'Update',
       name: 'Update Message',
       description: 'Edit an existing message',
       fields: [
@@ -486,6 +543,8 @@ export const slackConfig: AppConfig = {
     },
     {
       id: 'upload_file',
+      resource: 'File',
+      operation: 'Upload',
       name: 'Upload File',
       description: 'Upload a file to a channel',
       fields: [
@@ -551,6 +610,8 @@ export const discordConfig: AppConfig = {
   actions: [
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send a message to a channel',
       fields: [
@@ -561,6 +622,8 @@ export const discordConfig: AppConfig = {
     },
     {
       id: 'send_embed',
+      resource: 'Message',
+      operation: 'Send Embed',
       name: 'Send Embed',
       description: 'Send a rich embed message',
       fields: [
@@ -575,6 +638,8 @@ export const discordConfig: AppConfig = {
     },
     {
       id: 'webhook_send',
+      resource: 'Webhook',
+      operation: 'Send',
       name: 'Send via Webhook',
       description: 'Send using a webhook URL',
       fields: [
@@ -627,6 +692,8 @@ export const teamsConfig: AppConfig = {
   actions: [
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send a message to a channel',
       fields: [
@@ -637,6 +704,8 @@ export const teamsConfig: AppConfig = {
     },
     {
       id: 'send_card',
+      resource: 'Card',
+      operation: 'Send',
       name: 'Send Adaptive Card',
       description: 'Send a rich Adaptive Card',
       fields: [
@@ -647,6 +716,8 @@ export const teamsConfig: AppConfig = {
     },
     {
       id: 'webhook_send',
+      resource: 'Webhook',
+      operation: 'Send',
       name: 'Send via Webhook',
       description: 'Send using an incoming webhook',
       fields: [
@@ -708,6 +779,8 @@ export const twilioSmsConfig: AppConfig = {
   actions: [
     {
       id: 'send_sms',
+      resource: 'SMS',
+      operation: 'Send',
       name: 'Send SMS',
       description: 'Send an SMS message',
       fields: [
@@ -718,6 +791,8 @@ export const twilioSmsConfig: AppConfig = {
     },
     {
       id: 'lookup',
+      resource: 'Phone Number',
+      operation: 'Lookup',
       name: 'Phone Number Lookup',
       description: 'Look up information about a phone number',
       fields: [
@@ -787,6 +862,8 @@ export const gmailConfig: AppConfig = {
   actions: [
     {
       id: 'send_email',
+      resource: 'Email',
+      operation: 'Send',
       name: 'Send Email',
       description: 'Send an email',
       fields: [
@@ -801,6 +878,8 @@ export const gmailConfig: AppConfig = {
     },
     {
       id: 'reply_email',
+      resource: 'Email',
+      operation: 'Reply',
       name: 'Reply to Email',
       description: 'Reply to an existing email',
       fields: [
@@ -811,6 +890,8 @@ export const gmailConfig: AppConfig = {
     },
     {
       id: 'create_draft',
+      resource: 'Draft',
+      operation: 'Create',
       name: 'Create Draft',
       description: 'Create an email draft',
       fields: [
@@ -821,6 +902,8 @@ export const gmailConfig: AppConfig = {
     },
     {
       id: 'add_label',
+      resource: 'Message',
+      operation: 'Add Label',
       name: 'Add Label',
       description: 'Add a label to an email',
       fields: [
@@ -833,6 +916,8 @@ export const gmailConfig: AppConfig = {
     },
     {
       id: 'mark_read',
+      resource: 'Message',
+      operation: 'Mark Read/Unread',
       name: 'Mark as Read/Unread',
       description: 'Change read status of an email',
       fields: [
@@ -887,6 +972,8 @@ export const outlookConfig: AppConfig = {
   actions: [
     {
       id: 'send_email',
+      resource: 'Email',
+      operation: 'Send',
       name: 'Send Email',
       description: 'Send an email via Outlook',
       fields: [
@@ -908,6 +995,8 @@ export const outlookConfig: AppConfig = {
     },
     {
       id: 'reply_email',
+      resource: 'Email',
+      operation: 'Reply',
       name: 'Reply to Email',
       description: 'Reply to an existing email',
       fields: [
@@ -918,6 +1007,8 @@ export const outlookConfig: AppConfig = {
     },
     {
       id: 'forward_email',
+      resource: 'Email',
+      operation: 'Forward',
       name: 'Forward Email',
       description: 'Forward an email',
       fields: [
@@ -928,6 +1019,8 @@ export const outlookConfig: AppConfig = {
     },
     {
       id: 'move_email',
+      resource: 'Email',
+      operation: 'Move',
       name: 'Move Email',
       description: 'Move email to a folder',
       fields: [
@@ -981,6 +1074,8 @@ export const sendgridConfig: AppConfig = {
   actions: [
     {
       id: 'send_email',
+      resource: 'Email',
+      operation: 'Send',
       name: 'Send Email',
       description: 'Send a transactional email',
       fields: [
@@ -996,6 +1091,8 @@ export const sendgridConfig: AppConfig = {
     },
     {
       id: 'send_template',
+      resource: 'Email',
+      operation: 'Send Template',
       name: 'Send Template Email',
       description: 'Send an email using a template',
       fields: [
@@ -1007,6 +1104,8 @@ export const sendgridConfig: AppConfig = {
     },
     {
       id: 'add_contact',
+      resource: 'Contact',
+      operation: 'Add',
       name: 'Add Contact',
       description: 'Add a contact to SendGrid',
       fields: [
@@ -1061,7 +1160,10 @@ export const mailchimpConfig: AppConfig = {
       description: 'Triggers when a campaign is sent',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'listId', label: 'List/Audience ID (optional)', type: 'text', helpText: 'If set, only trigger for campaigns sent to this audience' },
+        { key: 'campaignId', label: 'Campaign ID (optional)', type: 'text', helpText: 'If set, only trigger for a specific campaign' },
+      ],
     },
     {
       id: 'unsubscribe',
@@ -1077,6 +1179,8 @@ export const mailchimpConfig: AppConfig = {
   actions: [
     {
       id: 'add_subscriber',
+      resource: 'Subscriber',
+      operation: 'Add/Update',
       name: 'Add/Update Subscriber',
       description: 'Add or update a subscriber',
       fields: [
@@ -1095,6 +1199,8 @@ export const mailchimpConfig: AppConfig = {
     },
     {
       id: 'remove_subscriber',
+      resource: 'Subscriber',
+      operation: 'Remove',
       name: 'Remove Subscriber',
       description: 'Remove a subscriber from a list',
       fields: [
@@ -1104,6 +1210,8 @@ export const mailchimpConfig: AppConfig = {
     },
     {
       id: 'add_tag',
+      resource: 'Subscriber',
+      operation: 'Add Tag',
       name: 'Add Tag',
       description: 'Add tags to a subscriber',
       fields: [
@@ -1114,6 +1222,8 @@ export const mailchimpConfig: AppConfig = {
     },
     {
       id: 'create_campaign',
+      resource: 'Campaign',
+      operation: 'Create',
       name: 'Create Campaign',
       description: 'Create an email campaign',
       fields: [
@@ -1155,6 +1265,8 @@ export const smtpConfig: AppConfig = {
   actions: [
     {
       id: 'send_email',
+      resource: 'Email',
+      operation: 'Send',
       name: 'Send Email',
       description: 'Send an email via SMTP',
       fields: [
@@ -1221,6 +1333,8 @@ export const googleSheetsConfig: AppConfig = {
   actions: [
     {
       id: 'append_row',
+      resource: 'Row',
+      operation: 'Append',
       name: 'Append Row',
       description: 'Add a new row to the sheet',
       fields: [
@@ -1235,6 +1349,8 @@ export const googleSheetsConfig: AppConfig = {
     },
     {
       id: 'update_row',
+      resource: 'Row',
+      operation: 'Update',
       name: 'Update Row',
       description: 'Update an existing row',
       fields: [
@@ -1246,6 +1362,8 @@ export const googleSheetsConfig: AppConfig = {
     },
     {
       id: 'get_rows',
+      resource: 'Row',
+      operation: 'Get Many',
       name: 'Get Rows',
       description: 'Read rows from the sheet',
       fields: [
@@ -1256,6 +1374,8 @@ export const googleSheetsConfig: AppConfig = {
     },
     {
       id: 'find_row',
+      resource: 'Row',
+      operation: 'Find',
       name: 'Find Row',
       description: 'Find a row by column value',
       fields: [
@@ -1267,6 +1387,8 @@ export const googleSheetsConfig: AppConfig = {
     },
     {
       id: 'delete_row',
+      resource: 'Row',
+      operation: 'Delete',
       name: 'Delete Row',
       description: 'Delete a row from the sheet',
       fields: [
@@ -1277,6 +1399,8 @@ export const googleSheetsConfig: AppConfig = {
     },
     {
       id: 'clear_range',
+      resource: 'Range',
+      operation: 'Clear',
       name: 'Clear Range',
       description: 'Clear values in a range',
       fields: [
@@ -1336,6 +1460,8 @@ export const googleDriveConfig: AppConfig = {
   actions: [
     {
       id: 'upload_file',
+      resource: 'File',
+      operation: 'Upload',
       name: 'Upload File',
       description: 'Upload a file to Drive',
       fields: [
@@ -1347,6 +1473,8 @@ export const googleDriveConfig: AppConfig = {
     },
     {
       id: 'create_folder',
+      resource: 'Folder',
+      operation: 'Create',
       name: 'Create Folder',
       description: 'Create a new folder',
       fields: [
@@ -1356,6 +1484,8 @@ export const googleDriveConfig: AppConfig = {
     },
     {
       id: 'copy_file',
+      resource: 'File',
+      operation: 'Copy',
       name: 'Copy File',
       description: 'Create a copy of a file',
       fields: [
@@ -1366,6 +1496,8 @@ export const googleDriveConfig: AppConfig = {
     },
     {
       id: 'move_file',
+      resource: 'File',
+      operation: 'Move',
       name: 'Move File',
       description: 'Move a file to another folder',
       fields: [
@@ -1375,6 +1507,8 @@ export const googleDriveConfig: AppConfig = {
     },
     {
       id: 'delete_file',
+      resource: 'File',
+      operation: 'Delete',
       name: 'Delete File',
       description: 'Delete a file or folder',
       fields: [
@@ -1384,6 +1518,8 @@ export const googleDriveConfig: AppConfig = {
     },
     {
       id: 'share_file',
+      resource: 'File',
+      operation: 'Share',
       name: 'Share File',
       description: 'Share a file with someone',
       fields: [
@@ -1399,6 +1535,8 @@ export const googleDriveConfig: AppConfig = {
     },
     {
       id: 'get_file',
+      resource: 'File',
+      operation: 'Get',
       name: 'Get File Info',
       description: 'Get file metadata',
       fields: [
@@ -1460,6 +1598,8 @@ export const googleCalendarConfig: AppConfig = {
   actions: [
     {
       id: 'create_event',
+      resource: 'Event',
+      operation: 'Create',
       name: 'Create Event',
       description: 'Create a new calendar event',
       fields: [
@@ -1480,6 +1620,8 @@ export const googleCalendarConfig: AppConfig = {
     },
     {
       id: 'update_event',
+      resource: 'Event',
+      operation: 'Update',
       name: 'Update Event',
       description: 'Update an existing event',
       fields: [
@@ -1493,6 +1635,8 @@ export const googleCalendarConfig: AppConfig = {
     },
     {
       id: 'delete_event',
+      resource: 'Event',
+      operation: 'Delete',
       name: 'Delete Event',
       description: 'Delete a calendar event',
       fields: [
@@ -1503,6 +1647,8 @@ export const googleCalendarConfig: AppConfig = {
     },
     {
       id: 'get_events',
+      resource: 'Event',
+      operation: 'Get Many',
       name: 'Get Events',
       description: 'List events in a time range',
       fields: [
@@ -1515,6 +1661,8 @@ export const googleCalendarConfig: AppConfig = {
     },
     {
       id: 'quick_add',
+      resource: 'Event',
+      operation: 'Quick Add',
       name: 'Quick Add Event',
       description: 'Create event using natural language',
       fields: [
@@ -1556,6 +1704,8 @@ export const googleDocsConfig: AppConfig = {
   actions: [
     {
       id: 'create_document',
+      resource: 'Document',
+      operation: 'Create',
       name: 'Create Document',
       description: 'Create a new Google Doc',
       fields: [
@@ -1566,6 +1716,8 @@ export const googleDocsConfig: AppConfig = {
     },
     {
       id: 'append_text',
+      resource: 'Document',
+      operation: 'Append Text',
       name: 'Append Text',
       description: 'Add text to end of document',
       fields: [
@@ -1575,6 +1727,8 @@ export const googleDocsConfig: AppConfig = {
     },
     {
       id: 'replace_text',
+      resource: 'Document',
+      operation: 'Find & Replace',
       name: 'Find & Replace',
       description: 'Replace text in the document',
       fields: [
@@ -1586,6 +1740,8 @@ export const googleDocsConfig: AppConfig = {
     },
     {
       id: 'get_content',
+      resource: 'Document',
+      operation: 'Get Content',
       name: 'Get Document Content',
       description: 'Read the document content',
       fields: [
@@ -1594,6 +1750,8 @@ export const googleDocsConfig: AppConfig = {
     },
     {
       id: 'create_from_template',
+      resource: 'Document',
+      operation: 'Create from Template',
       name: 'Create from Template',
       description: 'Create doc from template with variables',
       fields: [
@@ -1637,6 +1795,8 @@ export const googleFormsConfig: AppConfig = {
   actions: [
     {
       id: 'get_responses',
+      resource: 'Response',
+      operation: 'Get Many',
       name: 'Get Responses',
       description: 'Get all form responses',
       fields: [
@@ -1646,6 +1806,8 @@ export const googleFormsConfig: AppConfig = {
     },
     {
       id: 'get_form',
+      resource: 'Form',
+      operation: 'Get',
       name: 'Get Form Structure',
       description: 'Get form questions and structure',
       fields: [
@@ -1718,7 +1880,9 @@ export const hubspotConfig: AppConfig = {
       description: 'Triggers when a new contact is created',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'properties', label: 'Include Properties (optional)', type: 'json', placeholder: '["email", "firstname", "lastname"]', helpText: 'Store as config; useful if your runtime fetches only selected fields' },
+      ],
     },
     {
       id: 'contact_updated',
@@ -1736,7 +1900,10 @@ export const hubspotConfig: AppConfig = {
       description: 'Triggers when a new deal is created',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'pipeline', label: 'Pipeline (optional)', type: 'text', helpText: 'If set, only trigger for deals in this pipeline' },
+        { key: 'stage', label: 'Stage (optional)', type: 'text', helpText: 'If set, only trigger for deals created in this stage' },
+      ],
     },
     {
       id: 'deal_stage_changed',
@@ -1763,6 +1930,8 @@ export const hubspotConfig: AppConfig = {
   actions: [
     {
       id: 'create_contact',
+      resource: 'Contact',
+      operation: 'Create',
       name: 'Create Contact',
       description: 'Create a new contact',
       fields: [
@@ -1785,6 +1954,8 @@ export const hubspotConfig: AppConfig = {
     },
     {
       id: 'update_contact',
+      resource: 'Contact',
+      operation: 'Update',
       name: 'Update Contact',
       description: 'Update an existing contact',
       fields: [
@@ -1794,6 +1965,8 @@ export const hubspotConfig: AppConfig = {
     },
     {
       id: 'get_contact',
+      resource: 'Contact',
+      operation: 'Get',
       name: 'Get Contact',
       description: 'Retrieve contact details',
       fields: [
@@ -1804,6 +1977,8 @@ export const hubspotConfig: AppConfig = {
     },
     {
       id: 'create_deal',
+      resource: 'Deal',
+      operation: 'Create',
       name: 'Create Deal',
       description: 'Create a new deal',
       fields: [
@@ -1818,6 +1993,8 @@ export const hubspotConfig: AppConfig = {
     },
     {
       id: 'update_deal',
+      resource: 'Deal',
+      operation: 'Update',
       name: 'Update Deal',
       description: 'Update an existing deal',
       fields: [
@@ -1827,6 +2004,8 @@ export const hubspotConfig: AppConfig = {
     },
     {
       id: 'create_company',
+      resource: 'Company',
+      operation: 'Create',
       name: 'Create Company',
       description: 'Create a new company',
       fields: [
@@ -1840,6 +2019,8 @@ export const hubspotConfig: AppConfig = {
     },
     {
       id: 'add_note',
+      resource: 'Note',
+      operation: 'Add',
       name: 'Add Note',
       description: 'Add a note to a record',
       fields: [
@@ -1919,6 +2100,8 @@ export const salesforceConfig: AppConfig = {
   actions: [
     {
       id: 'create_record',
+      resource: 'Record',
+      operation: 'Create',
       name: 'Create Record',
       description: 'Create a new Salesforce record',
       fields: [
@@ -1935,6 +2118,8 @@ export const salesforceConfig: AppConfig = {
     },
     {
       id: 'update_record',
+      resource: 'Record',
+      operation: 'Update',
       name: 'Update Record',
       description: 'Update an existing record',
       fields: [
@@ -1950,6 +2135,8 @@ export const salesforceConfig: AppConfig = {
     },
     {
       id: 'get_record',
+      resource: 'Record',
+      operation: 'Get',
       name: 'Get Record',
       description: 'Retrieve a record by ID',
       fields: [
@@ -1965,6 +2152,8 @@ export const salesforceConfig: AppConfig = {
     },
     {
       id: 'query',
+      resource: 'Query',
+      operation: 'SOQL',
       name: 'SOQL Query',
       description: 'Run a custom SOQL query',
       fields: [
@@ -1973,6 +2162,8 @@ export const salesforceConfig: AppConfig = {
     },
     {
       id: 'delete_record',
+      resource: 'Record',
+      operation: 'Delete',
       name: 'Delete Record',
       description: 'Delete a record',
       fields: [
@@ -2020,7 +2211,11 @@ export const pipedriveConfig: AppConfig = {
       description: 'Triggers when a new deal is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'pipelineId', label: 'Pipeline ID', type: 'text', helpText: 'Optional: only for a specific pipeline' },
+        { key: 'stageId', label: 'Stage ID', type: 'text', helpText: 'Optional: only for a specific stage' },
+        { key: 'ownerId', label: 'Owner ID', type: 'text', helpText: 'Optional: only deals owned by this user' },
+      ],
     },
     {
       id: 'deal_updated',
@@ -2028,7 +2223,11 @@ export const pipedriveConfig: AppConfig = {
       description: 'Triggers when a deal is updated',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'pipelineId', label: 'Pipeline ID', type: 'text', helpText: 'Optional filter' },
+        { key: 'stageId', label: 'Stage ID', type: 'text', helpText: 'Optional filter' },
+        { key: 'fieldFilter', label: 'Watch Fields', type: 'json', placeholder: '["status", "value"]', helpText: 'Optional: only react when these fields change' },
+      ],
     },
     {
       id: 'deal_stage_changed',
@@ -2046,7 +2245,10 @@ export const pipedriveConfig: AppConfig = {
       description: 'Triggers when a new person is added',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'ownerId', label: 'Owner ID', type: 'text', helpText: 'Optional: only persons owned by this user' },
+        { key: 'orgId', label: 'Organization ID', type: 'text', helpText: 'Optional: only persons in this org' },
+      ],
     },
     {
       id: 'activity_completed',
@@ -2062,6 +2264,8 @@ export const pipedriveConfig: AppConfig = {
   actions: [
     {
       id: 'create_deal',
+      resource: 'Deal',
+      operation: 'Create',
       name: 'Create Deal',
       description: 'Create a new deal',
       fields: [
@@ -2076,6 +2280,8 @@ export const pipedriveConfig: AppConfig = {
     },
     {
       id: 'update_deal',
+      resource: 'Deal',
+      operation: 'Update',
       name: 'Update Deal',
       description: 'Update an existing deal',
       fields: [
@@ -2092,6 +2298,8 @@ export const pipedriveConfig: AppConfig = {
     },
     {
       id: 'create_person',
+      resource: 'Person',
+      operation: 'Create',
       name: 'Create Person',
       description: 'Create a new person/contact',
       fields: [
@@ -2103,6 +2311,8 @@ export const pipedriveConfig: AppConfig = {
     },
     {
       id: 'create_activity',
+      resource: 'Activity',
+      operation: 'Create',
       name: 'Create Activity',
       description: 'Create a new activity',
       fields: [
@@ -2122,6 +2332,8 @@ export const pipedriveConfig: AppConfig = {
     },
     {
       id: 'add_note',
+      resource: 'Note',
+      operation: 'Add',
       name: 'Add Note',
       description: 'Add a note to a deal or person',
       fields: [
@@ -2185,6 +2397,8 @@ export const zohoCrmConfig: AppConfig = {
   actions: [
     {
       id: 'create_record',
+      resource: 'Record',
+      operation: 'Create',
       name: 'Create Record',
       description: 'Create a new record',
       fields: [
@@ -2199,6 +2413,8 @@ export const zohoCrmConfig: AppConfig = {
     },
     {
       id: 'update_record',
+      resource: 'Record',
+      operation: 'Update',
       name: 'Update Record',
       description: 'Update an existing record',
       fields: [
@@ -2214,6 +2430,8 @@ export const zohoCrmConfig: AppConfig = {
     },
     {
       id: 'search_records',
+      resource: 'Record',
+      operation: 'Search',
       name: 'Search Records',
       description: 'Search for records',
       fields: [
@@ -2255,7 +2473,10 @@ export const freshsalesConfig: AppConfig = {
       description: 'Triggers when a new lead is created',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'ownerId', label: 'Owner ID', type: 'text', helpText: 'Optional: only leads owned by this user' },
+        { key: 'source', label: 'Lead Source', type: 'text', helpText: 'Optional: filter by source' },
+      ],
     },
     {
       id: 'new_contact',
@@ -2263,7 +2484,10 @@ export const freshsalesConfig: AppConfig = {
       description: 'Triggers when a new contact is created',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'ownerId', label: 'Owner ID', type: 'text', helpText: 'Optional: only contacts owned by this user' },
+        { key: 'accountId', label: 'Account ID', type: 'text', helpText: 'Optional: only contacts under this account' },
+      ],
     },
     {
       id: 'deal_stage_changed',
@@ -2271,12 +2495,17 @@ export const freshsalesConfig: AppConfig = {
       description: 'Triggers when deal stage changes',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'pipelineId', label: 'Pipeline ID', type: 'text', helpText: 'Optional: filter by pipeline' },
+        { key: 'stage', label: 'Stage', type: 'text', helpText: 'Optional: filter by stage' },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_lead',
+      resource: 'Lead',
+      operation: 'Create',
       name: 'Create Lead',
       description: 'Create a new lead',
       fields: [
@@ -2290,6 +2519,8 @@ export const freshsalesConfig: AppConfig = {
     },
     {
       id: 'create_contact',
+      resource: 'Contact',
+      operation: 'Create',
       name: 'Create Contact',
       description: 'Create a new contact',
       fields: [
@@ -2302,6 +2533,8 @@ export const freshsalesConfig: AppConfig = {
     },
     {
       id: 'create_deal',
+      resource: 'Deal',
+      operation: 'Create',
       name: 'Create Deal',
       description: 'Create a new deal',
       fields: [
@@ -2314,6 +2547,8 @@ export const freshsalesConfig: AppConfig = {
     },
     {
       id: 'add_note',
+      resource: 'Note',
+      operation: 'Add',
       name: 'Add Note',
       description: 'Add a note to a record',
       fields: [
@@ -2366,12 +2601,17 @@ export const zapierConfig: AppConfig = {
       description: 'Triggers when Zapier sends a webhook',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'secret', label: 'Secret (Optional)', type: 'password', helpText: 'If set, validate incoming requests using a shared secret' },
+        { key: 'ignoreEmptyPayload', label: 'Ignore Empty Payload', type: 'boolean', default: false },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_webhook',
+      resource: 'Webhook',
+      operation: 'Send',
       name: 'Send to Zapier',
       description: 'Send data to a Zapier webhook',
       fields: [
@@ -2406,12 +2646,17 @@ export const makeConfig: AppConfig = {
       description: 'Triggers when Make sends a webhook',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'secret', label: 'Secret (Optional)', type: 'password', helpText: 'If set, validate incoming requests using a shared secret' },
+        { key: 'ignoreEmptyPayload', label: 'Ignore Empty Payload', type: 'boolean', default: false },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_webhook',
+      resource: 'Webhook',
+      operation: 'Send',
       name: 'Send to Make',
       description: 'Send data to a Make scenario',
       fields: [
@@ -2447,12 +2692,17 @@ export const n8nConfig: AppConfig = {
       description: 'Triggers when n8n sends a webhook',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'secret', label: 'Secret (Optional)', type: 'password', helpText: 'If set, validate incoming requests using a shared secret' },
+        { key: 'ignoreEmptyPayload', label: 'Ignore Empty Payload', type: 'boolean', default: false },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_webhook',
+      resource: 'Webhook',
+      operation: 'Send',
       name: 'Send to n8n',
       description: 'Send data to an n8n workflow',
       fields: [
@@ -2491,12 +2741,17 @@ export const powerAutomateConfig: AppConfig = {
       description: 'Triggers when Power Automate sends request',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'secret', label: 'Secret (Optional)', type: 'password', helpText: 'If set, validate incoming requests using a shared secret' },
+        { key: 'ignoreEmptyPayload', label: 'Ignore Empty Payload', type: 'boolean', default: false },
+      ],
     },
   ],
   actions: [
     {
       id: 'trigger_flow',
+      resource: 'Flow',
+      operation: 'Trigger',
       name: 'Trigger Flow',
       description: 'Trigger a Power Automate flow',
       fields: [
@@ -2568,6 +2823,8 @@ export const airtableConfig: AppConfig = {
   actions: [
     {
       id: 'create_record',
+      resource: 'Record',
+      operation: 'Create',
       name: 'Create Record',
       description: 'Create a new record',
       fields: [
@@ -2578,6 +2835,8 @@ export const airtableConfig: AppConfig = {
     },
     {
       id: 'update_record',
+      resource: 'Record',
+      operation: 'Update',
       name: 'Update Record',
       description: 'Update an existing record',
       fields: [
@@ -2589,6 +2848,8 @@ export const airtableConfig: AppConfig = {
     },
     {
       id: 'get_record',
+      resource: 'Record',
+      operation: 'Get',
       name: 'Get Record',
       description: 'Retrieve a specific record',
       fields: [
@@ -2599,6 +2860,8 @@ export const airtableConfig: AppConfig = {
     },
     {
       id: 'list_records',
+      resource: 'Record',
+      operation: 'Get Many',
       name: 'List Records',
       description: 'Get records from a table',
       fields: [
@@ -2612,6 +2875,8 @@ export const airtableConfig: AppConfig = {
     },
     {
       id: 'delete_record',
+      resource: 'Record',
+      operation: 'Delete',
       name: 'Delete Record',
       description: 'Delete a record',
       fields: [
@@ -2672,6 +2937,8 @@ export const notionConfig: AppConfig = {
   actions: [
     {
       id: 'create_page',
+      resource: 'Page',
+      operation: 'Create',
       name: 'Create Page',
       description: 'Create a new page',
       fields: [
@@ -2687,6 +2954,8 @@ export const notionConfig: AppConfig = {
     },
     {
       id: 'update_page',
+      resource: 'Page',
+      operation: 'Update',
       name: 'Update Page',
       description: 'Update page properties',
       fields: [
@@ -2696,6 +2965,8 @@ export const notionConfig: AppConfig = {
     },
     {
       id: 'append_block',
+      resource: 'Page',
+      operation: 'Append Content',
       name: 'Append Content',
       description: 'Append content to a page',
       fields: [
@@ -2713,6 +2984,8 @@ export const notionConfig: AppConfig = {
     },
     {
       id: 'query_database',
+      resource: 'Database',
+      operation: 'Query',
       name: 'Query Database',
       description: 'Query a Notion database',
       fields: [
@@ -2724,6 +2997,8 @@ export const notionConfig: AppConfig = {
     },
     {
       id: 'get_page',
+      resource: 'Page',
+      operation: 'Get',
       name: 'Get Page',
       description: 'Retrieve a page',
       fields: [
@@ -2777,6 +3052,8 @@ export const firebaseConfig: AppConfig = {
   actions: [
     {
       id: 'create_document',
+      resource: 'Firestore',
+      operation: 'Create Document',
       name: 'Create Document',
       description: 'Create a new Firestore document',
       fields: [
@@ -2787,6 +3064,8 @@ export const firebaseConfig: AppConfig = {
     },
     {
       id: 'update_document',
+      resource: 'Firestore',
+      operation: 'Update Document',
       name: 'Update Document',
       description: 'Update an existing document',
       fields: [
@@ -2797,6 +3076,8 @@ export const firebaseConfig: AppConfig = {
     },
     {
       id: 'get_document',
+      resource: 'Firestore',
+      operation: 'Get Document',
       name: 'Get Document',
       description: 'Retrieve a document',
       fields: [
@@ -2805,6 +3086,8 @@ export const firebaseConfig: AppConfig = {
     },
     {
       id: 'query_collection',
+      resource: 'Firestore',
+      operation: 'Query Collection',
       name: 'Query Collection',
       description: 'Query documents in a collection',
       fields: [
@@ -2816,6 +3099,8 @@ export const firebaseConfig: AppConfig = {
     },
     {
       id: 'delete_document',
+      resource: 'Firestore',
+      operation: 'Delete Document',
       name: 'Delete Document',
       description: 'Delete a document',
       fields: [
@@ -2871,6 +3156,8 @@ export const supabaseConfig: AppConfig = {
   actions: [
     {
       id: 'insert_row',
+      resource: 'Row',
+      operation: 'Insert',
       name: 'Insert Row',
       description: 'Insert a new row',
       fields: [
@@ -2881,6 +3168,8 @@ export const supabaseConfig: AppConfig = {
     },
     {
       id: 'update_rows',
+      resource: 'Row',
+      operation: 'Update',
       name: 'Update Rows',
       description: 'Update rows matching criteria',
       fields: [
@@ -2891,6 +3180,8 @@ export const supabaseConfig: AppConfig = {
     },
     {
       id: 'select_rows',
+      resource: 'Row',
+      operation: 'Select',
       name: 'Select Rows',
       description: 'Query rows from a table',
       fields: [
@@ -2903,6 +3194,8 @@ export const supabaseConfig: AppConfig = {
     },
     {
       id: 'delete_rows',
+      resource: 'Row',
+      operation: 'Delete',
       name: 'Delete Rows',
       description: 'Delete rows matching criteria',
       fields: [
@@ -2912,6 +3205,8 @@ export const supabaseConfig: AppConfig = {
     },
     {
       id: 'rpc',
+      resource: 'Database',
+      operation: 'Call Function',
       name: 'Call Function',
       description: 'Call a database function',
       fields: [
@@ -2966,6 +3261,8 @@ export const mongodbConfig: AppConfig = {
   actions: [
     {
       id: 'insert_document',
+      resource: 'Document',
+      operation: 'Insert',
       name: 'Insert Document',
       description: 'Insert a new document',
       fields: [
@@ -2975,6 +3272,8 @@ export const mongodbConfig: AppConfig = {
     },
     {
       id: 'update_document',
+      resource: 'Document',
+      operation: 'Update',
       name: 'Update Document',
       description: 'Update documents matching filter',
       fields: [
@@ -2986,6 +3285,8 @@ export const mongodbConfig: AppConfig = {
     },
     {
       id: 'find_documents',
+      resource: 'Document',
+      operation: 'Find',
       name: 'Find Documents',
       description: 'Query documents',
       fields: [
@@ -2998,6 +3299,8 @@ export const mongodbConfig: AppConfig = {
     },
     {
       id: 'delete_documents',
+      resource: 'Document',
+      operation: 'Delete',
       name: 'Delete Documents',
       description: 'Delete documents matching filter',
       fields: [
@@ -3007,6 +3310,8 @@ export const mongodbConfig: AppConfig = {
     },
     {
       id: 'aggregate',
+      resource: 'Collection',
+      operation: 'Aggregate',
       name: 'Aggregate',
       description: 'Run an aggregation pipeline',
       fields: [
@@ -3054,6 +3359,8 @@ export const awsS3Config: AppConfig = {
   actions: [
     {
       id: 'upload_file',
+      resource: 'Object',
+      operation: 'Upload',
       name: 'Upload File',
       description: 'Upload a file to S3',
       fields: [
@@ -3069,6 +3376,8 @@ export const awsS3Config: AppConfig = {
     },
     {
       id: 'get_object',
+      resource: 'Object',
+      operation: 'Download',
       name: 'Get Object',
       description: 'Download an object from S3',
       fields: [
@@ -3078,6 +3387,8 @@ export const awsS3Config: AppConfig = {
     },
     {
       id: 'list_objects',
+      resource: 'Object',
+      operation: 'List',
       name: 'List Objects',
       description: 'List objects in a bucket',
       fields: [
@@ -3088,6 +3399,8 @@ export const awsS3Config: AppConfig = {
     },
     {
       id: 'delete_object',
+      resource: 'Object',
+      operation: 'Delete',
       name: 'Delete Object',
       description: 'Delete an object',
       fields: [
@@ -3097,6 +3410,8 @@ export const awsS3Config: AppConfig = {
     },
     {
       id: 'copy_object',
+      resource: 'Object',
+      operation: 'Copy',
       name: 'Copy Object',
       description: 'Copy an object to a new location',
       fields: [
@@ -3108,6 +3423,8 @@ export const awsS3Config: AppConfig = {
     },
     {
       id: 'generate_presigned_url',
+      resource: 'Object',
+      operation: 'Generate Presigned URL',
       name: 'Generate Presigned URL',
       description: 'Create a temporary access URL',
       fields: [
@@ -3164,6 +3481,8 @@ export const dropboxConfig: AppConfig = {
   actions: [
     {
       id: 'upload_file',
+      resource: 'File',
+      operation: 'Upload',
       name: 'Upload File',
       description: 'Upload a file to Dropbox',
       fields: [
@@ -3177,6 +3496,8 @@ export const dropboxConfig: AppConfig = {
     },
     {
       id: 'download_file',
+      resource: 'File',
+      operation: 'Download',
       name: 'Download File',
       description: 'Download a file',
       fields: [
@@ -3185,6 +3506,8 @@ export const dropboxConfig: AppConfig = {
     },
     {
       id: 'list_folder',
+      resource: 'Folder',
+      operation: 'List',
       name: 'List Folder',
       description: 'List contents of a folder',
       fields: [
@@ -3194,6 +3517,8 @@ export const dropboxConfig: AppConfig = {
     },
     {
       id: 'create_folder',
+      resource: 'Folder',
+      operation: 'Create',
       name: 'Create Folder',
       description: 'Create a new folder',
       fields: [
@@ -3202,6 +3527,8 @@ export const dropboxConfig: AppConfig = {
     },
     {
       id: 'move_file',
+      resource: 'File',
+      operation: 'Move/Rename',
       name: 'Move/Rename',
       description: 'Move or rename a file',
       fields: [
@@ -3211,6 +3538,8 @@ export const dropboxConfig: AppConfig = {
     },
     {
       id: 'delete_file',
+      resource: 'File',
+      operation: 'Delete',
       name: 'Delete',
       description: 'Delete a file or folder',
       fields: [
@@ -3219,6 +3548,8 @@ export const dropboxConfig: AppConfig = {
     },
     {
       id: 'create_shared_link',
+      resource: 'Sharing',
+      operation: 'Create Shared Link',
       name: 'Create Shared Link',
       description: 'Create a shareable link',
       fields: [
@@ -3267,7 +3598,15 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when a payment is successful',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'customerId', label: 'Customer ID (optional)', type: 'text' },
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'usd' },
+      ],
     },
     {
       id: 'payment_failed',
@@ -3275,7 +3614,15 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when a payment fails',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'customerId', label: 'Customer ID (optional)', type: 'text' },
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'usd' },
+      ],
     },
     {
       id: 'subscription_created',
@@ -3283,7 +3630,15 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when a new subscription is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'customerId', label: 'Customer ID (optional)', type: 'text' },
+        { key: 'priceId', label: 'Price ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'subscription_updated',
@@ -3291,7 +3646,15 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when a subscription is updated',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'customerId', label: 'Customer ID (optional)', type: 'text' },
+        { key: 'priceId', label: 'Price ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'subscription_canceled',
@@ -3299,7 +3662,15 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when a subscription is canceled',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'customerId', label: 'Customer ID (optional)', type: 'text' },
+        { key: 'priceId', label: 'Price ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'invoice_paid',
@@ -3307,7 +3678,15 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when an invoice is paid',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'customerId', label: 'Customer ID (optional)', type: 'text' },
+        { key: 'subscriptionId', label: 'Subscription ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'customer_created',
@@ -3315,12 +3694,21 @@ export const stripeConfig: AppConfig = {
       description: 'Triggers when a new customer is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'mode', label: 'Mode', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'live', label: 'Live' },
+          { value: 'test', label: 'Test' },
+        ] },
+        { key: 'emailContains', label: 'Email Contains (optional)', type: 'text', placeholder: '@example.com' },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_customer',
+      resource: 'Customer',
+      operation: 'Create',
       name: 'Create Customer',
       description: 'Create a new Stripe customer',
       fields: [
@@ -3333,6 +3721,8 @@ export const stripeConfig: AppConfig = {
     },
     {
       id: 'create_payment_intent',
+      resource: 'Payment',
+      operation: 'Create Payment Intent',
       name: 'Create Payment Intent',
       description: 'Create a payment intent',
       fields: [
@@ -3346,6 +3736,8 @@ export const stripeConfig: AppConfig = {
     },
     {
       id: 'create_subscription',
+      resource: 'Subscription',
+      operation: 'Create',
       name: 'Create Subscription',
       description: 'Create a new subscription',
       fields: [
@@ -3357,6 +3749,8 @@ export const stripeConfig: AppConfig = {
     },
     {
       id: 'cancel_subscription',
+      resource: 'Subscription',
+      operation: 'Cancel',
       name: 'Cancel Subscription',
       description: 'Cancel a subscription',
       fields: [
@@ -3366,6 +3760,8 @@ export const stripeConfig: AppConfig = {
     },
     {
       id: 'create_invoice',
+      resource: 'Invoice',
+      operation: 'Create',
       name: 'Create Invoice',
       description: 'Create a new invoice',
       fields: [
@@ -3376,6 +3772,8 @@ export const stripeConfig: AppConfig = {
     },
     {
       id: 'get_customer',
+      resource: 'Customer',
+      operation: 'Get',
       name: 'Get Customer',
       description: 'Retrieve customer details',
       fields: [
@@ -3384,6 +3782,8 @@ export const stripeConfig: AppConfig = {
     },
     {
       id: 'refund_payment',
+      resource: 'Refund',
+      operation: 'Create',
       name: 'Create Refund',
       description: 'Refund a payment',
       fields: [
@@ -3426,7 +3826,10 @@ export const razorpayConfig: AppConfig = {
       description: 'Triggers when payment is captured',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'INR' },
+        { key: 'minAmount', label: 'Minimum Amount (optional)', type: 'number', helpText: 'In paise' },
+      ],
     },
     {
       id: 'payment_failed',
@@ -3434,7 +3837,9 @@ export const razorpayConfig: AppConfig = {
       description: 'Triggers when payment fails',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'INR' },
+      ],
     },
     {
       id: 'subscription_activated',
@@ -3442,7 +3847,9 @@ export const razorpayConfig: AppConfig = {
       description: 'Triggers when subscription is activated',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'planId', label: 'Plan ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'refund_processed',
@@ -3450,12 +3857,16 @@ export const razorpayConfig: AppConfig = {
       description: 'Triggers when refund is processed',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'INR' },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_order',
+      resource: 'Order',
+      operation: 'Create',
       name: 'Create Order',
       description: 'Create a new order',
       fields: [
@@ -3467,6 +3878,8 @@ export const razorpayConfig: AppConfig = {
     },
     {
       id: 'capture_payment',
+      resource: 'Payment',
+      operation: 'Capture',
       name: 'Capture Payment',
       description: 'Capture an authorized payment',
       fields: [
@@ -3477,6 +3890,8 @@ export const razorpayConfig: AppConfig = {
     },
     {
       id: 'create_refund',
+      resource: 'Refund',
+      operation: 'Create',
       name: 'Create Refund',
       description: 'Refund a payment',
       fields: [
@@ -3487,6 +3902,8 @@ export const razorpayConfig: AppConfig = {
     },
     {
       id: 'get_payment',
+      resource: 'Payment',
+      operation: 'Get',
       name: 'Get Payment',
       description: 'Fetch payment details',
       fields: [
@@ -3495,6 +3912,8 @@ export const razorpayConfig: AppConfig = {
     },
     {
       id: 'create_customer',
+      resource: 'Customer',
+      operation: 'Create',
       name: 'Create Customer',
       description: 'Create a customer',
       fields: [
@@ -3533,7 +3952,11 @@ export const shopifyConfig: AppConfig = {
       description: 'Triggers when a new order is placed',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'minTotal', label: 'Minimum Order Total (optional)', type: 'number', helpText: 'Store currency minor units are not assumed; use a raw number' },
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'USD' },
+        { key: 'tagIncludes', label: 'Order Tag Contains (optional)', type: 'text', placeholder: 'vip' },
+      ],
     },
     {
       id: 'order_paid',
@@ -3541,7 +3964,10 @@ export const shopifyConfig: AppConfig = {
       description: 'Triggers when an order is paid',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'USD' },
+        { key: 'tagIncludes', label: 'Order Tag Contains (optional)', type: 'text', placeholder: 'vip' },
+      ],
     },
     {
       id: 'order_fulfilled',
@@ -3549,7 +3975,9 @@ export const shopifyConfig: AppConfig = {
       description: 'Triggers when an order is fulfilled',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'locationId', label: 'Location ID (optional)', type: 'text', helpText: 'If set, only trigger for fulfillments from this location' },
+      ],
     },
     {
       id: 'customer_created',
@@ -3557,7 +3985,13 @@ export const shopifyConfig: AppConfig = {
       description: 'Triggers when a customer is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'acceptsMarketing', label: 'Accepts Marketing (optional)', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'true', label: 'True' },
+          { value: 'false', label: 'False' },
+        ] },
+      ],
     },
     {
       id: 'product_created',
@@ -3565,7 +3999,10 @@ export const shopifyConfig: AppConfig = {
       description: 'Triggers when a product is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'vendor', label: 'Vendor (optional)', type: 'text' },
+        { key: 'productType', label: 'Product Type (optional)', type: 'text' },
+      ],
     },
     {
       id: 'product_updated',
@@ -3573,12 +4010,17 @@ export const shopifyConfig: AppConfig = {
       description: 'Triggers when a product is updated',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'vendor', label: 'Vendor (optional)', type: 'text' },
+        { key: 'productType', label: 'Product Type (optional)', type: 'text' },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_order',
+      resource: 'Order',
+      operation: 'Create',
       name: 'Create Order',
       description: 'Create a new order',
       fields: [
@@ -3595,6 +4037,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'update_order',
+      resource: 'Order',
+      operation: 'Update',
       name: 'Update Order',
       description: 'Update an order',
       fields: [
@@ -3606,6 +4050,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'get_order',
+      resource: 'Order',
+      operation: 'Get',
       name: 'Get Order',
       description: 'Retrieve order details',
       fields: [
@@ -3614,6 +4060,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'create_product',
+      resource: 'Product',
+      operation: 'Create',
       name: 'Create Product',
       description: 'Create a new product',
       fields: [
@@ -3628,6 +4076,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'update_product',
+      resource: 'Product',
+      operation: 'Update',
       name: 'Update Product',
       description: 'Update a product',
       fields: [
@@ -3639,6 +4089,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'update_inventory',
+      resource: 'Inventory',
+      operation: 'Adjust',
       name: 'Update Inventory',
       description: 'Adjust inventory levels',
       fields: [
@@ -3649,6 +4101,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'create_customer',
+      resource: 'Customer',
+      operation: 'Create',
       name: 'Create Customer',
       description: 'Create a customer',
       fields: [
@@ -3662,6 +4116,8 @@ export const shopifyConfig: AppConfig = {
     },
     {
       id: 'fulfill_order',
+      resource: 'Fulfillment',
+      operation: 'Create',
       name: 'Fulfill Order',
       description: 'Create a fulfillment',
       fields: [
@@ -3701,7 +4157,18 @@ export const woocommerceConfig: AppConfig = {
       description: 'Triggers when an order is created',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'status', label: 'Status Filter (optional)', type: 'multiselect', options: [
+          { value: 'pending', label: 'Pending' },
+          { value: 'processing', label: 'Processing' },
+          { value: 'on-hold', label: 'On Hold' },
+          { value: 'completed', label: 'Completed' },
+          { value: 'cancelled', label: 'Cancelled' },
+          { value: 'refunded', label: 'Refunded' },
+          { value: 'failed', label: 'Failed' },
+        ] },
+        { key: 'after', label: 'Created After (optional)', type: 'datetime' },
+      ],
     },
     {
       id: 'order_updated',
@@ -3709,7 +4176,17 @@ export const woocommerceConfig: AppConfig = {
       description: 'Triggers when an order status changes',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'status', label: 'Status Filter (optional)', type: 'multiselect', options: [
+          { value: 'pending', label: 'Pending' },
+          { value: 'processing', label: 'Processing' },
+          { value: 'on-hold', label: 'On Hold' },
+          { value: 'completed', label: 'Completed' },
+          { value: 'cancelled', label: 'Cancelled' },
+          { value: 'refunded', label: 'Refunded' },
+          { value: 'failed', label: 'Failed' },
+        ] },
+      ],
     },
     {
       id: 'customer_created',
@@ -3717,7 +4194,9 @@ export const woocommerceConfig: AppConfig = {
       description: 'Triggers when a customer is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'emailContains', label: 'Email Contains (optional)', type: 'text', placeholder: '@example.com' },
+      ],
     },
     {
       id: 'product_created',
@@ -3725,12 +4204,21 @@ export const woocommerceConfig: AppConfig = {
       description: 'Triggers when a product is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'status', label: 'Status (optional)', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'publish', label: 'Published' },
+          { value: 'draft', label: 'Draft' },
+          { value: 'private', label: 'Private' },
+        ] },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_order',
+      resource: 'Order',
+      operation: 'Create',
       name: 'Create Order',
       description: 'Create a new order',
       fields: [
@@ -3748,6 +4236,8 @@ export const woocommerceConfig: AppConfig = {
     },
     {
       id: 'update_order',
+      resource: 'Order',
+      operation: 'Update',
       name: 'Update Order',
       description: 'Update an order',
       fields: [
@@ -3765,6 +4255,8 @@ export const woocommerceConfig: AppConfig = {
     },
     {
       id: 'get_order',
+      resource: 'Order',
+      operation: 'Get',
       name: 'Get Order',
       description: 'Retrieve order details',
       fields: [
@@ -3773,6 +4265,8 @@ export const woocommerceConfig: AppConfig = {
     },
     {
       id: 'create_product',
+      resource: 'Product',
+      operation: 'Create',
       name: 'Create Product',
       description: 'Create a product',
       fields: [
@@ -3792,6 +4286,8 @@ export const woocommerceConfig: AppConfig = {
     },
     {
       id: 'update_stock',
+      resource: 'Inventory',
+      operation: 'Update Stock',
       name: 'Update Stock',
       description: 'Update product stock',
       fields: [
@@ -3806,6 +4302,8 @@ export const woocommerceConfig: AppConfig = {
     },
     {
       id: 'create_customer',
+      resource: 'Customer',
+      operation: 'Create',
       name: 'Create Customer',
       description: 'Create a customer',
       fields: [
@@ -3850,7 +4348,10 @@ export const paypalConfig: AppConfig = {
       description: 'Triggers when a payment is completed',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'USD' },
+        { key: 'payerEmailContains', label: 'Payer Email Contains (optional)', type: 'text', placeholder: '@example.com' },
+      ],
     },
     {
       id: 'payment_refunded',
@@ -3858,7 +4359,9 @@ export const paypalConfig: AppConfig = {
       description: 'Triggers when a payment is refunded',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'currency', label: 'Currency (optional)', type: 'text', placeholder: 'USD' },
+      ],
     },
     {
       id: 'subscription_activated',
@@ -3866,7 +4369,9 @@ export const paypalConfig: AppConfig = {
       description: 'Triggers when a subscription is activated',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'planId', label: 'Plan ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'subscription_cancelled',
@@ -3874,12 +4379,16 @@ export const paypalConfig: AppConfig = {
       description: 'Triggers when a subscription is cancelled',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'planId', label: 'Plan ID (optional)', type: 'text' },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_order',
+      resource: 'Order',
+      operation: 'Create',
       name: 'Create Order',
       description: 'Create a PayPal order',
       fields: [
@@ -3892,6 +4401,8 @@ export const paypalConfig: AppConfig = {
     },
     {
       id: 'capture_order',
+      resource: 'Order',
+      operation: 'Capture',
       name: 'Capture Order',
       description: 'Capture an approved order',
       fields: [
@@ -3900,6 +4411,8 @@ export const paypalConfig: AppConfig = {
     },
     {
       id: 'refund_capture',
+      resource: 'Refund',
+      operation: 'Create',
       name: 'Refund Payment',
       description: 'Refund a captured payment',
       fields: [
@@ -3911,6 +4424,8 @@ export const paypalConfig: AppConfig = {
     },
     {
       id: 'get_order',
+      resource: 'Order',
+      operation: 'Get',
       name: 'Get Order Details',
       description: 'Get order details',
       fields: [
@@ -3919,6 +4434,8 @@ export const paypalConfig: AppConfig = {
     },
     {
       id: 'create_payout',
+      resource: 'Payout',
+      operation: 'Create',
       name: 'Create Payout',
       description: 'Send money to recipients',
       fields: [
@@ -3969,8 +4486,28 @@ export const trelloConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
-        { key: 'listId', label: 'List ID', type: 'text', helpText: 'Optional: specific list' },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
       ],
     },
     {
@@ -3980,8 +4517,28 @@ export const trelloConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
-        { key: 'listId', label: 'Target List ID', type: 'text', helpText: 'Optional: trigger for specific list' },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'Target List (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
       ],
     },
     {
@@ -3991,7 +4548,17 @@ export const trelloConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
       ],
     },
     {
@@ -4001,17 +4568,51 @@ export const trelloConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_card',
+      resource: 'Card',
+      operation: 'Create',
       name: 'Create Card',
       description: 'Create a new card',
       fields: [
-        { key: 'listId', label: 'List ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
         { key: 'name', label: 'Card Name', type: 'text', required: true },
         { key: 'desc', label: 'Description', type: 'textarea' },
         { key: 'due', label: 'Due Date', type: 'datetime' },
@@ -4025,10 +4626,46 @@ export const trelloConfig: AppConfig = {
     },
     {
       id: 'update_card',
+      resource: 'Card',
+      operation: 'Update',
       name: 'Update Card',
       description: 'Update a card',
       fields: [
-        { key: 'cardId', label: 'Card ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
+        {
+          key: 'cardId',
+          label: 'Card',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/cards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['listId'],
+          },
+        },
         { key: 'name', label: 'Name', type: 'text' },
         { key: 'desc', label: 'Description', type: 'textarea' },
         { key: 'due', label: 'Due Date', type: 'datetime' },
@@ -4038,11 +4675,58 @@ export const trelloConfig: AppConfig = {
     },
     {
       id: 'move_card',
+      resource: 'Card',
+      operation: 'Move',
       name: 'Move Card',
       description: 'Move a card to another list',
       fields: [
-        { key: 'cardId', label: 'Card ID', type: 'text', required: true },
-        { key: 'listId', label: 'Target List ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'Source List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
+        {
+          key: 'cardId',
+          label: 'Card',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/cards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['listId'],
+          },
+        },
+        {
+          key: 'targetListId',
+          label: 'Target List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
         { key: 'pos', label: 'Position', type: 'select', options: [
           { value: 'top', label: 'Top' },
           { value: 'bottom', label: 'Bottom' },
@@ -4051,28 +4735,112 @@ export const trelloConfig: AppConfig = {
     },
     {
       id: 'add_comment',
+      resource: 'Comment',
+      operation: 'Add',
       name: 'Add Comment',
       description: 'Add a comment to a card',
       fields: [
-        { key: 'cardId', label: 'Card ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
+        {
+          key: 'cardId',
+          label: 'Card',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/cards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['listId'],
+          },
+        },
         { key: 'text', label: 'Comment', type: 'textarea', required: true },
       ],
     },
     {
       id: 'add_member',
+      resource: 'Member',
+      operation: 'Add to Card',
       name: 'Add Member',
       description: 'Add a member to a card',
       fields: [
-        { key: 'cardId', label: 'Card ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/lists',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['boardId'],
+          },
+        },
+        {
+          key: 'cardId',
+          label: 'Card',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/cards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+            dependsOn: ['listId'],
+          },
+        },
         { key: 'memberId', label: 'Member ID', type: 'text', required: true },
       ],
     },
     {
       id: 'create_list',
+      resource: 'List',
+      operation: 'Create',
       name: 'Create List',
       description: 'Create a new list',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/trello/boards',
+            method: 'POST',
+            authKeys: ['apiKey', 'token'],
+          },
+        },
         { key: 'name', label: 'List Name', type: 'text', required: true },
         { key: 'pos', label: 'Position', type: 'select', options: [
           { value: 'top', label: 'Top' },
@@ -4115,7 +4883,29 @@ export const asanaConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
       ],
     },
     {
@@ -4125,7 +4915,29 @@ export const asanaConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
       ],
     },
     {
@@ -4135,17 +4947,63 @@ export const asanaConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_task',
+      resource: 'Task',
+      operation: 'Create',
       name: 'Create Task',
       description: 'Create a new task',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
         { key: 'name', label: 'Task Name', type: 'text', required: true },
         { key: 'notes', label: 'Description', type: 'textarea' },
         { key: 'dueOn', label: 'Due Date', type: 'datetime' },
@@ -4155,10 +5013,46 @@ export const asanaConfig: AppConfig = {
     },
     {
       id: 'update_task',
+      resource: 'Task',
+      operation: 'Update',
       name: 'Update Task',
       description: 'Update a task',
       fields: [
-        { key: 'taskId', label: 'Task ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
+        {
+          key: 'taskId',
+          label: 'Task',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/tasks',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['projectId'],
+          },
+        },
         { key: 'name', label: 'Name', type: 'text' },
         { key: 'notes', label: 'Description', type: 'textarea' },
         { key: 'completed', label: 'Completed', type: 'boolean' },
@@ -4168,27 +5062,135 @@ export const asanaConfig: AppConfig = {
     },
     {
       id: 'complete_task',
+      resource: 'Task',
+      operation: 'Complete',
       name: 'Complete Task',
       description: 'Mark a task as complete',
       fields: [
-        { key: 'taskId', label: 'Task ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
+        {
+          key: 'taskId',
+          label: 'Task',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/tasks',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['projectId'],
+          },
+        },
       ],
     },
     {
       id: 'add_comment',
+      resource: 'Comment',
+      operation: 'Add',
       name: 'Add Comment',
       description: 'Add a comment to a task',
       fields: [
-        { key: 'taskId', label: 'Task ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
+        {
+          key: 'taskId',
+          label: 'Task',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/tasks',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['projectId'],
+          },
+        },
         { key: 'text', label: 'Comment', type: 'textarea', required: true },
       ],
     },
     {
       id: 'create_subtask',
+      resource: 'Subtask',
+      operation: 'Create',
       name: 'Create Subtask',
       description: 'Create a subtask',
       fields: [
-        { key: 'parentTaskId', label: 'Parent Task ID', type: 'text', required: true },
+        {
+          key: 'workspaceId',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/workspaces',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/projects',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['workspaceId'],
+          },
+        },
+        {
+          key: 'parentTaskId',
+          label: 'Parent Task',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/asana/tasks',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['projectId'],
+          },
+        },
         { key: 'name', label: 'Subtask Name', type: 'text', required: true },
         { key: 'notes', label: 'Description', type: 'textarea' },
       ],
@@ -4230,8 +5232,27 @@ export const jiraConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectKey', label: 'Project Key', type: 'text' },
-        { key: 'issueType', label: 'Issue Type', type: 'text' },
+        {
+          key: 'projectKey',
+          label: 'Project (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/jira/projects',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+          },
+        },
+        {
+          key: 'issueTypeId',
+          label: 'Issue Type (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/jira/issue-types',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+            dependsOn: ['projectKey'],
+          },
+        },
       ],
     },
     {
@@ -4241,7 +5262,16 @@ export const jiraConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectKey', label: 'Project Key', type: 'text' },
+        {
+          key: 'projectKey',
+          label: 'Project (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/jira/projects',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+          },
+        },
       ],
     },
     {
@@ -4251,7 +5281,16 @@ export const jiraConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectKey', label: 'Project Key', type: 'text' },
+        {
+          key: 'projectKey',
+          label: 'Project (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/jira/projects',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+          },
+        },
         { key: 'toStatus', label: 'To Status', type: 'text', helpText: 'Optional: specific target status' },
       ],
     },
@@ -4262,24 +5301,50 @@ export const jiraConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectKey', label: 'Project Key', type: 'text' },
+        {
+          key: 'projectKey',
+          label: 'Project (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/jira/projects',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_issue',
+      resource: 'Issue',
+      operation: 'Create',
       name: 'Create Issue',
       description: 'Create a new issue',
       fields: [
-        { key: 'projectKey', label: 'Project Key', type: 'text', required: true },
-        { key: 'issueType', label: 'Issue Type', type: 'select', required: true, options: [
-          { value: 'Task', label: 'Task' },
-          { value: 'Bug', label: 'Bug' },
-          { value: 'Story', label: 'Story' },
-          { value: 'Epic', label: 'Epic' },
-          { value: 'Sub-task', label: 'Sub-task' },
-        ]},
+        {
+          key: 'projectKey',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/jira/projects',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+          },
+        },
+        {
+          key: 'issueTypeId',
+          label: 'Issue Type',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/jira/issue-types',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+            dependsOn: ['projectKey'],
+          },
+        },
         { key: 'summary', label: 'Summary', type: 'text', required: true },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'priority', label: 'Priority', type: 'select', options: [
@@ -4296,6 +5361,8 @@ export const jiraConfig: AppConfig = {
     },
     {
       id: 'update_issue',
+      resource: 'Issue',
+      operation: 'Update',
       name: 'Update Issue',
       description: 'Update an issue',
       fields: [
@@ -4313,16 +5380,31 @@ export const jiraConfig: AppConfig = {
     },
     {
       id: 'transition_issue',
+      resource: 'Issue',
+      operation: 'Transition',
       name: 'Transition Issue',
       description: 'Change issue status',
       fields: [
         { key: 'issueKey', label: 'Issue Key', type: 'text', required: true },
-        { key: 'transitionId', label: 'Transition ID', type: 'text', required: true },
+        {
+          key: 'transitionId',
+          label: 'Transition',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/jira/transitions',
+            method: 'POST',
+            authKeys: ['domain', 'email', 'apiToken'],
+            dependsOn: ['issueKey'],
+          },
+        },
         { key: 'comment', label: 'Comment', type: 'textarea' },
       ],
     },
     {
       id: 'add_comment',
+      resource: 'Comment',
+      operation: 'Add',
       name: 'Add Comment',
       description: 'Add a comment to an issue',
       fields: [
@@ -4332,6 +5414,8 @@ export const jiraConfig: AppConfig = {
     },
     {
       id: 'search_issues',
+      resource: 'Issue',
+      operation: 'Search',
       name: 'Search Issues (JQL)',
       description: 'Search issues using JQL',
       fields: [
@@ -4368,7 +5452,17 @@ export const mondayConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/boards',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
       ],
     },
     {
@@ -4378,8 +5472,28 @@ export const mondayConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
-        { key: 'columnId', label: 'Column ID', type: 'text', helpText: 'Optional: specific column' },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/boards',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
+        {
+          key: 'columnId',
+          label: 'Column (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/monday/columns',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['boardId'],
+          },
+        },
       ],
     },
     {
@@ -4389,34 +5503,80 @@ export const mondayConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/boards',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_item',
+      resource: 'Item',
+      operation: 'Create',
       name: 'Create Item',
       description: 'Create a new item',
       fields: [
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/boards',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
         { key: 'itemName', label: 'Item Name', type: 'text', required: true },
-        { key: 'groupId', label: 'Group ID', type: 'text' },
+        {
+          key: 'groupId',
+          label: 'Group (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/monday/groups',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['boardId'],
+          },
+        },
         { key: 'columnValues', label: 'Column Values', type: 'json', helpText: '{"status": {"label": "Done"}}' },
       ],
     },
     {
       id: 'update_item',
+      resource: 'Item',
+      operation: 'Update',
       name: 'Update Item',
       description: 'Update item column values',
       fields: [
         { key: 'itemId', label: 'Item ID', type: 'text', required: true },
-        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/boards',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
         { key: 'columnValues', label: 'Column Values', type: 'json', required: true },
       ],
     },
     {
       id: 'create_update',
+      resource: 'Update',
+      operation: 'Create',
       name: 'Add Update',
       description: 'Add an update to an item',
       fields: [
@@ -4426,11 +5586,35 @@ export const mondayConfig: AppConfig = {
     },
     {
       id: 'move_item',
+      resource: 'Item',
+      operation: 'Move to Group',
       name: 'Move Item to Group',
       description: 'Move item to another group',
       fields: [
         { key: 'itemId', label: 'Item ID', type: 'text', required: true },
-        { key: 'groupId', label: 'Target Group ID', type: 'text', required: true },
+        {
+          key: 'boardId',
+          label: 'Board',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/boards',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
+        {
+          key: 'groupId',
+          label: 'Target Group',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/monday/groups',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['boardId'],
+          },
+        },
       ],
     },
   ],
@@ -4468,7 +5652,51 @@ export const clickupConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'listId', label: 'List ID', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Workspace (Team)',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/teams',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
+        {
+          key: 'spaceId',
+          label: 'Space',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/spaces',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['teamId'],
+          },
+        },
+        {
+          key: 'folderId',
+          label: 'Folder (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/folders',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/lists',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
       ],
     },
     {
@@ -4478,7 +5706,51 @@ export const clickupConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'listId', label: 'List ID', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Workspace (Team)',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/teams',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
+        {
+          key: 'spaceId',
+          label: 'Space',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/spaces',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['teamId'],
+          },
+        },
+        {
+          key: 'folderId',
+          label: 'Folder (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/folders',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/lists',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
       ],
     },
     {
@@ -4488,17 +5760,108 @@ export const clickupConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'listId', label: 'List ID', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Workspace (Team)',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/teams',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
+        {
+          key: 'spaceId',
+          label: 'Space',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/spaces',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['teamId'],
+          },
+        },
+        {
+          key: 'folderId',
+          label: 'Folder (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/folders',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/lists',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_task',
+      resource: 'Task',
+      operation: 'Create',
       name: 'Create Task',
       description: 'Create a new task',
       fields: [
-        { key: 'listId', label: 'List ID', type: 'text', required: true },
+        {
+          key: 'teamId',
+          label: 'Workspace (Team)',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/teams',
+            method: 'POST',
+            authKeys: ['apiToken'],
+          },
+        },
+        {
+          key: 'spaceId',
+          label: 'Space',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/spaces',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['teamId'],
+          },
+        },
+        {
+          key: 'folderId',
+          label: 'Folder (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/clickup/folders',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
+        {
+          key: 'listId',
+          label: 'List',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/clickup/lists',
+            method: 'POST',
+            authKeys: ['apiToken'],
+            dependsOn: ['spaceId'],
+          },
+        },
         { key: 'name', label: 'Task Name', type: 'text', required: true },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'status', label: 'Status', type: 'text' },
@@ -4515,6 +5878,8 @@ export const clickupConfig: AppConfig = {
     },
     {
       id: 'update_task',
+      resource: 'Task',
+      operation: 'Update',
       name: 'Update Task',
       description: 'Update a task',
       fields: [
@@ -4532,6 +5897,8 @@ export const clickupConfig: AppConfig = {
     },
     {
       id: 'add_comment',
+      resource: 'Comment',
+      operation: 'Add',
       name: 'Add Comment',
       description: 'Add a comment to a task',
       fields: [
@@ -4574,7 +5941,16 @@ export const linearConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'teamId', label: 'Team ID', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Team (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/linear/teams',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
       ],
     },
     {
@@ -4584,7 +5960,16 @@ export const linearConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'teamId', label: 'Team ID', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Team (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/linear/teams',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
       ],
     },
     {
@@ -4594,18 +5979,50 @@ export const linearConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'teamId', label: 'Team ID', type: 'text' },
-        { key: 'toState', label: 'To State', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Team',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/linear/teams',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
+        {
+          key: 'toStateId',
+          label: 'To State (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/linear/states',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['teamId'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_issue',
+      resource: 'Issue',
+      operation: 'Create',
       name: 'Create Issue',
       description: 'Create a new issue',
       fields: [
-        { key: 'teamId', label: 'Team ID', type: 'text', required: true },
+        {
+          key: 'teamId',
+          label: 'Team',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/linear/teams',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'priority', label: 'Priority', type: 'select', options: [
@@ -4615,26 +6032,70 @@ export const linearConfig: AppConfig = {
           { value: '4', label: 'Low' },
           { value: '0', label: 'No Priority' },
         ]},
-        { key: 'stateId', label: 'State ID', type: 'text' },
+        {
+          key: 'stateId',
+          label: 'State (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/linear/states',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['teamId'],
+          },
+        },
         { key: 'assigneeId', label: 'Assignee ID', type: 'text' },
-        { key: 'labelIds', label: 'Label IDs', type: 'json' },
+        {
+          key: 'labelIds',
+          label: 'Labels (optional)',
+          type: 'multiselect',
+          loadOptions: {
+            path: '/api/integrations/options/linear/labels',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['teamId'],
+          },
+        },
       ],
     },
     {
       id: 'update_issue',
+      resource: 'Issue',
+      operation: 'Update',
       name: 'Update Issue',
       description: 'Update an issue',
       fields: [
         { key: 'issueId', label: 'Issue ID', type: 'text', required: true },
         { key: 'title', label: 'Title', type: 'text' },
         { key: 'description', label: 'Description', type: 'textarea' },
-        { key: 'stateId', label: 'State ID', type: 'text' },
+        {
+          key: 'teamId',
+          label: 'Team (required for state lookup)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/linear/teams',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
+        {
+          key: 'stateId',
+          label: 'State (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/linear/states',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['teamId'],
+          },
+        },
         { key: 'priority', label: 'Priority', type: 'number' },
         { key: 'assigneeId', label: 'Assignee ID', type: 'text' },
       ],
     },
     {
       id: 'add_comment',
+      resource: 'Comment',
+      operation: 'Add',
       name: 'Add Comment',
       description: 'Add a comment to an issue',
       fields: [
@@ -4677,7 +6138,28 @@ export const calendlyConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'eventType', label: 'Event Type URI', type: 'text', helpText: 'Optional: specific event type' },
+        {
+          key: 'userUri',
+          label: 'User (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/calendly/users',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
+        {
+          key: 'eventType',
+          label: 'Event Type (optional)',
+          type: 'select',
+          helpText: 'Optional: specific event type',
+          loadOptions: {
+            path: '/api/integrations/options/calendly/event-types',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['userUri'],
+          },
+        },
       ],
     },
     {
@@ -4686,7 +6168,31 @@ export const calendlyConfig: AppConfig = {
       description: 'Triggers when an event is canceled',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        {
+          key: 'userUri',
+          label: 'User (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/calendly/users',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
+        {
+          key: 'eventType',
+          label: 'Event Type (optional)',
+          type: 'select',
+          helpText: 'Optional: specific event type',
+          loadOptions: {
+            path: '/api/integrations/options/calendly/event-types',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['userUri'],
+          },
+        },
+        { key: 'reasonContains', label: 'Cancellation Reason Contains (optional)', type: 'text' },
+      ],
     },
     {
       id: 'event_rescheduled',
@@ -4694,12 +6200,37 @@ export const calendlyConfig: AppConfig = {
       description: 'Triggers when an event is rescheduled',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        {
+          key: 'userUri',
+          label: 'User (optional)',
+          type: 'select',
+          loadOptions: {
+            path: '/api/integrations/options/calendly/users',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
+        {
+          key: 'eventType',
+          label: 'Event Type (optional)',
+          type: 'select',
+          helpText: 'Optional: specific event type',
+          loadOptions: {
+            path: '/api/integrations/options/calendly/event-types',
+            method: 'POST',
+            authKeys: ['apiKey'],
+            dependsOn: ['userUri'],
+          },
+        },
+      ],
     },
   ],
   actions: [
     {
       id: 'get_event',
+      resource: 'Event',
+      operation: 'Get',
       name: 'Get Event Details',
       description: 'Retrieve event information',
       fields: [
@@ -4708,10 +6239,22 @@ export const calendlyConfig: AppConfig = {
     },
     {
       id: 'list_events',
+      resource: 'Event',
+      operation: 'List',
       name: 'List Events',
       description: 'List scheduled events',
       fields: [
-        { key: 'userUri', label: 'User URI', type: 'text', required: true },
+        {
+          key: 'userUri',
+          label: 'User',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/calendly/users',
+            method: 'POST',
+            authKeys: ['apiKey'],
+          },
+        },
         { key: 'status', label: 'Status', type: 'select', options: [
           { value: 'active', label: 'Active' },
           { value: 'canceled', label: 'Canceled' },
@@ -4723,6 +6266,8 @@ export const calendlyConfig: AppConfig = {
     },
     {
       id: 'cancel_event',
+      resource: 'Event',
+      operation: 'Cancel',
       name: 'Cancel Event',
       description: 'Cancel a scheduled event',
       fields: [
@@ -4794,6 +6339,8 @@ export const webhookConfig: AppConfig = {
   actions: [
     {
       id: 'send_webhook',
+      resource: 'Webhook',
+      operation: 'Send',
       name: 'Send Webhook',
       description: 'Send an HTTP request to a URL',
       fields: [
@@ -4877,6 +6424,8 @@ export const restApiConfig: AppConfig = {
   actions: [
     {
       id: 'http_request',
+      resource: 'Request',
+      operation: 'HTTP Request',
       name: 'HTTP Request',
       description: 'Make an HTTP request',
       fields: [
@@ -4945,6 +6494,8 @@ export const graphqlConfig: AppConfig = {
   actions: [
     {
       id: 'query',
+      resource: 'GraphQL',
+      operation: 'Query',
       name: 'Execute Query',
       description: 'Execute a GraphQL query',
       fields: [
@@ -4955,6 +6506,8 @@ export const graphqlConfig: AppConfig = {
     },
     {
       id: 'mutation',
+      resource: 'GraphQL',
+      operation: 'Mutation',
       name: 'Execute Mutation',
       description: 'Execute a GraphQL mutation',
       fields: [
@@ -4998,8 +6551,20 @@ export const githubConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'branch', label: 'Branch Filter', type: 'text', placeholder: 'main' },
       ],
     },
@@ -5010,8 +6575,20 @@ export const githubConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'action', label: 'Action', type: 'multiselect', options: [
           { value: 'opened', label: 'Opened' },
           { value: 'closed', label: 'Closed' },
@@ -5027,8 +6604,20 @@ export const githubConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'action', label: 'Action', type: 'multiselect', options: [
           { value: 'opened', label: 'Opened' },
           { value: 'closed', label: 'Closed' },
@@ -5044,8 +6633,20 @@ export const githubConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
       ],
     },
     {
@@ -5055,19 +6656,45 @@ export const githubConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_issue',
+      resource: 'Issue',
+      operation: 'Create',
       name: 'Create Issue',
       description: 'Create a new issue',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
         { key: 'body', label: 'Body', type: 'textarea' },
         { key: 'labels', label: 'Labels', type: 'json', placeholder: '["bug", "help wanted"]' },
@@ -5077,11 +6704,25 @@ export const githubConfig: AppConfig = {
     },
     {
       id: 'update_issue',
+      resource: 'Issue',
+      operation: 'Update',
       name: 'Update Issue',
       description: 'Update an issue',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'issueNumber', label: 'Issue Number', type: 'number', required: true },
         { key: 'title', label: 'Title', type: 'text' },
         { key: 'body', label: 'Body', type: 'textarea' },
@@ -5094,22 +6735,50 @@ export const githubConfig: AppConfig = {
     },
     {
       id: 'create_comment',
+      resource: 'Comment',
+      operation: 'Create',
       name: 'Create Comment',
       description: 'Add comment to issue/PR',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'issueNumber', label: 'Issue/PR Number', type: 'number', required: true },
         { key: 'body', label: 'Comment', type: 'textarea', required: true },
       ],
     },
     {
       id: 'create_pr',
+      resource: 'Pull Request',
+      operation: 'Create',
       name: 'Create Pull Request',
       description: 'Create a pull request',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
         { key: 'body', label: 'Description', type: 'textarea' },
         { key: 'head', label: 'Head Branch', type: 'text', required: true },
@@ -5119,11 +6788,25 @@ export const githubConfig: AppConfig = {
     },
     {
       id: 'merge_pr',
+      resource: 'Pull Request',
+      operation: 'Merge',
       name: 'Merge Pull Request',
       description: 'Merge a pull request',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'pullNumber', label: 'PR Number', type: 'number', required: true },
         { key: 'commitTitle', label: 'Commit Title', type: 'text' },
         { key: 'commitMessage', label: 'Commit Message', type: 'textarea' },
@@ -5136,11 +6819,25 @@ export const githubConfig: AppConfig = {
     },
     {
       id: 'create_release',
+      resource: 'Release',
+      operation: 'Create',
       name: 'Create Release',
       description: 'Create a new release',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
         { key: 'tagName', label: 'Tag Name', type: 'text', required: true },
         { key: 'name', label: 'Release Name', type: 'text' },
         { key: 'body', label: 'Release Notes', type: 'textarea' },
@@ -5150,12 +6847,32 @@ export const githubConfig: AppConfig = {
     },
     {
       id: 'dispatch_workflow',
+      resource: 'Workflow',
+      operation: 'Dispatch',
       name: 'Dispatch Workflow',
       description: 'Trigger a GitHub Actions workflow',
       fields: [
-        { key: 'owner', label: 'Owner', type: 'text', required: true },
-        { key: 'repo', label: 'Repository', type: 'text', required: true },
-        { key: 'workflowId', label: 'Workflow ID/Filename', type: 'text', required: true },
+        {
+          key: 'owner',
+          label: 'Owner',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/owners', method: 'POST', authKeys: ['token'] },
+        },
+        {
+          key: 'repo',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['token'], dependsOn: ['owner'] },
+        },
+        {
+          key: 'workflowId',
+          label: 'Workflow',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workflows', method: 'POST', authKeys: ['token'], dependsOn: ['owner', 'repo'] },
+        },
         { key: 'ref', label: 'Branch/Tag', type: 'text', required: true, default: 'main' },
         { key: 'inputs', label: 'Workflow Inputs', type: 'json' },
       ],
@@ -5196,8 +6913,19 @@ export const gitlabConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
-        { key: 'branch', label: 'Branch Filter', type: 'text' },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
+        {
+          key: 'branch',
+          label: 'Branch Filter',
+          type: 'select',
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['token', 'baseUrl'], dependsOn: ['projectId'] },
+        },
       ],
     },
     {
@@ -5207,7 +6935,13 @@ export const gitlabConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
         { key: 'action', label: 'Action', type: 'multiselect', options: [
           { value: 'open', label: 'Opened' },
           { value: 'close', label: 'Closed' },
@@ -5223,7 +6957,13 @@ export const gitlabConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
       ],
     },
     {
@@ -5233,7 +6973,13 @@ export const gitlabConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
         { key: 'status', label: 'Status', type: 'multiselect', options: [
           { value: 'success', label: 'Success' },
           { value: 'failed', label: 'Failed' },
@@ -5245,10 +6991,18 @@ export const gitlabConfig: AppConfig = {
   actions: [
     {
       id: 'create_issue',
+      resource: 'Issue',
+      operation: 'Create',
       name: 'Create Issue',
       description: 'Create a new issue',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'labels', label: 'Labels', type: 'text', placeholder: 'bug,urgent' },
@@ -5258,10 +7012,18 @@ export const gitlabConfig: AppConfig = {
     },
     {
       id: 'update_issue',
+      resource: 'Issue',
+      operation: 'Update',
       name: 'Update Issue',
       description: 'Update an issue',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
         { key: 'issueIid', label: 'Issue IID', type: 'number', required: true },
         { key: 'title', label: 'Title', type: 'text' },
         { key: 'description', label: 'Description', type: 'textarea' },
@@ -5273,12 +7035,33 @@ export const gitlabConfig: AppConfig = {
     },
     {
       id: 'create_mr',
+      resource: 'Merge Request',
+      operation: 'Create',
       name: 'Create Merge Request',
       description: 'Create a merge request',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
-        { key: 'sourceBranch', label: 'Source Branch', type: 'text', required: true },
-        { key: 'targetBranch', label: 'Target Branch', type: 'text', required: true, default: 'main' },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
+        {
+          key: 'sourceBranch',
+          label: 'Source Branch',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['token', 'baseUrl'], dependsOn: ['projectId'] },
+        },
+        {
+          key: 'targetBranch',
+          label: 'Target Branch',
+          type: 'select',
+          required: true,
+          default: 'main',
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['token', 'baseUrl'], dependsOn: ['projectId'] },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'assigneeId', label: 'Assignee ID', type: 'number' },
@@ -5286,20 +7069,42 @@ export const gitlabConfig: AppConfig = {
     },
     {
       id: 'trigger_pipeline',
+      resource: 'Pipeline',
+      operation: 'Trigger',
       name: 'Trigger Pipeline',
       description: 'Trigger a CI/CD pipeline',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
-        { key: 'ref', label: 'Branch/Tag', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
+        {
+          key: 'ref',
+          label: 'Branch',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['token', 'baseUrl'], dependsOn: ['projectId'] },
+        },
         { key: 'variables', label: 'Variables', type: 'json', helpText: '[{"key": "VAR", "value": "val"}]' },
       ],
     },
     {
       id: 'add_comment',
+      resource: 'Note',
+      operation: 'Add',
       name: 'Add Note',
       description: 'Add a note/comment',
       fields: [
-        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        {
+          key: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/projects', method: 'POST', authKeys: ['token', 'baseUrl'] },
+        },
         { key: 'issueIid', label: 'Issue IID', type: 'number', required: true },
         { key: 'body', label: 'Comment', type: 'textarea', required: true },
       ],
@@ -5340,9 +7145,26 @@ export const bitbucketConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
-        { key: 'branch', label: 'Branch Filter', type: 'text' },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
+        {
+          key: 'branch',
+          label: 'Branch Filter',
+          type: 'select',
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace', 'repoSlug'] },
+        },
       ],
     },
     {
@@ -5352,8 +7174,20 @@ export const bitbucketConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
         { key: 'event', label: 'Event', type: 'multiselect', options: [
           { value: 'created', label: 'Created' },
           { value: 'updated', label: 'Updated' },
@@ -5370,19 +7204,45 @@ export const bitbucketConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_issue',
+      resource: 'Issue',
+      operation: 'Create',
       name: 'Create Issue',
       description: 'Create a new issue',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
         { key: 'content', label: 'Description', type: 'textarea' },
         { key: 'kind', label: 'Kind', type: 'select', options: [
@@ -5402,37 +7262,98 @@ export const bitbucketConfig: AppConfig = {
     },
     {
       id: 'create_pr',
+      resource: 'Pull Request',
+      operation: 'Create',
       name: 'Create Pull Request',
       description: 'Create a pull request',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
         { key: 'title', label: 'Title', type: 'text', required: true },
-        { key: 'sourceBranch', label: 'Source Branch', type: 'text', required: true },
-        { key: 'destBranch', label: 'Destination Branch', type: 'text', required: true, default: 'main' },
+        {
+          key: 'sourceBranch',
+          label: 'Source Branch',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace', 'repoSlug'] },
+        },
+        {
+          key: 'destBranch',
+          label: 'Destination Branch',
+          type: 'select',
+          required: true,
+          default: 'main',
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace', 'repoSlug'] },
+        },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'closeSourceBranch', label: 'Close Source Branch', type: 'boolean', default: true },
       ],
     },
     {
       id: 'add_comment',
+      resource: 'Pull Request',
+      operation: 'Add Comment',
       name: 'Add PR Comment',
       description: 'Add comment to pull request',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
         { key: 'pullRequestId', label: 'PR ID', type: 'number', required: true },
         { key: 'content', label: 'Comment', type: 'textarea', required: true },
       ],
     },
     {
       id: 'trigger_pipeline',
+      resource: 'Pipeline',
+      operation: 'Trigger',
       name: 'Trigger Pipeline',
       description: 'Trigger a Bitbucket pipeline',
       fields: [
-        { key: 'workspace', label: 'Workspace', type: 'text', required: true },
-        { key: 'repoSlug', label: 'Repository Slug', type: 'text', required: true },
-        { key: 'target', label: 'Branch/Tag', type: 'text', required: true },
+        {
+          key: 'workspace',
+          label: 'Workspace',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/workspaces', method: 'POST', authKeys: ['username', 'appPassword'] },
+        },
+        {
+          key: 'repoSlug',
+          label: 'Repository',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/repos', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace'] },
+        },
+        {
+          key: 'target',
+          label: 'Branch',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/branches', method: 'POST', authKeys: ['username', 'appPassword'], dependsOn: ['workspace', 'repoSlug'] },
+        },
         { key: 'variables', label: 'Variables', type: 'json' },
       ],
     },
@@ -5474,16 +7395,19 @@ export const openaiConfig: AppConfig = {
   actions: [
     {
       id: 'chat_completion',
+      resource: 'Chat',
+      operation: 'Completion',
       name: 'Chat Completion',
       description: 'Generate chat completion with GPT',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'gpt-4o', label: 'GPT-4o' },
-          { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-          { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-          { value: 'gpt-4', label: 'GPT-4' },
-          { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-        ], default: 'gpt-4o-mini' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'gpt-4o-mini',
+          loadOptions: { path: '/chat-models', method: 'POST', authKeys: ['apiKey', 'organization'] },
+        },
         { key: 'systemPrompt', label: 'System Prompt', type: 'textarea' },
         { key: 'userMessage', label: 'User Message', type: 'textarea', required: true },
         { key: 'temperature', label: 'Temperature', type: 'number', default: 0.7, helpText: '0-2, lower is more focused' },
@@ -5496,13 +7420,19 @@ export const openaiConfig: AppConfig = {
     },
     {
       id: 'generate_image',
+      resource: 'Image',
+      operation: 'Generate',
       name: 'Generate Image',
       description: 'Generate image with DALL-E',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'dall-e-3', label: 'DALL-E 3' },
-          { value: 'dall-e-2', label: 'DALL-E 2' },
-        ], default: 'dall-e-3' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'dall-e-3',
+          loadOptions: { path: '/image-models', method: 'POST', authKeys: ['apiKey', 'organization'] },
+        },
         { key: 'prompt', label: 'Prompt', type: 'textarea', required: true },
         { key: 'size', label: 'Size', type: 'select', options: [
           { value: '1024x1024', label: '1024x1024' },
@@ -5521,39 +7451,56 @@ export const openaiConfig: AppConfig = {
     },
     {
       id: 'transcribe_audio',
+      resource: 'Audio',
+      operation: 'Transcribe',
       name: 'Transcribe Audio',
       description: 'Transcribe audio with Whisper',
       fields: [
         { key: 'file', label: 'Audio File', type: 'file', required: true },
-        { key: 'model', label: 'Model', type: 'select', options: [
-          { value: 'whisper-1', label: 'Whisper' },
-        ], default: 'whisper-1' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          default: 'whisper-1',
+          loadOptions: { path: '/transcription-models', method: 'POST', authKeys: ['apiKey', 'organization'] },
+        },
         { key: 'language', label: 'Language', type: 'text', placeholder: 'en', helpText: 'ISO-639-1 code' },
         { key: 'prompt', label: 'Prompt', type: 'text', helpText: 'Optional context hint' },
       ],
     },
     {
       id: 'create_embedding',
+      resource: 'Embedding',
+      operation: 'Create',
       name: 'Create Embedding',
       description: 'Generate text embeddings',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'text-embedding-3-large', label: 'Embedding 3 Large' },
-          { value: 'text-embedding-3-small', label: 'Embedding 3 Small' },
-          { value: 'text-embedding-ada-002', label: 'Ada 002' },
-        ], default: 'text-embedding-3-small' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'text-embedding-3-small',
+          loadOptions: { path: '/embedding-models', method: 'POST', authKeys: ['apiKey', 'organization'] },
+        },
         { key: 'input', label: 'Input Text', type: 'textarea', required: true },
       ],
     },
     {
       id: 'text_to_speech',
+      resource: 'Speech',
+      operation: 'Text to Speech',
       name: 'Text to Speech',
       description: 'Convert text to speech',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'tts-1', label: 'TTS-1' },
-          { value: 'tts-1-hd', label: 'TTS-1 HD' },
-        ], default: 'tts-1' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'tts-1',
+          loadOptions: { path: '/tts-models', method: 'POST', authKeys: ['apiKey', 'organization'] },
+        },
         { key: 'input', label: 'Text', type: 'textarea', required: true },
         { key: 'voice', label: 'Voice', type: 'select', required: true, options: [
           { value: 'alloy', label: 'Alloy' },
@@ -5591,15 +7538,19 @@ export const anthropicConfig: AppConfig = {
   actions: [
     {
       id: 'message',
+      resource: 'Message',
+      operation: 'Create',
       name: 'Send Message',
       description: 'Generate response with Claude',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-          { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-          { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-          { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
-        ], default: 'claude-3-5-sonnet-20241022' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'claude-3-5-sonnet-20241022',
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiKey'] },
+        },
         { key: 'systemPrompt', label: 'System Prompt', type: 'textarea' },
         { key: 'userMessage', label: 'User Message', type: 'textarea', required: true },
         { key: 'maxTokens', label: 'Max Tokens', type: 'number', required: true, default: 1024 },
@@ -5610,13 +7561,19 @@ export const anthropicConfig: AppConfig = {
     },
     {
       id: 'vision',
+      resource: 'Vision',
+      operation: 'Analyze',
       name: 'Vision Analysis',
       description: 'Analyze images with Claude',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-          { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-        ], default: 'claude-3-5-sonnet-20241022' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'claude-3-5-sonnet-20241022',
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiKey'] },
+        },
         { key: 'imageUrl', label: 'Image URL', type: 'url', required: true },
         { key: 'prompt', label: 'Prompt', type: 'textarea', required: true, placeholder: 'Describe this image' },
         { key: 'maxTokens', label: 'Max Tokens', type: 'number', default: 1024 },
@@ -5647,14 +7604,19 @@ export const googleAiConfig: AppConfig = {
   actions: [
     {
       id: 'generate_content',
+      resource: 'Text',
+      operation: 'Generate',
       name: 'Generate Content',
       description: 'Generate text with Gemini',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-          { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-          { value: 'gemini-1.0-pro', label: 'Gemini 1.0 Pro' },
-        ], default: 'gemini-1.5-flash' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'gemini-1.5-flash',
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiKey'] },
+        },
         { key: 'prompt', label: 'Prompt', type: 'textarea', required: true },
         { key: 'systemInstruction', label: 'System Instruction', type: 'textarea' },
         { key: 'temperature', label: 'Temperature', type: 'number', default: 1.0 },
@@ -5665,13 +7627,19 @@ export const googleAiConfig: AppConfig = {
     },
     {
       id: 'analyze_image',
+      resource: 'Image',
+      operation: 'Analyze',
       name: 'Analyze Image',
       description: 'Analyze image with Gemini Vision',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-          { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-        ], default: 'gemini-1.5-flash' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'gemini-1.5-flash',
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiKey'] },
+        },
         { key: 'imageUrl', label: 'Image URL', type: 'url', required: true },
         { key: 'prompt', label: 'Prompt', type: 'textarea', required: true },
         { key: 'maxOutputTokens', label: 'Max Output Tokens', type: 'number', default: 2048 },
@@ -5679,12 +7647,19 @@ export const googleAiConfig: AppConfig = {
     },
     {
       id: 'embed_content',
+      resource: 'Embedding',
+      operation: 'Create',
       name: 'Create Embedding',
       description: 'Generate embeddings',
       fields: [
-        { key: 'model', label: 'Model', type: 'select', required: true, options: [
-          { value: 'text-embedding-004', label: 'Text Embedding 004' },
-        ], default: 'text-embedding-004' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          default: 'text-embedding-004',
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiKey'] },
+        },
         { key: 'content', label: 'Content', type: 'textarea', required: true },
         { key: 'taskType', label: 'Task Type', type: 'select', options: [
           { value: 'RETRIEVAL_QUERY', label: 'Retrieval Query' },
@@ -5720,10 +7695,18 @@ export const elevenLabsConfig: AppConfig = {
   actions: [
     {
       id: 'text_to_speech',
+      resource: 'Speech',
+      operation: 'Text to Speech',
       name: 'Text to Speech',
       description: 'Convert text to speech',
       fields: [
-        { key: 'voiceId', label: 'Voice ID', type: 'text', required: true },
+        {
+          key: 'voiceId',
+          label: 'Voice',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/voices', method: 'POST', authKeys: ['apiKey'] },
+        },
         { key: 'text', label: 'Text', type: 'textarea', required: true },
         { key: 'modelId', label: 'Model', type: 'select', options: [
           { value: 'eleven_multilingual_v2', label: 'Multilingual v2' },
@@ -5738,6 +7721,8 @@ export const elevenLabsConfig: AppConfig = {
     },
     {
       id: 'voice_clone',
+      resource: 'Voice',
+      operation: 'Clone',
       name: 'Clone Voice',
       description: 'Create a voice clone',
       fields: [
@@ -5749,9 +7734,14 @@ export const elevenLabsConfig: AppConfig = {
     },
     {
       id: 'get_voices',
+      resource: 'Voice',
+      operation: 'List',
       name: 'Get Voices',
       description: 'List available voices',
-      fields: [],
+      fields: [
+        { key: 'search', label: 'Search (optional)', type: 'text', helpText: 'Filter voices by name' },
+        { key: 'includeLegacy', label: 'Include Legacy', type: 'boolean', default: false },
+      ],
     },
   ],
 };
@@ -5782,18 +7772,38 @@ export const replicateConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', helpText: 'owner/model format' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          helpText: 'Optional: filter by model',
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiToken'] },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'run_model',
+      resource: 'Prediction',
+      operation: 'Run Model',
       name: 'Run Model',
       description: 'Run a model prediction',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', required: true, placeholder: 'stability-ai/sdxl' },
-        { key: 'version', label: 'Version', type: 'text', helpText: 'Specific version hash' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/models', method: 'POST', authKeys: ['apiToken'] },
+        },
+        {
+          key: 'version',
+          label: 'Version',
+          type: 'select',
+          helpText: 'Optional: choose a specific version',
+          loadOptions: { path: '/versions', method: 'POST', authKeys: ['apiToken'], dependsOn: ['model'] },
+        },
         { key: 'input', label: 'Input', type: 'json', required: true },
         { key: 'webhook', label: 'Webhook URL', type: 'url', helpText: 'For async results' },
         { key: 'webhookEventsFilter', label: 'Webhook Events', type: 'multiselect', options: [
@@ -5806,6 +7816,8 @@ export const replicateConfig: AppConfig = {
     },
     {
       id: 'get_prediction',
+      resource: 'Prediction',
+      operation: 'Get',
       name: 'Get Prediction',
       description: 'Get prediction status',
       fields: [
@@ -5814,6 +7826,8 @@ export const replicateConfig: AppConfig = {
     },
     {
       id: 'cancel_prediction',
+      resource: 'Prediction',
+      operation: 'Cancel',
       name: 'Cancel Prediction',
       description: 'Cancel a running prediction',
       fields: [
@@ -5845,10 +7859,18 @@ export const huggingFaceConfig: AppConfig = {
   actions: [
     {
       id: 'text_generation',
+      resource: 'Text',
+      operation: 'Generate',
       name: 'Text Generation',
       description: 'Generate text with a model',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', required: true, placeholder: 'gpt2' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/models/text-generation', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'inputs', label: 'Input Text', type: 'textarea', required: true },
         { key: 'maxNewTokens', label: 'Max New Tokens', type: 'number', default: 250 },
         { key: 'temperature', label: 'Temperature', type: 'number', default: 1.0 },
@@ -5859,38 +7881,70 @@ export const huggingFaceConfig: AppConfig = {
     },
     {
       id: 'image_classification',
+      resource: 'Image',
+      operation: 'Classify',
       name: 'Image Classification',
       description: 'Classify an image',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', required: true, placeholder: 'google/vit-base-patch16-224' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/models/image-classification', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'imageUrl', label: 'Image URL', type: 'url', required: true },
       ],
     },
     {
       id: 'sentiment_analysis',
+      resource: 'Text',
+      operation: 'Sentiment Analysis',
       name: 'Sentiment Analysis',
       description: 'Analyze text sentiment',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', default: 'distilbert-base-uncased-finetuned-sst-2-english' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          default: 'distilbert-base-uncased-finetuned-sst-2-english',
+          loadOptions: { path: '/models/text-classification', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'inputs', label: 'Text', type: 'textarea', required: true },
       ],
     },
     {
       id: 'question_answering',
+      resource: 'Text',
+      operation: 'Question Answering',
       name: 'Question Answering',
       description: 'Answer questions from context',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', default: 'deepset/roberta-base-squad2' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          default: 'deepset/roberta-base-squad2',
+          loadOptions: { path: '/models/question-answering', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'question', label: 'Question', type: 'text', required: true },
         { key: 'context', label: 'Context', type: 'textarea', required: true },
       ],
     },
     {
       id: 'summarization',
+      resource: 'Text',
+      operation: 'Summarize',
       name: 'Summarization',
       description: 'Summarize text',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', default: 'facebook/bart-large-cnn' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          default: 'facebook/bart-large-cnn',
+          loadOptions: { path: '/models/summarization', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'inputs', label: 'Text', type: 'textarea', required: true },
         { key: 'minLength', label: 'Min Length', type: 'number', default: 30 },
         { key: 'maxLength', label: 'Max Length', type: 'number', default: 130 },
@@ -5898,19 +7952,35 @@ export const huggingFaceConfig: AppConfig = {
     },
     {
       id: 'translation',
+      resource: 'Text',
+      operation: 'Translate',
       name: 'Translation',
       description: 'Translate text',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', required: true, placeholder: 'Helsinki-NLP/opus-mt-en-de' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/models/translation', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'inputs', label: 'Text', type: 'textarea', required: true },
       ],
     },
     {
       id: 'image_to_text',
+      resource: 'Image',
+      operation: 'Caption',
       name: 'Image to Text',
       description: 'Generate text from image',
       fields: [
-        { key: 'model', label: 'Model', type: 'text', default: 'Salesforce/blip-image-captioning-base' },
+        {
+          key: 'model',
+          label: 'Model',
+          type: 'select',
+          default: 'Salesforce/blip-image-captioning-base',
+          loadOptions: { path: '/models/image-to-text', method: 'POST', authKeys: ['apiToken'] },
+        },
         { key: 'imageUrl', label: 'Image URL', type: 'url', required: true },
       ],
     },
@@ -5944,15 +8014,36 @@ export const googleAnalyticsConfig: AppConfig = {
       description: 'Connect your Google account',
       scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
     },
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Paste a Google OAuth access token (fallback when OAuth connection is unavailable)',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
   ],
   triggers: [],
   actions: [
     {
       id: 'run_report',
+      resource: 'Analytics',
+      operation: 'Run Report',
       name: 'Run Report',
       description: 'Run an Analytics report',
       fields: [
-        { key: 'propertyId', label: 'Property ID', type: 'text', required: true, placeholder: 'properties/123456' },
+        {
+          key: 'propertyId',
+          label: 'Property',
+          type: 'select',
+          required: true,
+          placeholder: 'properties/123456',
+          loadOptions: {
+            path: '/api/integrations/options/google_analytics/properties',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
         { key: 'dateRange', label: 'Date Range', type: 'select', required: true, options: [
           { value: '7days', label: 'Last 7 Days' },
           { value: '30days', label: 'Last 30 Days' },
@@ -5981,6 +8072,8 @@ export const googleAnalyticsConfig: AppConfig = {
     },
     {
       id: 'get_realtime',
+      resource: 'Analytics',
+      operation: 'Get Realtime Data',
       name: 'Get Realtime Data',
       description: 'Get realtime analytics data',
       fields: [
@@ -6015,6 +8108,14 @@ export const facebookAdsConfig: AppConfig = {
       description: 'Connect your Facebook Ads account',
       scopes: ['ads_management', 'ads_read'],
     },
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Paste a Facebook user access token (fallback when OAuth connection is unavailable)',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
   ],
   triggers: [
     {
@@ -6024,17 +8125,39 @@ export const facebookAdsConfig: AppConfig = {
       triggerTypes: ['poll'],
       defaultTriggerType: 'poll',
       fields: [
-        { key: 'accountId', label: 'Ad Account ID', type: 'text', required: true },
+        {
+          key: 'accountId',
+          label: 'Ad Account',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/facebook_ads/accounts',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'get_campaigns',
+      resource: 'Campaign',
+      operation: 'List',
       name: 'Get Campaigns',
       description: 'List ad campaigns',
       fields: [
-        { key: 'accountId', label: 'Ad Account ID', type: 'text', required: true },
+        {
+          key: 'accountId',
+          label: 'Ad Account',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/facebook_ads/accounts',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
         { key: 'status', label: 'Status Filter', type: 'multiselect', options: [
           { value: 'ACTIVE', label: 'Active' },
           { value: 'PAUSED', label: 'Paused' },
@@ -6045,10 +8168,22 @@ export const facebookAdsConfig: AppConfig = {
     },
     {
       id: 'get_insights',
+      resource: 'Insights',
+      operation: 'Get',
       name: 'Get Insights',
       description: 'Get campaign insights',
       fields: [
-        { key: 'accountId', label: 'Ad Account ID', type: 'text', required: true },
+        {
+          key: 'accountId',
+          label: 'Ad Account',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/facebook_ads/accounts',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
         { key: 'level', label: 'Level', type: 'select', required: true, options: [
           { value: 'account', label: 'Account' },
           { value: 'campaign', label: 'Campaign' },
@@ -6076,10 +8211,34 @@ export const facebookAdsConfig: AppConfig = {
     },
     {
       id: 'update_campaign',
+      resource: 'Campaign',
+      operation: 'Update',
       name: 'Update Campaign',
       description: 'Update campaign settings',
       fields: [
-        { key: 'campaignId', label: 'Campaign ID', type: 'text', required: true },
+        {
+          key: 'accountId',
+          label: 'Ad Account',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/facebook_ads/accounts',
+            method: 'POST',
+            authKeys: ['accessToken'],
+          },
+        },
+        {
+          key: 'campaignId',
+          label: 'Campaign',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/facebook_ads/campaigns',
+            method: 'POST',
+            authKeys: ['accessToken'],
+            dependsOn: ['accountId'],
+          },
+        },
         { key: 'name', label: 'Name', type: 'text' },
         { key: 'status', label: 'Status', type: 'select', options: [
           { value: 'ACTIVE', label: 'Active' },
@@ -6106,15 +8265,37 @@ export const googleAdsConfig: AppConfig = {
       description: 'Connect your Google Ads account',
       scopes: ['https://www.googleapis.com/auth/adwords'],
     },
+    {
+      type: 'api-key',
+      name: 'Developer Token + Access Token',
+      description: 'Use a Google Ads developer token and OAuth access token (fallback when OAuth connection is unavailable)',
+      fields: [
+        { key: 'developerToken', label: 'Developer Token', type: 'password', required: true },
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+        { key: 'loginCustomerId', label: 'Login Customer ID (optional)', type: 'text', helpText: 'Manager account ID, if applicable' },
+      ],
+    },
   ],
   triggers: [],
   actions: [
     {
       id: 'get_campaigns',
+      resource: 'Campaign',
+      operation: 'List',
       name: 'Get Campaigns',
       description: 'List ad campaigns',
       fields: [
-        { key: 'customerId', label: 'Customer ID', type: 'text', required: true },
+        {
+          key: 'customerId',
+          label: 'Customer',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/google_ads/customers',
+            method: 'POST',
+            authKeys: ['accessToken', 'developerToken', 'loginCustomerId'],
+          },
+        },
         { key: 'status', label: 'Status Filter', type: 'multiselect', options: [
           { value: 'ENABLED', label: 'Enabled' },
           { value: 'PAUSED', label: 'Paused' },
@@ -6124,10 +8305,22 @@ export const googleAdsConfig: AppConfig = {
     },
     {
       id: 'get_report',
+      resource: 'Report',
+      operation: 'Run',
       name: 'Get Report',
       description: 'Run a Google Ads report',
       fields: [
-        { key: 'customerId', label: 'Customer ID', type: 'text', required: true },
+        {
+          key: 'customerId',
+          label: 'Customer',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/google_ads/customers',
+            method: 'POST',
+            authKeys: ['accessToken', 'developerToken', 'loginCustomerId'],
+          },
+        },
         { key: 'reportType', label: 'Report Type', type: 'select', required: true, options: [
           { value: 'campaign', label: 'Campaign Performance' },
           { value: 'ad_group', label: 'Ad Group Performance' },
@@ -6153,21 +8346,67 @@ export const googleAdsConfig: AppConfig = {
     },
     {
       id: 'update_campaign_budget',
+      resource: 'Campaign',
+      operation: 'Update Budget',
       name: 'Update Campaign Budget',
       description: 'Update campaign budget',
       fields: [
-        { key: 'customerId', label: 'Customer ID', type: 'text', required: true },
-        { key: 'campaignId', label: 'Campaign ID', type: 'text', required: true },
+        {
+          key: 'customerId',
+          label: 'Customer',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/google_ads/customers',
+            method: 'POST',
+            authKeys: ['accessToken', 'developerToken', 'loginCustomerId'],
+          },
+        },
+        {
+          key: 'campaignId',
+          label: 'Campaign',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/google_ads/campaigns',
+            method: 'POST',
+            authKeys: ['accessToken', 'developerToken', 'loginCustomerId'],
+            dependsOn: ['customerId'],
+          },
+        },
         { key: 'budgetAmountMicros', label: 'Budget (micros)', type: 'number', required: true, helpText: 'Amount in micro-units (1,000,000 = $1)' },
       ],
     },
     {
       id: 'update_campaign_status',
+      resource: 'Campaign',
+      operation: 'Update Status',
       name: 'Update Campaign Status',
       description: 'Enable or pause campaign',
       fields: [
-        { key: 'customerId', label: 'Customer ID', type: 'text', required: true },
-        { key: 'campaignId', label: 'Campaign ID', type: 'text', required: true },
+        {
+          key: 'customerId',
+          label: 'Customer',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/google_ads/customers',
+            method: 'POST',
+            authKeys: ['accessToken', 'developerToken', 'loginCustomerId'],
+          },
+        },
+        {
+          key: 'campaignId',
+          label: 'Campaign',
+          type: 'select',
+          required: true,
+          loadOptions: {
+            path: '/api/integrations/options/google_ads/campaigns',
+            method: 'POST',
+            authKeys: ['accessToken', 'developerToken', 'loginCustomerId'],
+            dependsOn: ['customerId'],
+          },
+        },
         { key: 'status', label: 'Status', type: 'select', required: true, options: [
           { value: 'ENABLED', label: 'Enabled' },
           { value: 'PAUSED', label: 'Paused' },
@@ -6208,7 +8447,21 @@ export const intercomConfig: AppConfig = {
       description: 'Triggers on new conversation',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        {
+          key: 'inboxId',
+          label: 'Inbox (optional)',
+          type: 'select',
+          helpText: 'If set, only trigger for conversations in this inbox',
+          loadOptions: { path: '/api/integrations/options/intercom/inboxes', method: 'POST', authKeys: ['accessToken'] },
+        },
+        { key: 'assigneeType', label: 'Assignee Type (optional)', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'admin', label: 'Assigned to Admin' },
+          { value: 'team', label: 'Assigned to Team' },
+          { value: 'unassigned', label: 'Unassigned' },
+        ] },
+      ],
     },
     {
       id: 'conversation_reply',
@@ -6230,7 +8483,14 @@ export const intercomConfig: AppConfig = {
       description: 'Triggers when user is created',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'role', label: 'Role Filter (optional)', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'user', label: 'User' },
+          { value: 'lead', label: 'Lead' },
+        ] },
+        { key: 'emailContains', label: 'Email Contains (optional)', type: 'text', placeholder: '@example.com' },
+      ],
     },
     {
       id: 'user_tag_added',
@@ -6239,13 +8499,20 @@ export const intercomConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'tagId', label: 'Tag ID', type: 'text' },
+        {
+          key: 'tagId',
+          label: 'Tag',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/intercom/tags', method: 'POST', authKeys: ['accessToken'] },
+        },
       ],
     },
   ],
   actions: [
     {
       id: 'create_contact',
+      resource: 'Contact',
+      operation: 'Create',
       name: 'Create Contact',
       description: 'Create a new contact',
       fields: [
@@ -6261,6 +8528,8 @@ export const intercomConfig: AppConfig = {
     },
     {
       id: 'update_contact',
+      resource: 'Contact',
+      operation: 'Update',
       name: 'Update Contact',
       description: 'Update a contact',
       fields: [
@@ -6273,6 +8542,8 @@ export const intercomConfig: AppConfig = {
     },
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send message to user',
       fields: [
@@ -6288,31 +8559,55 @@ export const intercomConfig: AppConfig = {
     },
     {
       id: 'add_tag',
+      resource: 'Tag',
+      operation: 'Add to Contact',
       name: 'Add Tag',
       description: 'Add tag to contact',
       fields: [
         { key: 'contactId', label: 'Contact ID', type: 'text', required: true },
-        { key: 'tagId', label: 'Tag ID', type: 'text', required: true },
+        {
+          key: 'tagId',
+          label: 'Tag',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/intercom/tags', method: 'POST', authKeys: ['accessToken'] },
+        },
       ],
     },
     {
       id: 'create_note',
+      resource: 'Note',
+      operation: 'Create',
       name: 'Create Note',
       description: 'Add note to contact',
       fields: [
         { key: 'contactId', label: 'Contact ID', type: 'text', required: true },
         { key: 'body', label: 'Note', type: 'textarea', required: true },
-        { key: 'adminId', label: 'Admin ID', type: 'text', required: true },
+        {
+          key: 'adminId',
+          label: 'Admin',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/intercom/admins', method: 'POST', authKeys: ['accessToken'] },
+        },
       ],
     },
     {
       id: 'reply_conversation',
+      resource: 'Conversation',
+      operation: 'Reply',
       name: 'Reply to Conversation',
       description: 'Reply to a conversation',
       fields: [
         { key: 'conversationId', label: 'Conversation ID', type: 'text', required: true },
         { key: 'body', label: 'Message', type: 'textarea', required: true },
-        { key: 'adminId', label: 'Admin ID', type: 'text', required: true },
+        {
+          key: 'adminId',
+          label: 'Admin',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/intercom/admins', method: 'POST', authKeys: ['accessToken'] },
+        },
         { key: 'messageType', label: 'Type', type: 'select', options: [
           { value: 'comment', label: 'Comment (visible)' },
           { value: 'note', label: 'Note (internal)' },
@@ -6337,11 +8632,21 @@ export const linkedinConfig: AppConfig = {
       description: 'Connect your LinkedIn account',
       scopes: ['r_liteprofile', 'r_emailaddress', 'w_member_social'],
     },
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Paste a LinkedIn OAuth access token (fallback when OAuth connection is unavailable)',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
   ],
   triggers: [],
   actions: [
     {
       id: 'create_post',
+      resource: 'Post',
+      operation: 'Create',
       name: 'Create Post',
       description: 'Create a LinkedIn post',
       fields: [
@@ -6356,18 +8661,29 @@ export const linkedinConfig: AppConfig = {
     },
     {
       id: 'get_profile',
+      resource: 'Profile',
+      operation: 'Get',
       name: 'Get Profile',
       description: 'Get user profile info',
-      fields: [],
+      fields: [
+        { key: 'personUrn', label: 'Person URN (optional)', type: 'text', placeholder: 'urn:li:person:...' },
+        { key: 'projection', label: 'Projection (optional)', type: 'text', helpText: 'Advanced: LinkedIn projection string' },
+      ],
     },
     {
       id: 'get_connections',
+      resource: 'Connections',
+      operation: 'Get',
       name: 'Get Connections',
       description: 'Get connection count',
-      fields: [],
+      fields: [
+        { key: 'personUrn', label: 'Person URN (optional)', type: 'text', placeholder: 'urn:li:person:...' },
+      ],
     },
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send InMail/message',
       fields: [
@@ -6438,7 +8754,34 @@ export const zendeskConfig: AppConfig = {
       description: 'Triggers when ticket is updated',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'status', label: 'Status Filter (optional)', type: 'multiselect', options: [
+          { value: 'new', label: 'New' },
+          { value: 'open', label: 'Open' },
+          { value: 'pending', label: 'Pending' },
+          { value: 'hold', label: 'On Hold' },
+          { value: 'solved', label: 'Solved' },
+          { value: 'closed', label: 'Closed' },
+        ] },
+        { key: 'priority', label: 'Priority Filter (optional)', type: 'multiselect', options: [
+          { value: 'low', label: 'Low' },
+          { value: 'normal', label: 'Normal' },
+          { value: 'high', label: 'High' },
+          { value: 'urgent', label: 'Urgent' },
+        ] },
+        {
+          key: 'groupId',
+          label: 'Group (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zendesk/groups', method: 'POST', authKeys: ['subdomain', 'email', 'apiToken'] },
+        },
+        {
+          key: 'assigneeId',
+          label: 'Assignee (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zendesk/agents', method: 'POST', authKeys: ['subdomain', 'email', 'apiToken'] },
+        },
+      ],
     },
     {
       id: 'ticket_status_changed',
@@ -6475,6 +8818,8 @@ export const zendeskConfig: AppConfig = {
   actions: [
     {
       id: 'create_ticket',
+      resource: 'Ticket',
+      operation: 'Create',
       name: 'Create Ticket',
       description: 'Create a new ticket',
       fields: [
@@ -6493,14 +8838,26 @@ export const zendeskConfig: AppConfig = {
           { value: 'task', label: 'Task' },
         ]},
         { key: 'requesterId', label: 'Requester ID', type: 'number' },
-        { key: 'assigneeId', label: 'Assignee ID', type: 'number' },
-        { key: 'groupId', label: 'Group ID', type: 'number' },
+        {
+          key: 'assigneeId',
+          label: 'Assignee (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zendesk/agents', method: 'POST', authKeys: ['subdomain', 'email', 'apiToken'] },
+        },
+        {
+          key: 'groupId',
+          label: 'Group (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zendesk/groups', method: 'POST', authKeys: ['subdomain', 'email', 'apiToken'] },
+        },
         { key: 'tags', label: 'Tags', type: 'json', placeholder: '["tag1", "tag2"]' },
         { key: 'customFields', label: 'Custom Fields', type: 'json' },
       ],
     },
     {
       id: 'update_ticket',
+      resource: 'Ticket',
+      operation: 'Update',
       name: 'Update Ticket',
       description: 'Update an existing ticket',
       fields: [
@@ -6519,12 +8876,19 @@ export const zendeskConfig: AppConfig = {
           { value: 'high', label: 'High' },
           { value: 'urgent', label: 'Urgent' },
         ]},
-        { key: 'assigneeId', label: 'Assignee ID', type: 'number' },
+        {
+          key: 'assigneeId',
+          label: 'Assignee (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zendesk/agents', method: 'POST', authKeys: ['subdomain', 'email', 'apiToken'] },
+        },
         { key: 'tags', label: 'Tags', type: 'json' },
       ],
     },
     {
       id: 'add_comment',
+      resource: 'Comment',
+      operation: 'Add',
       name: 'Add Comment',
       description: 'Add comment to ticket',
       fields: [
@@ -6536,6 +8900,8 @@ export const zendeskConfig: AppConfig = {
     },
     {
       id: 'search_tickets',
+      resource: 'Ticket',
+      operation: 'Search',
       name: 'Search Tickets',
       description: 'Search for tickets',
       fields: [
@@ -6553,6 +8919,8 @@ export const zendeskConfig: AppConfig = {
     },
     {
       id: 'get_ticket',
+      resource: 'Ticket',
+      operation: 'Get',
       name: 'Get Ticket',
       description: 'Get ticket details',
       fields: [
@@ -6588,7 +8956,26 @@ export const freshdeskConfig: AppConfig = {
       description: 'Triggers on new ticket',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'status', label: 'Status Filter (optional)', type: 'multiselect', options: [
+          { value: 'open', label: 'Open' },
+          { value: 'pending', label: 'Pending' },
+          { value: 'resolved', label: 'Resolved' },
+          { value: 'closed', label: 'Closed' },
+        ] },
+        { key: 'priority', label: 'Priority Filter (optional)', type: 'multiselect', options: [
+          { value: 'low', label: 'Low' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'high', label: 'High' },
+          { value: 'urgent', label: 'Urgent' },
+        ] },
+        {
+          key: 'groupId',
+          label: 'Group (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/freshdesk/groups', method: 'POST', authKeys: ['domain', 'apiKey'] },
+        },
+      ],
     },
     {
       id: 'ticket_updated',
@@ -6596,7 +8983,26 @@ export const freshdeskConfig: AppConfig = {
       description: 'Triggers when ticket is updated',
       triggerTypes: ['webhook', 'poll'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'status', label: 'Status Filter (optional)', type: 'multiselect', options: [
+          { value: 'open', label: 'Open' },
+          { value: 'pending', label: 'Pending' },
+          { value: 'resolved', label: 'Resolved' },
+          { value: 'closed', label: 'Closed' },
+        ] },
+        { key: 'priority', label: 'Priority Filter (optional)', type: 'multiselect', options: [
+          { value: 'low', label: 'Low' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'high', label: 'High' },
+          { value: 'urgent', label: 'Urgent' },
+        ] },
+        {
+          key: 'agentId',
+          label: 'Agent (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/freshdesk/agents', method: 'POST', authKeys: ['domain', 'apiKey'] },
+        },
+      ],
     },
     {
       id: 'note_created',
@@ -6604,12 +9010,17 @@ export const freshdeskConfig: AppConfig = {
       description: 'Triggers on new note',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'ticketId', label: 'Ticket ID (optional)', type: 'text', helpText: 'If set, only trigger notes for this ticket' },
+        { key: 'public', label: 'Public Notes Only', type: 'boolean', default: false },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_ticket',
+      resource: 'Ticket',
+      operation: 'Create',
       name: 'Create Ticket',
       description: 'Create a new ticket',
       fields: [
@@ -6634,6 +9045,8 @@ export const freshdeskConfig: AppConfig = {
     },
     {
       id: 'update_ticket',
+      resource: 'Ticket',
+      operation: 'Update',
       name: 'Update Ticket',
       description: 'Update a ticket',
       fields: [
@@ -6650,12 +9063,24 @@ export const freshdeskConfig: AppConfig = {
           { value: '3', label: 'High' },
           { value: '4', label: 'Urgent' },
         ]},
-        { key: 'agentId', label: 'Agent ID', type: 'number' },
-        { key: 'groupId', label: 'Group ID', type: 'number' },
+        {
+          key: 'agentId',
+          label: 'Agent (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/freshdesk/agents', method: 'POST', authKeys: ['domain', 'apiKey'] },
+        },
+        {
+          key: 'groupId',
+          label: 'Group (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/freshdesk/groups', method: 'POST', authKeys: ['domain', 'apiKey'] },
+        },
       ],
     },
     {
       id: 'add_note',
+      resource: 'Note',
+      operation: 'Add',
       name: 'Add Note',
       description: 'Add note to ticket',
       fields: [
@@ -6666,6 +9091,8 @@ export const freshdeskConfig: AppConfig = {
     },
     {
       id: 'reply_ticket',
+      resource: 'Reply',
+      operation: 'Send',
       name: 'Reply to Ticket',
       description: 'Send reply to ticket',
       fields: [
@@ -6675,6 +9102,8 @@ export const freshdeskConfig: AppConfig = {
     },
     {
       id: 'create_contact',
+      resource: 'Contact',
+      operation: 'Create',
       name: 'Create Contact',
       description: 'Create a new contact',
       fields: [
@@ -6724,7 +9153,16 @@ export const crispConfig: AppConfig = {
       description: 'Triggers on new chat session',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        {
+          key: 'operatorId',
+          label: 'Operator (optional)',
+          type: 'select',
+          helpText: 'If set, only trigger sessions assigned to this operator',
+          loadOptions: { path: '/api/integrations/options/crisp/operators', method: 'POST', authKeys: ['websiteId', 'identifier', 'key'] },
+        },
+        { key: 'country', label: 'Country Code (optional)', type: 'text', placeholder: 'US' },
+      ],
     },
     {
       id: 'user_segment_changed',
@@ -6732,12 +9170,17 @@ export const crispConfig: AppConfig = {
       description: 'Triggers on segment change',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'fromSegment', label: 'From Segment (optional)', type: 'text' },
+        { key: 'toSegment', label: 'To Segment (optional)', type: 'text' },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_message',
+      resource: 'Conversation',
+      operation: 'Send Message',
       name: 'Send Message',
       description: 'Send message to conversation',
       fields: [
@@ -6751,6 +9194,8 @@ export const crispConfig: AppConfig = {
     },
     {
       id: 'update_profile',
+      resource: 'Profile',
+      operation: 'Update',
       name: 'Update Profile',
       description: 'Update visitor profile',
       fields: [
@@ -6764,6 +9209,8 @@ export const crispConfig: AppConfig = {
     },
     {
       id: 'add_segment',
+      resource: 'Conversation',
+      operation: 'Add Segment',
       name: 'Add Segment',
       description: 'Add segment to conversation',
       fields: [
@@ -6773,6 +9220,8 @@ export const crispConfig: AppConfig = {
     },
     {
       id: 'set_state',
+      resource: 'Conversation',
+      operation: 'Set State',
       name: 'Set Conversation State',
       description: 'Update conversation state',
       fields: [
@@ -6786,11 +9235,19 @@ export const crispConfig: AppConfig = {
     },
     {
       id: 'assign_conversation',
+      resource: 'Conversation',
+      operation: 'Assign',
       name: 'Assign Conversation',
       description: 'Assign to operator',
       fields: [
         { key: 'sessionId', label: 'Session ID', type: 'text', required: true },
-        { key: 'operatorId', label: 'Operator ID', type: 'text', required: true },
+        {
+          key: 'operatorId',
+          label: 'Operator',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/crisp/operators', method: 'POST', authKeys: ['websiteId', 'identifier', 'key'] },
+        },
       ],
     },
   ],
@@ -6822,7 +9279,10 @@ export const tawkConfig: AppConfig = {
       description: 'Triggers when chat starts',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'departmentId', label: 'Department ID (optional)', type: 'text' },
+        { key: 'assignedAgentId', label: 'Assigned Agent ID (optional)', type: 'text' },
+      ],
     },
     {
       id: 'chat_ended',
@@ -6830,7 +9290,10 @@ export const tawkConfig: AppConfig = {
       description: 'Triggers when chat ends',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'departmentId', label: 'Department ID (optional)', type: 'text' },
+        { key: 'reason', label: 'End Reason Contains (optional)', type: 'text' },
+      ],
     },
     {
       id: 'ticket_created',
@@ -6838,7 +9301,15 @@ export const tawkConfig: AppConfig = {
       description: 'Triggers on new ticket',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'departmentId', label: 'Department ID (optional)', type: 'text' },
+        { key: 'priority', label: 'Priority (optional)', type: 'select', default: 'any', options: [
+          { value: 'any', label: 'Any' },
+          { value: 'low', label: 'Low' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'high', label: 'High' },
+        ] },
+      ],
     },
     {
       id: 'message_received',
@@ -6846,12 +9317,17 @@ export const tawkConfig: AppConfig = {
       description: 'Triggers on new message',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'fromVisitorOnly', label: 'From Visitor Only', type: 'boolean', default: true },
+        { key: 'keyword', label: 'Keyword Filter (optional)', type: 'text', placeholder: 'Only trigger if message contains this text' },
+      ],
     },
   ],
   actions: [
     {
       id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
       name: 'Send Message',
       description: 'Send message to visitor',
       fields: [
@@ -6861,6 +9337,8 @@ export const tawkConfig: AppConfig = {
     },
     {
       id: 'create_ticket',
+      resource: 'Ticket',
+      operation: 'Create',
       name: 'Create Ticket',
       description: 'Create a support ticket',
       fields: [
@@ -6877,6 +9355,8 @@ export const tawkConfig: AppConfig = {
     },
     {
       id: 'get_visitor_info',
+      resource: 'Visitor',
+      operation: 'Get',
       name: 'Get Visitor Info',
       description: 'Get visitor information',
       fields: [
@@ -6885,6 +9365,8 @@ export const tawkConfig: AppConfig = {
     },
     {
       id: 'ban_visitor',
+      resource: 'Visitor',
+      operation: 'Ban',
       name: 'Ban Visitor',
       description: 'Ban a visitor',
       fields: [
@@ -6932,7 +9414,14 @@ export const twilioVoiceConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'phoneNumber', label: 'Phone Number', type: 'text', required: true, placeholder: '+1234567890' },
+        {
+          key: 'phoneNumber',
+          label: 'Phone Number',
+          type: 'select',
+          required: true,
+          placeholder: '+1234567890',
+          loadOptions: { path: '/api/integrations/options/twilio_voice/numbers', method: 'POST', authKeys: ['accountSid', 'authToken'] },
+        },
       ],
     },
     {
@@ -6942,7 +9431,13 @@ export const twilioVoiceConfig: AppConfig = {
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
       fields: [
-        { key: 'phoneNumber', label: 'Phone Number', type: 'text', required: true },
+        {
+          key: 'phoneNumber',
+          label: 'Phone Number',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/twilio_voice/numbers', method: 'POST', authKeys: ['accountSid', 'authToken'] },
+        },
       ],
     },
     {
@@ -6951,7 +9446,10 @@ export const twilioVoiceConfig: AppConfig = {
       description: 'Triggers when recording is ready',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'callSid', label: 'Call SID (optional)', type: 'text', helpText: 'If set, only trigger recordings for this call' },
+        { key: 'minDurationSeconds', label: 'Minimum Duration (seconds, optional)', type: 'number' },
+      ],
     },
     {
       id: 'transcription_completed',
@@ -6959,17 +9457,28 @@ export const twilioVoiceConfig: AppConfig = {
       description: 'Triggers when transcription is ready',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'callSid', label: 'Call SID (optional)', type: 'text', helpText: 'If set, only trigger transcriptions for this call' },
+        { key: 'language', label: 'Language (optional)', type: 'text', placeholder: 'en-US' },
+      ],
     },
   ],
   actions: [
     {
       id: 'make_call',
+      resource: 'Call',
+      operation: 'Make',
       name: 'Make Call',
       description: 'Initiate an outbound call',
       fields: [
         { key: 'to', label: 'To Number', type: 'text', required: true, placeholder: '+1234567890' },
-        { key: 'from', label: 'From Number', type: 'text', required: true },
+        {
+          key: 'from',
+          label: 'From Number',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/twilio_voice/numbers', method: 'POST', authKeys: ['accountSid', 'authToken'] },
+        },
         { key: 'twiml', label: 'TwiML', type: 'textarea', helpText: 'TwiML instructions for the call' },
         { key: 'url', label: 'TwiML URL', type: 'url', helpText: 'URL returning TwiML' },
         { key: 'record', label: 'Record Call', type: 'boolean', default: false },
@@ -6982,16 +9491,26 @@ export const twilioVoiceConfig: AppConfig = {
     },
     {
       id: 'send_sms_during_call',
+      resource: 'Message',
+      operation: 'Send SMS',
       name: 'Send SMS',
       description: 'Send SMS during/after call',
       fields: [
         { key: 'to', label: 'To Number', type: 'text', required: true },
-        { key: 'from', label: 'From Number', type: 'text', required: true },
+        {
+          key: 'from',
+          label: 'From Number',
+          type: 'select',
+          required: true,
+          loadOptions: { path: '/api/integrations/options/twilio_voice/numbers', method: 'POST', authKeys: ['accountSid', 'authToken'] },
+        },
         { key: 'body', label: 'Message', type: 'textarea', required: true },
       ],
     },
     {
       id: 'get_call',
+      resource: 'Call',
+      operation: 'Get',
       name: 'Get Call Details',
       description: 'Get call information',
       fields: [
@@ -7000,6 +9519,8 @@ export const twilioVoiceConfig: AppConfig = {
     },
     {
       id: 'update_call',
+      resource: 'Call',
+      operation: 'Update',
       name: 'Update Call',
       description: 'Modify an in-progress call',
       fields: [
@@ -7014,6 +9535,8 @@ export const twilioVoiceConfig: AppConfig = {
     },
     {
       id: 'get_recording',
+      resource: 'Recording',
+      operation: 'Get',
       name: 'Get Recording',
       description: 'Get call recording',
       fields: [
@@ -7056,7 +9579,15 @@ export const zoomConfig: AppConfig = {
       description: 'Triggers when meeting starts',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'meetingId', label: 'Meeting ID (optional)', type: 'text' },
+        {
+          key: 'hostId',
+          label: 'Host (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zoom/users', method: 'POST', authKeys: ['accountId', 'clientId', 'clientSecret'] },
+        },
+      ],
     },
     {
       id: 'meeting_ended',
@@ -7064,7 +9595,15 @@ export const zoomConfig: AppConfig = {
       description: 'Triggers when meeting ends',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'meetingId', label: 'Meeting ID (optional)', type: 'text' },
+        {
+          key: 'hostId',
+          label: 'Host (optional)',
+          type: 'select',
+          loadOptions: { path: '/api/integrations/options/zoom/users', method: 'POST', authKeys: ['accountId', 'clientId', 'clientSecret'] },
+        },
+      ],
     },
     {
       id: 'participant_joined',
@@ -7072,7 +9611,10 @@ export const zoomConfig: AppConfig = {
       description: 'Triggers when someone joins',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'meetingId', label: 'Meeting ID (optional)', type: 'text' },
+        { key: 'emailContains', label: 'Participant Email Contains (optional)', type: 'text', placeholder: '@example.com' },
+      ],
     },
     {
       id: 'recording_completed',
@@ -7080,7 +9622,10 @@ export const zoomConfig: AppConfig = {
       description: 'Triggers when recording is ready',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'meetingId', label: 'Meeting ID (optional)', type: 'text' },
+        { key: 'includeTranscript', label: 'Include Transcript (if available)', type: 'boolean', default: false },
+      ],
     },
     {
       id: 'webinar_registered',
@@ -7088,12 +9633,17 @@ export const zoomConfig: AppConfig = {
       description: 'Triggers on new registration',
       triggerTypes: ['webhook'],
       defaultTriggerType: 'webhook',
-      fields: [],
+      fields: [
+        { key: 'webinarId', label: 'Webinar ID (optional)', type: 'text' },
+        { key: 'occurrenceId', label: 'Occurrence ID (optional)', type: 'text' },
+      ],
     },
   ],
   actions: [
     {
       id: 'create_meeting',
+      resource: 'Meeting',
+      operation: 'Create',
       name: 'Create Meeting',
       description: 'Schedule a new meeting',
       fields: [
@@ -7121,6 +9671,8 @@ export const zoomConfig: AppConfig = {
     },
     {
       id: 'update_meeting',
+      resource: 'Meeting',
+      operation: 'Update',
       name: 'Update Meeting',
       description: 'Update meeting details',
       fields: [
@@ -7133,6 +9685,8 @@ export const zoomConfig: AppConfig = {
     },
     {
       id: 'delete_meeting',
+      resource: 'Meeting',
+      operation: 'Delete',
       name: 'Delete Meeting',
       description: 'Delete a meeting',
       fields: [
@@ -7141,6 +9695,8 @@ export const zoomConfig: AppConfig = {
     },
     {
       id: 'get_meeting',
+      resource: 'Meeting',
+      operation: 'Get',
       name: 'Get Meeting',
       description: 'Get meeting details',
       fields: [
@@ -7149,6 +9705,8 @@ export const zoomConfig: AppConfig = {
     },
     {
       id: 'list_meetings',
+      resource: 'Meeting',
+      operation: 'List',
       name: 'List Meetings',
       description: 'List scheduled meetings',
       fields: [
@@ -7162,6 +9720,8 @@ export const zoomConfig: AppConfig = {
     },
     {
       id: 'add_registrant',
+      resource: 'Registrant',
+      operation: 'Add',
       name: 'Add Registrant',
       description: 'Add meeting/webinar registrant',
       fields: [
@@ -7173,6 +9733,8 @@ export const zoomConfig: AppConfig = {
     },
     {
       id: 'get_recordings',
+      resource: 'Recording',
+      operation: 'Get',
       name: 'Get Recordings',
       description: 'Get meeting recordings',
       fields: [
@@ -7197,11 +9759,21 @@ export const googleMeetConfig: AppConfig = {
       description: 'Connect your Google account',
       scopes: ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/calendar.events'],
     },
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Paste a Google OAuth access token (fallback when OAuth connection is unavailable)',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
   ],
   triggers: [],
   actions: [
     {
       id: 'create_meeting',
+      resource: 'Meeting',
+      operation: 'Create',
       name: 'Create Meeting',
       description: 'Create a Google Meet via Calendar',
       fields: [
@@ -7222,20 +9794,36 @@ export const googleMeetConfig: AppConfig = {
     },
     {
       id: 'get_meeting_link',
+      resource: 'Meeting',
+      operation: 'Get Link',
       name: 'Get Meeting Link',
       description: 'Get Meet link from calendar event',
       fields: [
         { key: 'eventId', label: 'Event ID', type: 'text', required: true },
-        { key: 'calendarId', label: 'Calendar ID', type: 'text', default: 'primary' },
+        {
+          key: 'calendarId',
+          label: 'Calendar',
+          type: 'select',
+          default: 'primary',
+          loadOptions: { path: '/api/integrations/options/google_meet/calendars', method: 'POST', authKeys: ['accessToken'] },
+        },
       ],
     },
     {
       id: 'update_meeting',
+      resource: 'Meeting',
+      operation: 'Update',
       name: 'Update Meeting',
       description: 'Update meeting details',
       fields: [
         { key: 'eventId', label: 'Event ID', type: 'text', required: true },
-        { key: 'calendarId', label: 'Calendar ID', type: 'text', default: 'primary' },
+        {
+          key: 'calendarId',
+          label: 'Calendar',
+          type: 'select',
+          default: 'primary',
+          loadOptions: { path: '/api/integrations/options/google_meet/calendars', method: 'POST', authKeys: ['accessToken'] },
+        },
         { key: 'summary', label: 'Title', type: 'text' },
         { key: 'description', label: 'Description', type: 'textarea' },
         { key: 'startTime', label: 'Start Time', type: 'datetime' },
@@ -7244,11 +9832,19 @@ export const googleMeetConfig: AppConfig = {
     },
     {
       id: 'delete_meeting',
+      resource: 'Meeting',
+      operation: 'Delete',
       name: 'Delete Meeting',
       description: 'Cancel and delete meeting',
       fields: [
         { key: 'eventId', label: 'Event ID', type: 'text', required: true },
-        { key: 'calendarId', label: 'Calendar ID', type: 'text', default: 'primary' },
+        {
+          key: 'calendarId',
+          label: 'Calendar',
+          type: 'select',
+          default: 'primary',
+          loadOptions: { path: '/api/integrations/options/google_meet/calendars', method: 'POST', authKeys: ['accessToken'] },
+        },
         { key: 'sendUpdates', label: 'Send Cancellation', type: 'select', options: [
           { value: 'all', label: 'All Attendees' },
           { value: 'externalOnly', label: 'External Only' },
@@ -7259,27 +9855,1763 @@ export const googleMeetConfig: AppConfig = {
   ],
 };
 
+// ============================================================================
+// CORE TRIGGERS (INTERNAL)
+// ============================================================================
+
+export const scheduleConfig: AppConfig = {
+  id: 'schedule',
+  name: 'Schedule',
+  icon: '⏰',
+  color: '#8B5CF6',
+  description: 'Time-based triggers',
+  category: 'developer',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [
+    {
+      id: 'cron',
+      name: 'Cron',
+      description: 'Run on a cron schedule',
+      triggerTypes: ['schedule'],
+      defaultTriggerType: 'schedule',
+      fields: [
+        { key: 'expression', label: 'Cron Expression', type: 'text', required: true, placeholder: '0 * * * *' },
+        { key: 'timezone', label: 'Timezone', type: 'text', default: 'UTC' },
+        { key: 'runOnStartup', label: 'Run On Startup', type: 'boolean', default: false },
+      ],
+    },
+    {
+      id: 'interval',
+      name: 'Interval',
+      description: 'Run at a fixed interval',
+      triggerTypes: ['schedule'],
+      defaultTriggerType: 'schedule',
+      fields: [
+        { key: 'every', label: 'Every', type: 'number', required: true, default: 5 },
+        {
+          key: 'unit',
+          label: 'Unit',
+          type: 'select',
+          required: true,
+          options: [
+            { value: 'minutes', label: 'Minutes' },
+            { value: 'hours', label: 'Hours' },
+            { value: 'days', label: 'Days' },
+          ],
+          default: 'minutes',
+        },
+        { key: 'startAt', label: 'Start At (optional)', type: 'datetime' },
+      ],
+    },
+  ],
+  actions: [],
+};
+
+export const manualTriggerConfig: AppConfig = {
+  id: 'manual',
+  name: 'Manual Trigger',
+  icon: '▶️',
+  color: '#10B981',
+  description: 'Start manually',
+  category: 'developer',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [
+    {
+      id: 'manual',
+      name: 'Manual',
+      description: 'Run manually',
+      triggerTypes: ['manual'],
+      defaultTriggerType: 'manual',
+      fields: [
+        { key: 'payload', label: 'Payload (optional)', type: 'json', helpText: 'Seed data for testing' },
+        { key: 'note', label: 'Note (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [],
+};
+
+// ============================================================================
+// LOGIC / FLOW CONTROL (INTERNAL)
+// ============================================================================
+
+export const ifConditionConfig: AppConfig = {
+  id: 'if_condition',
+  name: 'IF',
+  icon: '🔀',
+  color: '#F59E0B',
+  description: 'Conditional branching',
+  category: 'logic',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'if',
+      resource: 'Condition',
+      operation: 'Evaluate',
+      name: 'IF Condition',
+      description: 'Branch based on a condition',
+      fields: [
+        { key: 'left', label: 'Left', type: 'text', required: true, placeholder: '{{input.value}}' },
+        {
+          key: 'operator',
+          label: 'Operator',
+          type: 'select',
+          required: true,
+          options: [
+            { value: 'equals', label: 'Equals' },
+            { value: 'not_equals', label: 'Not Equals' },
+            { value: 'contains', label: 'Contains' },
+            { value: 'not_contains', label: 'Not Contains' },
+            { value: 'gt', label: 'Greater Than' },
+            { value: 'gte', label: 'Greater Than or Equal' },
+            { value: 'lt', label: 'Less Than' },
+            { value: 'lte', label: 'Less Than or Equal' },
+            { value: 'exists', label: 'Exists' },
+            { value: 'not_exists', label: 'Not Exists' },
+          ],
+          default: 'equals',
+        },
+        { key: 'right', label: 'Right', type: 'text', placeholder: '42' },
+        { key: 'caseSensitive', label: 'Case Sensitive', type: 'boolean', default: false },
+      ],
+    },
+  ],
+};
+
+export const switchConfig: AppConfig = {
+  id: 'switch',
+  name: 'Switch',
+  icon: '🔃',
+  color: '#F59E0B',
+  description: 'Multiple branches',
+  category: 'logic',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'switch',
+      resource: 'Switch',
+      operation: 'Evaluate',
+      name: 'Switch',
+      description: 'Route based on multiple cases',
+      fields: [
+        { key: 'value', label: 'Value', type: 'text', required: true, placeholder: '{{input.status}}' },
+        {
+          key: 'cases',
+          label: 'Cases (JSON)',
+          type: 'json',
+          required: true,
+          placeholder: '[{"equals":"paid","route":"A"},{"equals":"pending","route":"B"}]',
+        },
+        { key: 'defaultRoute', label: 'Default Route (optional)', type: 'text', placeholder: 'default' },
+        { key: 'caseSensitive', label: 'Case Sensitive', type: 'boolean', default: false },
+      ],
+    },
+  ],
+};
+
+export const loopConfig: AppConfig = {
+  id: 'loop',
+  name: 'Loop',
+  icon: '🔁',
+  color: '#8B5CF6',
+  description: 'Iterate over items',
+  category: 'logic',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'loop',
+      resource: 'Loop',
+      operation: 'For Each',
+      name: 'Loop',
+      description: 'Loop over an array of items',
+      fields: [
+        { key: 'items', label: 'Items (JSON array)', type: 'json', required: true, placeholder: '[1,2,3]' },
+        { key: 'itemVariable', label: 'Item Variable', type: 'text', default: 'item' },
+        { key: 'indexVariable', label: 'Index Variable', type: 'text', default: 'index' },
+        { key: 'maxIterations', label: 'Max Iterations (optional)', type: 'number' },
+      ],
+    },
+  ],
+};
+
+export const setVariableConfig: AppConfig = {
+  id: 'set_variable',
+  name: 'Set Variable',
+  icon: '📝',
+  color: '#6B7280',
+  description: 'Set workflow variables',
+  category: 'logic',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'set',
+      resource: 'Variable',
+      operation: 'Set',
+      name: 'Set',
+      description: 'Set a variable value',
+      fields: [
+        { key: 'name', label: 'Name', type: 'text', required: true },
+        { key: 'value', label: 'Value', type: 'json', required: true },
+        {
+          key: 'scope',
+          label: 'Scope',
+          type: 'select',
+          options: [
+            { value: 'workflow', label: 'Workflow' },
+            { value: 'node', label: 'Node' },
+          ],
+          default: 'workflow',
+        },
+        { key: 'overwrite', label: 'Overwrite', type: 'boolean', default: true },
+      ],
+    },
+  ],
+};
+
+export const codeConfig: AppConfig = {
+  id: 'code',
+  name: 'Code',
+  icon: '💻',
+  color: '#374151',
+  description: 'Run custom code',
+  category: 'logic',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication required',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'execute',
+      resource: 'Code',
+      operation: 'Execute',
+      name: 'Execute Code',
+      description: 'Execute custom code with a JSON input',
+      fields: [
+        {
+          key: 'language',
+          label: 'Language',
+          type: 'select',
+          options: [
+            { value: 'javascript', label: 'JavaScript' },
+            { value: 'typescript', label: 'TypeScript' },
+          ],
+          default: 'javascript',
+        },
+        { key: 'code', label: 'Code', type: 'textarea', required: true },
+        { key: 'input', label: 'Input (JSON)', type: 'json' },
+        { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', default: 10000 },
+      ],
+    },
+  ],
+};
+
+// ============================================================================
+// EXTENDED INTEGRATIONS (ADDED TO MATCH TOOL CATALOG)
+// ============================================================================
+
+export const iftttConfig: AppConfig = {
+  id: 'ifttt',
+  name: 'IFTTT',
+  icon: '🤖',
+  color: '#FF4A00',
+  description: 'Trigger IFTTT Webhooks events',
+  category: 'automation',
+  docsUrl: 'https://ifttt.com/maker_webhooks',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Webhook Key',
+      description: 'IFTTT Webhooks key',
+      fields: [
+        { key: 'key', label: 'Key', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'trigger_event',
+      resource: 'Webhook',
+      operation: 'Trigger Event',
+      name: 'Trigger Event',
+      description: 'Trigger an IFTTT Webhooks event',
+      fields: [
+        { key: 'event', label: 'Event Name', type: 'text', required: true },
+        { key: 'value1', label: 'Value 1', type: 'text' },
+        { key: 'value2', label: 'Value 2', type: 'text' },
+        { key: 'value3', label: 'Value 3', type: 'text' },
+      ],
+    },
+  ],
+};
+
+export const azureOpenAiConfig: AppConfig = {
+  id: 'azure_openai',
+  name: 'Azure OpenAI',
+  icon: '🧩',
+  color: '#0078D4',
+  description: 'Azure-hosted OpenAI models',
+  category: 'ai',
+  docsUrl: 'https://learn.microsoft.com/azure/ai-services/openai/',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Azure OpenAI',
+      description: 'Azure OpenAI resource configuration',
+      fields: [
+        { key: 'endpoint', label: 'Endpoint', type: 'url', required: true, placeholder: 'https://<resource>.openai.azure.com' },
+        { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+        { key: 'apiVersion', label: 'API Version', type: 'text', default: '2024-02-15-preview' },
+        { key: 'deployment', label: 'Deployment Name', type: 'text', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'chat_completion',
+      resource: 'Chat',
+      operation: 'Completion',
+      name: 'Chat Completion',
+      description: 'Generate a chat response (Azure OpenAI)',
+      fields: [
+        { key: 'system', label: 'System Prompt (optional)', type: 'textarea' },
+        { key: 'prompt', label: 'User Prompt', type: 'textarea', required: true },
+        { key: 'temperature', label: 'Temperature', type: 'number', default: 0.7 },
+        { key: 'maxTokens', label: 'Max Tokens', type: 'number', default: 512 },
+      ],
+    },
+  ],
+};
+
+export const mailgunConfig: AppConfig = {
+  id: 'mailgun',
+  name: 'Mailgun',
+  icon: '📬',
+  color: '#DC2626',
+  description: 'Send emails via Mailgun',
+  category: 'email',
+  docsUrl: 'https://documentation.mailgun.com/en/latest/api-sending.html',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'API Key',
+      description: 'Mailgun API key and domain',
+      fields: [
+        { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+        { key: 'domain', label: 'Domain', type: 'text', required: true, placeholder: 'mg.yourdomain.com' },
+        { key: 'region', label: 'Region', type: 'select', options: [
+          { value: 'us', label: 'US' },
+          { value: 'eu', label: 'EU' },
+        ], default: 'us' },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'send_email',
+      resource: 'Email',
+      operation: 'Send',
+      name: 'Send Email',
+      description: 'Send an email via Mailgun',
+      fields: [
+        { key: 'to', label: 'To', type: 'text', required: true, placeholder: 'user@example.com' },
+        { key: 'from', label: 'From', type: 'text', required: true, placeholder: 'you@mg.yourdomain.com' },
+        { key: 'subject', label: 'Subject', type: 'text', required: true },
+        { key: 'text', label: 'Text', type: 'textarea' },
+        { key: 'html', label: 'HTML', type: 'textarea' },
+      ],
+    },
+  ],
+};
+
+export const slackBotConfig: AppConfig = {
+  id: 'slack_bot',
+  name: 'Slack Bot',
+  icon: '🤖',
+  color: '#4A154B',
+  description: 'Slack API access with bot token',
+  category: 'communication',
+  docsUrl: 'https://api.slack.com/',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Bot Token',
+      description: 'Slack Bot token authentication',
+      fields: [
+        { key: 'botToken', label: 'Bot Token', type: 'password', required: true, placeholder: 'xoxb-...' },
+        { key: 'signingSecret', label: 'Signing Secret (optional)', type: 'password' },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'reaction_added',
+      name: 'Reaction Added',
+      description: 'Triggers when a reaction is added',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'channel', label: 'Channel ID (optional)', type: 'text' },
+        { key: 'emoji', label: 'Emoji (optional)', type: 'text', placeholder: ':thumbsup:' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'post_message',
+      resource: 'Message',
+      operation: 'Post',
+      name: 'Post Message',
+      description: 'Post a message to a channel',
+      fields: [
+        { key: 'channel', label: 'Channel', type: 'text', required: true, placeholder: 'C12345678' },
+        { key: 'text', label: 'Text', type: 'textarea', required: true },
+        { key: 'threadTs', label: 'Thread TS (optional)', type: 'text' },
+      ],
+    },
+  ],
+};
+
+export const discordBotConfig: AppConfig = {
+  id: 'discord_bot',
+  name: 'Discord Bot',
+  icon: '🎮',
+  color: '#5865F2',
+  description: 'Discord API access with bot token',
+  category: 'communication',
+  docsUrl: 'https://discord.com/developers/docs/intro',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Bot',
+      description: 'Discord bot credentials',
+      fields: [
+        { key: 'botToken', label: 'Bot Token', type: 'password', required: true },
+        { key: 'applicationId', label: 'Application ID (optional)', type: 'text' },
+        { key: 'publicKey', label: 'Public Key (optional)', type: 'text' },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'interaction',
+      name: 'Interaction',
+      description: 'Triggers on a Discord interaction',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'guildId', label: 'Guild ID (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
+      name: 'Send Message',
+      description: 'Send a message to a channel',
+      fields: [
+        { key: 'channelId', label: 'Channel ID', type: 'text', required: true },
+        { key: 'content', label: 'Content', type: 'textarea', required: true },
+      ],
+    },
+  ],
+};
+
+export const smsTwilioConfig: AppConfig = {
+  id: 'sms_twilio',
+  name: 'Twilio SMS',
+  icon: '📱',
+  color: '#F22F46',
+  description: 'Send SMS messages via Twilio',
+  category: 'communication',
+  docsUrl: 'https://www.twilio.com/docs/sms',
+  auth: [
+    {
+      type: 'basic',
+      name: 'Twilio',
+      description: 'Twilio Account SID and Auth Token',
+      fields: [
+        { key: 'accountSid', label: 'Account SID', type: 'password', required: true },
+        { key: 'authToken', label: 'Auth Token', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'sms_received',
+      name: 'SMS Received',
+      description: 'Triggers when an SMS is received',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'to', label: 'To (optional)', type: 'text' },
+        { key: 'from', label: 'From (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'send_sms',
+      resource: 'Message',
+      operation: 'Send',
+      name: 'Send SMS',
+      description: 'Send an SMS message',
+      fields: [
+        { key: 'to', label: 'To', type: 'text', required: true },
+        { key: 'from', label: 'From', type: 'text', required: true },
+        { key: 'body', label: 'Message', type: 'textarea', required: true },
+      ],
+    },
+  ],
+};
+
+export const squareConfig: AppConfig = {
+  id: 'square',
+  name: 'Square',
+  icon: '⬛',
+  color: '#111827',
+  description: 'Payments and orders with Square',
+  category: 'ecommerce',
+  docsUrl: 'https://developer.squareup.com/reference/square',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Square access token',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+        { key: 'environment', label: 'Environment', type: 'select', options: [
+          { value: 'production', label: 'Production' },
+          { value: 'sandbox', label: 'Sandbox' },
+        ], default: 'production' },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'payment_received',
+      name: 'Payment Received',
+      description: 'Triggers when a payment is received',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'locationId', label: 'Location ID (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'create_payment',
+      resource: 'Payment',
+      operation: 'Create',
+      name: 'Create Payment',
+      description: 'Create a payment',
+      fields: [
+        { key: 'amount', label: 'Amount (cents)', type: 'number', required: true },
+        { key: 'currency', label: 'Currency', type: 'text', default: 'USD' },
+        { key: 'sourceId', label: 'Source ID', type: 'text', required: true, helpText: 'Nonce or card-on-file source id' },
+        { key: 'idempotencyKey', label: 'Idempotency Key (optional)', type: 'text' },
+      ],
+    },
+  ],
+};
+
+export const webhookOutgoingConfig: AppConfig = {
+  id: 'webhook_outgoing',
+  name: 'Outgoing Webhook',
+  icon: '📤',
+  color: '#6366F1',
+  description: 'Send HTTP requests to external systems',
+  category: 'developer',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'send',
+      resource: 'Webhook',
+      operation: 'Send',
+      name: 'Send Webhook',
+      description: 'Send an HTTP request',
+      fields: [
+        { key: 'url', label: 'URL', type: 'url', required: true },
+        { key: 'method', label: 'Method', type: 'select', options: [
+          { value: 'GET', label: 'GET' },
+          { value: 'POST', label: 'POST' },
+          { value: 'PUT', label: 'PUT' },
+          { value: 'PATCH', label: 'PATCH' },
+          { value: 'DELETE', label: 'DELETE' },
+        ], default: 'POST' },
+        { key: 'headers', label: 'Headers (JSON)', type: 'json', placeholder: '{"Content-Type":"application/json"}' },
+        { key: 'body', label: 'Body (JSON)', type: 'json' },
+      ],
+    },
+  ],
+};
+
+export const customApiConfig: AppConfig = {
+  id: 'custom_api',
+  name: 'Custom API',
+  icon: '🧰',
+  color: '#10B981',
+  description: 'Call a custom API with base URL + headers',
+  category: 'developer',
+  auth: [
+    {
+      type: 'custom',
+      name: 'API Settings',
+      description: 'Common API settings',
+      fields: [
+        { key: 'baseUrl', label: 'Base URL', type: 'url', required: true },
+        { key: 'headers', label: 'Default Headers (JSON)', type: 'json', placeholder: '{"Authorization":"Bearer ..."}' },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'request',
+      resource: 'Request',
+      operation: 'Send',
+      name: 'Send Request',
+      description: 'Send a request to an endpoint',
+      fields: [
+        { key: 'path', label: 'Path', type: 'text', required: true, placeholder: '/v1/items' },
+        { key: 'method', label: 'Method', type: 'select', options: [
+          { value: 'GET', label: 'GET' },
+          { value: 'POST', label: 'POST' },
+          { value: 'PUT', label: 'PUT' },
+          { value: 'PATCH', label: 'PATCH' },
+          { value: 'DELETE', label: 'DELETE' },
+        ], default: 'GET' },
+        { key: 'query', label: 'Query Params (JSON)', type: 'json' },
+        { key: 'headers', label: 'Headers Override (JSON)', type: 'json' },
+        { key: 'body', label: 'Body (JSON)', type: 'json' },
+      ],
+    },
+  ],
+};
+
+export const customIntegrationConfig: AppConfig = {
+  id: 'custom_integration',
+  name: 'Build Custom Integration',
+  icon: '✨',
+  color: '#8B5CF6',
+  description: 'Create a simple custom integration definition',
+  category: 'developer',
+  auth: [
+    {
+      type: 'custom',
+      name: 'No Auth',
+      description: 'No authentication',
+      fields: [],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'define',
+      resource: 'Integration',
+      operation: 'Define',
+      name: 'Define Integration',
+      description: 'Define base URL and authentication for a custom integration',
+      fields: [
+        { key: 'name', label: 'Name', type: 'text', required: true },
+        { key: 'baseUrl', label: 'Base URL', type: 'url', required: true },
+        { key: 'authType', label: 'Auth Type', type: 'select', options: [
+          { value: 'none', label: 'None' },
+          { value: 'apiKey', label: 'API Key' },
+          { value: 'bearer', label: 'Bearer Token' },
+          { value: 'basic', label: 'Basic Auth' },
+        ], default: 'none' },
+        { key: 'authConfig', label: 'Auth Config (JSON)', type: 'json', helpText: 'Depends on auth type' },
+      ],
+    },
+  ],
+};
+
+export const segmentConfig: AppConfig = {
+  id: 'segment',
+  name: 'Segment',
+  icon: '🧩',
+  color: '#111827',
+  description: 'Customer data platform tracking',
+  category: 'marketing',
+  docsUrl: 'https://segment.com/docs/connections/sources/catalog/libraries/server/http-api/',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Write Key',
+      description: 'Segment source write key',
+      fields: [
+        { key: 'writeKey', label: 'Write Key', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'track',
+      resource: 'Event',
+      operation: 'Track',
+      name: 'Track',
+      description: 'Send a track call',
+      fields: [
+        { key: 'userId', label: 'User ID', type: 'text', required: true },
+        { key: 'event', label: 'Event', type: 'text', required: true },
+        { key: 'properties', label: 'Properties (JSON)', type: 'json' },
+        { key: 'context', label: 'Context (JSON)', type: 'json' },
+      ],
+    },
+  ],
+};
+
+export const mixpanelConfig: AppConfig = {
+  id: 'mixpanel',
+  name: 'Mixpanel',
+  icon: '📈',
+  color: '#8B5CF6',
+  description: 'Product analytics tracking',
+  category: 'marketing',
+  docsUrl: 'https://developer.mixpanel.com/docs/http',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Project Token',
+      description: 'Mixpanel project token',
+      fields: [
+        { key: 'projectToken', label: 'Project Token', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'track',
+      resource: 'Event',
+      operation: 'Track',
+      name: 'Track Event',
+      description: 'Track an event',
+      fields: [
+        { key: 'distinctId', label: 'Distinct ID', type: 'text', required: true },
+        { key: 'event', label: 'Event Name', type: 'text', required: true },
+        { key: 'properties', label: 'Properties (JSON)', type: 'json' },
+      ],
+    },
+  ],
+};
+
+export const mastodonConfig: AppConfig = {
+  id: 'mastodon',
+  name: 'Mastodon',
+  icon: '🐘',
+  color: '#6364FF',
+  description: 'Post updates to Mastodon',
+  category: 'marketing',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Mastodon instance + token',
+      fields: [
+        { key: 'instanceUrl', label: 'Instance URL', type: 'url', required: true, placeholder: 'https://mastodon.social' },
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_status',
+      resource: 'Status',
+      operation: 'Create',
+      name: 'Create Status',
+      description: 'Post a new status',
+      fields: [
+        { key: 'status', label: 'Status', type: 'textarea', required: true },
+        { key: 'visibility', label: 'Visibility', type: 'select', options: [
+          { value: 'public', label: 'Public' },
+          { value: 'unlisted', label: 'Unlisted' },
+          { value: 'private', label: 'Followers-only' },
+          { value: 'direct', label: 'Direct' },
+        ], default: 'public' },
+      ],
+    },
+  ],
+};
+
+export const redditConfig: AppConfig = {
+  id: 'reddit',
+  name: 'Reddit',
+  icon: '👽',
+  color: '#FF4500',
+  description: 'Post to subreddits (basic)',
+  category: 'marketing',
+  auth: [
+    socialAccessTokenAuth('Reddit'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_post',
+      resource: 'Post',
+      operation: 'Create',
+      name: 'Create Post',
+      description: 'Create a subreddit post',
+      fields: [
+        { key: 'subreddit', label: 'Subreddit', type: 'text', required: true, placeholder: 'r/example' },
+        { key: 'title', label: 'Title', type: 'text', required: true },
+        { key: 'text', label: 'Text', type: 'textarea' },
+        { key: 'url', label: 'URL (optional)', type: 'url' },
+      ],
+    },
+  ],
+};
+
+export const snapchatConfig: AppConfig = {
+  id: 'snapchat',
+  name: 'Snapchat',
+  icon: '👻',
+  color: '#FDE047',
+  description: 'Snapchat posting/ads (basic)',
+  category: 'marketing',
+  auth: [
+    socialAccessTokenAuth('Snapchat'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_post',
+      resource: 'Post',
+      operation: 'Create',
+      name: 'Create Post',
+      description: 'Create a post (implementation-dependent)',
+      fields: [
+        { key: 'caption', label: 'Caption (optional)', type: 'textarea' },
+        { key: 'mediaUrl', label: 'Media URL', type: 'url', required: true },
+      ],
+    },
+  ],
+};
+
+export const driftConfig: AppConfig = {
+  id: 'drift',
+  name: 'Drift',
+  icon: '💬',
+  color: '#111827',
+  description: 'Customer messaging and chat',
+  category: 'support',
+  docsUrl: 'https://devdocs.drift.com/',
+  auth: [
+    socialAccessTokenAuth('Drift'),
+  ],
+  triggers: [
+    {
+      id: 'new_message',
+      name: 'New Message',
+      description: 'Triggers when a new message is received',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'inboxId', label: 'Inbox ID (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'send_message',
+      resource: 'Message',
+      operation: 'Send',
+      name: 'Send Message',
+      description: 'Send a chat message',
+      fields: [
+        { key: 'conversationId', label: 'Conversation ID', type: 'text', required: true },
+        { key: 'body', label: 'Message', type: 'textarea', required: true },
+      ],
+    },
+  ],
+};
+
+export const hubspotOauthConfig: AppConfig = {
+  id: 'hubspot_oauth',
+  name: 'HubSpot (OAuth)',
+  icon: '🧡',
+  color: '#FF7A59',
+  description: 'HubSpot via OAuth',
+  category: 'crm',
+  docsUrl: 'https://developers.hubspot.com/docs/api/overview',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'HubSpot Account',
+      description: 'Connect your HubSpot account',
+      scopes: ['crm.objects.contacts.read', 'crm.objects.contacts.write', 'crm.objects.deals.read', 'crm.objects.deals.write'],
+    },
+    {
+      type: 'api-key',
+      name: 'Private App Token',
+      description: 'Use a HubSpot Private App token',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'new_contact',
+      name: 'New Contact',
+      description: 'Triggers when a new contact is created',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [],
+    },
+  ],
+  actions: [
+    {
+      id: 'create_contact',
+      resource: 'Contact',
+      operation: 'Create',
+      name: 'Create Contact',
+      description: 'Create a new contact',
+      fields: [
+        { key: 'email', label: 'Email', type: 'email', required: true },
+        { key: 'firstName', label: 'First Name', type: 'text' },
+        { key: 'lastName', label: 'Last Name', type: 'text' },
+      ],
+    },
+  ],
+};
+
+export const hubspotMarketingConfig: AppConfig = {
+  id: 'hubspot_marketing',
+  name: 'HubSpot Marketing',
+  icon: '📣',
+  color: '#FF7A59',
+  description: 'HubSpot marketing tools',
+  category: 'marketing',
+  docsUrl: 'https://developers.hubspot.com/docs/api/marketing',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'HubSpot Account',
+      description: 'Connect your HubSpot account',
+      scopes: ['marketing-email.read', 'marketing-email.write', 'crm.objects.contacts.read'],
+    },
+    {
+      type: 'api-key',
+      name: 'Private App Token',
+      description: 'Use a HubSpot Private App token',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'add_to_list',
+      resource: 'Contact',
+      operation: 'Add To List',
+      name: 'Add Contact to List',
+      description: 'Add a contact to a list',
+      fields: [
+        { key: 'listId', label: 'List ID', type: 'text', required: true },
+        { key: 'email', label: 'Email', type: 'email', required: true },
+      ],
+    },
+    {
+      id: 'send_marketing_email',
+      resource: 'Email',
+      operation: 'Send',
+      name: 'Send Marketing Email',
+      description: 'Send a marketing email (implementation-dependent)',
+      fields: [
+        { key: 'to', label: 'To', type: 'text', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', required: true },
+        { key: 'html', label: 'HTML', type: 'textarea', required: true },
+      ],
+    },
+  ],
+};
+
+export const bigqueryConfig: AppConfig = {
+  id: 'bigquery',
+  name: 'BigQuery',
+  icon: '🔷',
+  color: '#4285F4',
+  description: 'Run BigQuery SQL queries',
+  category: 'storage',
+  docsUrl: 'https://cloud.google.com/bigquery/docs/reference/rest',
+  auth: [
+    {
+      type: 'custom',
+      name: 'Service Account',
+      description: 'Service account JSON + project ID',
+      fields: [
+        { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+        { key: 'serviceAccountJson', label: 'Service Account JSON', type: 'json', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'query',
+      resource: 'Job',
+      operation: 'Query',
+      name: 'Run Query',
+      description: 'Run a SQL query',
+      fields: [
+        { key: 'query', label: 'SQL', type: 'textarea', required: true },
+        { key: 'useLegacySql', label: 'Use Legacy SQL', type: 'boolean', default: false },
+        { key: 'location', label: 'Location (optional)', type: 'text', placeholder: 'US' },
+      ],
+    },
+  ],
+};
+
+export const cosmosdbConfig: AppConfig = {
+  id: 'cosmosdb',
+  name: 'Cosmos DB',
+  icon: '🪐',
+  color: '#0078D4',
+  description: 'Azure Cosmos DB operations',
+  category: 'storage',
+  docsUrl: 'https://learn.microsoft.com/azure/cosmos-db/',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'Connection',
+      description: 'Cosmos DB endpoint + key',
+      fields: [
+        { key: 'endpoint', label: 'Endpoint', type: 'url', required: true },
+        { key: 'key', label: 'Key', type: 'password', required: true },
+        { key: 'databaseId', label: 'Database ID', type: 'text', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'query',
+      resource: 'Container',
+      operation: 'Query',
+      name: 'Query',
+      description: 'Run a SQL query against a container',
+      fields: [
+        { key: 'containerId', label: 'Container ID', type: 'text', required: true },
+        { key: 'query', label: 'Query', type: 'textarea', required: true, placeholder: 'SELECT * FROM c' },
+        { key: 'parameters', label: 'Parameters (JSON)', type: 'json' },
+      ],
+    },
+  ],
+};
+
+export const postgresqlConfig: AppConfig = {
+  id: 'postgresql',
+  name: 'PostgreSQL',
+  icon: '🐘',
+  color: '#10B981',
+  description: 'PostgreSQL database queries',
+  category: 'storage',
+  auth: [
+    {
+      type: 'custom',
+      name: 'Connection',
+      description: 'PostgreSQL connection settings',
+      fields: [
+        { key: 'host', label: 'Host', type: 'text', required: true },
+        { key: 'port', label: 'Port', type: 'number', default: 5432 },
+        { key: 'database', label: 'Database', type: 'text', required: true },
+        { key: 'user', label: 'User', type: 'text', required: true },
+        { key: 'password', label: 'Password', type: 'password', required: true },
+        { key: 'ssl', label: 'SSL', type: 'boolean', default: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'query',
+      resource: 'Database',
+      operation: 'Query',
+      name: 'Query',
+      description: 'Run a SELECT query',
+      fields: [
+        { key: 'query', label: 'SQL', type: 'textarea', required: true },
+        { key: 'params', label: 'Parameters (JSON array)', type: 'json', placeholder: '["value"]' },
+        { key: 'limit', label: 'Limit (optional)', type: 'number' },
+      ],
+    },
+    {
+      id: 'execute',
+      resource: 'Database',
+      operation: 'Execute',
+      name: 'Execute',
+      description: 'Run INSERT/UPDATE/DELETE',
+      fields: [
+        { key: 'query', label: 'SQL', type: 'textarea', required: true },
+        { key: 'params', label: 'Parameters (JSON array)', type: 'json', placeholder: '["value"]' },
+      ],
+    },
+  ],
+};
+
+export const mysqlDbConfig: AppConfig = {
+  id: 'mysql',
+  name: 'MySQL',
+  icon: '🐬',
+  color: '#10B981',
+  description: 'MySQL database queries',
+  category: 'storage',
+  auth: [
+    {
+      type: 'custom',
+      name: 'Connection',
+      description: 'MySQL connection settings',
+      fields: [
+        { key: 'host', label: 'Host', type: 'text', required: true },
+        { key: 'port', label: 'Port', type: 'number', default: 3306 },
+        { key: 'database', label: 'Database', type: 'text', required: true },
+        { key: 'user', label: 'User', type: 'text', required: true },
+        { key: 'password', label: 'Password', type: 'password', required: true },
+        { key: 'ssl', label: 'SSL', type: 'boolean', default: false },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'query',
+      resource: 'Database',
+      operation: 'Query',
+      name: 'Query',
+      description: 'Run a SELECT query',
+      fields: [
+        { key: 'query', label: 'SQL', type: 'textarea', required: true },
+        { key: 'params', label: 'Parameters (JSON array)', type: 'json', placeholder: '["value"]' },
+        { key: 'limit', label: 'Limit (optional)', type: 'number' },
+      ],
+    },
+    {
+      id: 'execute',
+      resource: 'Database',
+      operation: 'Execute',
+      name: 'Execute',
+      description: 'Run INSERT/UPDATE/DELETE',
+      fields: [
+        { key: 'query', label: 'SQL', type: 'textarea', required: true },
+        { key: 'params', label: 'Parameters (JSON array)', type: 'json', placeholder: '["value"]' },
+      ],
+    },
+  ],
+};
+
+export const redisConfig: AppConfig = {
+  id: 'redis',
+  name: 'Redis',
+  icon: '🧱',
+  color: '#DC2626',
+  description: 'Redis key-value store',
+  category: 'storage',
+  auth: [
+    {
+      type: 'custom',
+      name: 'Connection',
+      description: 'Redis connection settings',
+      fields: [
+        { key: 'url', label: 'Redis URL', type: 'password', required: true, placeholder: 'redis://localhost:6379' },
+        { key: 'database', label: 'DB Index', type: 'number', default: 0 },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'set',
+      resource: 'Key',
+      operation: 'Set',
+      name: 'Set Key',
+      description: 'Set a key value',
+      fields: [
+        { key: 'key', label: 'Key', type: 'text', required: true },
+        { key: 'value', label: 'Value', type: 'text', required: true },
+        { key: 'ttlSeconds', label: 'TTL (seconds, optional)', type: 'number' },
+      ],
+    },
+    {
+      id: 'get',
+      resource: 'Key',
+      operation: 'Get',
+      name: 'Get Key',
+      description: 'Get a key value',
+      fields: [
+        { key: 'key', label: 'Key', type: 'text', required: true },
+      ],
+    },
+    {
+      id: 'publish',
+      resource: 'Pub/Sub',
+      operation: 'Publish',
+      name: 'Publish Message',
+      description: 'Publish to a channel',
+      fields: [
+        { key: 'channel', label: 'Channel', type: 'text', required: true },
+        { key: 'message', label: 'Message', type: 'text', required: true },
+      ],
+    },
+  ],
+};
+
+export const dynamodbConfig: AppConfig = {
+  id: 'dynamodb',
+  name: 'DynamoDB',
+  icon: '🗄️',
+  color: '#8B5CF6',
+  description: 'AWS DynamoDB operations',
+  category: 'storage',
+  docsUrl: 'https://docs.aws.amazon.com/amazondynamodb/',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'AWS Credentials',
+      description: 'AWS access keys for DynamoDB',
+      fields: [
+        { key: 'accessKeyId', label: 'Access Key ID', type: 'password', required: true },
+        { key: 'secretAccessKey', label: 'Secret Access Key', type: 'password', required: true },
+        { key: 'region', label: 'Region', type: 'text', required: true, default: 'us-east-1' },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'put_item',
+      resource: 'Table',
+      operation: 'Put Item',
+      name: 'Put Item',
+      description: 'Insert or replace an item',
+      fields: [
+        { key: 'tableName', label: 'Table Name', type: 'text', required: true },
+        { key: 'item', label: 'Item (JSON)', type: 'json', required: true },
+      ],
+    },
+    {
+      id: 'get_item',
+      resource: 'Table',
+      operation: 'Get Item',
+      name: 'Get Item',
+      description: 'Fetch an item by key',
+      fields: [
+        { key: 'tableName', label: 'Table Name', type: 'text', required: true },
+        { key: 'key', label: 'Key (JSON)', type: 'json', required: true },
+      ],
+    },
+  ],
+};
+
+export const elasticsearchConfig: AppConfig = {
+  id: 'elasticsearch',
+  name: 'Elasticsearch',
+  icon: '🔎',
+  color: '#6B7280',
+  description: 'Search and indexing',
+  category: 'storage',
+  docsUrl: 'https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html',
+  auth: [
+    {
+      type: 'custom',
+      name: 'API Key',
+      description: 'Elasticsearch endpoint + API key',
+      fields: [
+        { key: 'baseUrl', label: 'Base URL', type: 'url', required: true, placeholder: 'https://your-es.example.com' },
+        { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'index_document',
+      resource: 'Index',
+      operation: 'Index Document',
+      name: 'Index Document',
+      description: 'Index a document',
+      fields: [
+        { key: 'index', label: 'Index', type: 'text', required: true },
+        { key: 'id', label: 'Document ID (optional)', type: 'text' },
+        { key: 'document', label: 'Document (JSON)', type: 'json', required: true },
+      ],
+    },
+    {
+      id: 'search',
+      resource: 'Index',
+      operation: 'Search',
+      name: 'Search',
+      description: 'Run a search query',
+      fields: [
+        { key: 'index', label: 'Index', type: 'text', required: true },
+        { key: 'query', label: 'Query (JSON)', type: 'json', required: true },
+        { key: 'size', label: 'Size', type: 'number', default: 10 },
+      ],
+    },
+  ],
+};
+
+export const liveagentConfig: AppConfig = {
+  id: 'liveagent',
+  name: 'LiveAgent',
+  icon: '🎧',
+  color: '#03363D',
+  description: 'Help desk and live chat',
+  category: 'support',
+  docsUrl: 'https://www.liveagent.com/api/',
+  auth: [
+    {
+      type: 'api-key',
+      name: 'API Key',
+      description: 'LiveAgent API key',
+      fields: [
+        { key: 'baseUrl', label: 'Base URL', type: 'url', required: true, placeholder: 'https://yourcompany.ladesk.com/api/v3' },
+        { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'ticket_created',
+      name: 'Ticket Created',
+      description: 'Triggers when a ticket is created',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'departmentId', label: 'Department ID (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'create_ticket',
+      resource: 'Ticket',
+      operation: 'Create',
+      name: 'Create Ticket',
+      description: 'Create a support ticket',
+      fields: [
+        { key: 'subject', label: 'Subject', type: 'text', required: true },
+        { key: 'message', label: 'Message', type: 'textarea', required: true },
+        { key: 'email', label: 'Customer Email (optional)', type: 'email' },
+        { key: 'priority', label: 'Priority', type: 'select', options: [
+          { value: 'low', label: 'Low' },
+          { value: 'normal', label: 'Normal' },
+          { value: 'high', label: 'High' },
+          { value: 'urgent', label: 'Urgent' },
+        ], default: 'normal' },
+      ],
+    },
+  ],
+};
+
+export const helpscoutConfig: AppConfig = {
+  id: 'helpscout',
+  name: 'Help Scout',
+  icon: '🛟',
+  color: '#1292EE',
+  description: 'Shared inbox and help desk',
+  category: 'support',
+  docsUrl: 'https://developer.helpscout.com/',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'Help Scout Account',
+      description: 'Connect your Help Scout account',
+      scopes: ['conversations.read', 'conversations.write', 'customers.read'],
+    },
+    {
+      type: 'api-key',
+      name: 'Access Token',
+      description: 'Paste a Help Scout OAuth access token (fallback when OAuth connection is unavailable)',
+      fields: [
+        { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+      ],
+    },
+  ],
+  triggers: [
+    {
+      id: 'conversation_created',
+      name: 'Conversation Created',
+      description: 'Triggers when a conversation is created',
+      triggerTypes: ['webhook'],
+      defaultTriggerType: 'webhook',
+      fields: [
+        { key: 'mailboxId', label: 'Mailbox ID (optional)', type: 'text' },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: 'create_conversation',
+      resource: 'Conversation',
+      operation: 'Create',
+      name: 'Create Conversation',
+      description: 'Create a new conversation',
+      fields: [
+        { key: 'mailboxId', label: 'Mailbox ID', type: 'text', required: true },
+        { key: 'subject', label: 'Subject', type: 'text', required: true },
+        { key: 'customerEmail', label: 'Customer Email', type: 'email', required: true },
+        { key: 'body', label: 'Body', type: 'textarea', required: true },
+      ],
+    },
+    {
+      id: 'reply_conversation',
+      resource: 'Conversation',
+      operation: 'Reply',
+      name: 'Reply to Conversation',
+      description: 'Reply to an existing conversation',
+      fields: [
+        { key: 'conversationId', label: 'Conversation ID', type: 'text', required: true },
+        { key: 'body', label: 'Body', type: 'textarea', required: true },
+      ],
+    },
+  ],
+};
+
+function socialAccessTokenAuth(appName: string): AuthConfig {
+  return {
+    type: 'api-key',
+    name: 'Access Token',
+    description: `Paste a ${appName} OAuth access token (fallback when OAuth connection is unavailable)`,
+    fields: [
+      { key: 'accessToken', label: 'Access Token', type: 'password', required: true },
+    ],
+  };
+}
+
+export const twitterConfig: AppConfig = {
+  id: 'twitter',
+  name: 'Twitter / X',
+  icon: '🐦',
+  color: '#0A66C2',
+  description: 'Post updates and read profile info',
+  category: 'marketing',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'Twitter Account',
+      description: 'Connect your Twitter/X account',
+      scopes: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+    },
+    socialAccessTokenAuth('Twitter'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_tweet',
+      resource: 'Tweet',
+      operation: 'Create',
+      name: 'Create Tweet',
+      description: 'Publish a tweet',
+      fields: [
+        { key: 'text', label: 'Text', type: 'textarea', required: true },
+        { key: 'replyToTweetId', label: 'Reply To Tweet ID (optional)', type: 'text' },
+      ],
+    },
+    {
+      id: 'get_profile',
+      resource: 'Profile',
+      operation: 'Get',
+      name: 'Get Profile',
+      description: 'Get profile information',
+      fields: [
+        { key: 'username', label: 'Username (optional)', type: 'text' },
+        { key: 'userId', label: 'User ID (optional)', type: 'text' },
+      ],
+    },
+  ],
+};
+
+export const instagramConfig: AppConfig = {
+  id: 'instagram',
+  name: 'Instagram',
+  icon: '📸',
+  color: '#EA4B71',
+  description: 'Instagram Graph API basics',
+  category: 'marketing',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'Instagram Account',
+      description: 'Connect your Instagram Business account',
+      scopes: ['instagram_basic', 'pages_show_list', 'instagram_content_publish'],
+    },
+    socialAccessTokenAuth('Instagram'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_post',
+      resource: 'Post',
+      operation: 'Create',
+      name: 'Create Post',
+      description: 'Publish a post (requires Business account)',
+      fields: [
+        { key: 'caption', label: 'Caption', type: 'textarea' },
+        { key: 'imageUrl', label: 'Image URL', type: 'url', required: true },
+        { key: 'instagramAccountId', label: 'Instagram Account ID', type: 'text', required: true },
+      ],
+    },
+  ],
+};
+
+export const youtubeConfig: AppConfig = {
+  id: 'youtube',
+  name: 'YouTube',
+  icon: '📺',
+  color: '#DC2626',
+  description: 'YouTube channel and uploads',
+  category: 'marketing',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'Google Account',
+      description: 'Connect your Google account',
+      scopes: ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload'],
+    },
+    socialAccessTokenAuth('YouTube'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'upload_video',
+      resource: 'Video',
+      operation: 'Upload',
+      name: 'Upload Video',
+      description: 'Upload a video (metadata only; upload handling depends on implementation)',
+      fields: [
+        { key: 'title', label: 'Title', type: 'text', required: true },
+        { key: 'description', label: 'Description', type: 'textarea' },
+        { key: 'privacyStatus', label: 'Privacy', type: 'select', options: [
+          { value: 'private', label: 'Private' },
+          { value: 'unlisted', label: 'Unlisted' },
+          { value: 'public', label: 'Public' },
+        ], default: 'private' },
+        { key: 'videoUrl', label: 'Video URL (optional)', type: 'url', helpText: 'If your backend supports fetching the file' },
+      ],
+    },
+  ],
+};
+
+export const tiktokConfig: AppConfig = {
+  id: 'tiktok',
+  name: 'TikTok',
+  icon: '🎵',
+  color: '#000000',
+  description: 'TikTok basic posting',
+  category: 'marketing',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'TikTok Account',
+      description: 'Connect your TikTok account',
+      scopes: ['user.info.basic', 'video.publish'],
+    },
+    socialAccessTokenAuth('TikTok'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_post',
+      resource: 'Post',
+      operation: 'Create',
+      name: 'Create Post',
+      description: 'Publish a post (implementation-dependent)',
+      fields: [
+        { key: 'caption', label: 'Caption', type: 'textarea' },
+        { key: 'videoUrl', label: 'Video URL', type: 'url', required: true },
+      ],
+    },
+  ],
+};
+
+export const pinterestConfig: AppConfig = {
+  id: 'pinterest',
+  name: 'Pinterest',
+  icon: '📌',
+  color: '#DC2626',
+  description: 'Pins and boards',
+  category: 'marketing',
+  auth: [
+    {
+      type: 'oauth2',
+      name: 'Pinterest Account',
+      description: 'Connect your Pinterest account',
+      scopes: ['boards:read', 'pins:read', 'pins:write'],
+    },
+    socialAccessTokenAuth('Pinterest'),
+  ],
+  triggers: [],
+  actions: [
+    {
+      id: 'create_pin',
+      resource: 'Pin',
+      operation: 'Create',
+      name: 'Create Pin',
+      description: 'Create a new pin',
+      fields: [
+        { key: 'boardId', label: 'Board ID', type: 'text', required: true },
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+        { key: 'link', label: 'Link (optional)', type: 'url' },
+        { key: 'imageUrl', label: 'Image URL', type: 'url', required: true },
+      ],
+    },
+  ],
+};
+
 // Add Voice/Video apps
 APP_CONFIGS.twilio_voice = twilioVoiceConfig;
 APP_CONFIGS.zoom = zoomConfig;
 APP_CONFIGS.google_meet = googleMeetConfig;
 
-// Helper to get config by app ID
+// Add Core triggers / Logic
+APP_CONFIGS.schedule = scheduleConfig;
+APP_CONFIGS.manual = manualTriggerConfig;
+APP_CONFIGS.if_condition = ifConditionConfig;
+APP_CONFIGS.switch = switchConfig;
+APP_CONFIGS.loop = loopConfig;
+APP_CONFIGS.set_variable = setVariableConfig;
+APP_CONFIGS.code = codeConfig;
+
+// Add Extended integrations
+APP_CONFIGS.ifttt = iftttConfig;
+APP_CONFIGS.azure_openai = azureOpenAiConfig;
+APP_CONFIGS.postgresql = postgresqlConfig;
+APP_CONFIGS.mysql = mysqlDbConfig;
+APP_CONFIGS.redis = redisConfig;
+APP_CONFIGS.dynamodb = dynamodbConfig;
+APP_CONFIGS.elasticsearch = elasticsearchConfig;
+APP_CONFIGS.liveagent = liveagentConfig;
+APP_CONFIGS.helpscout = helpscoutConfig;
+APP_CONFIGS.drift = driftConfig;
+APP_CONFIGS.twitter = twitterConfig;
+APP_CONFIGS.instagram = instagramConfig;
+APP_CONFIGS.youtube = youtubeConfig;
+APP_CONFIGS.tiktok = tiktokConfig;
+APP_CONFIGS.pinterest = pinterestConfig;
+APP_CONFIGS.reddit = redditConfig;
+APP_CONFIGS.snapchat = snapchatConfig;
+APP_CONFIGS.mastodon = mastodonConfig;
+APP_CONFIGS.mixpanel = mixpanelConfig;
+APP_CONFIGS.segment = segmentConfig;
+APP_CONFIGS.mailgun = mailgunConfig;
+APP_CONFIGS.slack_bot = slackBotConfig;
+APP_CONFIGS.discord_bot = discordBotConfig;
+APP_CONFIGS.sms_twilio = smsTwilioConfig;
+APP_CONFIGS.square = squareConfig;
+APP_CONFIGS.webhook_outgoing = webhookOutgoingConfig;
+APP_CONFIGS.custom_api = customApiConfig;
+APP_CONFIGS.custom_integration = customIntegrationConfig;
+APP_CONFIGS.hubspot_oauth = hubspotOauthConfig;
+APP_CONFIGS.hubspot_marketing = hubspotMarketingConfig;
+APP_CONFIGS.bigquery = bigqueryConfig;
+APP_CONFIGS.cosmosdb = cosmosdbConfig;
+
+function resolveAppId(appId: string): string {
+  const raw = (appId || '').trim();
+  if (!raw) return raw;
+
+  // Primary normalization: catalog IDs often use kebab-case.
+  const normalized = raw.replace(/-/g, '_');
+
+  // Aliases for legacy or differing IDs across catalogs.
+  const aliases: Record<string, string> = {
+    webhooks: 'webhook',
+    webhook_outgoing: 'webhook_outgoing',
+    twilio: 'twilio_sms',
+    sms_twilio: 'sms_twilio',
+    zoho: 'zoho_crm',
+  };
+
+  return aliases[raw] || aliases[normalized] || normalized;
+}
+
+// Helper to get config by app ID (supports hyphenated IDs + aliases)
 export function getAppConfig(appId: string): AppConfig | undefined {
-  return APP_CONFIGS[appId];
+  const resolved = resolveAppId(appId);
+  return APP_CONFIGS[resolved] || APP_CONFIGS[appId];
 }
 
 // Helper to get triggers for an app
 export function getAppTriggers(appId: string): TriggerConfig[] {
-  return APP_CONFIGS[appId]?.triggers || [];
+  return getAppConfig(appId)?.triggers || [];
 }
 
 // Helper to get actions for an app
 export function getAppActions(appId: string): ActionConfig[] {
-  return APP_CONFIGS[appId]?.actions || [];
+  return getAppConfig(appId)?.actions || [];
 }
 
 // Helper to get auth options for an app
 export function getAppAuth(appId: string): AuthConfig[] {
-  return APP_CONFIGS[appId]?.auth || [];
+  return getAppConfig(appId)?.auth || [];
 }

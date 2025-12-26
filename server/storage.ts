@@ -99,6 +99,7 @@ export interface IStorage {
 
   // Integration Workflows
   getWorkflowsByUserId(userId: string): Promise<IntegrationWorkflow[]>;
+  getActiveWorkflows(): Promise<IntegrationWorkflow[]>;
   getWorkflowById(id: string): Promise<IntegrationWorkflow | undefined>;
   getWorkflowByWebhookId(webhookId: string): Promise<IntegrationWorkflow | undefined>;
   createWorkflow(userId: string, workflow: Omit<InsertIntegrationWorkflow, 'userId'>): Promise<IntegrationWorkflow>;
@@ -917,6 +918,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(integrationWorkflows)
       .where(eq(integrationWorkflows.userId, userId))
+      .orderBy(desc(integrationWorkflows.updatedAt));
+  }
+
+  async getActiveWorkflows(): Promise<IntegrationWorkflow[]> {
+    return db
+      .select()
+      .from(integrationWorkflows)
+      .where(eq(integrationWorkflows.isActive, true))
       .orderBy(desc(integrationWorkflows.updatedAt));
   }
 
