@@ -254,14 +254,11 @@ const SCHEDULE_PRESETS = [
 ];
 
 const EXPRESSION_HELPERS = [
-  { label: 'Email', expr: '{{$json.email}}', desc: 'Get email field' },
-  { label: 'Name', expr: '{{$json.name}}', desc: 'Get name field' },
-  { label: 'First Name', expr: '{{$json.firstName}}', desc: 'Get first name' },
-  { label: 'Last Name', expr: '{{$json.lastName}}', desc: 'Get last name' },
-  { label: 'Phone', expr: '{{$json.phone}}', desc: 'Get phone number' },
-  { label: 'ID', expr: '{{$json.id}}', desc: 'Get record ID' },
-  { label: 'Current Date', expr: '{{$now.toISODate()}}', desc: 'Today\'s date' },
-  { label: 'Timestamp', expr: '{{$now}}', desc: 'Current timestamp' },
+  { label: 'Trigger Email', expr: '{{trigger.email}}', desc: 'Read email from the trigger payload' },
+  { label: 'Trigger Name', expr: '{{trigger.name}}', desc: 'Read name from the trigger payload' },
+  { label: 'Trigger ID', expr: '{{trigger.id}}', desc: 'Read an id from the trigger payload' },
+  { label: 'Previous Node (example)', expr: '{{nodes.NODE_ID_HERE.outputField}}', desc: 'Read output from a specific node id' },
+  { label: 'Workflow Variable (example)', expr: '{{variables.myVar}}', desc: 'Read a workflow variable set earlier' },
 ];
 
 // ============================================================================
@@ -585,7 +582,8 @@ export function ConfigPanelV2({
       .filter((f) => !!f.required)
       .filter((f) => isFieldVisible(f))
       .filter((f) => {
-        const value = dynamicFields[f.key];
+        const hasExplicitValue = Object.prototype.hasOwnProperty.call(dynamicFields, f.key);
+        const value = hasExplicitValue ? dynamicFields[f.key] : f.default;
         if (value === null || value === undefined) return true;
         if (typeof value === 'string') return value.trim().length === 0;
         if (Array.isArray(value)) return value.length === 0;
@@ -904,12 +902,49 @@ export function ConfigPanelV2({
     setIsTesting(true);
     setTestResult(null);
     try {
-      await new Promise(r => setTimeout(r, 2000));
+      const missing = isTrigger ? missingTriggerFields : missingActionFields;
+      if (missing.length > 0) {
+        throw new Error(`Missing required: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}`);
+      }
+
+      if (isAuthenticated && credentialId) {
+        const res = await fetch(`/api/integrations/credentials/${encodeURIComponent(credentialId)}/verify`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
+        }
+
+        if (!res.ok) {
+          throw new Error(data?.message || 'Credential test failed');
+        }
+
+        if (data?.isValid === false) {
+          throw new Error(data?.message || 'Credential is invalid');
+        }
+
+        setTestResult('success');
+        toast({
+          title: 'Test successful!',
+          description: data?.message || 'Credential verified and node is configured correctly.',
+        });
+        return;
+      }
+
       setTestResult('success');
-      toast({ title: "Test successful!", description: "Node is configured correctly." });
-    } catch (error) {
+      toast({ title: 'Test successful!', description: 'Node is configured correctly.' });
+    } catch (error: any) {
       setTestResult('error');
-      toast({ title: "Test failed", variant: "destructive" });
+      toast({
+        title: 'Test failed',
+        description: error?.message || 'Failed to validate node',
+        variant: 'destructive',
+      });
     } finally {
       setIsTesting(false);
     }
@@ -922,9 +957,15 @@ export function ConfigPanelV2({
 
     // Never persist secrets onto nodes. Strip auth fields from dynamicFields and store only credentialId.
     const authMethods = appConfig?.auth || [];
-    const apiKeyAuth = authMethods.find((a: any) => a.type === 'api-key' || a.type === 'bearer');
-    const authFieldKeys = new Set<string>((apiKeyAuth?.fields || []).map((f: any) => f.key));
+    const authFieldKeys = new Set<string>();
+    for (const method of authMethods) {
+      for (const field of method.fields || []) {
+        authFieldKeys.add(field.key);
+      }
+    }
+    // Common legacy keys that sometimes appear on nodes.
     authFieldKeys.add('apiKey');
+    authFieldKeys.add('accessToken');
     const sanitizedDynamicFields: Record<string, any> = { ...dynamicFields };
     for (const key of authFieldKeys) {
       delete sanitizedDynamicFields[key];
@@ -1679,14 +1720,8 @@ export function ConfigPanelV2({
 
   const renderDynamicField = (field: ConfigField) => {
     const value = dynamicFields[field.key] ?? field.default ?? '';
-    
-    // Check if field has dependency
-    if (field.dependsOn) {
-      const dependsOnValue = dynamicFields[field.dependsOn.field];
-      if (dependsOnValue !== field.dependsOn.value) {
-        return null;
-      }
-    }
+
+    if (!isFieldVisible(field)) return null;
 
     const updateField = (newValue: any) => {
       setDynamicFields(prev => ({ ...prev, [field.key]: newValue }));

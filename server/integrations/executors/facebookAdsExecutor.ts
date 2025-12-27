@@ -50,11 +50,21 @@ export async function executeFacebookAdsAction(input: FacebookAdsExecuteInput): 
   const { actionId, config, credential } = input;
   const { accessToken } = fbAuthSchema.parse({ accessToken: credential.accessToken });
 
+  const normalizeAdAccountId = (value: any) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    // Graph API commonly expects `act_<id>`.
+    if (raw.startsWith('act_')) return raw;
+    // If UI options return a numeric id, convert to act_<id>.
+    if (/^\d+$/.test(raw)) return `act_${raw}`;
+    return raw;
+  };
+
   if (actionId === 'get_campaigns') {
-    const adAccountId = String(config.adAccountId || '').trim();
+    const adAccountId = normalizeAdAccountId(config.accountId || (config as any).adAccountId);
     if (!adAccountId) throw new Error('Facebook Ads get_campaigns requires adAccountId');
 
-    const fields = String(config.fields || 'id,name,status,objective,effective_status').trim();
+    const fields = String((config as any).fields || 'id,name,status,objective,effective_status').trim();
     const limit = String(config.limit || '50');
 
     const url = buildGraphUrl(`${encodeURIComponent(adAccountId)}/campaigns`, {
@@ -68,7 +78,7 @@ export async function executeFacebookAdsAction(input: FacebookAdsExecuteInput): 
   }
 
   if (actionId === 'get_insights') {
-    const objectId = String(config.objectId || config.adAccountId || '').trim();
+    const objectId = String((config as any).objectId || normalizeAdAccountId(config.accountId || (config as any).adAccountId) || '').trim();
     if (!objectId) throw new Error('Facebook Ads get_insights requires objectId (or adAccountId)');
 
     const fields = String(config.fields || 'impressions,clicks,spend,ctr,cpc,cpm,actions').trim();

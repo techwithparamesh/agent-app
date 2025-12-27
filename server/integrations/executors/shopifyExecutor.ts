@@ -187,5 +187,33 @@ export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<
     return { ok: true, customer: data?.customer, raw: data };
   }
 
+  if (actionId === 'fulfill_order') {
+    const orderId = String(config.orderId || '').trim();
+    if (!orderId) throw new Error('Shopify fulfill_order requires orderId');
+
+    const notifyCustomer = config.notifyCustomer !== undefined ? Boolean(config.notifyCustomer) : true;
+    const trackingNumber = config.trackingNumber != null ? String(config.trackingNumber).trim() : '';
+    const trackingCompany = config.trackingCompany != null ? String(config.trackingCompany).trim() : '';
+
+    // NOTE: Shopify fulfillment APIs can be complex (fulfillment orders).
+    // This uses the legacy REST endpoint as a best-effort for simple stores.
+    const fulfillment: any = {
+      notify_customer: notifyCustomer,
+    };
+
+    if (trackingNumber) fulfillment.tracking_number = trackingNumber;
+    if (trackingCompany) fulfillment.tracking_company = trackingCompany;
+
+    const data = await shopifyFetchJson(
+      shopDomain,
+      accessToken,
+      'POST',
+      `/orders/${encodeURIComponent(orderId)}/fulfillments.json`,
+      { fulfillment },
+    );
+
+    return { ok: true, fulfillment: data?.fulfillment, raw: data };
+  }
+
   return { status: 'skipped', reason: `Shopify action not implemented: ${actionId}` };
 }

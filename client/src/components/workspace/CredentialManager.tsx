@@ -5,7 +5,7 @@
  * Features: per-app credentials, test connection, encryption status.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -147,6 +147,11 @@ export interface CredentialTemplate {
 export interface CredentialManagerProps {
   credentials: Credential[];
   templates: CredentialTemplate[];
+  /**
+   * If provided, the UI will filter to this app and open the Create dialog
+   * with the matching template preselected.
+   */
+  preselectAppId?: string;
   onCreateCredential?: (credential: Omit<Credential, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<Credential>;
   onUpdateCredential?: (id: string, updates: Partial<Credential>) => Promise<void>;
   onDeleteCredential?: (id: string) => Promise<void>;
@@ -211,8 +216,10 @@ const defaultTemplates: CredentialTemplate[] = [
     appIcon: '📧',
     type: 'oauth2',
     fields: [
+      { key: 'accessToken', label: 'Access Token', type: 'password', required: true, placeholder: 'ya29.a0...' },
       { key: 'clientId', label: 'Client ID', type: 'text', required: true },
       { key: 'clientSecret', label: 'Client Secret', type: 'password', required: true },
+      { key: 'refreshToken', label: 'Refresh Token (optional)', type: 'password', required: false },
     ],
     oauthConfig: {
       authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -307,6 +314,7 @@ const defaultTemplates: CredentialTemplate[] = [
 export function CredentialManager({
   credentials,
   templates: customTemplates = [],
+  preselectAppId,
   onCreateCredential,
   onUpdateCredential,
   onDeleteCredential,
@@ -342,6 +350,26 @@ export function CredentialManager({
     });
     return merged;
   }, [customTemplates]);
+
+  useEffect(() => {
+    if (!preselectAppId) return;
+
+    // Filter list to the selected app.
+    setFilterApp(preselectAppId);
+
+    // Prefer opening the Create dialog with that app's template.
+    const template = allTemplates.find(t => t.appId === preselectAppId) || null;
+    if (template) {
+      setSelectedTemplate(template);
+      setCredentialName(`My ${template.appName} Account`);
+      const initial: Record<string, string> = {};
+      template.fields.forEach((f) => {
+        initial[f.key] = '';
+      });
+      setFormData(initial);
+      setIsCreateDialogOpen(true);
+    }
+  }, [preselectAppId, allTemplates]);
 
   // Filter credentials
   const filteredCredentials = useMemo(() => {

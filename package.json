@@ -8,7 +8,9 @@
     "build": "npx tsx script/build.ts",
     "start": "cross-env NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "audit:config": "npx tsx script/auditConfigKeys.ts",
+    "audit:coverage": "npx tsx script/auditAppCoverage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
@@ -53,6 +55,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "cron-parser": "^5.4.0",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.39.3",

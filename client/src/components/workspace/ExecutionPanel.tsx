@@ -47,7 +47,7 @@ import {
 // TYPES
 // ============================================
 
-export type ExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'cancelled';
+export type ExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'cancelled' | 'skipped';
 
 export interface StepExecution {
   nodeId: string;
@@ -135,6 +135,12 @@ const statusConfig: Record<ExecutionStatus, {
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
     label: "Cancelled",
+  },
+  skipped: {
+    icon: ChevronRight,
+    color: "text-muted-foreground",
+    bgColor: "bg-muted",
+    label: "Skipped",
   },
 };
 

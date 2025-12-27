@@ -1,11 +1,17 @@
 import { storage } from '../storage';
 import { decryptCredentialData } from './crypto';
 import { runWorkflow } from './workflowRunner';
+import CronExpressionParser from 'cron-parser';
 
 type PollState = {
   lastRunAt?: string;
   lastSeenAt?: string;
   recentIds?: string[];
+};
+
+type ScheduleState = {
+  lastRunAt?: string;
+  lastScheduledFor?: string;
 };
 
 function nowIso() {
@@ -56,6 +62,45 @@ function getPollState(workflow: any): PollState {
 function setPollState(workflow: any, newState: PollState) {
   const cfg = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
   return { ...cfg, _pollState: newState };
+}
+
+function getScheduleState(workflow: any): ScheduleState {
+  const cfg = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  const ss = (cfg as any)._scheduleState;
+  if (!ss || typeof ss !== 'object') return {};
+  return ss as ScheduleState;
+}
+
+function setScheduleState(workflow: any, newState: ScheduleState) {
+  const cfg = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  return { ...cfg, _scheduleState: newState };
+}
+
+function getScheduleExpression(triggerNode: any, workflow: any): string {
+  const fromNode = triggerNode?.config?.cronExpression;
+  if (typeof fromNode === 'string' && fromNode.trim()) return fromNode.trim();
+  const fromWorkflow = workflow?.cronExpression;
+  if (typeof fromWorkflow === 'string' && fromWorkflow.trim()) return fromWorkflow.trim();
+  const fromCfg = workflow?.triggerConfig?.cronExpression;
+  if (typeof fromCfg === 'string' && fromCfg.trim()) return fromCfg.trim();
+  return '';
+}
+
+function getScheduleTimezone(triggerNode: any, workflow: any): string {
+  const fromNode = triggerNode?.config?.timezone;
+  if (typeof fromNode === 'string' && fromNode.trim()) return fromNode.trim();
+  const fromWorkflow = workflow?.timezone;
+  if (typeof fromWorkflow === 'string' && fromWorkflow.trim()) return fromWorkflow.trim();
+  return 'UTC';
+}
+
+function nextScheduleAfter(cronExpression: string, tz: string, afterDate: Date): Date | null {
+  try {
+    const cron = CronExpressionParser.parse(cronExpression, { currentDate: afterDate, tz });
+    return cron.next().toDate();
+  } catch {
+    return null;
+  }
 }
 
 function shouldRunPoll(state: PollState, intervalMinutes: number, nowMs: number) {
@@ -370,6 +415,74 @@ async function executePollEvent(workflow: any, triggerNode: any, triggerId: stri
   }
 }
 
+async function executeScheduleEvent(workflow: any, triggerNode: any, triggerId: string, cronExpression: string, timezone: string, scheduledForIso: string) {
+  const triggerData = {
+    appId: getTriggerAppId(triggerNode),
+    triggerId,
+    nodeId: normalizeNodeId(triggerNode),
+    cronExpression,
+    timezone,
+    scheduledFor: scheduledForIso,
+    firedAt: nowIso(),
+  };
+
+  const execution = await storage.createExecution({
+    workflowId: workflow.id,
+    status: 'pending',
+    triggerType: 'schedule',
+    triggerData,
+    startedAt: new Date(),
+  });
+
+  const startedAtMs = Date.now();
+  await storage.updateExecution(execution.id, { status: 'running' });
+
+  try {
+    const result = await runWorkflow({
+      userId: workflow.userId,
+      workflowId: workflow.id,
+      nodes: workflow.nodes || [],
+      connections: workflow.connections || [],
+      triggerType: 'schedule',
+      triggerData,
+    });
+
+    const duration = Date.now() - startedAtMs;
+    await storage.updateExecution(execution.id, {
+      status: 'success',
+      completedAt: new Date(),
+      duration,
+      outputData: result.outputData,
+      nodeExecutions: result.nodeExecutions,
+    });
+
+    await storage.updateWorkflow(workflow.id, {
+      executionCount: (workflow.executionCount || 0) + 1,
+      lastExecutedAt: new Date(),
+      lastExecutionStatus: 'success',
+    });
+
+    return { ok: true, executionId: execution.id };
+  } catch (error: any) {
+    const duration = Date.now() - startedAtMs;
+    await storage.updateExecution(execution.id, {
+      status: 'error',
+      completedAt: new Date(),
+      duration,
+      errorMessage: error?.message || 'Workflow execution failed',
+      errorStack: error?.stack ? String(error.stack) : undefined,
+    });
+
+    await storage.updateWorkflow(workflow.id, {
+      executionCount: (workflow.executionCount || 0) + 1,
+      lastExecutedAt: new Date(),
+      lastExecutionStatus: 'error',
+    });
+
+    return { ok: false, executionId: execution.id, error: error?.message || 'Failed' };
+  }
+}
+
 let engineStarted = false;
 let timer: NodeJS.Timeout | null = null;
 
@@ -388,40 +501,68 @@ export function startIntegrationTriggerEngine() {
           if (!triggerNode) continue;
 
           const tType = getTriggerType(triggerNode, workflow);
-          if (tType !== 'poll') continue;
 
-          const appId = getTriggerAppId(triggerNode);
           const triggerId = getTriggerId(triggerNode);
 
-          // Only implement poll handlers for Drive + Calendar in this batch.
-          if (appId !== 'google_drive' && appId !== 'google_calendar') continue;
+          if (tType === 'poll') {
+            const appId = getTriggerAppId(triggerNode);
 
-          const intervalMin = pollIntervalMinutes(triggerNode);
-          const state = getPollState(workflow);
-          if (!shouldRunPoll(state, intervalMin, nowMs)) continue;
+            // Only implement poll handlers for Drive + Calendar in this batch.
+            if (appId !== 'google_drive' && appId !== 'google_calendar') continue;
 
-          const credentialId = getCredentialId(triggerNode);
-          if (!credentialId) continue;
-          const credential = await resolveCredential(workflow.userId, credentialId);
+            const intervalMin = pollIntervalMinutes(triggerNode);
+            const state = getPollState(workflow);
+            if (!shouldRunPoll(state, intervalMin, nowMs)) continue;
 
-          let polled;
-          if (appId === 'google_drive') {
-            polled = await pollGoogleDrive(triggerId, triggerNode.config || {}, credential, state);
-          } else {
-            polled = await pollGoogleCalendar(triggerId, triggerNode.config || {}, credential, state);
+            const credentialId = getCredentialId(triggerNode);
+            if (!credentialId) continue;
+            const credential = await resolveCredential(workflow.userId, credentialId);
+
+            let polled;
+            if (appId === 'google_drive') {
+              polled = await pollGoogleDrive(triggerId, triggerNode.config || {}, credential, state);
+            } else {
+              polled = await pollGoogleCalendar(triggerId, triggerNode.config || {}, credential, state);
+            }
+
+            let nextState: PollState = polled.nextState || {};
+            nextState = { ...nextState, lastRunAt: new Date().toISOString() };
+
+            // Execute events (cap to avoid runaway)
+            const events = Array.isArray(polled.events) ? polled.events.slice(0, 5) : [];
+            for (const ev of events) {
+              await executePollEvent(workflow, triggerNode, triggerId, ev);
+            }
+
+            const updatedTriggerConfig = setPollState(workflow, nextState);
+            await storage.updateWorkflow(workflow.id, { triggerConfig: updatedTriggerConfig });
+            continue;
           }
 
-          let nextState: PollState = polled.nextState || {};
-          nextState = { ...nextState, lastRunAt: new Date().toISOString() };
+          if (tType === 'schedule') {
+            const cronExpression = getScheduleExpression(triggerNode, workflow);
+            if (!cronExpression) continue;
+            const timezone = getScheduleTimezone(triggerNode, workflow);
 
-          // Execute events (cap to avoid runaway)
-          const events = Array.isArray(polled.events) ? polled.events.slice(0, 5) : [];
-          for (const ev of events) {
-            await executePollEvent(workflow, triggerNode, triggerId, ev);
+            const state = getScheduleState(workflow);
+            const lastRunAtMs = state.lastRunAt ? Date.parse(state.lastRunAt) : NaN;
+            const baseDate = Number.isFinite(lastRunAtMs) ? new Date(lastRunAtMs) : new Date(nowMs - 1000);
+
+            const next = nextScheduleAfter(cronExpression, timezone, baseDate);
+            if (!next) continue;
+            if (next.getTime() > nowMs) continue;
+
+            const scheduledForIso = next.toISOString();
+            const lastScheduledForMs = state.lastScheduledFor ? Date.parse(state.lastScheduledFor) : NaN;
+            if (Number.isFinite(lastScheduledForMs) && lastScheduledForMs === next.getTime()) continue;
+
+            await executeScheduleEvent(workflow, triggerNode, triggerId, cronExpression, timezone, scheduledForIso);
+
+            const nextState: ScheduleState = { lastRunAt: nowIso(), lastScheduledFor: scheduledForIso };
+            const updatedTriggerConfig = setScheduleState(workflow, nextState);
+            await storage.updateWorkflow(workflow.id, { triggerConfig: updatedTriggerConfig });
+            continue;
           }
-
-          const updatedTriggerConfig = setPollState(workflow, nextState);
-          await storage.updateWorkflow(workflow.id, { triggerConfig: updatedTriggerConfig });
         } catch (err) {
           console.error('[TriggerEngine] workflow poll error:', err);
         }

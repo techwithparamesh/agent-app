@@ -86,6 +86,27 @@ export async function executeGoogleAdsAction(input: GoogleAdsExecuteInput): Prom
 
   const customerId = String(config.customerId || '').trim();
 
+  async function resolveCampaignBudgetResourceName(campaignId: string): Promise<string> {
+    const gaql = `SELECT campaign_budget.resource_name FROM campaign WHERE campaign.id = ${Number(campaignId)}`;
+    const data = await googleAdsFetch(
+      credential,
+      `https://googleads.googleapis.com/v16/customers/${encodeURIComponent(customerId)}/googleAds:searchStream`,
+      { method: 'POST', body: JSON.stringify({ query: gaql }) },
+    );
+
+    // searchStream returns an array of response chunks
+    const chunks = Array.isArray(data) ? data : [];
+    for (const chunk of chunks) {
+      const results = Array.isArray((chunk as any)?.results) ? (chunk as any).results : [];
+      for (const r of results) {
+        const rn = (r as any)?.campaignBudget?.resourceName;
+        if (typeof rn === 'string' && rn.trim()) return rn.trim();
+      }
+    }
+
+    throw new Error('Google Ads could not resolve campaign budget resource name for campaignId');
+  }
+
   if (actionId === 'get_campaigns') {
     if (!customerId) throw new Error('Google Ads get_campaigns requires customerId');
 
@@ -115,12 +136,24 @@ export async function executeGoogleAdsAction(input: GoogleAdsExecuteInput): Prom
   if (actionId === 'update_campaign_budget') {
     if (!customerId) throw new Error('Google Ads update_campaign_budget requires customerId');
 
-    const campaignBudgetResourceName = String(config.campaignBudgetResourceName || '').trim();
-    const amountMicros = config.amountMicros;
+    // UI provides campaignId + budgetAmountMicros.
+    // Backend also supports direct campaignBudgetResourceName + amountMicros.
+    const campaignId = String(config.campaignId || '').trim();
+    const campaignBudgetResourceNameRaw = String((config as any).campaignBudgetResourceName || '').trim();
+    const amountMicros = (config as any).amountMicros ?? config.budgetAmountMicros;
 
-    if (!campaignBudgetResourceName) throw new Error('Google Ads update_campaign_budget requires campaignBudgetResourceName');
     if (amountMicros === undefined || amountMicros === null || amountMicros === '') {
-      throw new Error('Google Ads update_campaign_budget requires amountMicros');
+      throw new Error('Google Ads update_campaign_budget requires budgetAmountMicros (or amountMicros)');
+    }
+
+    const campaignBudgetResourceName = campaignBudgetResourceNameRaw
+      ? campaignBudgetResourceNameRaw
+      : campaignId
+        ? await resolveCampaignBudgetResourceName(campaignId)
+        : '';
+
+    if (!campaignBudgetResourceName) {
+      throw new Error('Google Ads update_campaign_budget requires campaignId or campaignBudgetResourceName');
     }
 
     const body = {
@@ -147,7 +180,10 @@ export async function executeGoogleAdsAction(input: GoogleAdsExecuteInput): Prom
   if (actionId === 'update_campaign_status') {
     if (!customerId) throw new Error('Google Ads update_campaign_status requires customerId');
 
-    const campaignResourceName = String(config.campaignResourceName || '').trim();
+    const campaignResourceName = String(
+      (config as any).campaignResourceName ||
+        (config.campaignId ? `customers/${customerId}/campaigns/${String(config.campaignId).trim()}` : '')
+    ).trim();
     const status = String(config.status || '').trim();
 
     if (!campaignResourceName) throw new Error('Google Ads update_campaign_status requires campaignResourceName');

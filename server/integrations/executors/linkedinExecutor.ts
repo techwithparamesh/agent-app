@@ -53,11 +53,21 @@ export async function executeLinkedInAction(input: LinkedInExecuteInput): Promis
   }
 
   if (actionId === 'create_post') {
-    const authorUrn = String(config.authorUrn || '').trim();
+    let authorUrn = String((config as any).authorUrn || '').trim();
     const text = String(config.text || '').trim();
 
-    if (!authorUrn) throw new Error('LinkedIn create_post requires authorUrn (e.g., urn:li:person:...)');
     if (!text) throw new Error('LinkedIn create_post requires text');
+
+    // UI does not require authorUrn; default to the authenticated user.
+    if (!authorUrn) {
+      const me = await liJson(accessToken, 'https://api.linkedin.com/v2/me');
+      const id = String((me as any)?.id || '').trim();
+      if (!id) throw new Error('LinkedIn /me did not return an id; cannot derive authorUrn');
+      authorUrn = `urn:li:person:${id}`;
+    }
+
+    const visibility = String(config.visibility || 'PUBLIC').toUpperCase();
+    const networkVisibility = visibility === 'CONNECTIONS' ? 'CONNECTIONS' : 'PUBLIC';
 
     const body = {
       author: authorUrn,
@@ -69,7 +79,7 @@ export async function executeLinkedInAction(input: LinkedInExecuteInput): Promis
         },
       },
       visibility: {
-        'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
+        'com.linkedin.ugc.MemberNetworkVisibility': networkVisibility,
       },
     };
 

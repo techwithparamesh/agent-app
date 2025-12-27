@@ -140,5 +140,21 @@ export async function executeTrelloAction(input: TrelloExecuteInput): Promise<an
     return { ok: true, result: data, raw: data };
   }
 
+  if (actionId === 'create_list') {
+    const boardId = String(config.boardId || '').trim();
+    const name = String(config.name || '').trim();
+    if (!boardId) throw new Error('Trello create_list requires boardId');
+    if (!name) throw new Error('Trello create_list requires name');
+
+    const params: any = {
+      idBoard: boardId,
+      name,
+      ...(config.pos ? { pos: String(config.pos) } : {}),
+    };
+
+    const data = await trelloRequestJson('/lists', apiKey, token, 'POST', params);
+    return { ok: true, list: data, raw: data };
+  }
+
   return { status: 'skipped', reason: `Trello action not implemented: ${actionId}` };
 }

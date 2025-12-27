@@ -54,7 +54,6 @@ import {
   PanelRightOpen,
   Keyboard,
   StickyNote,
-  Map,
   Key,
   Pin,
   Layout,
@@ -68,6 +67,7 @@ import { FlowConnections } from "@/components/workspace/FlowConnections";
 import { EnhancedFlowNode } from "@/components/workspace/EnhancedFlowNode";
 import { ConfigPanelV2 } from "@/components/workspace/ConfigPanelV2";
 import { ExecutionPanel } from "@/components/workspace/ExecutionPanel";
+import type { ExecutionRun, StepExecution, ExecutionStatus } from "@/components/workspace/ExecutionPanel";
 import { 
   ContextMenu, 
   buildNodeContextMenu,
@@ -94,10 +94,13 @@ import { CanvasMiniMap } from "@/components/workspace/CanvasMiniMap";
 import { CredentialManager, type Credential } from "@/components/workspace/CredentialManager";
 import { DataPinningPanel, type PinnedData } from "@/components/workspace/DataPinningPanel";
 import { TemplatesGallery, type WorkflowTemplate } from "@/components/workspace/TemplatesGallery";
+import type { CredentialTemplate, CredentialType, CredentialField } from "@/components/workspace/CredentialManager";
 
 // API hooks for backend sync
 import { useCredentialsApi, useWorkflowsApi } from "@/hooks/useWorkflowApi";
 import { useToast } from "@/hooks/use-toast";
+
+import { getAppConfig } from "@/components/workspace/AppConfigurations";
 
 // n8n Schema registry for apps
 import { n8nSchemaRegistry, getAllN8nApps } from "@/components/workspace/n8n-schemas";
@@ -147,7 +150,10 @@ export function EnhancedWorkspace() {
   const [appsPanelCollapsed, setAppsPanelCollapsed] = useState(false);
   const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
+  const [executionRuns, setExecutionRuns] = useState<ExecutionRun[]>([]);
+  const [currentRun, setCurrentRun] = useState<ExecutionRun | null>(null);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   // New panel states
   const [credentialsPanelOpen, setCredentialsPanelOpen] = useState(false);
@@ -159,6 +165,12 @@ export function EnhancedWorkspace() {
   const [n8nModalOpen, setN8nModalOpen] = useState(false);
   const [n8nModalNodeId, setN8nModalNodeId] = useState<string | null>(null);
 
+  // Empty canvas onboarding
+  const [emptyCanvasTriggerOpen, setEmptyCanvasTriggerOpen] = useState(false);
+
+  // Credential deep-linking
+  const [autoOpenCredentialAppId, setAutoOpenCredentialAppId] = useState<string | null>(null);
+
   // Sticky notes state
   const [stickyNotes, setStickyNotes] = useState<StickyNoteData[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -167,6 +179,80 @@ export function EnhancedWorkspace() {
   const { toast } = useToast();
   const credentialsApi = useCredentialsApi();
   const workflowsApi = useWorkflowsApi();
+
+  const credentialTemplates = useMemo<CredentialTemplate[]>(() => {
+    const toCredentialType = (authType: string): CredentialType => {
+      switch (authType) {
+        case 'api-key':
+          return 'api_key';
+        case 'bearer':
+          return 'bearer_token';
+        case 'basic':
+          return 'basic_auth';
+        case 'oauth2':
+          return 'oauth2';
+        case 'custom':
+        default:
+          // Backend does not accept "custom" credentialType; treat as api_key.
+          return 'api_key';
+      }
+    };
+
+    const toCredentialFieldType = (t: any): CredentialField['type'] => {
+      if (t === 'password') return 'password';
+      if (t === 'url') return 'url';
+      if (t === 'email') return 'email';
+      if (t === 'select') return 'select';
+      return 'text';
+    };
+
+    const pickAuthWithFields = (authList: any[]) => {
+      const withFields = (authList || []).filter((a) => Array.isArray(a?.fields) && a.fields.length > 0);
+      if (withFields.length === 0) return null;
+
+      // Prefer templates that include commonly-used secret keys first.
+      const score = (a: any) => {
+        const keys = new Set<string>((a.fields || []).map((f: any) => String(f?.key || '')));
+        const hasToken = keys.has('accessToken') || keys.has('token') || keys.has('botToken');
+        const hasApiKey = keys.has('apiKey') || keys.has('key');
+        const hasUserPass = keys.has('username') && keys.has('password');
+        return (hasToken ? 3 : 0) + (hasApiKey ? 2 : 0) + (hasUserPass ? 1 : 0);
+      };
+
+      return withFields.sort((a, b) => score(b) - score(a))[0];
+    };
+
+    const templates: CredentialTemplate[] = [];
+    for (const app of appCatalog) {
+      const cfg = getAppConfig(app.id);
+      if (!cfg) continue;
+
+      const chosenAuth = pickAuthWithFields(cfg.auth);
+      if (!chosenAuth) continue;
+
+      const fields: CredentialField[] = (chosenAuth.fields || []).map((f: any) => ({
+        key: String(f.key),
+        label: String(f.label || f.key),
+        type: toCredentialFieldType(f.type),
+        placeholder: f.placeholder,
+        required: !!f.required,
+        helpText: f.helpText,
+        options: Array.isArray(f.options)
+          ? f.options.map((o: any) => ({ value: String(o.value), label: String(o.label ?? o.value) }))
+          : undefined,
+      }));
+
+      templates.push({
+        appId: cfg.id,
+        appName: cfg.name,
+        appIcon: cfg.icon,
+        type: toCredentialType(chosenAuth.type),
+        fields,
+        helpUrl: cfg.docsUrl,
+      });
+    }
+    return templates;
+  }, []);
   
   // Current workflow ID (for save/update)
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
@@ -853,6 +939,103 @@ export function EnhancedWorkspace() {
     }
   }, [flowState.nodes, flowName, isActive, currentWorkflowId, workflowsApi, toast]);
 
+  const ensureSavedWorkflowId = useCallback(async (): Promise<string> => {
+    // If already saved, use existing ID.
+    if (currentWorkflowId) return currentWorkflowId;
+
+    // Extract connections from nodes
+    const connections: Array<{ sourceId: string; targetId: string }> = [];
+    flowState.nodes.forEach(node => {
+      node.connections.forEach(targetId => {
+        connections.push({ sourceId: node.id, targetId });
+      });
+    });
+
+    const triggerNode = flowState.nodes.find(n => n.type === 'trigger');
+    const triggerConfig = triggerNode?.config || {};
+
+    const result = await workflowsApi.saveWorkflow({
+      name: flowName,
+      description: '',
+      nodes: flowState.nodes,
+      connections,
+      triggerConfig,
+      isActive,
+    });
+
+    if (!result?.id) {
+      throw new Error('Failed to save workflow before execution');
+    }
+    setCurrentWorkflowId(result.id);
+    return result.id;
+  }, [currentWorkflowId, flowState.nodes, flowName, isActive, workflowsApi]);
+
+  const handleStartExecution = useCallback(async () => {
+    try {
+      const workflowId = await ensureSavedWorkflowId();
+      setExecutionPanelOpen(true);
+
+      const startedAt = Date.now();
+      const exec = await workflowsApi.executeWorkflow(workflowId, {});
+      const endedAt = Date.now();
+
+      if (!exec) {
+        throw new Error('Execution failed');
+      }
+
+      const nodeById = new Map(flowState.nodes.map(n => [n.id, n] as const));
+
+      const toStatus = (s: string): ExecutionStatus => {
+        if (s === 'success') return 'success';
+        if (s === 'error') return 'error';
+        if (s === 'skipped') return 'skipped';
+        return 'pending';
+      };
+
+      const steps: StepExecution[] = (exec as any).nodeExecutions
+        ? (exec as any).nodeExecutions.map((ne: any) => {
+            const node = nodeById.get(String(ne.nodeId));
+            return {
+              nodeId: String(ne.nodeId),
+              nodeName: String(ne.nodeName || node?.name || ne.nodeId),
+              appIcon: String(node?.appIcon || '⚡'),
+              status: toStatus(String(ne.status)),
+              startTime: ne.startedAt ? new Date(ne.startedAt) : undefined,
+              endTime: ne.completedAt ? new Date(ne.completedAt) : undefined,
+              duration:
+                ne.startedAt && ne.completedAt
+                  ? new Date(ne.completedAt).getTime() - new Date(ne.startedAt).getTime()
+                  : undefined,
+              input: ne.inputData || undefined,
+              output: ne.outputData || undefined,
+              error: ne.error || undefined,
+            };
+          })
+        : [];
+
+      const run: ExecutionRun = {
+        id: String((exec as any).executionId || `run_${Date.now()}`),
+        flowId: workflowId,
+        status: String((exec as any).status || 'success') === 'error' ? 'error' : 'success',
+        startTime: new Date(startedAt),
+        endTime: new Date(endedAt),
+        duration: endedAt - startedAt,
+        steps,
+        triggeredBy: 'manual',
+        error: (exec as any).message || undefined,
+      };
+
+      setCurrentRun(run);
+      setExecutionRuns(prev => [run, ...prev].slice(0, 50));
+    } catch (err: any) {
+      toast({
+        title: 'Execution failed',
+        description: err?.message || 'Failed to execute workflow',
+        variant: 'destructive',
+      });
+    }
+  }, [ensureSavedWorkflowId, workflowsApi, flowState.nodes, toast]);
+
   // Handle template import
   const handleImportTemplate = useCallback((template: WorkflowTemplate) => {
     // Clear existing nodes
@@ -1145,6 +1328,18 @@ export function EnhancedWorkspace() {
     }
   }, [flowActions]);
 
+  useEffect(() => {
+    // Deep-link from Integrations “Connect” → open Credentials panel with a chosen app preselected.
+    const shouldOpen = sessionStorage.getItem('workspace_open_credentials');
+    const appId = sessionStorage.getItem('workspace_credentials_appId');
+    if (shouldOpen === '1' && appId) {
+      sessionStorage.removeItem('workspace_open_credentials');
+      sessionStorage.removeItem('workspace_credentials_appId');
+      setAutoOpenCredentialAppId(appId);
+      setCredentialsPanelOpen(true);
+    }
+  }, []);
+
   // ============================================
   // RENDER
   // ============================================
@@ -1159,7 +1354,13 @@ export function EnhancedWorkspace() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation('/dashboard/integrations')}
+              onClick={() => {
+                if (flowState.isDirty) {
+                  setLeaveConfirmOpen(true);
+                  return;
+                }
+                setLocation('/dashboard/integrations');
+              }}
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -1275,6 +1476,16 @@ export function EnhancedWorkspace() {
             >
               <Save className="h-4 w-4" />
               {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={handleStartExecution}
+              disabled={flowState.nodes.length === 0}
+            >
+              <Play className="h-4 w-4" />
+              Execute
             </Button>
 
             <Button
@@ -1423,6 +1634,48 @@ export function EnhancedWorkspace() {
                   />
                 </div>
               ))}
+
+              {/* Empty canvas onboarding */}
+              {flowState.nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-[520px] max-w-[92vw] rounded-xl border bg-background/95 p-8 shadow-sm text-center pointer-events-auto">
+                    <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl">
+                      ⚡
+                    </div>
+                    <h2 className="mt-4 text-xl font-semibold">Start your workflow</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Pick a trigger to create your first step.
+                    </p>
+                    <div className="mt-6 flex flex-col items-center gap-3">
+                      <Button
+                        className="w-full"
+                        onClick={() => setEmptyCanvasTriggerOpen(true)}
+                      >
+                        Add first step
+                      </Button>
+                      <button
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                        onClick={() => setTemplatesGalleryOpen(true)}
+                      >
+                        Or start from a template
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {emptyCanvasTriggerOpen && flowState.nodes.length === 0 && (
+                <EmptyCanvasTriggerSelector
+                  onSelectTrigger={(triggerId) => {
+                    handleEmptyCanvasTriggerSelect(triggerId);
+                    setEmptyCanvasTriggerOpen(false);
+                  }}
+                  onStartFromTemplate={() => {
+                    setEmptyCanvasTriggerOpen(false);
+                    setTemplatesGalleryOpen(true);
+                  }}
+                />
+              )}
             </FlowCanvas>
           </div>
 
@@ -1441,6 +1694,9 @@ export function EnhancedWorkspace() {
           <ExecutionPanel
             isOpen={executionPanelOpen}
             onClose={() => setExecutionPanelOpen(false)}
+            currentRun={currentRun}
+            runs={executionRuns}
+            onStartExecution={handleStartExecution}
             onNodeClick={(nodeId) => {
               flowActions.selectNode(nodeId);
               flowActions.centerOnNode(nodeId);
@@ -1515,12 +1771,45 @@ export function EnhancedWorkspace() {
           </DialogContent>
         </Dialog>
 
+        {/* Leave Confirmation Dialog */}
+        <Dialog open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Leave flow builder?</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm text-muted-foreground">
+              You have unsaved changes. Leaving now will discard them.
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setLeaveConfirmOpen(false)}>
+                Stay
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setLeaveConfirmOpen(false);
+                  setLocation('/dashboard/integrations');
+                }}
+              >
+                Leave
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Credentials Panel */}
-        <Sheet open={credentialsPanelOpen} onOpenChange={setCredentialsPanelOpen}>
+        <Sheet
+          open={credentialsPanelOpen}
+          onOpenChange={(open) => {
+            setCredentialsPanelOpen(open);
+            if (!open) setAutoOpenCredentialAppId(null);
+          }}
+        >
           <SheetContent side="right" className="w-[500px] sm:w-[600px] p-0">
             <CredentialManager
               credentials={credentialsApi.credentials}
-              templates={[]}
+              templates={credentialTemplates}
+              preselectAppId={autoOpenCredentialAppId || undefined}
               onCreateCredential={handleCreateCredential}
               onUpdateCredential={handleUpdateCredential}
               onDeleteCredential={handleDeleteCredential}

@@ -22,6 +22,23 @@ async function slackPost(token: string, method: string, body: any) {
   return data;
 }
 
+async function slackPostMultipart(token: string, method: string, form: FormData) {
+  const res = await fetch(`https://slack.com/api/${method}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+    body: form,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data?.ok === false) {
+    throw new Error(`Slack API error: ${data?.error || res.statusText}`);
+  }
+  return data;
+}
+
 export type SlackExecuteInput = {
   actionId: string;
   config: Record<string, any>;
@@ -100,6 +117,38 @@ export async function executeSlackAction(input: SlackExecuteInput): Promise<any>
 
     const data = await slackPost(botToken, 'chat.update', { channel, ts, text });
     return { ok: true, channel: data.channel, ts: data.ts, message: data.message };
+  }
+
+  if (actionId === 'upload_file') {
+    const channels = Array.isArray(config.channels)
+      ? config.channels.map(String).filter(Boolean).join(',')
+      : String(config.channels || '').trim();
+    const fileUrl = String(config.fileUrl || '').trim();
+    if (!channels) throw new Error('Slack upload_file requires channels');
+    if (!fileUrl) throw new Error('Slack upload_file requires fileUrl');
+
+    const fileRes = await fetch(fileUrl);
+    if (!fileRes.ok) {
+      const text = await fileRes.text().catch(() => '');
+      throw new Error(`Slack upload_file could not fetch fileUrl (${fileRes.status}): ${text || fileRes.statusText}`);
+    }
+
+    const ab = await fileRes.arrayBuffer();
+    const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
+    const blob = new Blob([ab], { type: contentType });
+
+    const filename = String(config.filename || '').trim() || new URL(fileUrl).pathname.split('/').filter(Boolean).pop() || 'file';
+    const title = config.title != null ? String(config.title) : undefined;
+    const initialComment = config.initialComment != null ? String(config.initialComment) : undefined;
+
+    const form = new FormData();
+    form.append('channels', channels);
+    form.append('file', blob, filename);
+    if (title) form.append('title', title);
+    if (initialComment) form.append('initial_comment', initialComment);
+
+    const data = await slackPostMultipart(botToken, 'files.upload', form);
+    return { ok: true, file: data.file, raw: data };
   }
 
   return {

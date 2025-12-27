@@ -1,4 +1,4 @@
-import { useState, useMemo, Component, ErrorInfo, ReactNode } from "react";
+import { useEffect, useState, useMemo, Component, ErrorInfo, ReactNode } from "react";
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -1104,6 +1104,8 @@ function IntegrationsPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState<'my-integrations' | 'browse'>('browse');
+  const [tabInitialized, setTabInitialized] = useState(false);
 
   // Navigate to workspace to create flow with selected app
   const openWorkspace = (integration?: any) => {
@@ -1253,6 +1255,33 @@ function IntegrationsPageContent() {
   const userIntegrations = integrationsData?.integrations || [];
   const agents = agentsData || [];
 
+  const isAppConfigured = useMemo(() => {
+    const configuredTypes = new Set(userIntegrations.map((i) => i.type));
+    return (appId: string) => configuredTypes.has(appId);
+  }, [userIntegrations]);
+
+  const handleBrowsePrimaryAction = (app: any) => {
+    if (!app?.id) return;
+
+    if (isAppConfigured(app.id)) {
+      // “Open in Builder” should open an empty canvas (no auto-added node).
+      sessionStorage.removeItem('workspace_initial_app');
+      setLocation('/dashboard/integrations/workspace');
+      return;
+    }
+
+    // n8n-like: “Connect” should take the user to Credentials and preselect this app.
+    sessionStorage.setItem('workspace_open_credentials', '1');
+    sessionStorage.setItem('workspace_credentials_appId', String(app.id));
+    setLocation('/dashboard/integrations/workspace');
+  };
+
+  useEffect(() => {
+    if (tabInitialized || isLoading) return;
+    setActiveTab(userIntegrations.length > 0 ? 'my-integrations' : 'browse');
+    setTabInitialized(true);
+  }, [isLoading, tabInitialized, userIntegrations.length]);
+
   const getIntegrationInfo = (type: string) => {
     return allIntegrations.find(i => i.id === type);
   };
@@ -1268,7 +1297,7 @@ function IntegrationsPageContent() {
               Integrations
             </h1>
             <p className="text-muted-foreground mt-1">
-              Connect 95 apps and automate your workflows like n8n
+              Connect {allIntegrations.length} apps and automate your workflows like n8n
             </p>
           </div>
           <div className="flex gap-2">
@@ -1276,7 +1305,7 @@ function IntegrationsPageContent() {
               <Plus className="h-5 w-5 mr-2" />
               Quick Setup
             </Button>
-            <Button size="lg" onClick={() => openWorkspace()} className="bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90">
+            <Button size="lg" onClick={() => openWorkspace()}>
               <Layout className="h-5 w-5 mr-2" />
               Open Flow Builder
             </Button>
@@ -1295,58 +1324,58 @@ function IntegrationsPageContent() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200">
+          <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400">Total Integrations</p>
-                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{userIntegrations.length}</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Total integrations</p>
+                  <p className="text-3xl font-semibold">{userIntegrations.length}</p>
                 </div>
-                <Link className="h-8 w-8 text-blue-500" />
+                <Link className="h-8 w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200">
+          <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-600 dark:text-green-400">Active</p>
-                  <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Active</p>
+                  <p className="text-3xl font-semibold">
                     {userIntegrations.filter(i => i.isActive).length}
                   </p>
                 </div>
-                <Power className="h-8 w-8 text-green-500" />
+                <Power className="h-8 w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200">
+          <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-orange-600 dark:text-orange-400">With Errors</p>
-                  <p className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">With errors</p>
+                  <p className="text-3xl font-semibold">
                     {userIntegrations.filter(i => i.errorCount > 0).length}
                   </p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-orange-500" />
+                <AlertCircle className="h-8 w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200">
+          <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-600 dark:text-purple-400">Available Apps</p>
-                  <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{allIntegrations.length}</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Available apps</p>
+                  <p className="text-3xl font-semibold">{allIntegrations.length}</p>
                 </div>
-                <Globe className="h-8 w-8 text-purple-500" />
+                <Globe className="h-8 w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="browse" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="my-integrations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -1495,7 +1524,7 @@ function IntegrationsPageContent() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search 95 integrations..."
+                  placeholder={`Search ${allIntegrations.length} apps...`}
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -1525,16 +1554,19 @@ function IntegrationsPageContent() {
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {popularIntegrations.map((int) => (
-                    <Card
-                      key={int.id}
-                      className="cursor-pointer hover:border-primary hover:shadow-md transition-all group"
-                      onClick={() => openWorkspace(int)}
-                    >
-                      <CardContent className="p-4 text-center">
-                        <div className={`w-12 h-12 rounded-xl mx-auto mb-2 flex items-center justify-center text-2xl ${int.categoryColor}`}>
+                    <Card key={int.id} className="hover:border-primary hover:shadow-md transition-all">
+                      <CardContent className="p-4 text-center space-y-3">
+                        <div className={`w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-2xl ${int.categoryColor}`}>
                           {int.icon}
                         </div>
-                        <p className="font-medium text-sm group-hover:text-primary transition-colors">{int.name}</p>
+                        <p className="font-medium text-sm">{int.name}</p>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleBrowsePrimaryAction(int)}
+                        >
+                          {isAppConfigured(int.id) ? 'Open in Builder' : 'Connect'}
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -1554,21 +1586,28 @@ function IntegrationsPageContent() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {category.integrations.map((int) => (
-                      <Card
-                        key={int.id}
-                        className="cursor-pointer hover:border-primary hover:shadow-md transition-all group"
-                        onClick={() => openWorkspace({ ...int, categoryColor: category.color })}
-                      >
+                      <Card key={int.id} className="hover:border-primary hover:shadow-md transition-all">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${category.color} text-white`}>
                               {int.icon}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium group-hover:text-primary transition-colors">{int.name}</p>
+                              <p className="font-medium">{int.name}</p>
                               <p className="text-xs text-muted-foreground truncate">{int.description}</p>
                             </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleBrowsePrimaryAction({
+                                  ...int,
+                                  categoryLabel: category.label,
+                                  categoryColor: category.color,
+                                })
+                              }
+                            >
+                              {isAppConfigured(int.id) ? 'Open in Builder' : 'Connect'}
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -1587,21 +1626,20 @@ function IntegrationsPageContent() {
                   </div>
                 ) : (
                   filteredIntegrations.map((int) => (
-                    <Card
-                      key={int.id}
-                      className="cursor-pointer hover:border-primary hover:shadow-md transition-all group"
-                      onClick={() => openWorkspace(int)}
-                    >
+                    <Card key={int.id} className="hover:border-primary hover:shadow-md transition-all">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${int.categoryColor} text-white`}>
                             {int.icon}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium group-hover:text-primary transition-colors">{int.name}</p>
+                            <p className="font-medium">{int.name}</p>
                             <p className="text-xs text-muted-foreground truncate">{int.description}</p>
                           </div>
                           <Badge variant="outline" className="text-xs">{int.categoryLabel}</Badge>
+                          <Button size="sm" onClick={() => handleBrowsePrimaryAction(int)}>
+                            {isAppConfigured(int.id) ? 'Open in Builder' : 'Connect'}
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

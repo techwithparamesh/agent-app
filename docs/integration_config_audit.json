@@ -1,0 +1,1018 @@
+{
+  "generatedAt": "2025-12-27T04:33:38.489Z",
+  "findings": [
+    {
+      "appId": "whatsapp",
+      "appName": "WhatsApp Business",
+      "executorFile": "server/integrations/executors/whatsappExecutor.ts",
+      "actionId": "send_message",
+      "actionName": "Send Message",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "to"
+      ],
+      "backendKeys": [
+        "message",
+        "previewUrl"
+      ],
+      "uiKeys": [
+        "message",
+        "previewUrl",
+        "to"
+      ]
+    },
+    {
+      "appId": "whatsapp",
+      "appName": "WhatsApp Business",
+      "executorFile": "server/integrations/executors/whatsappExecutor.ts",
+      "actionId": "send_template",
+      "actionName": "Send Template Message",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "to"
+      ],
+      "backendKeys": [
+        "templateLanguage",
+        "templateName",
+        "templateParams"
+      ],
+      "uiKeys": [
+        "templateLanguage",
+        "templateName",
+        "templateParams",
+        "to"
+      ]
+    },
+    {
+      "appId": "whatsapp",
+      "appName": "WhatsApp Business",
+      "executorFile": "server/integrations/executors/whatsappExecutor.ts",
+      "actionId": "send_media",
+      "actionName": "Send Media",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "to"
+      ],
+      "backendKeys": [
+        "caption",
+        "filename",
+        "mediaType",
+        "mediaUrl"
+      ],
+      "uiKeys": [
+        "caption",
+        "filename",
+        "mediaType",
+        "mediaUrl",
+        "to"
+      ]
+    },
+    {
+      "appId": "whatsapp",
+      "appName": "WhatsApp Business",
+      "executorFile": "server/integrations/executors/whatsappExecutor.ts",
+      "actionId": "send_interactive",
+      "actionName": "Send Interactive Message",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "to"
+      ],
+      "backendKeys": [
+        "bodyText",
+        "buttons",
+        "footerText",
+        "headerText",
+        "interactiveType"
+      ],
+      "uiKeys": [
+        "bodyText",
+        "buttons",
+        "footerText",
+        "headerText",
+        "interactiveType",
+        "to"
+      ]
+    },
+    {
+      "appId": "telegram",
+      "appName": "Telegram",
+      "executorFile": "server/integrations/executors/telegramExecutor.ts",
+      "actionId": "send_document",
+      "actionName": "Send Document",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "filename"
+      ],
+      "backendKeys": [
+        "caption",
+        "chatId",
+        "document"
+      ],
+      "uiKeys": [
+        "caption",
+        "chatId",
+        "document",
+        "filename"
+      ]
+    },
+    {
+      "appId": "gmail",
+      "appName": "Gmail",
+      "executorFile": "server/integrations/executors/gmailExecutor.ts",
+      "actionId": "reply_email",
+      "actionName": "Reply to Email",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "replyAll"
+      ],
+      "backendKeys": [
+        "body",
+        "threadId"
+      ],
+      "uiKeys": [
+        "body",
+        "replyAll",
+        "threadId"
+      ]
+    },
+    {
+      "appId": "google_calendar",
+      "appName": "Google Calendar",
+      "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
+      "actionId": "create_event",
+      "actionName": "Create Event",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "calendarId"
+      ],
+      "backendKeys": [
+        "attendees",
+        "conferenceData",
+        "description",
+        "endDateTime",
+        "location",
+        "sendUpdates",
+        "startDateTime",
+        "summary"
+      ],
+      "uiKeys": [
+        "attendees",
+        "calendarId",
+        "conferenceData",
+        "description",
+        "endDateTime",
+        "location",
+        "sendUpdates",
+        "startDateTime",
+        "summary"
+      ]
+    },
+    {
+      "appId": "google_calendar",
+      "appName": "Google Calendar",
+      "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
+      "actionId": "update_event",
+      "actionName": "Update Event",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "calendarId"
+      ],
+      "backendKeys": [
+        "description",
+        "endDateTime",
+        "eventId",
+        "startDateTime",
+        "summary"
+      ],
+      "uiKeys": [
+        "calendarId",
+        "description",
+        "endDateTime",
+        "eventId",
+        "startDateTime",
+        "summary"
+      ]
+    },
+    {
+      "appId": "google_calendar",
+      "appName": "Google Calendar",
+      "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
+      "actionId": "delete_event",
+      "actionName": "Delete Event",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "calendarId"
+      ],
+      "backendKeys": [
+        "eventId",
+        "sendUpdates"
+      ],
+      "uiKeys": [
+        "calendarId",
+        "eventId",
+        "sendUpdates"
+      ]
+    },
+    {
+      "appId": "google_calendar",
+      "appName": "Google Calendar",
+      "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
+      "actionId": "get_events",
+      "actionName": "Get Events",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "calendarId"
+      ],
+      "backendKeys": [
+        "maxResults",
+        "searchQuery",
+        "timeMax",
+        "timeMin"
+      ],
+      "uiKeys": [
+        "calendarId",
+        "maxResults",
+        "searchQuery",
+        "timeMax",
+        "timeMin"
+      ]
+    },
+    {
+      "appId": "google_calendar",
+      "appName": "Google Calendar",
+      "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
+      "actionId": "quick_add",
+      "actionName": "Quick Add Event",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "calendarId"
+      ],
+      "backendKeys": [
+        "text"
+      ],
+      "uiKeys": [
+        "calendarId",
+        "text"
+      ]
+    },
+    {
+      "appId": "hubspot",
+      "appName": "HubSpot",
+      "executorFile": "server/integrations/executors/hubspotExecutor.ts",
+      "actionId": "create_deal",
+      "actionName": "Create Deal",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "associatedCompanyIds",
+        "associatedContactIds"
+      ],
+      "backendKeys": [
+        "amount",
+        "closedate",
+        "dealname",
+        "dealstage",
+        "pipeline"
+      ],
+      "uiKeys": [
+        "amount",
+        "associatedCompanyIds",
+        "associatedContactIds",
+        "closedate",
+        "dealname",
+        "dealstage",
+        "pipeline"
+      ]
+    },
+    {
+      "appId": "airtable",
+      "appName": "Airtable",
+      "executorFile": "server/integrations/executors/airtableExecutor.ts",
+      "actionId": "create_record",
+      "actionName": "Create Record",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "baseId",
+        "tableId"
+      ],
+      "backendKeys": [
+        "fields"
+      ],
+      "uiKeys": [
+        "baseId",
+        "fields",
+        "tableId"
+      ]
+    },
+    {
+      "appId": "airtable",
+      "appName": "Airtable",
+      "executorFile": "server/integrations/executors/airtableExecutor.ts",
+      "actionId": "update_record",
+      "actionName": "Update Record",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "baseId",
+        "tableId"
+      ],
+      "backendKeys": [
+        "fields",
+        "recordId"
+      ],
+      "uiKeys": [
+        "baseId",
+        "fields",
+        "recordId",
+        "tableId"
+      ]
+    },
+    {
+      "appId": "airtable",
+      "appName": "Airtable",
+      "executorFile": "server/integrations/executors/airtableExecutor.ts",
+      "actionId": "get_record",
+      "actionName": "Get Record",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "baseId",
+        "tableId"
+      ],
+      "backendKeys": [
+        "recordId"
+      ],
+      "uiKeys": [
+        "baseId",
+        "recordId",
+        "tableId"
+      ]
+    },
+    {
+      "appId": "airtable",
+      "appName": "Airtable",
+      "executorFile": "server/integrations/executors/airtableExecutor.ts",
+      "actionId": "list_records",
+      "actionName": "List Records",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "baseId",
+        "tableId"
+      ],
+      "backendKeys": [
+        "filterByFormula",
+        "maxRecords",
+        "sort",
+        "viewId"
+      ],
+      "uiKeys": [
+        "baseId",
+        "filterByFormula",
+        "maxRecords",
+        "sort",
+        "tableId",
+        "viewId"
+      ]
+    },
+    {
+      "appId": "airtable",
+      "appName": "Airtable",
+      "executorFile": "server/integrations/executors/airtableExecutor.ts",
+      "actionId": "delete_record",
+      "actionName": "Delete Record",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "baseId",
+        "tableId"
+      ],
+      "backendKeys": [
+        "recordId"
+      ],
+      "uiKeys": [
+        "baseId",
+        "recordId",
+        "tableId"
+      ]
+    },
+    {
+      "appId": "shopify",
+      "appName": "Shopify",
+      "executorFile": "server/integrations/executors/shopifyExecutor.ts",
+      "actionId": "create_customer",
+      "actionName": "Create Customer",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "addresses"
+      ],
+      "backendKeys": [
+        "acceptsMarketing",
+        "email",
+        "firstName",
+        "lastName",
+        "note",
+        "phone",
+        "tags"
+      ],
+      "uiKeys": [
+        "acceptsMarketing",
+        "addresses",
+        "email",
+        "firstName",
+        "lastName",
+        "note",
+        "phone",
+        "tags"
+      ]
+    },
+    {
+      "appId": "trello",
+      "appName": "Trello",
+      "executorFile": "server/integrations/executors/trelloExecutor.ts",
+      "actionId": "create_card",
+      "actionName": "Create Card",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "boardId"
+      ],
+      "backendKeys": [
+        "desc",
+        "due",
+        "labels",
+        "listId",
+        "members",
+        "name",
+        "pos"
+      ],
+      "uiKeys": [
+        "boardId",
+        "desc",
+        "due",
+        "labels",
+        "listId",
+        "members",
+        "name",
+        "pos"
+      ]
+    },
+    {
+      "appId": "trello",
+      "appName": "Trello",
+      "executorFile": "server/integrations/executors/trelloExecutor.ts",
+      "actionId": "update_card",
+      "actionName": "Update Card",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "boardId",
+        "listId"
+      ],
+      "backendKeys": [
+        "cardId",
+        "closed",
+        "desc",
+        "due",
+        "dueComplete",
+        "name"
+      ],
+      "uiKeys": [
+        "boardId",
+        "cardId",
+        "closed",
+        "desc",
+        "due",
+        "dueComplete",
+        "listId",
+        "name"
+      ]
+    },
+    {
+      "appId": "trello",
+      "appName": "Trello",
+      "executorFile": "server/integrations/executors/trelloExecutor.ts",
+      "actionId": "move_card",
+      "actionName": "Move Card",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "boardId",
+        "listId"
+      ],
+      "backendKeys": [
+        "cardId",
+        "pos",
+        "targetListId"
+      ],
+      "uiKeys": [
+        "boardId",
+        "cardId",
+        "listId",
+        "pos",
+        "targetListId"
+      ]
+    },
+    {
+      "appId": "trello",
+      "appName": "Trello",
+      "executorFile": "server/integrations/executors/trelloExecutor.ts",
+      "actionId": "add_comment",
+      "actionName": "Add Comment",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "boardId",
+        "listId"
+      ],
+      "backendKeys": [
+        "cardId",
+        "text"
+      ],
+      "uiKeys": [
+        "boardId",
+        "cardId",
+        "listId",
+        "text"
+      ]
+    },
+    {
+      "appId": "trello",
+      "appName": "Trello",
+      "executorFile": "server/integrations/executors/trelloExecutor.ts",
+      "actionId": "add_member",
+      "actionName": "Add Member",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "boardId",
+        "listId"
+      ],
+      "backendKeys": [
+        "cardId",
+        "memberId"
+      ],
+      "uiKeys": [
+        "boardId",
+        "cardId",
+        "listId",
+        "memberId"
+      ]
+    },
+    {
+      "appId": "asana",
+      "appName": "Asana",
+      "executorFile": "server/integrations/executors/asanaExecutor.ts",
+      "actionId": "update_task",
+      "actionName": "Update Task",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "projectId",
+        "workspaceId"
+      ],
+      "backendKeys": [
+        "assignee",
+        "completed",
+        "dueOn",
+        "name",
+        "notes",
+        "taskId"
+      ],
+      "uiKeys": [
+        "assignee",
+        "completed",
+        "dueOn",
+        "name",
+        "notes",
+        "projectId",
+        "taskId",
+        "workspaceId"
+      ]
+    },
+    {
+      "appId": "asana",
+      "appName": "Asana",
+      "executorFile": "server/integrations/executors/asanaExecutor.ts",
+      "actionId": "complete_task",
+      "actionName": "Complete Task",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "projectId",
+        "workspaceId"
+      ],
+      "backendKeys": [
+        "taskId"
+      ],
+      "uiKeys": [
+        "projectId",
+        "taskId",
+        "workspaceId"
+      ]
+    },
+    {
+      "appId": "asana",
+      "appName": "Asana",
+      "executorFile": "server/integrations/executors/asanaExecutor.ts",
+      "actionId": "add_comment",
+      "actionName": "Add Comment",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "projectId",
+        "workspaceId"
+      ],
+      "backendKeys": [
+        "taskId",
+        "text"
+      ],
+      "uiKeys": [
+        "projectId",
+        "taskId",
+        "text",
+        "workspaceId"
+      ]
+    },
+    {
+      "appId": "asana",
+      "appName": "Asana",
+      "executorFile": "server/integrations/executors/asanaExecutor.ts",
+      "actionId": "create_subtask",
+      "actionName": "Create Subtask",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "projectId",
+        "workspaceId"
+      ],
+      "backendKeys": [
+        "name",
+        "notes",
+        "parentTaskId"
+      ],
+      "uiKeys": [
+        "name",
+        "notes",
+        "parentTaskId",
+        "projectId",
+        "workspaceId"
+      ]
+    },
+    {
+      "appId": "monday",
+      "appName": "Monday.com",
+      "executorFile": "server/integrations/executors/mondayExecutor.ts",
+      "actionId": "move_item",
+      "actionName": "Move Item to Group",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "boardId"
+      ],
+      "backendKeys": [
+        "groupId",
+        "itemId"
+      ],
+      "uiKeys": [
+        "boardId",
+        "groupId",
+        "itemId"
+      ]
+    },
+    {
+      "appId": "clickup",
+      "appName": "ClickUp",
+      "executorFile": "server/integrations/executors/clickupExecutor.ts",
+      "actionId": "create_task",
+      "actionName": "Create Task",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "folderId",
+        "spaceId",
+        "teamId"
+      ],
+      "backendKeys": [
+        "assignees",
+        "description",
+        "dueDate",
+        "listId",
+        "name",
+        "priority",
+        "status",
+        "tags"
+      ],
+      "uiKeys": [
+        "assignees",
+        "description",
+        "dueDate",
+        "folderId",
+        "listId",
+        "name",
+        "priority",
+        "spaceId",
+        "status",
+        "tags",
+        "teamId"
+      ]
+    },
+    {
+      "appId": "linear",
+      "appName": "Linear",
+      "executorFile": "server/integrations/executors/linearExecutor.ts",
+      "actionId": "update_issue",
+      "actionName": "Update Issue",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "teamId"
+      ],
+      "backendKeys": [
+        "assigneeId",
+        "description",
+        "issueId",
+        "priority",
+        "stateId",
+        "title"
+      ],
+      "uiKeys": [
+        "assigneeId",
+        "description",
+        "issueId",
+        "priority",
+        "stateId",
+        "teamId",
+        "title"
+      ]
+    },
+    {
+      "appId": "openai",
+      "appName": "OpenAI",
+      "executorFile": "server/integrations/executors/openaiExecutor.ts",
+      "actionId": "transcribe_audio",
+      "actionName": "Transcribe Audio",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "file",
+        "language",
+        "model",
+        "prompt"
+      ],
+      "backendKeys": [],
+      "uiKeys": [
+        "file",
+        "language",
+        "model",
+        "prompt"
+      ]
+    },
+    {
+      "appId": "google_analytics",
+      "appName": "Google Analytics",
+      "executorFile": "server/integrations/executors/googleAnalyticsExecutor.ts",
+      "actionId": "run_report",
+      "actionName": "Run Report",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "dateRange",
+        "endDate",
+        "startDate"
+      ],
+      "backendKeys": [
+        "dimensions",
+        "metrics",
+        "propertyId"
+      ],
+      "uiKeys": [
+        "dateRange",
+        "dimensions",
+        "endDate",
+        "metrics",
+        "propertyId",
+        "startDate"
+      ]
+    },
+    {
+      "appId": "facebook_ads",
+      "appName": "Facebook Ads",
+      "executorFile": "server/integrations/executors/facebookAdsExecutor.ts",
+      "actionId": "get_campaigns",
+      "actionName": "Get Campaigns",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "status"
+      ],
+      "backendKeys": [
+        "accountId",
+        "limit"
+      ],
+      "uiKeys": [
+        "accountId",
+        "limit",
+        "status"
+      ]
+    },
+    {
+      "appId": "facebook_ads",
+      "appName": "Facebook Ads",
+      "executorFile": "server/integrations/executors/facebookAdsExecutor.ts",
+      "actionId": "update_campaign",
+      "actionName": "Update Campaign",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "accountId",
+        "dailyBudget"
+      ],
+      "backendKeys": [
+        "campaignId",
+        "name",
+        "status"
+      ],
+      "uiKeys": [
+        "accountId",
+        "campaignId",
+        "dailyBudget",
+        "name",
+        "status"
+      ]
+    },
+    {
+      "appId": "google_ads",
+      "appName": "Google Ads",
+      "executorFile": "server/integrations/executors/googleAdsExecutor.ts",
+      "actionId": "get_campaigns",
+      "actionName": "Get Campaigns",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "customerId",
+        "status"
+      ],
+      "backendKeys": [
+        "limit"
+      ],
+      "uiKeys": [
+        "customerId",
+        "limit",
+        "status"
+      ]
+    },
+    {
+      "appId": "google_ads",
+      "appName": "Google Ads",
+      "executorFile": "server/integrations/executors/googleAdsExecutor.ts",
+      "actionId": "get_report",
+      "actionName": "Get Report",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "customerId",
+        "dateRange",
+        "metrics",
+        "reportType"
+      ],
+      "backendKeys": [],
+      "uiKeys": [
+        "customerId",
+        "dateRange",
+        "metrics",
+        "reportType"
+      ]
+    },
+    {
+      "appId": "google_ads",
+      "appName": "Google Ads",
+      "executorFile": "server/integrations/executors/googleAdsExecutor.ts",
+      "actionId": "update_campaign_budget",
+      "actionName": "Update Campaign Budget",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "customerId"
+      ],
+      "backendKeys": [
+        "budgetAmountMicros",
+        "campaignId"
+      ],
+      "uiKeys": [
+        "budgetAmountMicros",
+        "campaignId",
+        "customerId"
+      ]
+    },
+    {
+      "appId": "google_ads",
+      "appName": "Google Ads",
+      "executorFile": "server/integrations/executors/googleAdsExecutor.ts",
+      "actionId": "update_campaign_status",
+      "actionName": "Update Campaign Status",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "customerId"
+      ],
+      "backendKeys": [
+        "campaignId",
+        "status"
+      ],
+      "uiKeys": [
+        "campaignId",
+        "customerId",
+        "status"
+      ]
+    },
+    {
+      "appId": "linkedin",
+      "appName": "LinkedIn",
+      "executorFile": "server/integrations/executors/linkedinExecutor.ts",
+      "actionId": "create_post",
+      "actionName": "Create Post",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "articleUrl",
+        "mediaUrl"
+      ],
+      "backendKeys": [
+        "text",
+        "visibility"
+      ],
+      "uiKeys": [
+        "articleUrl",
+        "mediaUrl",
+        "text",
+        "visibility"
+      ]
+    },
+    {
+      "appId": "linkedin",
+      "appName": "LinkedIn",
+      "executorFile": "server/integrations/executors/linkedinExecutor.ts",
+      "actionId": "get_profile",
+      "actionName": "Get Profile",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "personUrn",
+        "projection"
+      ],
+      "backendKeys": [],
+      "uiKeys": [
+        "personUrn",
+        "projection"
+      ]
+    },
+    {
+      "appId": "linkedin",
+      "appName": "LinkedIn",
+      "executorFile": "server/integrations/executors/linkedinExecutor.ts",
+      "actionId": "get_connections",
+      "actionName": "Get Connections",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "personUrn"
+      ],
+      "backendKeys": [],
+      "uiKeys": [
+        "personUrn"
+      ]
+    },
+    {
+      "appId": "linkedin",
+      "appName": "LinkedIn",
+      "executorFile": "server/integrations/executors/linkedinExecutor.ts",
+      "actionId": "send_message",
+      "actionName": "Send Message",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "body",
+        "recipientUrn",
+        "subject"
+      ],
+      "backendKeys": [],
+      "uiKeys": [
+        "body",
+        "recipientUrn",
+        "subject"
+      ]
+    },
+    {
+      "appId": "zendesk",
+      "appName": "Zendesk",
+      "executorFile": "server/integrations/executors/zendeskExecutor.ts",
+      "actionId": "search_tickets",
+      "actionName": "Search Tickets",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "sortBy",
+        "sortOrder"
+      ],
+      "backendKeys": [
+        "query"
+      ],
+      "uiKeys": [
+        "query",
+        "sortBy",
+        "sortOrder"
+      ]
+    },
+    {
+      "appId": "twitter",
+      "appName": "Twitter / X",
+      "executorFile": "server/integrations/executors/twitterExecutor.ts",
+      "actionId": "get_profile",
+      "actionName": "Get Profile",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "lookupBy"
+      ],
+      "backendKeys": [
+        "userId",
+        "username"
+      ],
+      "uiKeys": [
+        "lookupBy",
+        "userId",
+        "username"
+      ]
+    }
+  ]
+}

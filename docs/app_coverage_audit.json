@@ -1,0 +1,1862 @@
+{
+  "generatedAt": "2025-12-27T04:33:28.361Z",
+  "summary": {
+    "apps": 107,
+    "appsWithExecutorFile": 107,
+    "appsMissingExecutorFile": 0,
+    "appsWithAnyExecutorActionsDetected": 105,
+    "appsFullyImplementedActions": 105,
+    "appsPartiallyImplementedActions": 0,
+    "appsWithNoUiActions": 2
+  },
+  "rows": [
+    {
+      "appId": "whatsapp",
+      "appName": "WhatsApp Business",
+      "executorFile": "server/integrations/executors/whatsappExecutor.ts",
+      "uiActionIds": [
+        "mark_read",
+        "send_interactive",
+        "send_media",
+        "send_message",
+        "send_template"
+      ],
+      "executorActionIds": [
+        "mark_read",
+        "send_interactive",
+        "send_media",
+        "send_message",
+        "send_template"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "telegram",
+      "appName": "Telegram",
+      "executorFile": "server/integrations/executors/telegramExecutor.ts",
+      "uiActionIds": [
+        "delete_message",
+        "edit_message",
+        "send_buttons",
+        "send_document",
+        "send_message",
+        "send_photo"
+      ],
+      "executorActionIds": [
+        "delete_message",
+        "edit_message",
+        "send_buttons",
+        "send_document",
+        "send_message",
+        "send_photo"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "slack",
+      "appName": "Slack",
+      "executorFile": "server/integrations/executors/slackExecutor.ts",
+      "uiActionIds": [
+        "add_reaction",
+        "send_blocks",
+        "send_dm",
+        "send_message",
+        "update_message",
+        "upload_file"
+      ],
+      "executorActionIds": [
+        "add_reaction",
+        "send_blocks",
+        "send_dm",
+        "send_message",
+        "update_message",
+        "upload_file"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "discord",
+      "appName": "Discord",
+      "executorFile": "server/integrations/executors/discordExecutor.ts",
+      "uiActionIds": [
+        "send_embed",
+        "send_message",
+        "webhook_send"
+      ],
+      "executorActionIds": [
+        "send_embed",
+        "send_message",
+        "webhook_send"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "microsoft_teams",
+      "appName": "Microsoft Teams",
+      "executorFile": "server/integrations/executors/microsoftTeamsExecutor.ts",
+      "uiActionIds": [
+        "send_card",
+        "send_message",
+        "webhook_send"
+      ],
+      "executorActionIds": [
+        "send_card",
+        "send_message",
+        "webhook_send"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "twilio_sms",
+      "appName": "Twilio SMS",
+      "executorFile": "server/integrations/executors/twilioSmsExecutor.ts",
+      "uiActionIds": [
+        "lookup",
+        "send_sms"
+      ],
+      "executorActionIds": [
+        "lookup",
+        "send_sms"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "gmail",
+      "appName": "Gmail",
+      "executorFile": "server/integrations/executors/gmailExecutor.ts",
+      "uiActionIds": [
+        "add_label",
+        "create_draft",
+        "mark_read",
+        "reply_email",
+        "send_email"
+      ],
+      "executorActionIds": [
+        "add_label",
+        "create_draft",
+        "mark_read",
+        "reply_email",
+        "send_email"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "outlook",
+      "appName": "Outlook",
+      "executorFile": "server/integrations/executors/outlookExecutor.ts",
+      "uiActionIds": [
+        "forward_email",
+        "move_email",
+        "reply_email",
+        "send_email"
+      ],
+      "executorActionIds": [
+        "forward_email",
+        "move_email",
+        "reply_email",
+        "send_email"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "sendgrid",
+      "appName": "SendGrid",
+      "executorFile": "server/integrations/executors/sendgridExecutor.ts",
+      "uiActionIds": [
+        "add_contact",
+        "send_email",
+        "send_template"
+      ],
+      "executorActionIds": [
+        "add_contact",
+        "send_email",
+        "send_template"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "mailchimp",
+      "appName": "Mailchimp",
+      "executorFile": "server/integrations/executors/mailchimpExecutor.ts",
+      "uiActionIds": [
+        "add_subscriber",
+        "add_tag",
+        "create_campaign",
+        "remove_subscriber"
+      ],
+      "executorActionIds": [
+        "add_subscriber",
+        "add_tag",
+        "create_campaign",
+        "remove_subscriber"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "smtp",
+      "appName": "SMTP",
+      "executorFile": "server/integrations/executors/smtpExecutor.ts",
+      "uiActionIds": [
+        "send_email"
+      ],
+      "executorActionIds": [
+        "send_email"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "uiActionIds": [
+        "append_row",
+        "clear_range",
+        "delete_row",
+        "find_row",
+        "get_rows",
+        "update_row"
+      ],
+      "executorActionIds": [
+        "append_row",
+        "clear_range",
+        "delete_row",
+        "find_row",
+        "get_rows",
+        "update_row"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "uiActionIds": [
+        "copy_file",
+        "create_folder",
+        "delete_file",
+        "get_file",
+        "move_file",
+        "share_file",
+        "upload_file"
+      ],
+      "executorActionIds": [
+        "copy_file",
+        "create_folder",
+        "delete_file",
+        "get_file",
+        "move_file",
+        "share_file",
+        "upload_file"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_calendar",
+      "appName": "Google Calendar",
+      "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
+      "uiActionIds": [
+        "create_event",
+        "delete_event",
+        "get_events",
+        "quick_add",
+        "update_event"
+      ],
+      "executorActionIds": [
+        "create_event",
+        "delete_event",
+        "get_events",
+        "quick_add",
+        "update_event"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_docs",
+      "appName": "Google Docs",
+      "executorFile": "server/integrations/executors/googleDocsExecutor.ts",
+      "uiActionIds": [
+        "append_text",
+        "create_document",
+        "create_from_template",
+        "get_content",
+        "replace_text"
+      ],
+      "executorActionIds": [
+        "append_text",
+        "create_document",
+        "create_from_template",
+        "get_content",
+        "replace_text"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_forms",
+      "appName": "Google Forms",
+      "executorFile": "server/integrations/executors/googleFormsExecutor.ts",
+      "uiActionIds": [
+        "get_form",
+        "get_responses"
+      ],
+      "executorActionIds": [
+        "get_form",
+        "get_responses"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "hubspot",
+      "appName": "HubSpot",
+      "executorFile": "server/integrations/executors/hubspotExecutor.ts",
+      "uiActionIds": [
+        "add_note",
+        "create_company",
+        "create_contact",
+        "create_deal",
+        "get_contact",
+        "update_contact",
+        "update_deal"
+      ],
+      "executorActionIds": [
+        "add_note",
+        "create_company",
+        "create_contact",
+        "create_deal",
+        "get_contact",
+        "update_contact",
+        "update_deal"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "salesforce",
+      "appName": "Salesforce",
+      "executorFile": "server/integrations/executors/salesforceExecutor.ts",
+      "uiActionIds": [
+        "create_record",
+        "delete_record",
+        "get_record",
+        "query",
+        "update_record"
+      ],
+      "executorActionIds": [
+        "create_record",
+        "delete_record",
+        "get_record",
+        "query",
+        "update_record"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "pipedrive",
+      "appName": "Pipedrive",
+      "executorFile": "server/integrations/executors/pipedriveExecutor.ts",
+      "uiActionIds": [
+        "add_note",
+        "create_activity",
+        "create_deal",
+        "create_person",
+        "update_deal"
+      ],
+      "executorActionIds": [
+        "add_note",
+        "create_activity",
+        "create_deal",
+        "create_person",
+        "update_deal"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "zoho_crm",
+      "appName": "Zoho CRM",
+      "executorFile": "server/integrations/executors/zohoCrmExecutor.ts",
+      "uiActionIds": [
+        "create_record",
+        "search_records",
+        "update_record"
+      ],
+      "executorActionIds": [
+        "create_record",
+        "search_records",
+        "update_record"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "freshsales",
+      "appName": "Freshsales",
+      "executorFile": "server/integrations/executors/freshsalesExecutor.ts",
+      "uiActionIds": [
+        "add_note",
+        "create_contact",
+        "create_deal",
+        "create_lead"
+      ],
+      "executorActionIds": [
+        "add_note",
+        "create_contact",
+        "create_deal",
+        "create_lead"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "zapier",
+      "appName": "Zapier",
+      "executorFile": "server/integrations/executors/zapierExecutor.ts",
+      "uiActionIds": [
+        "send_webhook"
+      ],
+      "executorActionIds": [
+        "send_webhook"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "make",
+      "appName": "Make (Integromat)",
+      "executorFile": "server/integrations/executors/makeExecutor.ts",
+      "uiActionIds": [
+        "send_webhook"
+      ],
+      "executorActionIds": [
+        "send_webhook"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "n8n",
+      "appName": "n8n",
+      "executorFile": "server/integrations/executors/n8nExecutor.ts",
+      "uiActionIds": [
+        "send_webhook"
+      ],
+      "executorActionIds": [
+        "send_webhook"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "power_automate",
+      "appName": "Power Automate",
+      "executorFile": "server/integrations/executors/powerAutomateExecutor.ts",
+      "uiActionIds": [
+        "trigger_flow"
+      ],
+      "executorActionIds": [
+        "trigger_flow"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "airtable",
+      "appName": "Airtable",
+      "executorFile": "server/integrations/executors/airtableExecutor.ts",
+      "uiActionIds": [
+        "create_record",
+        "delete_record",
+        "get_record",
+        "list_records",
+        "update_record"
+      ],
+      "executorActionIds": [
+        "create_record",
+        "delete_record",
+        "get_record",
+        "list_records",
+        "update_record"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "notion",
+      "appName": "Notion",
+      "executorFile": "server/integrations/executors/notionExecutor.ts",
+      "uiActionIds": [
+        "append_block",
+        "create_page",
+        "get_page",
+        "query_database",
+        "update_page"
+      ],
+      "executorActionIds": [
+        "append_block",
+        "create_page",
+        "get_page",
+        "query_database",
+        "update_page"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "firebase",
+      "appName": "Firebase",
+      "executorFile": "server/integrations/executors/firebaseExecutor.ts",
+      "uiActionIds": [
+        "create_document",
+        "delete_document",
+        "get_document",
+        "query_collection",
+        "update_document"
+      ],
+      "executorActionIds": [
+        "create_document",
+        "delete_document",
+        "get_document",
+        "query_collection",
+        "update_document"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "supabase",
+      "appName": "Supabase",
+      "executorFile": "server/integrations/executors/supabaseExecutor.ts",
+      "uiActionIds": [
+        "delete_rows",
+        "insert_row",
+        "rpc",
+        "select_rows",
+        "update_rows"
+      ],
+      "executorActionIds": [
+        "delete_rows",
+        "insert_row",
+        "rpc",
+        "select_rows",
+        "update_rows"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "mongodb",
+      "appName": "MongoDB",
+      "executorFile": "server/integrations/executors/mongodbExecutor.ts",
+      "uiActionIds": [
+        "aggregate",
+        "delete_documents",
+        "find_documents",
+        "insert_document",
+        "update_document"
+      ],
+      "executorActionIds": [
+        "aggregate",
+        "delete_documents",
+        "find_documents",
+        "insert_document",
+        "update_document"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "aws_s3",
+      "appName": "AWS S3",
+      "executorFile": "server/integrations/executors/awsS3Executor.ts",
+      "uiActionIds": [
+        "copy_object",
+        "delete_object",
+        "generate_presigned_url",
+        "get_object",
+        "list_objects",
+        "upload_file"
+      ],
+      "executorActionIds": [
+        "copy_object",
+        "delete_object",
+        "generate_presigned_url",
+        "get_object",
+        "list_objects",
+        "upload_file"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "dropbox",
+      "appName": "Dropbox",
+      "executorFile": "server/integrations/executors/dropboxExecutor.ts",
+      "uiActionIds": [
+        "create_folder",
+        "create_shared_link",
+        "delete_file",
+        "download_file",
+        "list_folder",
+        "move_file",
+        "upload_file"
+      ],
+      "executorActionIds": [
+        "create_folder",
+        "create_shared_link",
+        "delete_file",
+        "download_file",
+        "list_folder",
+        "move_file",
+        "upload_file"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "uiActionIds": [
+        "cancel_subscription",
+        "create_customer",
+        "create_invoice",
+        "create_payment_intent",
+        "create_subscription",
+        "get_customer",
+        "refund_payment"
+      ],
+      "executorActionIds": [
+        "cancel_subscription",
+        "create_customer",
+        "create_invoice",
+        "create_payment_intent",
+        "create_subscription",
+        "get_customer",
+        "refund_payment"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "razorpay",
+      "appName": "Razorpay",
+      "executorFile": "server/integrations/executors/razorpayExecutor.ts",
+      "uiActionIds": [
+        "capture_payment",
+        "create_customer",
+        "create_order",
+        "create_refund",
+        "get_payment"
+      ],
+      "executorActionIds": [
+        "capture_payment",
+        "create_customer",
+        "create_order",
+        "create_refund",
+        "get_payment"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "shopify",
+      "appName": "Shopify",
+      "executorFile": "server/integrations/executors/shopifyExecutor.ts",
+      "uiActionIds": [
+        "create_customer",
+        "create_order",
+        "create_product",
+        "fulfill_order",
+        "get_order",
+        "update_inventory",
+        "update_order",
+        "update_product"
+      ],
+      "executorActionIds": [
+        "create_customer",
+        "create_order",
+        "create_product",
+        "fulfill_order",
+        "get_order",
+        "update_inventory",
+        "update_order",
+        "update_product"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "woocommerce",
+      "appName": "WooCommerce",
+      "executorFile": "server/integrations/executors/woocommerceExecutor.ts",
+      "uiActionIds": [
+        "create_customer",
+        "create_order",
+        "create_product",
+        "get_order",
+        "update_order",
+        "update_stock"
+      ],
+      "executorActionIds": [
+        "create_customer",
+        "create_order",
+        "create_product",
+        "get_order",
+        "update_order",
+        "update_stock"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "paypal",
+      "appName": "PayPal",
+      "executorFile": "server/integrations/executors/paypalExecutor.ts",
+      "uiActionIds": [
+        "capture_order",
+        "create_order",
+        "create_payout",
+        "get_order",
+        "refund_capture"
+      ],
+      "executorActionIds": [
+        "capture_order",
+        "create_order",
+        "create_payout",
+        "get_order",
+        "refund_capture"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "trello",
+      "appName": "Trello",
+      "executorFile": "server/integrations/executors/trelloExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "add_member",
+        "create_card",
+        "create_list",
+        "move_card",
+        "update_card"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "add_member",
+        "create_card",
+        "create_list",
+        "move_card",
+        "update_card"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "asana",
+      "appName": "Asana",
+      "executorFile": "server/integrations/executors/asanaExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "complete_task",
+        "create_subtask",
+        "create_task",
+        "update_task"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "complete_task",
+        "create_subtask",
+        "create_task",
+        "update_task"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "jira",
+      "appName": "Jira",
+      "executorFile": "server/integrations/executors/jiraExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "create_issue",
+        "search_issues",
+        "transition_issue",
+        "update_issue"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "create_issue",
+        "search_issues",
+        "transition_issue",
+        "update_issue"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "monday",
+      "appName": "Monday.com",
+      "executorFile": "server/integrations/executors/mondayExecutor.ts",
+      "uiActionIds": [
+        "create_item",
+        "create_update",
+        "move_item",
+        "update_item"
+      ],
+      "executorActionIds": [
+        "create_item",
+        "create_update",
+        "move_item",
+        "update_item"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "clickup",
+      "appName": "ClickUp",
+      "executorFile": "server/integrations/executors/clickupExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "create_task",
+        "update_task"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "create_task",
+        "update_task"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "linear",
+      "appName": "Linear",
+      "executorFile": "server/integrations/executors/linearExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "create_issue",
+        "update_issue"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "create_issue",
+        "update_issue"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "calendly",
+      "appName": "Calendly",
+      "executorFile": "server/integrations/executors/calendlyExecutor.ts",
+      "uiActionIds": [
+        "cancel_event",
+        "get_event",
+        "list_events"
+      ],
+      "executorActionIds": [
+        "cancel_event",
+        "get_event",
+        "list_events"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "webhook",
+      "appName": "Webhook",
+      "executorFile": "server/integrations/executors/webhookExecutor.ts",
+      "uiActionIds": [
+        "send_webhook"
+      ],
+      "executorActionIds": [
+        "send_webhook"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "rest_api",
+      "appName": "REST API",
+      "executorFile": "server/integrations/executors/restApiExecutor.ts",
+      "uiActionIds": [
+        "http_request"
+      ],
+      "executorActionIds": [
+        "http_request"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "graphql",
+      "appName": "GraphQL",
+      "executorFile": "server/integrations/executors/graphqlExecutor.ts",
+      "uiActionIds": [
+        "mutation",
+        "query"
+      ],
+      "executorActionIds": [
+        "mutation",
+        "query"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "github",
+      "appName": "GitHub",
+      "executorFile": "server/integrations/executors/githubExecutor.ts",
+      "uiActionIds": [
+        "create_comment",
+        "create_issue",
+        "create_pr",
+        "create_release",
+        "dispatch_workflow",
+        "merge_pr",
+        "update_issue"
+      ],
+      "executorActionIds": [
+        "create_comment",
+        "create_issue",
+        "create_pr",
+        "create_release",
+        "dispatch_workflow",
+        "merge_pr",
+        "update_issue"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "gitlab",
+      "appName": "GitLab",
+      "executorFile": "server/integrations/executors/gitlabExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "create_issue",
+        "create_mr",
+        "trigger_pipeline",
+        "update_issue"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "create_issue",
+        "create_mr",
+        "trigger_pipeline",
+        "update_issue"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "bitbucket",
+      "appName": "Bitbucket",
+      "executorFile": "server/integrations/executors/bitbucketExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "create_issue",
+        "create_pr",
+        "trigger_pipeline"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "create_issue",
+        "create_pr",
+        "trigger_pipeline"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "openai",
+      "appName": "OpenAI",
+      "executorFile": "server/integrations/executors/openaiExecutor.ts",
+      "uiActionIds": [
+        "chat_completion",
+        "create_embedding",
+        "generate_image",
+        "text_to_speech",
+        "transcribe_audio"
+      ],
+      "executorActionIds": [
+        "chat_completion",
+        "create_embedding",
+        "generate_image",
+        "text_to_speech",
+        "transcribe_audio"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "anthropic",
+      "appName": "Anthropic",
+      "executorFile": "server/integrations/executors/anthropicExecutor.ts",
+      "uiActionIds": [
+        "message",
+        "vision"
+      ],
+      "executorActionIds": [
+        "message",
+        "vision"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_ai",
+      "appName": "Google AI",
+      "executorFile": "server/integrations/executors/googleAiExecutor.ts",
+      "uiActionIds": [
+        "analyze_image",
+        "embed_content",
+        "generate_content"
+      ],
+      "executorActionIds": [
+        "analyze_image",
+        "embed_content",
+        "generate_content"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "elevenlabs",
+      "appName": "ElevenLabs",
+      "executorFile": "server/integrations/executors/elevenlabsExecutor.ts",
+      "uiActionIds": [
+        "get_voices",
+        "text_to_speech",
+        "voice_clone"
+      ],
+      "executorActionIds": [
+        "get_voices",
+        "text_to_speech",
+        "voice_clone"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "replicate",
+      "appName": "Replicate",
+      "executorFile": "server/integrations/executors/replicateExecutor.ts",
+      "uiActionIds": [
+        "cancel_prediction",
+        "get_prediction",
+        "run_model"
+      ],
+      "executorActionIds": [
+        "cancel_prediction",
+        "get_prediction",
+        "run_model"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "huggingface",
+      "appName": "HuggingFace",
+      "executorFile": "server/integrations/executors/huggingfaceExecutor.ts",
+      "uiActionIds": [
+        "image_classification",
+        "image_to_text",
+        "question_answering",
+        "sentiment_analysis",
+        "summarization",
+        "text_generation",
+        "translation"
+      ],
+      "executorActionIds": [
+        "image_classification",
+        "image_to_text",
+        "question_answering",
+        "sentiment_analysis",
+        "summarization",
+        "text_generation",
+        "translation"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_analytics",
+      "appName": "Google Analytics",
+      "executorFile": "server/integrations/executors/googleAnalyticsExecutor.ts",
+      "uiActionIds": [
+        "get_realtime",
+        "run_report"
+      ],
+      "executorActionIds": [
+        "get_realtime",
+        "run_report"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "facebook_ads",
+      "appName": "Facebook Ads",
+      "executorFile": "server/integrations/executors/facebookAdsExecutor.ts",
+      "uiActionIds": [
+        "get_campaigns",
+        "get_insights",
+        "update_campaign"
+      ],
+      "executorActionIds": [
+        "get_campaigns",
+        "get_insights",
+        "update_campaign"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_ads",
+      "appName": "Google Ads",
+      "executorFile": "server/integrations/executors/googleAdsExecutor.ts",
+      "uiActionIds": [
+        "get_campaigns",
+        "get_report",
+        "update_campaign_budget",
+        "update_campaign_status"
+      ],
+      "executorActionIds": [
+        "get_campaigns",
+        "get_report",
+        "update_campaign_budget",
+        "update_campaign_status"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "intercom",
+      "appName": "Intercom",
+      "executorFile": "server/integrations/executors/intercomExecutor.ts",
+      "uiActionIds": [
+        "add_tag",
+        "create_contact",
+        "create_note",
+        "reply_conversation",
+        "send_message",
+        "update_contact"
+      ],
+      "executorActionIds": [
+        "add_tag",
+        "create_contact",
+        "create_note",
+        "reply_conversation",
+        "send_message",
+        "update_contact"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "linkedin",
+      "appName": "LinkedIn",
+      "executorFile": "server/integrations/executors/linkedinExecutor.ts",
+      "uiActionIds": [
+        "create_post",
+        "get_connections",
+        "get_profile",
+        "send_message"
+      ],
+      "executorActionIds": [
+        "create_post",
+        "get_connections",
+        "get_profile",
+        "send_message"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "zendesk",
+      "appName": "Zendesk",
+      "executorFile": "server/integrations/executors/zendeskExecutor.ts",
+      "uiActionIds": [
+        "add_comment",
+        "create_ticket",
+        "get_ticket",
+        "search_tickets",
+        "update_ticket"
+      ],
+      "executorActionIds": [
+        "add_comment",
+        "create_ticket",
+        "get_ticket",
+        "search_tickets",
+        "update_ticket"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "freshdesk",
+      "appName": "Freshdesk",
+      "executorFile": "server/integrations/executors/freshdeskExecutor.ts",
+      "uiActionIds": [
+        "add_note",
+        "create_contact",
+        "create_ticket",
+        "reply_ticket",
+        "update_ticket"
+      ],
+      "executorActionIds": [
+        "add_note",
+        "create_contact",
+        "create_ticket",
+        "reply_ticket",
+        "update_ticket"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "crisp",
+      "appName": "Crisp",
+      "executorFile": "server/integrations/executors/crispExecutor.ts",
+      "uiActionIds": [
+        "add_segment",
+        "assign_conversation",
+        "send_message",
+        "set_state",
+        "update_profile"
+      ],
+      "executorActionIds": [
+        "add_segment",
+        "assign_conversation",
+        "send_message",
+        "set_state",
+        "update_profile"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "tawk",
+      "appName": "Tawk.to",
+      "executorFile": "server/integrations/executors/tawkExecutor.ts",
+      "uiActionIds": [
+        "ban_visitor",
+        "create_ticket",
+        "get_visitor_info",
+        "send_message"
+      ],
+      "executorActionIds": [
+        "ban_visitor",
+        "create_ticket",
+        "get_visitor_info",
+        "send_message"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "twilio_voice",
+      "appName": "Twilio Voice",
+      "executorFile": "server/integrations/executors/twilioVoiceExecutor.ts",
+      "uiActionIds": [
+        "get_call",
+        "get_recording",
+        "make_call",
+        "send_sms_during_call",
+        "update_call"
+      ],
+      "executorActionIds": [
+        "get_call",
+        "get_recording",
+        "make_call",
+        "send_sms_during_call",
+        "update_call"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "zoom",
+      "appName": "Zoom",
+      "executorFile": "server/integrations/executors/zoomExecutor.ts",
+      "uiActionIds": [
+        "add_registrant",
+        "create_meeting",
+        "delete_meeting",
+        "get_meeting",
+        "get_recordings",
+        "list_meetings",
+        "update_meeting"
+      ],
+      "executorActionIds": [
+        "add_registrant",
+        "create_meeting",
+        "delete_meeting",
+        "get_meeting",
+        "get_recordings",
+        "list_meetings",
+        "update_meeting"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "google_meet",
+      "appName": "Google Meet",
+      "executorFile": "server/integrations/executors/googleMeetExecutor.ts",
+      "uiActionIds": [
+        "create_meeting",
+        "delete_meeting",
+        "get_meeting_link",
+        "update_meeting"
+      ],
+      "executorActionIds": [
+        "create_meeting",
+        "delete_meeting",
+        "get_meeting_link",
+        "update_meeting"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "schedule",
+      "appName": "Schedule",
+      "executorFile": "server/integrations/executors/scheduleExecutor.ts",
+      "uiActionIds": [],
+      "executorActionIds": [],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "manual",
+      "appName": "Manual Trigger",
+      "executorFile": "server/integrations/executors/manualExecutor.ts",
+      "uiActionIds": [],
+      "executorActionIds": [],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "if_condition",
+      "appName": "IF",
+      "executorFile": "server/integrations/executors/ifConditionExecutor.ts",
+      "uiActionIds": [
+        "if"
+      ],
+      "executorActionIds": [
+        "if"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "switch",
+      "appName": "Switch",
+      "executorFile": "server/integrations/executors/switchExecutor.ts",
+      "uiActionIds": [
+        "switch"
+      ],
+      "executorActionIds": [
+        "switch"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "loop",
+      "appName": "Loop",
+      "executorFile": "server/integrations/executors/loopExecutor.ts",
+      "uiActionIds": [
+        "loop"
+      ],
+      "executorActionIds": [
+        "loop"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "set_variable",
+      "appName": "Set Variable",
+      "executorFile": "server/integrations/executors/setVariableExecutor.ts",
+      "uiActionIds": [
+        "set"
+      ],
+      "executorActionIds": [
+        "set"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "code",
+      "appName": "Code",
+      "executorFile": "server/integrations/executors/codeExecutor.ts",
+      "uiActionIds": [
+        "execute"
+      ],
+      "executorActionIds": [
+        "execute"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "ifttt",
+      "appName": "IFTTT",
+      "executorFile": "server/integrations/executors/iftttExecutor.ts",
+      "uiActionIds": [
+        "trigger_event"
+      ],
+      "executorActionIds": [
+        "trigger_event"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "azure_openai",
+      "appName": "Azure OpenAI",
+      "executorFile": "server/integrations/executors/azureOpenAiExecutor.ts",
+      "uiActionIds": [
+        "chat_completion"
+      ],
+      "executorActionIds": [
+        "chat_completion"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "postgresql",
+      "appName": "PostgreSQL",
+      "executorFile": "server/integrations/executors/postgresqlExecutor.ts",
+      "uiActionIds": [
+        "execute",
+        "query"
+      ],
+      "executorActionIds": [
+        "execute",
+        "query"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "mysql",
+      "appName": "MySQL",
+      "executorFile": "server/integrations/executors/mysqlExecutor.ts",
+      "uiActionIds": [
+        "execute",
+        "query"
+      ],
+      "executorActionIds": [
+        "execute",
+        "query"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "redis",
+      "appName": "Redis",
+      "executorFile": "server/integrations/executors/redisExecutor.ts",
+      "uiActionIds": [
+        "get",
+        "publish",
+        "set"
+      ],
+      "executorActionIds": [
+        "get",
+        "publish",
+        "set"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "dynamodb",
+      "appName": "DynamoDB",
+      "executorFile": "server/integrations/executors/dynamodbExecutor.ts",
+      "uiActionIds": [
+        "get_item",
+        "put_item"
+      ],
+      "executorActionIds": [
+        "get_item",
+        "put_item"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "elasticsearch",
+      "appName": "Elasticsearch",
+      "executorFile": "server/integrations/executors/elasticsearchExecutor.ts",
+      "uiActionIds": [
+        "index_document",
+        "search"
+      ],
+      "executorActionIds": [
+        "index_document",
+        "search"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "liveagent",
+      "appName": "LiveAgent",
+      "executorFile": "server/integrations/executors/liveagentExecutor.ts",
+      "uiActionIds": [
+        "create_ticket"
+      ],
+      "executorActionIds": [
+        "create_ticket"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "helpscout",
+      "appName": "Help Scout",
+      "executorFile": "server/integrations/executors/helpscoutExecutor.ts",
+      "uiActionIds": [
+        "create_conversation",
+        "reply_conversation"
+      ],
+      "executorActionIds": [
+        "create_conversation",
+        "reply_conversation"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "drift",
+      "appName": "Drift",
+      "executorFile": "server/integrations/executors/driftExecutor.ts",
+      "uiActionIds": [
+        "send_message"
+      ],
+      "executorActionIds": [
+        "send_message"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "twitter",
+      "appName": "Twitter / X",
+      "executorFile": "server/integrations/executors/twitterExecutor.ts",
+      "uiActionIds": [
+        "create_tweet",
+        "get_profile"
+      ],
+      "executorActionIds": [
+        "create_tweet",
+        "get_profile"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "instagram",
+      "appName": "Instagram",
+      "executorFile": "server/integrations/executors/instagramExecutor.ts",
+      "uiActionIds": [
+        "create_post"
+      ],
+      "executorActionIds": [
+        "create_post"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "youtube",
+      "appName": "YouTube",
+      "executorFile": "server/integrations/executors/youtubeExecutor.ts",
+      "uiActionIds": [
+        "upload_video"
+      ],
+      "executorActionIds": [
+        "upload_video"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "tiktok",
+      "appName": "TikTok",
+      "executorFile": "server/integrations/executors/tiktokExecutor.ts",
+      "uiActionIds": [
+        "create_post"
+      ],
+      "executorActionIds": [
+        "create_post"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "pinterest",
+      "appName": "Pinterest",
+      "executorFile": "server/integrations/executors/pinterestExecutor.ts",
+      "uiActionIds": [
+        "create_pin"
+      ],
+      "executorActionIds": [
+        "create_pin"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "reddit",
+      "appName": "Reddit",
+      "executorFile": "server/integrations/executors/redditExecutor.ts",
+      "uiActionIds": [
+        "create_post"
+      ],
+      "executorActionIds": [
+        "create_post"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "snapchat",
+      "appName": "Snapchat",
+      "executorFile": "server/integrations/executors/snapchatExecutor.ts",
+      "uiActionIds": [
+        "create_post"
+      ],
+      "executorActionIds": [
+        "create_post"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "mastodon",
+      "appName": "Mastodon",
+      "executorFile": "server/integrations/executors/mastodonExecutor.ts",
+      "uiActionIds": [
+        "create_status"
+      ],
+      "executorActionIds": [
+        "create_status"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "mixpanel",
+      "appName": "Mixpanel",
+      "executorFile": "server/integrations/executors/mixpanelExecutor.ts",
+      "uiActionIds": [
+        "track"
+      ],
+      "executorActionIds": [
+        "track"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "segment",
+      "appName": "Segment",
+      "executorFile": "server/integrations/executors/segmentExecutor.ts",
+      "uiActionIds": [
+        "track"
+      ],
+      "executorActionIds": [
+        "track"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "mailgun",
+      "appName": "Mailgun",
+      "executorFile": "server/integrations/executors/mailgunExecutor.ts",
+      "uiActionIds": [
+        "send_email"
+      ],
+      "executorActionIds": [
+        "send_email"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "slack_bot",
+      "appName": "Slack Bot",
+      "executorFile": "server/integrations/executors/slackBotExecutor.ts",
+      "uiActionIds": [
+        "post_message"
+      ],
+      "executorActionIds": [
+        "post_message"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "discord_bot",
+      "appName": "Discord Bot",
+      "executorFile": "server/integrations/executors/discordBotExecutor.ts",
+      "uiActionIds": [
+        "send_message"
+      ],
+      "executorActionIds": [
+        "send_message"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "sms_twilio",
+      "appName": "Twilio SMS",
+      "executorFile": "server/integrations/executors/twilioSmsExecutor.ts",
+      "uiActionIds": [
+        "send_sms"
+      ],
+      "executorActionIds": [
+        "lookup",
+        "send_sms"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": [
+        "lookup"
+      ]
+    },
+    {
+      "appId": "square",
+      "appName": "Square",
+      "executorFile": "server/integrations/executors/squareExecutor.ts",
+      "uiActionIds": [
+        "create_payment"
+      ],
+      "executorActionIds": [
+        "create_payment"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "webhook_outgoing",
+      "appName": "Outgoing Webhook",
+      "executorFile": "server/integrations/executors/webhookOutgoingExecutor.ts",
+      "uiActionIds": [
+        "send"
+      ],
+      "executorActionIds": [
+        "send"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "custom_api",
+      "appName": "Custom API",
+      "executorFile": "server/integrations/executors/customApiExecutor.ts",
+      "uiActionIds": [
+        "request"
+      ],
+      "executorActionIds": [
+        "request"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "custom_integration",
+      "appName": "Build Custom Integration",
+      "executorFile": "server/integrations/executors/customIntegrationExecutor.ts",
+      "uiActionIds": [
+        "define"
+      ],
+      "executorActionIds": [
+        "define"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "hubspot_oauth",
+      "appName": "HubSpot (OAuth)",
+      "executorFile": "server/integrations/executors/hubspotOauthExecutor.ts",
+      "uiActionIds": [
+        "create_contact"
+      ],
+      "executorActionIds": [
+        "create_contact"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "hubspot_marketing",
+      "appName": "HubSpot Marketing",
+      "executorFile": "server/integrations/executors/hubspotMarketingExecutor.ts",
+      "uiActionIds": [
+        "add_to_list",
+        "send_marketing_email"
+      ],
+      "executorActionIds": [
+        "add_to_list",
+        "send_marketing_email"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "bigquery",
+      "appName": "BigQuery",
+      "executorFile": "server/integrations/executors/bigqueryExecutor.ts",
+      "uiActionIds": [
+        "query"
+      ],
+      "executorActionIds": [
+        "query"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    },
+    {
+      "appId": "cosmosdb",
+      "appName": "Cosmos DB",
+      "executorFile": "server/integrations/executors/cosmosDbExecutor.ts",
+      "uiActionIds": [
+        "query"
+      ],
+      "executorActionIds": [
+        "query"
+      ],
+      "missingInExecutor": [],
+      "extraInExecutor": []
+    }
+  ]
+}
