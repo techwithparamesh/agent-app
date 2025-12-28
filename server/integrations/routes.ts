@@ -276,9 +276,25 @@ integrationRoutes.use('/options/google_forms', googleFormsOptionsRouter);
 // Catch-all: if an app has no server-side options loader yet, return an empty list
 // rather than a 404 (keeps the UI error-free while providers are implemented).
 integrationRoutes.all('/options/:appId/*', async (req, res) => {
+  if (process.env.NODE_ENV !== 'production') {
+    const appId = String((req as any).params?.appId || '');
+    console.warn('[Integrations Options] Unhandled options path:', {
+      method: req.method,
+      appId,
+      url: req.originalUrl,
+    });
+  }
   return res.json({ options: [] });
 });
 integrationRoutes.all('/options/:appId', async (req, res) => {
+  if (process.env.NODE_ENV !== 'production') {
+    const appId = String((req as any).params?.appId || '');
+    console.warn('[Integrations Options] Unhandled options app root:', {
+      method: req.method,
+      appId,
+      url: req.originalUrl,
+    });
+  }
   return res.json({ options: [] });
 });
 

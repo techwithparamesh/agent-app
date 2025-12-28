@@ -386,6 +386,7 @@ export function ConfigPanelV2({
     try {
       const res = await fetch(url, {
         method,
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: method === 'GET' ? undefined : JSON.stringify(payload),
       });

@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { FlowNode } from "./types";
+import { getAppAuth } from "./AppConfigurations";
 
 interface WorkflowValidationResult {
   isValid: boolean;
@@ -33,12 +34,20 @@ export function validateWorkflow(nodes: FlowNode[]): WorkflowValidationResult {
 
   // Check 3: All trigger nodes must have credentials/connection
   const unconnectedTriggers = triggerNodes.filter(n => {
-    // Check if node requires authentication and has it configured
-    const needsAuth = ['google-sheets', 'gmail', 'slack'].includes(n.appId);
-    if (needsAuth && !n.config?.apiKey && !n.config?.oauthToken) {
-      return true;
-    }
-    return false;
+    const auth = getAppAuth(n.appId);
+    const requiresAuth = Array.isArray(auth) && auth.length > 0;
+    if (!requiresAuth) return false;
+
+    const cfg = n.config || {};
+    const hasCredential =
+      !!cfg.credentialId ||
+      cfg.isAuthenticated === true ||
+      !!cfg.apiKey ||
+      !!cfg.accessToken ||
+      !!cfg.oauthToken ||
+      !!cfg.token;
+
+    return !hasCredential;
   });
 
   if (unconnectedTriggers.length > 0) {
