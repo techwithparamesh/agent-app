@@ -612,128 +612,7 @@ export function ConfigPanelV2({
     return getMissingRequiredFields(selectedTrigger.fields || []);
   }, [node?.appId, selectedTriggerId, getMissingRequiredFields]);
 
-  if (!isOpen || !node) return null;
-
-  // Determine whether this node/app actually requires credentials.
-  const stepAppConfig = node?.appId ? getAppConfig(node.appId) : null;
-  const stepAuthMethods = stepAppConfig?.auth || [];
-  const requiresCredentials = stepAuthMethods.length > 0;
-
-  // Check if this is a manual trigger (which has simplified config)
-  const isManualTrigger = node.type === 'trigger' && (triggerType === 'manual' || node.config?.triggerType === 'manual');
-
-  // Define wizard steps based on node type and trigger type
-  // Manual triggers have a simplified flow - just Settings and Test
-  const manualTriggerSteps: StepConfig[] = [
-    {
-      id: 'settings',
-      title: 'Settings',
-      subtitle: 'Configure manual trigger',
-      icon: <Settings className="h-4 w-4" />,
-      isComplete: true, // Manual triggers are always ready
-      isRequired: false,
-    },
-    {
-      id: 'test',
-      title: 'Test',
-      subtitle: 'Run the workflow',
-      icon: <Play className="h-4 w-4" />,
-      isComplete: testResult === 'success',
-      isRequired: false,
-    },
-  ];
-
-  const standardTriggerSteps: StepConfig[] = [
-    {
-      id: 'trigger-type',
-      title: 'Trigger Type',
-      subtitle: 'How should this workflow start?',
-      icon: <Zap className="h-4 w-4" />,
-      isComplete: !!triggerType,
-      isRequired: true,
-    },
-    ...(requiresCredentials
-      ? [
-          {
-            id: 'credentials',
-            title: 'Connect',
-            subtitle: 'Authenticate with the service',
-            icon: <Key className="h-4 w-4" />,
-            isComplete: isAuthenticated,
-            isRequired: true,
-          } as StepConfig,
-        ]
-      : []),
-    {
-      id: 'settings',
-      title: 'Settings',
-      subtitle: 'Configure trigger options',
-      icon: <Settings className="h-4 w-4" />,
-      isComplete: isTriggerSettingsComplete(),
-      isRequired: true,
-    },
-    {
-      id: 'test',
-      title: 'Test',
-      subtitle: 'Verify configuration',
-      icon: <Play className="h-4 w-4" />,
-      isComplete: testResult === 'success',
-      isRequired: false,
-    },
-  ];
-
-  // Use simplified steps for manual triggers
-  const triggerSteps = isManualTrigger ? manualTriggerSteps : standardTriggerSteps;
-
-  const actionSteps: StepConfig[] = [
-    {
-      id: 'operation',
-      title: 'Operation',
-      subtitle: 'What action to perform?',
-      icon: <Settings className="h-4 w-4" />,
-      isComplete: !!selectedActionId && isSelectedActionConfigured(),
-      isRequired: true,
-    },
-    ...(requiresCredentials
-      ? [
-          {
-            id: 'credentials',
-            title: 'Connect',
-            subtitle: 'Authenticate with the service',
-            icon: <Key className="h-4 w-4" />,
-            isComplete: isAuthenticated,
-            isRequired: true,
-          } as StepConfig,
-        ]
-      : []),
-    {
-      id: 'mapping',
-      title: 'Data',
-      subtitle: 'Map input data',
-      icon: <Database className="h-4 w-4" />,
-      isComplete: fieldMappings.length > 0,
-      isRequired: false,
-    },
-    {
-      id: 'test',
-      title: 'Test',
-      subtitle: 'Verify configuration',
-      icon: <Play className="h-4 w-4" />,
-      isComplete: testResult === 'success',
-      isRequired: false,
-    },
-  ];
-
-  const steps = isTrigger ? triggerSteps : actionSteps;
-  const progress = ((currentStep + 1) / steps.length) * 100;
-
-  useEffect(() => {
-    if (currentStep >= steps.length) {
-      setCurrentStep(Math.max(0, steps.length - 1));
-    }
-  }, [currentStep, steps.length]);
-
-  // Helper functions
+  // Helper functions (must be defined before step calculation)
   function isTriggerSettingsComplete(): boolean {
     if (!triggerType) return false;
     switch (triggerType) {
@@ -751,6 +630,151 @@ export function ConfigPanelV2({
         return true;
     }
   }
+
+  function isSelectedActionConfigured(): boolean {
+    if (!selectedActionId) return false;
+    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
+    const selectedAction = appConfig?.actions?.find((a) => a.id === selectedActionId);
+    if (!selectedAction) return false;
+    
+    const missingFields = getMissingRequiredFields(selectedAction.fields || []);
+    return missingFields.length === 0;
+  }
+
+  // Determine whether this node/app actually requires credentials.
+  const stepAppConfig = node?.appId ? getAppConfig(node.appId) : null;
+  const stepAuthMethods = stepAppConfig?.auth || [];
+  const requiresCredentials = stepAuthMethods.length > 0;
+
+  // Check if this is a manual trigger (which has simplified config)
+  const isManualTrigger = node?.type === 'trigger' && (triggerType === 'manual' || node?.config?.triggerType === 'manual');
+
+  // Use useMemo to memoize steps calculation to avoid hooks count issues
+  const steps = useMemo(() => {
+    if (!node) return [];
+    
+    const isTrigger = node.type === 'trigger';
+
+    // Manual triggers have a simplified flow - just Settings and Test
+    const manualTriggerSteps: StepConfig[] = [
+      {
+        id: 'settings',
+        title: 'Settings',
+        subtitle: 'Configure manual trigger',
+        icon: <Settings className="h-4 w-4" />,
+        isComplete: true, // Manual triggers are always ready
+        isRequired: false,
+      },
+      {
+        id: 'test',
+        title: 'Test',
+        subtitle: 'Run the workflow',
+        icon: <Play className="h-4 w-4" />,
+        isComplete: testResult === 'success',
+        isRequired: false,
+      },
+    ];
+
+    const standardTriggerSteps: StepConfig[] = [
+      {
+        id: 'trigger-type',
+        title: 'Trigger Type',
+        subtitle: 'How should this workflow start?',
+        icon: <Zap className="h-4 w-4" />,
+        isComplete: !!triggerType,
+        isRequired: true,
+      },
+      ...(requiresCredentials
+        ? [
+            {
+              id: 'credentials',
+              title: 'Connect',
+              subtitle: 'Authenticate with the service',
+              icon: <Key className="h-4 w-4" />,
+              isComplete: isAuthenticated,
+              isRequired: true,
+            } as StepConfig,
+          ]
+        : []),
+      {
+        id: 'settings',
+        title: 'Settings',
+        subtitle: 'Configure trigger options',
+        icon: <Settings className="h-4 w-4" />,
+        isComplete: isTriggerSettingsComplete(),
+        isRequired: true,
+      },
+      {
+        id: 'test',
+        title: 'Test',
+        subtitle: 'Verify configuration',
+        icon: <Play className="h-4 w-4" />,
+        isComplete: testResult === 'success',
+        isRequired: false,
+      },
+    ];
+
+    const triggerSteps = isManualTrigger ? manualTriggerSteps : standardTriggerSteps;
+
+    const actionSteps: StepConfig[] = [
+      {
+        id: 'operation',
+        title: 'Operation',
+        subtitle: 'What action to perform?',
+        icon: <Settings className="h-4 w-4" />,
+        isComplete: !!selectedActionId && isSelectedActionConfigured(),
+        isRequired: true,
+      },
+      ...(requiresCredentials
+        ? [
+            {
+              id: 'credentials',
+              title: 'Connect',
+              subtitle: 'Authenticate with the service',
+              icon: <Key className="h-4 w-4" />,
+              isComplete: isAuthenticated,
+              isRequired: true,
+            } as StepConfig,
+          ]
+        : []),
+      {
+        id: 'mapping',
+        title: 'Data',
+        subtitle: 'Map input data',
+        icon: <Database className="h-4 w-4" />,
+        isComplete: fieldMappings.length > 0,
+        isRequired: false,
+      },
+      {
+        id: 'test',
+        title: 'Test',
+        subtitle: 'Verify configuration',
+        icon: <Play className="h-4 w-4" />,
+        isComplete: testResult === 'success',
+        isRequired: false,
+      },
+    ];
+
+    return isTrigger ? triggerSteps : actionSteps;
+  }, [
+    node,
+    triggerType,
+    requiresCredentials,
+    isAuthenticated,
+    testResult,
+    selectedActionId,
+    isManualTrigger,
+  ]);
+
+  const progress = ((currentStep + 1) / steps.length) * 100;
+
+  useEffect(() => {
+    if (currentStep >= steps.length && steps.length > 0) {
+      setCurrentStep(Math.max(0, steps.length - 1));
+    }
+  }, [currentStep, steps.length]);
+
+  if (!isOpen || !node) return null;
 
   function canProceed(): boolean {
     const step = steps[currentStep];

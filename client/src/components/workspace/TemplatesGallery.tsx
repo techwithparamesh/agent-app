@@ -804,14 +804,14 @@ function TemplatePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-2xl">
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-2xl flex-shrink-0">
               {template.icon}
             </div>
-            <div>
-              <DialogTitle>{template.name}</DialogTitle>
+            <div className="min-w-0">
+              <DialogTitle className="text-lg">{template.name}</DialogTitle>
               <DialogDescription className="mt-1">
                 {template.description}
               </DialogDescription>
@@ -819,75 +819,77 @@ function TemplatePreviewDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Stats */}
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <Workflow className="w-4 h-4 text-muted-foreground" />
-              <span>{template.nodes.length} nodes</span>
-            </div>
-            {template.usageCount !== undefined && (
+        <ScrollArea className="flex-1 overflow-auto">
+          <div className="px-6 py-4 space-y-4">
+            {/* Stats */}
+            <div className="flex items-center gap-6 text-sm flex-wrap">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span>{template.usageCount.toLocaleString()} uses</span>
+                <Workflow className="w-4 h-4 text-muted-foreground" />
+                <span>{template.nodes.length} nodes</span>
               </div>
-            )}
-            {template.rating !== undefined && (
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span>{template.rating} rating</span>
-              </div>
-            )}
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2">
-            {template.tags.map((tag) => (
-              <Badge key={tag} variant="secondary">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-
-          {/* Workflow Preview */}
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <h4 className="text-sm font-medium mb-3">Workflow Structure</h4>
-            <div className="space-y-2">
-              {template.nodes.map((node, idx) => (
-                <div key={node.id} className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                    {idx + 1}
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                  <Badge variant="outline">{node.name}</Badge>
-                  <span className="text-xs text-muted-foreground">({node.type})</span>
+              {template.usageCount !== undefined && (
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <span>{template.usageCount.toLocaleString()} uses</span>
                 </div>
+              )}
+              {template.rating !== undefined && (
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span>{template.rating} rating</span>
+                </div>
+              )}
+            </div>
+
+            {/* Tags */}
+            <div className="flex flex-wrap gap-2">
+              {template.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
               ))}
             </div>
-          </div>
 
-          {/* Meta */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              <span>Updated {template.updatedAt.toLocaleDateString()}</span>
-            </div>
-            {template.author && (
-              <div className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                <span>By {template.author}</span>
+            {/* Workflow Preview */}
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <h4 className="text-sm font-medium mb-3">Workflow Structure</h4>
+              <div className="space-y-2">
+                {template.nodes.map((node, idx) => (
+                  <div key={node.id} className="flex items-center gap-2 flex-wrap">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium flex-shrink-0">
+                      {idx + 1}
+                    </div>
+                    {idx > 0 && <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
+                    <Badge variant="outline" className="flex-shrink-0">{node.name}</Badge>
+                    <span className="text-xs text-muted-foreground">({node.type})</span>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        <DialogFooter>
+            {/* Meta */}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t flex-wrap">
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>Updated {template.updatedAt.toLocaleDateString()}</span>
+              </div>
+              {template.author && (
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span>By {template.author}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={onImport}>
             <Download className="w-4 h-4 mr-2" />
-            Import Template
+            Use Template
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -968,11 +970,11 @@ export function TemplatesGallery({
 
   return (
     <TooltipProvider>
-      <div className={cn('flex flex-col h-full', className)}>
+      <div className={cn('flex flex-col h-full overflow-hidden', className)}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
           <div>
-            <h3 className="font-semibold flex items-center gap-2">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
               <Layout className="w-5 h-5" />
               Workflow Templates
             </h3>
@@ -997,7 +999,7 @@ export function TemplatesGallery({
         </div>
 
         {/* Search & Filters */}
-        <div className="p-4 border-b space-y-4">
+        <div className="p-4 border-b space-y-3 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -1008,33 +1010,31 @@ export function TemplatesGallery({
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <SortAsc className="w-4 h-4 mr-2" />
-                    {sortBy === 'popular' && 'Most Popular'}
-                    {sortBy === 'recent' && 'Most Recent'}
-                    {sortBy === 'rating' && 'Highest Rated'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSortBy('popular')}>
-                    {sortBy === 'popular' && <Check className="w-4 h-4 mr-2" />}
-                    Most Popular
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortBy('recent')}>
-                    {sortBy === 'recent' && <Check className="w-4 h-4 mr-2" />}
-                    Most Recent
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortBy('rating')}>
-                    {sortBy === 'rating' && <Check className="w-4 h-4 mr-2" />}
-                    Highest Rated
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+          <div className="flex items-center justify-between gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <SortAsc className="w-4 h-4 mr-2" />
+                  {sortBy === 'popular' && 'Most Popular'}
+                  {sortBy === 'recent' && 'Most Recent'}
+                  {sortBy === 'rating' && 'Highest Rated'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setSortBy('popular')}>
+                  {sortBy === 'popular' && <Check className="w-4 h-4 mr-2" />}
+                  Most Popular
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('recent')}>
+                  {sortBy === 'recent' && <Check className="w-4 h-4 mr-2" />}
+                  Most Recent
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('rating')}>
+                  {sortBy === 'rating' && <Check className="w-4 h-4 mr-2" />}
+                  Highest Rated
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <div className="flex items-center gap-1 border rounded-md p-1">
               <Button
@@ -1058,9 +1058,9 @@ export function TemplatesGallery({
         </div>
 
         {/* Categories & Content */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Category Sidebar */}
-          <div className="w-48 border-r flex-shrink-0">
+          <div className="w-48 border-r flex-shrink-0 overflow-hidden">
             <ScrollArea className="h-full">
               <div className="p-2 space-y-1">
                 {(Object.entries(CATEGORY_CONFIG) as [TemplateCategory, { label: string; icon: React.ReactNode }][]).map(
@@ -1068,7 +1068,8 @@ export function TemplatesGallery({
                     <Button
                       key={key}
                       variant={activeCategory === key ? 'secondary' : 'ghost'}
-                      className="w-full justify-start"
+                      className="w-full justify-start text-sm"
+                      size="sm"
                       onClick={() => setActiveCategory(key)}
                     >
                       {icon}
@@ -1081,36 +1082,38 @@ export function TemplatesGallery({
           </div>
 
           {/* Templates Grid/List */}
-          <ScrollArea className="flex-1">
-            <div className="p-4">
-              {filteredTemplates.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Layout className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>No templates found</p>
-                  <p className="text-sm">Try adjusting your search or filters</p>
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    viewMode === 'grid'
-                      ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-                      : 'space-y-3'
-                  )}
-                >
-                  {filteredTemplates.map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      viewMode={viewMode}
-                      onImport={() => onImportTemplate?.(template)}
-                      onPreview={() => setPreviewTemplate(template)}
-                      onStar={(starred) => onStarTemplate?.(template.id, starred)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-4">
+                {filteredTemplates.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Layout className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p>No templates found</p>
+                    <p className="text-sm">Try adjusting your search or filters</p>
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      viewMode === 'grid'
+                        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+                        : 'space-y-3'
+                    )}
+                  >
+                    {filteredTemplates.map((template) => (
+                      <TemplateCard
+                        key={template.id}
+                        template={template}
+                        viewMode={viewMode}
+                        onImport={() => onImportTemplate?.(template)}
+                        onPreview={() => setPreviewTemplate(template)}
+                        onStar={(starred) => onStarTemplate?.(template.id, starred)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
 
         {/* Preview Dialog */}
