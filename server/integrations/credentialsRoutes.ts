@@ -22,8 +22,18 @@ import pg from 'pg';
 import mysql from 'mysql2/promise';
 import { createClient as createRedisClient } from 'redis';
 
+import { APP_CONFIGS } from '../../client/src/components/workspace/AppConfigurations';
+
 const router = Router();
 const { Client: PgClient } = pg;
+
+// ========== META ROUTES ==========
+
+// List apps that are supported by the workflow builder + backend executors.
+// This endpoint is used by the Integrations browse UI to avoid catalog drift.
+router.get('/supported-apps', isAuthenticated, async (_req: any, res) => {
+  res.json({ appIds: Object.keys(APP_CONFIGS) });
+});
 
 // ========== CREDENTIALS ROUTES ==========
 

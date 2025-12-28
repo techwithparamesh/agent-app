@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, Component, ErrorInfo, ReactNode } from "react";
+import { useEffect, useState, useMemo, useCallback, Component, ErrorInfo, ReactNode } from "react";
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -136,11 +136,27 @@ const integrationCatalog = {
       },
       { 
         id: 'sms_twilio', 
+        name: 'Twilio SMS (Legacy)', 
+        icon: '📱',
+        description: 'Send SMS messages via Twilio (legacy integration id)',
+        category: 'communication',
+        fields: ['accountSid', 'authToken', 'fromNumber', 'messagingServiceSid'],
+      },
+      { 
+        id: 'twilio_sms', 
         name: 'Twilio SMS', 
         icon: '📱',
         description: 'Send SMS messages via Twilio',
         category: 'communication',
-        fields: ['accountSid', 'authToken', 'fromNumber', 'messagingServiceSid'],
+        fields: ['accountSid', 'authToken', 'fromNumber'],
+      },
+      { 
+        id: 'twilio_voice', 
+        name: 'Twilio Voice', 
+        icon: '📞',
+        description: 'Make and manage voice calls via Twilio',
+        category: 'communication',
+        fields: ['accountSid', 'authToken'],
       },
       { 
         id: 'microsoft_teams', 
@@ -243,6 +259,14 @@ const integrationCatalog = {
         description: 'Create and manage calendar events',
         category: 'google',
         fields: ['clientId', 'clientSecret', 'refreshToken', 'calendarId'],
+      },
+      { 
+        id: 'google_meet', 
+        name: 'Google Meet', 
+        icon: '🎥',
+        description: 'Create meetings and manage meeting links',
+        category: 'google',
+        fields: ['accessToken'],
       },
       { 
         id: 'google_docs', 
@@ -614,11 +638,19 @@ const integrationCatalog = {
       },
       { 
         id: 'custom_api', 
+        name: 'Custom API', 
+        icon: '🌐',
+        description: 'Call APIs with custom auth and request building',
+        category: 'developer',
+        fields: ['apiUrl', 'method', 'headers', 'authType', 'apiKey', 'timeout'],
+      },
+      { 
+        id: 'rest_api', 
         name: 'REST API', 
         icon: '🌐',
         description: 'Call any REST API endpoint',
         category: 'developer',
-        fields: ['apiUrl', 'method', 'headers', 'authType', 'apiKey', 'timeout'],
+        fields: [],
       },
       { 
         id: 'graphql', 
@@ -710,6 +742,14 @@ const integrationCatalog = {
         description: 'Run open-source ML models via API',
         category: 'ai',
         fields: ['apiToken', 'modelVersion'],
+      },
+      {
+        id: 'huggingface',
+        name: 'HuggingFace',
+        icon: '🤗',
+        description: 'Run HuggingFace Inference API models',
+        category: 'ai',
+        fields: ['apiToken'],
       },
     ]
   },
@@ -1041,6 +1081,10 @@ interface Agent {
   name: string;
 }
 
+type SupportedAppsResponse = {
+  appIds: string[];
+};
+
 // Error Boundary for catching render errors
 class IntegrationErrorBoundary extends Component<
   { children: ReactNode },
@@ -1154,6 +1198,16 @@ function IntegrationsPageContent() {
     },
   });
 
+  // Fetch supported apps from backend (used to badge/disable catalog items)
+  const { data: supportedAppsData } = useQuery({
+    queryKey: ['/api/integrations/supported-apps'],
+    queryFn: async () => {
+      const res = await fetch('/api/integrations/supported-apps', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch supported apps');
+      return res.json() as Promise<SupportedAppsResponse>;
+    },
+  });
+
   // Fetch agents for selector
   const { data: agentsData } = useQuery({
     queryKey: ['/api/agents'],
@@ -1259,6 +1313,17 @@ function IntegrationsPageContent() {
     const configuredTypes = new Set(userIntegrations.map((i) => i.type));
     return (appId: string) => configuredTypes.has(appId);
   }, [userIntegrations]);
+
+  const supportedAppIds = useMemo(() => {
+    const ids = supportedAppsData?.appIds || [];
+    return new Set(ids);
+  }, [supportedAppsData?.appIds]);
+
+  const isBackendSupported = useCallback((appId: string) => {
+    // If the list hasn't loaded yet, don't block UI.
+    if (supportedAppIds.size === 0) return true;
+    return supportedAppIds.has(appId);
+  }, [supportedAppIds]);
 
   const handleBrowsePrimaryAction = (app: any) => {
     if (!app?.id) return;
@@ -1560,12 +1625,18 @@ function IntegrationsPageContent() {
                           {int.icon}
                         </div>
                         <p className="font-medium text-sm">{int.name}</p>
+                        <div className="flex items-center justify-center">
+                          <Badge variant="outline" className="text-[10px]">
+                            {isBackendSupported(int.id) ? 'Backend supported' : 'Coming soon'}
+                          </Badge>
+                        </div>
                         <Button
                           size="sm"
                           className="w-full"
                           onClick={() => handleBrowsePrimaryAction(int)}
+                          disabled={!isBackendSupported(int.id) && !isAppConfigured(int.id)}
                         >
-                          {isAppConfigured(int.id) ? 'Open in Builder' : 'Connect'}
+                          {isAppConfigured(int.id) ? 'Open in Builder' : (isBackendSupported(int.id) ? 'Connect' : 'Coming soon')}
                         </Button>
                       </CardContent>
                     </Card>
@@ -1593,7 +1664,12 @@ function IntegrationsPageContent() {
                               {int.icon}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium">{int.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{int.name}</p>
+                                <Badge variant="outline" className="text-[10px]">
+                                  {isBackendSupported(int.id) ? 'Backend supported' : 'Coming soon'}
+                                </Badge>
+                              </div>
                               <p className="text-xs text-muted-foreground truncate">{int.description}</p>
                             </div>
                             <Button
@@ -1605,8 +1681,9 @@ function IntegrationsPageContent() {
                                   categoryColor: category.color,
                                 })
                               }
+                              disabled={!isBackendSupported(int.id) && !isAppConfigured(int.id)}
                             >
-                              {isAppConfigured(int.id) ? 'Open in Builder' : 'Connect'}
+                              {isAppConfigured(int.id) ? 'Open in Builder' : (isBackendSupported(int.id) ? 'Connect' : 'Coming soon')}
                             </Button>
                           </div>
                         </CardContent>
@@ -1633,12 +1710,21 @@ function IntegrationsPageContent() {
                             {int.icon}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium">{int.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{int.name}</p>
+                              <Badge variant="outline" className="text-[10px]">
+                                {isBackendSupported(int.id) ? 'Backend supported' : 'Coming soon'}
+                              </Badge>
+                            </div>
                             <p className="text-xs text-muted-foreground truncate">{int.description}</p>
                           </div>
                           <Badge variant="outline" className="text-xs">{int.categoryLabel}</Badge>
-                          <Button size="sm" onClick={() => handleBrowsePrimaryAction(int)}>
-                            {isAppConfigured(int.id) ? 'Open in Builder' : 'Connect'}
+                          <Button
+                            size="sm"
+                            onClick={() => handleBrowsePrimaryAction(int)}
+                            disabled={!isBackendSupported(int.id) && !isAppConfigured(int.id)}
+                          >
+                            {isAppConfigured(int.id) ? 'Open in Builder' : (isBackendSupported(int.id) ? 'Connect' : 'Coming soon')}
                           </Button>
                         </div>
                       </CardContent>

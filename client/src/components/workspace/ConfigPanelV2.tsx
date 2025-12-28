@@ -554,11 +554,6 @@ export function ConfigPanelV2({
     void refreshCredentials();
   }, [isOpen, refreshCredentials]);
 
-  if (!isOpen || !node) return null;
-
-  // Check if this is a manual trigger (which has simplified config)
-  const isManualTrigger = node.type === 'trigger' && (triggerType === 'manual' || node.config?.triggerType === 'manual');
-
   // ============================================================================
   // n8n-like helpers: resource/operation parsing + required checks
   // ============================================================================
@@ -616,6 +611,11 @@ export function ConfigPanelV2({
     if (!selectedTrigger) return [] as string[];
     return getMissingRequiredFields(selectedTrigger.fields || []);
   }, [node?.appId, selectedTriggerId, getMissingRequiredFields]);
+
+  if (!isOpen || !node) return null;
+
+  // Check if this is a manual trigger (which has simplified config)
+  const isManualTrigger = node.type === 'trigger' && (triggerType === 'manual' || node.config?.triggerType === 'manual');
 
   // Define wizard steps based on node type and trigger type
   // Manual triggers have a simplified flow - just Settings and Test
