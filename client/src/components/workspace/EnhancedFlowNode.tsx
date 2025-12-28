@@ -92,149 +92,138 @@ const NODE_WIDTH = 260;
 const statusConfig = {
   idle: {
     icon: Circle,
-    color: "text-gray-400",
-    bgColor: "bg-gray-500/10",
-    borderColor: "border-gray-500/30",
-    label: "Not Configured",
+    color: "text-muted-foreground",
+    bgColor: "bg-muted/30",
+    borderColor: "border-border",
+    label: "Not configured",
     pulse: false,
   },
   incomplete: {
     icon: AlertTriangle,
-    color: "text-amber-500",
+    color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-500/10",
-    borderColor: "border-amber-500/40",
+    borderColor: "border-amber-500/35",
     label: "Needs Configuration",
     pulse: false,
   },
   configured: {
     icon: CheckCircle2,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/40",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-muted/30",
+    borderColor: "border-border",
     label: "Ready",
     pulse: false,
   },
   complete: {
     icon: CheckCircle2,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/40",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-muted/30",
+    borderColor: "border-border",
     label: "Complete",
     pulse: false,
   },
   error: {
     icon: AlertCircle,
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
-    borderColor: "border-red-500/40",
+    color: "text-destructive",
+    bgColor: "bg-muted/30",
+    borderColor: "border-destructive/35",
     label: "Error",
     pulse: false,
   },
   running: {
     icon: Loader2,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/40",
+    color: "text-primary",
+    bgColor: "bg-muted/30",
+    borderColor: "border-border",
     label: "Running",
     pulse: true,
   },
   success: {
     icon: CheckCircle2,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/40",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-muted/30",
+    borderColor: "border-border",
     label: "Success",
     pulse: false,
   },
 };
 
 // Node type configuration
-const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; color: string; gradient: string }> = {
+const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; badgeClassName: string; gradient?: string }> = {
   trigger: { 
     label: "Trigger", 
     icon: Zap, 
-    color: "bg-amber-500",
-    gradient: "from-amber-500/20 to-orange-500/10",
+    badgeClassName: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25",
   },
   action: { 
     label: "Action", 
     icon: ArrowRight, 
-    color: "bg-blue-500",
-    gradient: "from-blue-500/20 to-indigo-500/10",
+    badgeClassName: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25",
   },
   condition: { 
     label: "Condition", 
     icon: GitBranch, 
-    color: "bg-violet-500",
-    gradient: "from-violet-500/20 to-purple-500/10",
+    badgeClassName: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/25",
   },
   delay: { 
     label: "Delay", 
     icon: Clock, 
-    color: "bg-orange-500",
-    gradient: "from-orange-500/20 to-red-500/10",
+    badgeClassName: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/25",
   },
   loop: { 
     label: "Loop", 
     icon: RotateCcw, 
-    color: "bg-cyan-500",
-    gradient: "from-cyan-500/20 to-teal-500/10",
+    badgeClassName: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25",
   },
   router: { 
     label: "Router", 
     icon: GitBranch, 
-    color: "bg-indigo-500",
-    gradient: "from-indigo-500/20 to-blue-500/10",
+    badgeClassName: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25",
   },
   "error-handler": { 
     label: "Error Handler", 
     icon: AlertCircle, 
-    color: "bg-red-500",
-    gradient: "from-red-500/20 to-rose-500/10",
+    badgeClassName: "bg-destructive/10 text-destructive border border-destructive/25",
   },
   switch: {
     label: "Switch",
     icon: GitBranch,
-    color: "bg-violet-500",
-    gradient: "from-violet-500/20 to-fuchsia-500/10",
+    badgeClassName: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/25",
   },
   filter: {
     label: "Filter",
     icon: GitBranch,
-    color: "bg-emerald-500",
-    gradient: "from-emerald-500/20 to-green-500/10",
+    badgeClassName: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25",
   },
   merge: {
     label: "Merge",
     icon: GitBranch,
-    color: "bg-teal-500",
-    gradient: "from-teal-500/20 to-cyan-500/10",
+    badgeClassName: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/25",
   },
   split: {
     label: "Split",
     icon: GitBranch,
-    color: "bg-pink-500",
-    gradient: "from-pink-500/20 to-rose-500/10",
+    badgeClassName: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border border-pink-500/25",
   },
   code: {
     label: "Code",
     icon: ArrowRight,
-    color: "bg-slate-500",
-    gradient: "from-slate-500/20 to-gray-500/10",
+    badgeClassName: "bg-muted text-foreground border border-border",
   },
   transform: {
     label: "Transform",
     icon: RotateCcw,
-    color: "bg-lime-500",
-    gradient: "from-lime-500/20 to-green-500/10",
+    badgeClassName: "bg-lime-500/15 text-lime-700 dark:text-lime-300 border border-lime-500/25",
   },
   wait: {
     label: "Wait",
     icon: Clock,
-    color: "bg-orange-400",
-    gradient: "from-orange-400/20 to-amber-500/10",
+    badgeClassName: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20",
   },
 };
+
+const shouldShowStatusRow = (status: FlowNodeType["status"]) =>
+  status === "incomplete" || status === "error" || status === "running";
 
 // ============================================
 // CONNECTION HANDLE COMPONENT
@@ -436,9 +425,9 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
         {/* Main card */}
         <div
           className={cn(
-            "relative rounded-xl border-2 bg-card overflow-hidden",
-            "transition-all duration-200 ease-out",
-            "shadow-lg hover:shadow-xl",
+            "relative rounded-xl border bg-card overflow-hidden",
+            "transition-shadow duration-150",
+            "shadow-sm hover:shadow-md",
             isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-primary/20",
             isValidDropTarget && "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background",
             isDragging && "shadow-2xl cursor-grabbing",
@@ -446,12 +435,6 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
             status.borderColor,
           )}
         >
-          {/* Gradient header background */}
-          <div className={cn(
-            "absolute top-0 left-0 right-0 h-20 opacity-50",
-            `bg-gradient-to-br ${nodeType.gradient}`
-          )} />
-
           {/* Header */}
           <div className="relative flex items-start gap-3 p-3 pb-2">
             {/* Drag handle */}
@@ -478,18 +461,28 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
                   variant="secondary"
                   className={cn(
                     "h-5 text-[10px] gap-1 font-medium",
-                    nodeType.color, "text-white"
+                    nodeType.badgeClassName
                   )}
                 >
                   <TypeIcon className="h-3 w-3" />
                   {nodeType.label}
                 </Badge>
+
+                {node.status === 'incomplete' && (
+                  <Badge
+                    variant="outline"
+                    className="h-5 text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25"
+                  >
+                    Needs config
+                  </Badge>
+                )}
                 
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={cn(
                       "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium",
-                      status.bgColor, status.color
+                      "bg-muted/30 border border-border",
+                      status.color
                     )}>
                       <StatusIcon className={cn(
                         "h-3 w-3",
@@ -608,39 +601,27 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
             </div>
           )}
 
-          {/* Status footer */}
-          <div className={cn(
-            "flex items-center justify-between px-3 py-2",
-            status.bgColor,
-            "border-t",
-            status.borderColor
-          )}>
-            <span className={cn(
-              "text-[11px] font-medium flex items-center gap-1.5",
-              status.color
+          {/* Status row (only when important) */}
+          {shouldShowStatusRow(node.status) && (
+            <div className={cn(
+              "flex items-center justify-between px-3 py-2 border-t border-border/60 bg-transparent"
             )}>
-              <StatusIcon className={cn(
-                "h-3 w-3",
-                status.pulse && "animate-spin"
-              )} />
-              {status.label}
-            </span>
-            
-            {node.status === 'configured' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-[11px] gap-1.5 px-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTest?.();
-                }}
-              >
-                <Play className="h-3 w-3" />
-                Test
-              </Button>
-            )}
-          </div>
+              <span className={cn(
+                "text-[11px] font-medium flex items-center gap-1.5",
+                status.color
+              )}>
+                <StatusIcon className={cn(
+                  "h-3 w-3",
+                  status.pulse && "animate-spin"
+                )} />
+                {status.label}
+              </span>
+
+              {node.status === 'running' && (
+                <span className="text-[11px] text-muted-foreground">Executing…</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Connection Handles */}

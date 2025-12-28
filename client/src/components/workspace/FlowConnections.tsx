@@ -47,11 +47,13 @@ const HIT_AREA_WIDTH = 20;
 
 // Connection colors by type
 const CONNECTION_COLORS = {
-  default: 'hsl(var(--primary))',
-  success: '#22c55e',
-  error: '#ef4444',
-  warning: '#f59e0b',
-  disabled: 'hsl(var(--muted-foreground))',
+  default: 'hsl(var(--muted-foreground) / 0.45)',
+  hover: 'hsl(var(--primary) / 0.55)',
+  selected: 'hsl(var(--primary))',
+  success: 'hsl(var(--primary) / 0.55)',
+  error: 'hsl(var(--destructive))',
+  warning: 'hsl(var(--primary) / 0.55)',
+  disabled: 'hsl(var(--muted-foreground) / 0.35)',
 };
 
 // ============================================
@@ -210,14 +212,14 @@ const SingleConnection: React.FC<SingleConnectionProps> = ({
     return CONNECTION_COLORS.default;
   };
 
-  const color = getColor();
+  const baseColor = getColor();
+  const color = isSelected ? CONNECTION_COLORS.selected : isHovered ? CONNECTION_COLORS.hover : baseColor;
   const strokeWidth = isHovered || isSelected ? STROKE_WIDTH_HOVER : STROKE_WIDTH;
 
   return (
     <g
       className={cn(
-        "transition-all duration-150",
-        isSelected && "drop-shadow-lg"
+        "transition-all duration-150"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -246,10 +248,10 @@ const SingleConnection: React.FC<SingleConnectionProps> = ({
           d={path}
           fill="none"
           stroke={color}
-          strokeWidth={strokeWidth + 4}
+          strokeWidth={strokeWidth + 2}
           strokeLinecap="round"
-          opacity={0.3}
-          className="blur-[2px]"
+          opacity={0.18}
+          className="blur-[1px]"
         />
       )}
 
@@ -265,9 +267,7 @@ const SingleConnection: React.FC<SingleConnectionProps> = ({
           connection.animated && "animate-dash"
         )}
         strokeDasharray={connection.animated ? "8 4" : undefined}
-        style={{
-          filter: isHovered ? `drop-shadow(0 0 4px ${color})` : undefined,
-        }}
+        style={undefined}
       />
 
       {/* Arrow at end */}
@@ -284,7 +284,7 @@ const SingleConnection: React.FC<SingleConnectionProps> = ({
       <circle
         cx={start.x}
         cy={start.y}
-        r={isHovered || isSelected ? 6 : 4}
+        r={isHovered || isSelected ? 5 : 4}
         fill={color}
         className="transition-all duration-150"
       />

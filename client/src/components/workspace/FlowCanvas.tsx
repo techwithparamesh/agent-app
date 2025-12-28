@@ -402,9 +402,14 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
   // RENDER
   // ============================================
 
-  const gridPattern = showGrid ? `
-    radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)
-  ` : 'none';
+  const gridPattern = showGrid
+    ? [
+        // Fine dot grid
+        `radial-gradient(circle, hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px)`,
+        // Coarse dot grid
+        `radial-gradient(circle, hsl(var(--muted-foreground) / 0.10) 1px, transparent 1px)`,
+      ].join(',')
+    : 'none';
 
   return (
     <TooltipProvider>
@@ -433,8 +438,8 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: gridPattern,
-            backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
-            backgroundPosition: `${viewport.x}px ${viewport.y}px`,
+            backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px, ${GRID_SIZE * 5 * viewport.zoom}px ${GRID_SIZE * 5 * viewport.zoom}px`,
+            backgroundPosition: `${viewport.x}px ${viewport.y}px, ${viewport.x}px ${viewport.y}px`,
             opacity: Math.min(1, viewport.zoom),
           }}
         />
