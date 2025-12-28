@@ -614,6 +614,11 @@ export function ConfigPanelV2({
 
   if (!isOpen || !node) return null;
 
+  // Determine whether this node/app actually requires credentials.
+  const stepAppConfig = node?.appId ? getAppConfig(node.appId) : null;
+  const stepAuthMethods = stepAppConfig?.auth || [];
+  const requiresCredentials = stepAuthMethods.length > 0;
+
   // Check if this is a manual trigger (which has simplified config)
   const isManualTrigger = node.type === 'trigger' && (triggerType === 'manual' || node.config?.triggerType === 'manual');
 
@@ -647,14 +652,18 @@ export function ConfigPanelV2({
       isComplete: !!triggerType,
       isRequired: true,
     },
-    {
-      id: 'credentials',
-      title: 'Connect',
-      subtitle: 'Authenticate with the service',
-      icon: <Key className="h-4 w-4" />,
-      isComplete: isAuthenticated,
-      isRequired: true,
-    },
+    ...(requiresCredentials
+      ? [
+          {
+            id: 'credentials',
+            title: 'Connect',
+            subtitle: 'Authenticate with the service',
+            icon: <Key className="h-4 w-4" />,
+            isComplete: isAuthenticated,
+            isRequired: true,
+          } as StepConfig,
+        ]
+      : []),
     {
       id: 'settings',
       title: 'Settings',
@@ -685,14 +694,18 @@ export function ConfigPanelV2({
       isComplete: !!selectedActionId && isSelectedActionConfigured(),
       isRequired: true,
     },
-    {
-      id: 'credentials',
-      title: 'Connect',
-      subtitle: 'Authenticate with the service',
-      icon: <Key className="h-4 w-4" />,
-      isComplete: isAuthenticated,
-      isRequired: true,
-    },
+    ...(requiresCredentials
+      ? [
+          {
+            id: 'credentials',
+            title: 'Connect',
+            subtitle: 'Authenticate with the service',
+            icon: <Key className="h-4 w-4" />,
+            isComplete: isAuthenticated,
+            isRequired: true,
+          } as StepConfig,
+        ]
+      : []),
     {
       id: 'mapping',
       title: 'Data',
@@ -713,6 +726,12 @@ export function ConfigPanelV2({
 
   const steps = isTrigger ? triggerSteps : actionSteps;
   const progress = ((currentStep + 1) / steps.length) * 100;
+
+  useEffect(() => {
+    if (currentStep >= steps.length) {
+      setCurrentStep(Math.max(0, steps.length - 1));
+    }
+  }, [currentStep, steps.length]);
 
   // Helper functions
   function isTriggerSettingsComplete(): boolean {
@@ -744,6 +763,9 @@ export function ConfigPanelV2({
     // Get app-specific auth config
     const appConfig = node?.appId ? getAppConfig(node.appId) : null;
     const authConfig = appConfig?.auth?.find(a => a.type === 'oauth2');
+    const supportsApiKey = (appConfig?.auth || []).some(
+      (a) => a.type === 'api-key' || a.type === 'bearer'
+    );
     
     if (authConfig?.oauthUrls?.authorize) {
       // Real OAuth flow - redirect to authorization URL
@@ -793,15 +815,17 @@ export function ConfigPanelV2({
       return;
     }
     
-    // Fallback: OAuth not configured - switch to API key auth method
+    // OAuth isn't configured for this integration.
     toast({
       title: "OAuth Not Configured",
-      description: `Please use API Key authentication for ${node.appName}.`,
+      description: supportsApiKey
+        ? `Please use API Key authentication for ${node.appName}.`
+        : `OAuth isn't configured for ${node.appName} in this app yet.`,
       variant: "default",
     });
-    
-    // Switch to API key method instead of auto-connecting
-    setAuthMethod('apikey');
+
+    // Only switch when the app actually supports API key auth.
+    if (supportsApiKey) setAuthMethod('apikey');
   };
 
   const handleApiKeyVerify = async () => {
@@ -1233,6 +1257,8 @@ export function ConfigPanelV2({
     const hasOAuth = availableAuthMethods.some(a => a.type === 'oauth2');
     const hasApiKey = availableAuthMethods.some(a => a.type === 'api-key' || a.type === 'bearer');
     const apiKeyConfig = availableAuthMethods.find(a => a.type === 'api-key' || a.type === 'bearer');
+    const oauthConfig = availableAuthMethods.find((a) => a.type === 'oauth2');
+    const oauthConfigured = Boolean((oauthConfig as any)?.oauthUrls?.authorize);
     
     const resolvedCredentialId = credentialId || node?.config?.credentialId;
     const credentialSelectValue = resolvedCredentialId || '__none__';
@@ -1244,6 +1270,30 @@ export function ConfigPanelV2({
     const connectedLabel = selectedCredential
       ? `${selectedCredential.name}${selectedCredential.preview ? ` — ${selectedCredential.preview}` : ''}`
       : 'Connected';
+
+    if (availableAuthMethods.length === 0) {
+      return (
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold flex items-center gap-2">
+              <Key className="h-4 w-4 text-muted-foreground" />
+              Connect
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              This step doesn’t require authentication.
+            </p>
+          </div>
+
+          <Alert>
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>No connection needed</AlertTitle>
+            <AlertDescription className="text-sm">
+              Continue to the next step.
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
 
     return (
     <div className="space-y-4">
@@ -1329,24 +1379,22 @@ export function ConfigPanelV2({
         </Card>
       )}
 
-      {/* Auth method tabs - always show since API key is always available */}
-      {!isAuthenticated && (
+      {/* Auth method tabs - show only when both methods exist */}
+      {!isAuthenticated && hasOAuth && hasApiKey && (
         <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-          {hasOAuth && (
-            <Button
-              variant={authMethod === 'oauth' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-9"
-              onClick={() => setAuthMethod('oauth')}
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-              OAuth
-            </Button>
-          )}
+          <Button
+            variant={authMethod === 'oauth' ? 'default' : 'ghost'}
+            size="sm"
+            className="h-9"
+            onClick={() => setAuthMethod('oauth')}
+          >
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            OAuth
+          </Button>
           <Button
             variant={authMethod === 'apikey' ? 'default' : 'ghost'}
             size="sm"
-            className={cn("h-9", !hasOAuth && "col-span-2")}
+            className="h-9"
             onClick={() => setAuthMethod('apikey')}
           >
             <Key className="h-3.5 w-3.5 mr-1.5" />
@@ -1356,7 +1404,7 @@ export function ConfigPanelV2({
       )}
 
       {/* OAuth flow */}
-      {authMethod === 'oauth' && !isAuthenticated && hasOAuth && (
+      {(authMethod === 'oauth' || (hasOAuth && !hasApiKey)) && !isAuthenticated && hasOAuth && (
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-3">
@@ -1370,11 +1418,21 @@ export function ConfigPanelV2({
                 </p>
               </div>
             </div>
+
+            {!oauthConfigured && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>OAuth not configured</AlertTitle>
+                <AlertDescription className="text-sm">
+                  This integration doesn’t have OAuth endpoints configured in this app yet.
+                </AlertDescription>
+              </Alert>
+            )}
             
             <Button 
               className="w-full"
               onClick={handleOAuthConnect}
-              disabled={isAuthenticating}
+              disabled={isAuthenticating || !oauthConfigured}
             >
               {isAuthenticating ? (
                 <>
@@ -1404,8 +1462,8 @@ export function ConfigPanelV2({
         </Card>
       )}
 
-      {/* API Key flow - always available */}
-      {authMethod === 'apikey' && !isAuthenticated && (
+      {/* API Key flow */}
+      {(authMethod === 'apikey' || (!hasOAuth && hasApiKey)) && !isAuthenticated && hasApiKey && (
         <Card>
           <CardContent className="p-4 space-y-3">
             {apiKeyConfig?.fields?.map((field) => (

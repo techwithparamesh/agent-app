@@ -1789,23 +1789,28 @@ router.post('/credentials/:id/verify', isAuthenticated, async (req: any, res) =>
       }
     }
 
-    // Verify Telegram bot token
-    if (appId === 'telegram' && decryptedData.botToken) {
-      try {
-        const response = await fetch(
-          `https://api.telegram.org/bot${encodeURIComponent(String(decryptedData.botToken))}/getMe`,
-          { method: 'GET', headers: { Accept: 'application/json' } }
-        );
+    // Verify Telegram bot token (support both botToken and apiKey field names)
+    if (appId === 'telegram') {
+      const telegramToken = decryptedData.botToken || decryptedData.apiKey || decryptedData.token;
+      if (telegramToken) {
+        try {
+          const response = await fetch(
+            `https://api.telegram.org/bot${encodeURIComponent(String(telegramToken))}/getMe`,
+            { method: 'GET', headers: { Accept: 'application/json' } }
+          );
 
-        const payload = (await response.json().catch(() => null)) as any;
-        const ok = response.ok && payload?.ok === true && payload?.result?.id;
-        isValid = Boolean(ok);
-        message = isValid
-          ? 'Credential verified successfully'
-          : (payload?.description ? `Invalid bot token: ${payload.description}` : 'Invalid bot token');
-      } catch {
-        isValid = false;
-        message = 'Failed to verify bot token';
+          const payload = (await response.json().catch(() => null)) as any;
+          const ok = response.ok && payload?.ok === true && payload?.result?.id;
+          isValid = Boolean(ok);
+          message = isValid
+            ? `Credential verified successfully (Bot: @${payload?.result?.username || 'unknown'})`
+            : (payload?.description ? `Invalid bot token: ${payload.description}` : 'Invalid bot token');
+        } catch {
+          isValid = false;
+          message = 'Failed to verify bot token';
+        }
+      } else {
+        message = 'Bot token is required for Telegram verification';
       }
     }
 

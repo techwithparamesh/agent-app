@@ -291,7 +291,14 @@ export const telegramConfig: AppConfig = {
       name: 'Bot Token',
       description: 'Use your Telegram Bot Token from @BotFather',
       fields: [
-        { key: 'botToken', label: 'Bot Token', type: 'password', required: true, placeholder: '123456:ABC-DEF...' },
+        { 
+          key: 'botToken', 
+          label: 'Bot Token', 
+          type: 'password', 
+          required: true, 
+          placeholder: '123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
+          helpText: 'Get this from @BotFather on Telegram. Send /newbot or /mybots to get your token.'
+        },
       ],
     },
   ],
