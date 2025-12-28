@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
@@ -177,8 +178,18 @@ const StepExecutionItem: React.FC<{
   onClick?: () => void;
 }> = ({ step, onClick }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { toast } = useToast();
   const status = statusConfig[step.status];
   const StatusIcon = status.icon;
+
+  const copyJson = async (obj: any) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(obj ?? {}, null, 2));
+      toast({ title: 'Copied', description: 'JSON copied to clipboard.' });
+    } catch {
+      toast({ title: 'Copy failed', description: 'Could not copy to clipboard.', variant: 'destructive' });
+    }
+  };
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -232,7 +243,16 @@ const StepExecutionItem: React.FC<{
                   <FileJson className="h-3 w-3" />
                   Input
                 </span>
-                <Button variant="ghost" size="icon" className="h-5 w-5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void copyJson(step.input);
+                  }}
+                >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
@@ -250,7 +270,16 @@ const StepExecutionItem: React.FC<{
                   <FileJson className="h-3 w-3" />
                   Output
                 </span>
-                <Button variant="ghost" size="icon" className="h-5 w-5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void copyJson(step.output);
+                  }}
+                >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
@@ -313,16 +342,39 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   className,
 }) => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+  const { toast } = useToast();
 
   if (!isOpen) return null;
 
   const runStatus = currentRun ? statusConfig[currentRun.status] : null;
 
+  const handleExportLogs = () => {
+    const payload = {
+      currentRun,
+      runs,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `execution-logs-${currentRun?.id || 'latest'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Exported', description: 'Execution logs downloaded.' });
+  };
+
+  const handleRetryFailed = () => {
+    onStartExecution?.();
+  };
+
   return (
     <TooltipProvider>
       <div
         className={cn(
-          "w-96 h-full bg-background border-l flex flex-col",
+          "w-96 max-w-[92vw] h-full bg-background border-l flex flex-col",
           "animate-in slide-in-from-right duration-200",
           className
         )}
@@ -527,11 +579,21 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
 
         {/* Footer */}
         <div className="p-3 border-t flex items-center justify-between">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={handleExportLogs}
+          >
             <Download className="h-3 w-3" />
             Export Logs
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={handleRetryFailed}
+          >
             <RotateCcw className="h-3 w-3" />
             Retry Failed
           </Button>

@@ -296,6 +296,11 @@ async function executeNode(node: any, userId: string, context: any): Promise<any
   const appId = getNodeAppId(node);
   const actionId = getNodeActionId(node);
 
+  // Hard validation: action nodes must have an action selected.
+  if (getNodeType(node) === 'action' && (!actionId || actionId.trim().length === 0)) {
+    throw new Error('Action node is not configured (missing action selection)');
+  }
+
   const rawConfig = (node?.config && typeof node.config === 'object') ? node.config : {};
   const config = interpolate(rawConfig, context);
 
@@ -850,6 +855,12 @@ export async function runWorkflow(input: WorkflowRunInput): Promise<{ nodeExecut
   const triggerNode = (nodes || []).find((n) => getNodeType(n) === 'trigger');
   if (!triggerNode) {
     throw new Error('Workflow has no trigger node');
+  }
+
+  // Hard validation: trigger must have a triggerType.
+  const triggerType = String(triggerNode?.config?.triggerType || '').trim();
+  if (!triggerType) {
+    throw new Error('Trigger node is not configured (missing trigger type)');
   }
 
   const triggerId = getNodeId(triggerNode);

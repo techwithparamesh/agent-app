@@ -86,7 +86,7 @@ export interface EnhancedFlowNodeProps {
 // CONSTANTS
 // ============================================
 
-const NODE_WIDTH = 260;
+const NODE_WIDTH = 280;
 
 // Status configuration
 const statusConfig = {
@@ -148,77 +148,91 @@ const statusConfig = {
   },
 };
 
-// Node type configuration
-const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; badgeClassName: string; gradient?: string }> = {
+// Node type configuration with n8n-style left border accent colors
+const nodeTypeConfig: Record<string, { label: string; icon: typeof Zap; badgeClassName: string; accentColor: string }> = {
   trigger: { 
     label: "Trigger", 
     icon: Zap, 
     badgeClassName: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25",
+    accentColor: "#f59e0b", // amber-500
   },
   action: { 
     label: "Action", 
     icon: ArrowRight, 
     badgeClassName: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25",
+    accentColor: "#3b82f6", // blue-500
   },
   condition: { 
     label: "Condition", 
     icon: GitBranch, 
     badgeClassName: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/25",
+    accentColor: "#a855f7", // purple-500
   },
   delay: { 
     label: "Delay", 
     icon: Clock, 
     badgeClassName: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/25",
+    accentColor: "#f97316", // orange-500
   },
   loop: { 
     label: "Loop", 
     icon: RotateCcw, 
     badgeClassName: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25",
+    accentColor: "#06b6d4", // cyan-500
   },
   router: { 
     label: "Router", 
     icon: GitBranch, 
     badgeClassName: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25",
+    accentColor: "#6366f1", // indigo-500
   },
   "error-handler": { 
     label: "Error Handler", 
     icon: AlertCircle, 
     badgeClassName: "bg-destructive/10 text-destructive border border-destructive/25",
+    accentColor: "#ef4444", // red-500
   },
   switch: {
     label: "Switch",
     icon: GitBranch,
     badgeClassName: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/25",
+    accentColor: "#8b5cf6", // violet-500
   },
   filter: {
     label: "Filter",
     icon: GitBranch,
     badgeClassName: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25",
+    accentColor: "#10b981", // emerald-500
   },
   merge: {
     label: "Merge",
     icon: GitBranch,
     badgeClassName: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/25",
+    accentColor: "#14b8a6", // teal-500
   },
   split: {
     label: "Split",
     icon: GitBranch,
     badgeClassName: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border border-pink-500/25",
+    accentColor: "#ec4899", // pink-500
   },
   code: {
     label: "Code",
     icon: ArrowRight,
     badgeClassName: "bg-muted text-foreground border border-border",
+    accentColor: "#71717a", // zinc-500
   },
   transform: {
     label: "Transform",
     icon: RotateCcw,
     badgeClassName: "bg-lime-500/15 text-lime-700 dark:text-lime-300 border border-lime-500/25",
+    accentColor: "#84cc16", // lime-500
   },
   wait: {
     label: "Wait",
     icon: Clock,
     badgeClassName: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20",
+    accentColor: "#d97706", // amber-600
   },
 };
 
@@ -422,7 +436,7 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Main card */}
+        {/* Main card with n8n-style colored left accent border */}
         <div
           className={cn(
             "relative rounded-xl border bg-card overflow-hidden",
@@ -435,8 +449,14 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
             status.borderColor,
           )}
         >
+          {/* n8n-style colored left accent border */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+            style={{ backgroundColor: nodeType.accentColor }}
+          />
+          
           {/* Header */}
-          <div className="relative flex items-start gap-3 p-3 pb-2">
+          <div className="relative flex items-start gap-3 p-3 pb-2 pl-4">
             {/* Drag handle */}
             <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
               <GripVertical className="h-4 w-4 text-muted-foreground/50" />
@@ -457,41 +477,42 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
             <div className="flex-1 min-w-0 pt-0.5">
               {/* Type and status badges */}
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "h-5 text-[10px] gap-1 font-medium",
-                    nodeType.badgeClassName
-                  )}
-                >
-                  <TypeIcon className="h-3 w-3" />
-                  {nodeType.label}
-                </Badge>
-
-                {node.status === 'incomplete' && (
-                  <Badge
-                    variant="outline"
-                    className="h-5 text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25"
-                  >
-                    Needs config
-                  </Badge>
-                )}
-                
+                {/* Type badge - only show icon for cleaner look */}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium",
-                      "bg-muted/30 border border-border",
-                      status.color
-                    )}>
-                      <StatusIcon className={cn(
-                        "h-3 w-3",
-                        status.pulse && "animate-spin"
-                      )} />
-                    </div>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "h-5 px-1.5 text-[10px] font-medium",
+                        nodeType.badgeClassName
+                      )}
+                    >
+                      <TypeIcon className="h-3 w-3" />
+                    </Badge>
                   </TooltipTrigger>
-                  <TooltipContent side="top">{status.label}</TooltipContent>
+                  <TooltipContent side="top">{nodeType.label}</TooltipContent>
                 </Tooltip>
+
+                {/* Status indicator - clean icon only with tooltip */}
+                {node.status !== 'configured' && node.status !== 'complete' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={cn(
+                        "flex items-center justify-center w-5 h-5 rounded-full",
+                        node.status === 'incomplete' && "bg-amber-500/15",
+                        node.status === 'error' && "bg-destructive/15",
+                        node.status === 'running' && "bg-primary/15",
+                        status.color
+                      )}>
+                        <StatusIcon className={cn(
+                          "h-3 w-3",
+                          status.pulse && "animate-spin"
+                        )} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{status.label}</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
 
               {/* App name */}

@@ -37,7 +37,7 @@ export interface FlowConnectionsProps {
 // CONSTANTS
 // ============================================
 
-const NODE_WIDTH = 260;
+const NODE_WIDTH = 280;
 const NODE_HEIGHT = 140;
 const HANDLE_OFFSET = 10;
 const CURVE_OFFSET = 80;
@@ -45,15 +45,15 @@ const STROKE_WIDTH = 2;
 const STROKE_WIDTH_HOVER = 3;
 const HIT_AREA_WIDTH = 20;
 
-// Connection colors by type
+// Connection colors by type (n8n-style: increased opacity for visibility)
 const CONNECTION_COLORS = {
-  default: 'hsl(var(--muted-foreground) / 0.45)',
-  hover: 'hsl(var(--primary) / 0.55)',
+  default: 'hsl(var(--muted-foreground) / 0.65)',
+  hover: 'hsl(var(--primary) / 0.85)',
   selected: 'hsl(var(--primary))',
-  success: 'hsl(var(--primary) / 0.55)',
+  success: 'hsl(142 76% 45% / 0.85)',
   error: 'hsl(var(--destructive))',
-  warning: 'hsl(var(--primary) / 0.55)',
-  disabled: 'hsl(var(--muted-foreground) / 0.35)',
+  warning: 'hsl(38 92% 50% / 0.85)',
+  disabled: 'hsl(var(--muted-foreground) / 0.40)',
 };
 
 // ============================================

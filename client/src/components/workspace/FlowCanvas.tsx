@@ -402,12 +402,17 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
   // RENDER
   // ============================================
 
+  // n8n-style line grid pattern for professional appearance
   const gridPattern = showGrid
     ? [
-        // Fine dot grid
-        `radial-gradient(circle, hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px)`,
-        // Coarse dot grid
-        `radial-gradient(circle, hsl(var(--muted-foreground) / 0.10) 1px, transparent 1px)`,
+        // Fine horizontal lines
+        `linear-gradient(hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)`,
+        // Fine vertical lines
+        `linear-gradient(90deg, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)`,
+        // Major horizontal lines (every 5 units)
+        `linear-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`,
+        // Major vertical lines (every 5 units)
+        `linear-gradient(90deg, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`,
       ].join(',')
     : 'none';
 
@@ -433,14 +438,19 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
         onDrop={handleDrop}
         tabIndex={0}
       >
-        {/* Grid Background */}
+        {/* Grid Background - n8n-style intersecting lines */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: gridPattern,
-            backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px, ${GRID_SIZE * 5 * viewport.zoom}px ${GRID_SIZE * 5 * viewport.zoom}px`,
-            backgroundPosition: `${viewport.x}px ${viewport.y}px, ${viewport.x}px ${viewport.y}px`,
-            opacity: Math.min(1, viewport.zoom),
+            backgroundSize: [
+              `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
+              `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
+              `${GRID_SIZE * 5 * viewport.zoom}px ${GRID_SIZE * 5 * viewport.zoom}px`,
+              `${GRID_SIZE * 5 * viewport.zoom}px ${GRID_SIZE * 5 * viewport.zoom}px`,
+            ].join(', '),
+            backgroundPosition: `${viewport.x}px ${viewport.y}px`,
+            opacity: Math.min(1, viewport.zoom * 1.2),
           }}
         />
 

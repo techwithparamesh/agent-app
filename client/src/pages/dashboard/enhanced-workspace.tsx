@@ -100,7 +100,8 @@ import type { CredentialTemplate, CredentialType, CredentialField } from "@/comp
 import { useCredentialsApi, useWorkflowsApi } from "@/hooks/useWorkflowApi";
 import { useToast } from "@/hooks/use-toast";
 
-import { getAppConfig } from "@/components/workspace/AppConfigurations";
+import { getAppConfig, type ConfigField } from "@/components/workspace/AppConfigurations";
+import { validateWorkflow } from "@/components/workspace/WorkflowValidator";
 
 // n8n Schema registry for apps
 import { n8nSchemaRegistry, getAllN8nApps } from "@/components/workspace/n8n-schemas";
@@ -152,6 +153,7 @@ export function EnhancedWorkspace() {
   const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
   const [executionRuns, setExecutionRuns] = useState<ExecutionRun[]>([]);
   const [currentRun, setCurrentRun] = useState<ExecutionRun | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
@@ -314,6 +316,125 @@ export function EnhancedWorkspace() {
   useEffect(() => {
     workflowsApi.loadWorkflows();
   }, []);
+
+  // ============================================
+  // CONFIG NORMALIZATION + VALIDATION HELPERS
+  // ============================================
+
+  const isConfigFieldVisible = useCallback((field: ConfigField, values: Record<string, any>): boolean => {
+    if (!field.dependsOn) return true;
+    const currentValue = values[field.dependsOn.field];
+    const expected = field.dependsOn.value;
+    if (Array.isArray(expected)) return expected.includes(currentValue);
+    return currentValue === expected;
+  }, []);
+
+  const getMissingRequiredFields = useCallback((fields: ConfigField[], values: Record<string, any>): string[] => {
+    return (fields || [])
+      .filter((f) => !!f.required)
+      .filter((f) => isConfigFieldVisible(f, values))
+      .filter((f) => {
+        const hasExplicitValue = Object.prototype.hasOwnProperty.call(values, f.key);
+        const value = hasExplicitValue ? values[f.key] : f.default;
+        if (value === null || value === undefined) return true;
+        if (typeof value === 'string') return value.trim().length === 0;
+        if (Array.isArray(value)) return value.length === 0;
+        return false;
+      })
+      .map((f) => f.label);
+  }, [isConfigFieldVisible]);
+
+  const computeNodeStatus = useCallback((node: FlowNode, nextConfig: Record<string, any>, nextActionId?: string, nextTriggerId?: string) => {
+    // Don't override execution statuses.
+    if (node.status === 'running' || node.status === 'success' || node.status === 'error') return node.status;
+
+    const appConfig = getAppConfig(node.appId);
+    const requiresAuth = (appConfig?.auth?.length || 0) > 0;
+    const isAuthenticated = nextConfig?.isAuthenticated === true;
+    const credentialId = typeof nextConfig?.credentialId === 'string' ? nextConfig.credentialId : null;
+    const hasCredential = isAuthenticated || !!credentialId;
+    const dynamicFields = (nextConfig?.dynamicFields && typeof nextConfig.dynamicFields === 'object') ? nextConfig.dynamicFields : {};
+
+    // Trigger nodes
+    if (node.type === 'trigger') {
+      const triggerType = nextConfig?.triggerType || node.config?.triggerType;
+      if (!triggerType) return 'incomplete';
+      if (requiresAuth && !hasCredential) return 'incomplete';
+
+      const selectedTriggerId: string | undefined =
+        (typeof nextConfig?.selectedTriggerId === 'string' && nextConfig.selectedTriggerId.length > 0)
+          ? nextConfig.selectedTriggerId
+          : (typeof node.config?.selectedTriggerId === 'string' ? node.config.selectedTriggerId : undefined);
+
+      // For app triggers, enforce required fields from schema
+      if ((appConfig?.triggers?.length || 0) > 0) {
+        if (!selectedTriggerId && !nextTriggerId) return 'incomplete';
+        const trigger = appConfig?.triggers?.find((t) => t.id === selectedTriggerId);
+        if (trigger) {
+          const missing = getMissingRequiredFields(trigger.fields || [], dynamicFields);
+          if (missing.length > 0) return 'incomplete';
+        }
+      }
+
+      return 'configured';
+    }
+
+    // Action nodes
+    if (node.type === 'action') {
+      const selectedActionId: string | undefined =
+        (typeof nextConfig?.selectedActionId === 'string' && nextConfig.selectedActionId.length > 0)
+          ? nextConfig.selectedActionId
+          : (typeof node.config?.selectedActionId === 'string' ? node.config.selectedActionId : undefined);
+
+      const effectiveActionId = selectedActionId || nextActionId;
+      if (!effectiveActionId) return 'incomplete';
+      if (requiresAuth && !hasCredential) return 'incomplete';
+
+      const action = appConfig?.actions?.find((a) => a.id === effectiveActionId);
+      if (action) {
+        const missing = getMissingRequiredFields(action.fields || [], dynamicFields);
+        if (missing.length > 0) return 'incomplete';
+      }
+
+      return 'configured';
+    }
+
+    // Logic/utility nodes: treat as configured by default.
+    return 'configured';
+  }, [getMissingRequiredFields]);
+
+  // Normalize nodes that were saved by ConfigPanelV2 (selectedActionId/selectedTriggerId)
+  useEffect(() => {
+    for (const node of flowState.nodes) {
+      // Avoid normalizing while executing.
+      if (node.status === 'running') continue;
+
+      const nextConfig = node.config || {};
+      const derivedActionId =
+        (!node.actionId && typeof nextConfig?.selectedActionId === 'string' && nextConfig.selectedActionId.length > 0)
+          ? nextConfig.selectedActionId
+          : node.actionId;
+      const derivedTriggerId =
+        (!node.triggerId && typeof nextConfig?.selectedTriggerId === 'string' && nextConfig.selectedTriggerId.length > 0)
+          ? nextConfig.selectedTriggerId
+          : node.triggerId;
+
+      const derivedStatus = computeNodeStatus(node, nextConfig, derivedActionId, derivedTriggerId);
+
+      const needsUpdate =
+        derivedActionId !== node.actionId ||
+        derivedTriggerId !== node.triggerId ||
+        (node.status !== 'success' && node.status !== 'error' && derivedStatus !== node.status);
+
+      if (needsUpdate) {
+        flowActions.updateNode(node.id, {
+          actionId: derivedActionId,
+          triggerId: derivedTriggerId,
+          status: derivedStatus,
+        });
+      }
+    }
+  }, [flowState.nodes, flowActions, computeNodeStatus]);
 
   // ============================================
   // HANDLERS
@@ -583,15 +704,31 @@ export function EnhancedWorkspace() {
 
   // Handle node config save
   const handleNodeSave = useCallback((nodeId: string, config: Record<string, any>) => {
+    const prev = flowActions.getNode(nodeId);
+    const nextActionId =
+      (typeof config?.selectedActionId === 'string' && config.selectedActionId.length > 0)
+        ? config.selectedActionId
+        : (typeof config?.actionId === 'string' && config.actionId.length > 0)
+          ? config.actionId
+          : prev?.actionId;
+    const nextTriggerId =
+      (typeof config?.selectedTriggerId === 'string' && config.selectedTriggerId.length > 0)
+        ? config.selectedTriggerId
+        : (typeof config?.triggerId === 'string' && config.triggerId.length > 0)
+          ? config.triggerId
+          : prev?.triggerId;
+
+    const status = prev ? computeNodeStatus(prev, config, nextActionId, nextTriggerId) : 'incomplete';
+
     flowActions.updateNode(nodeId, {
       config,
-      name: config.name || flowActions.getNode(nodeId)?.name,
-      triggerId: config.triggerId,
-      actionId: config.actionId,
-      status: config.triggerId || config.actionId ? 'configured' : 'incomplete',
+      name: config.name || prev?.name,
+      triggerId: nextTriggerId,
+      actionId: nextActionId,
+      status,
     });
     setConfigPanelOpen(false);
-  }, [flowActions]);
+  }, [flowActions, computeNodeStatus]);
 
   // Handle quick node picker selection (from connection drop on empty canvas)
   const handleQuickNodeSelect = useCallback((app: typeof appCatalog[0], nodeType: 'action' | 'condition' | 'delay' | 'loop') => {
@@ -939,6 +1076,91 @@ export function EnhancedWorkspace() {
     }
   }, [flowState.nodes, flowName, isActive, currentWorkflowId, workflowsApi, toast]);
 
+  const handleExportFlow = useCallback(() => {
+    const payload = {
+      id: currentWorkflowId,
+      name: flowName,
+      isActive,
+      nodes: flowState.nodes,
+      connections: flowState.connections,
+      exportedAt: new Date().toISOString(),
+    };
+
+    const safeName = (flowName || 'workflow')
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s+/g, ' ');
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeName}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    toast({ title: 'Exported', description: 'Workflow JSON downloaded.' });
+  }, [currentWorkflowId, flowName, isActive, flowState.nodes, flowState.connections, toast]);
+
+  const handleDuplicateFlow = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const result = await workflowsApi.saveWorkflow({
+        name: `${flowName} (Copy)`,
+        description: '',
+        nodes: flowState.nodes,
+        connections: flowState.connections,
+        triggerConfig: flowState.nodes.find(n => n.type === 'trigger')?.config || {},
+        isActive: false,
+      });
+
+      if (result?.id) {
+        setCurrentWorkflowId(result.id);
+        setFlowName(result.name || `${flowName} (Copy)`);
+        toast({ title: 'Duplicated', description: 'Created a copy of this workflow.' });
+      } else {
+        toast({ title: 'Duplicate failed', description: 'Could not create a copy.', variant: 'destructive' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Duplicate failed', description: e?.message || 'Could not create a copy.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [flowName, flowState.nodes, flowState.connections, workflowsApi, toast]);
+
+  const handleShareFlow = useCallback(async () => {
+    try {
+      const url = window.location.href;
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Link copied', description: 'Workspace link copied to clipboard.' });
+    } catch {
+      toast({ title: 'Copy failed', description: 'Could not copy link to clipboard.', variant: 'destructive' });
+    }
+  }, [toast]);
+
+  const handleDeleteFlow = useCallback(async () => {
+    if (!currentWorkflowId) {
+      // Unsaved flow: just go back.
+      setLocation('/dashboard/integrations');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const ok = await workflowsApi.deleteWorkflow(currentWorkflowId);
+      if (ok) {
+        toast({ title: 'Deleted', description: 'Workflow removed.' });
+        setLocation('/dashboard/integrations');
+      } else {
+        toast({ title: 'Delete failed', description: 'Could not delete workflow.', variant: 'destructive' });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentWorkflowId, workflowsApi, toast, setLocation]);
+
   const ensureSavedWorkflowId = useCallback(async (): Promise<string> => {
     // If already saved, use existing ID.
     if (currentWorkflowId) return currentWorkflowId;
@@ -972,6 +1194,27 @@ export function EnhancedWorkspace() {
 
   const handleStartExecution = useCallback(async () => {
     try {
+      // n8n-like: block execution until configuration is complete.
+      const validation = validateWorkflow(flowState.nodes);
+      const hasIncomplete = flowState.nodes.some(n => n.status === 'incomplete' || n.status === 'idle');
+      if (!validation.isValid || hasIncomplete) {
+        const firstBad = flowState.nodes.find(n => n.status === 'incomplete' || n.status === 'idle')
+          || flowState.nodes.find(n => n.type === 'trigger' && !n.config?.triggerType)
+          || flowState.nodes.find(n => n.type === 'action' && !n.actionId);
+
+        if (firstBad) {
+          flowActions.selectNode(firstBad.id);
+          setConfigPanelOpen(true);
+        }
+
+        toast({
+          title: 'Workflow needs configuration',
+          description: validation.errors[0] || 'Please complete required fields before executing.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const workflowId = await ensureSavedWorkflowId();
       setExecutionPanelOpen(true);
 
@@ -1034,7 +1277,7 @@ export function EnhancedWorkspace() {
         variant: 'destructive',
       });
     }
-  }, [ensureSavedWorkflowId, workflowsApi, flowState.nodes, toast]);
+  }, [ensureSavedWorkflowId, workflowsApi, flowState.nodes, toast, flowActions]);
 
   // Handle template import
   const handleImportTemplate = useCallback((template: WorkflowTemplate) => {
@@ -1373,7 +1616,7 @@ export function EnhancedWorkspace() {
               <Input
                 value={flowName}
                 onChange={(e) => setFlowName(e.target.value)}
-                className="h-8 w-60 border-none bg-transparent font-medium text-sm"
+                className="h-8 w-40 sm:w-60 border-none bg-transparent font-medium text-sm"
               />
               {flowState.isDirty && (
                 <Badge variant="outline" className="text-[10px]">Unsaved</Badge>
@@ -1505,24 +1748,50 @@ export function EnhancedWorkspace() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleDuplicateFlow();
+                  }}
+                >
                   <Copy className="h-4 w-4 mr-2" />
                   Duplicate Flow
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    handleExportFlow();
+                  }}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleShareFlow();
+                  }}
+                >
                   <Share2 className="h-4 w-4 mr-2" />
                   Share
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    toast({ title: 'Coming soon', description: 'Version history is not available yet.' });
+                  }}
+                >
                   <History className="h-4 w-4 mr-2" />
                   Version History
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setDeleteConfirmOpen(true);
+                  }}
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Flow
                 </DropdownMenuItem>
@@ -1697,12 +1966,47 @@ export function EnhancedWorkspace() {
             currentRun={currentRun}
             runs={executionRuns}
             onStartExecution={handleStartExecution}
+            onStopExecution={() => {
+              // Backend cancellation isn't implemented yet; keep the UI responsive.
+              toast({ title: 'Not supported yet', description: 'Stopping a running execution is not available yet.' });
+            }}
+            onClearLogs={() => {
+              setExecutionRuns([]);
+              setCurrentRun(null);
+              toast({ title: 'Cleared', description: 'Execution logs cleared.' });
+            }}
             onNodeClick={(nodeId) => {
               flowActions.selectNode(nodeId);
               flowActions.centerOnNode(nodeId);
             }}
           />
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete this workflow?</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm text-muted-foreground">
+              This action can’t be undone.
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  void handleDeleteFlow();
+                }}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Context Menu */}
         {contextMenu && (
