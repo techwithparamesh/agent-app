@@ -260,7 +260,7 @@ export function AppSidebar() {
                   className="gap-3"
                 >
                   <Link href="/dashboard/agents/website">
-                    <Globe className="h-5 w-5 text-blue-500" />
+                    <Globe className="h-5 w-5" />
                     <span>Website Agent</span>
                   </Link>
                 </SidebarMenuButton>
@@ -274,7 +274,7 @@ export function AppSidebar() {
                   className="gap-3"
                 >
                   <Link href="/dashboard/agents/whatsapp">
-                    <Smartphone className="h-5 w-5 text-green-500" />
+                    <Smartphone className="h-5 w-5" />
                     <span>WhatsApp Agent</span>
                   </Link>
                 </SidebarMenuButton>
@@ -288,7 +288,7 @@ export function AppSidebar() {
                   className="gap-3"
                 >
                   <Link href="/dashboard/agents/new">
-                    <Zap className="h-5 w-5 text-yellow-500" />
+                    <Zap className="h-5 w-5" />
                     <span>Quick Create</span>
                   </Link>
                 </SidebarMenuButton>
@@ -404,7 +404,7 @@ export function AppSidebar() {
                   className="gap-3"
                 >
                   <Link href="/dashboard/whatsapp/accounts">
-                    <Phone className="h-5 w-5 text-green-500" />
+                    <Phone className="h-5 w-5" />
                     <span>WhatsApp Accounts</span>
                   </Link>
                 </SidebarMenuButton>

@@ -112,6 +112,13 @@ export default function AnalyticsPage() {
   return (
     <DashboardLayout title="Analytics">
       <div className="max-w-6xl mx-auto space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
+          <p className="text-sm text-muted-foreground">
+            Monitor conversations, visitors, and response quality.
+          </p>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, index) => (
@@ -196,9 +203,9 @@ export default function AnalyticsPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                               {(agent as any).agentType === 'whatsapp' ? (
-                                <Smartphone className="h-5 w-5 text-green-500" />
+                                <Smartphone className="h-5 w-5" />
                               ) : (
-                                <Globe className="h-5 w-5 text-blue-500" />
+                                <Globe className="h-5 w-5" />
                               )}
                             </div>
                             <div>
@@ -255,9 +262,9 @@ export default function AnalyticsPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                           {getAgentType(conversation.agentId) === 'whatsapp' ? (
-                            <Smartphone className="h-5 w-5 text-green-500" />
+                            <Smartphone className="h-5 w-5" />
                           ) : (
-                            <Globe className="h-5 w-5 text-blue-500" />
+                            <Globe className="h-5 w-5" />
                           )}
                         </div>
                         <div>

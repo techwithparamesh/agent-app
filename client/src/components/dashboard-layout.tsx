@@ -61,14 +61,18 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between gap-4 h-16 px-4 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+          <header className="flex items-center justify-between gap-4 h-16 px-6 md:px-8 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-40">
             <div className="flex items-center gap-4">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <SidebarTrigger aria-label="Toggle sidebar" data-testid="button-sidebar-toggle" />
               {title && (
-                <h1 className="font-display font-semibold text-lg">{title}</h1>
+                <h1 className="text-sm font-medium text-muted-foreground truncate">
+                  {title}
+                </h1>
               )}
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-6 md:p-8">
             {children}

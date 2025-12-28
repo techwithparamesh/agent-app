@@ -81,10 +81,11 @@ export default function AgentsList() {
 
   return (
     <DashboardLayout title="My Agents">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-muted-foreground">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">My Agents</h1>
+            <p className="text-sm text-muted-foreground">
               Manage and configure your AI agents.
             </p>
           </div>

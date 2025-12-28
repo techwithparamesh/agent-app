@@ -317,10 +317,15 @@ export function WorkspaceCanvas({
           onDrop={handleDrop}
           style={{
             backgroundImage: showGrid
-              ? `radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`
+              ? [
+                  // Fine dot grid
+                  `radial-gradient(circle, hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px)`,
+                  // Coarse dot grid
+                  `radial-gradient(circle, hsl(var(--muted-foreground) / 0.10) 1px, transparent 1px)`,
+                ].join(',')
               : 'none',
-            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
-            backgroundPosition: `${viewport.x}px ${viewport.y}px`,
+            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px, ${100 * viewport.zoom}px ${100 * viewport.zoom}px`,
+            backgroundPosition: `${viewport.x}px ${viewport.y}px, ${viewport.x}px ${viewport.y}px`,
           }}
         >
           {/* Transformable content */}

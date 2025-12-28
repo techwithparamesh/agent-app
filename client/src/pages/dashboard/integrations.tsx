@@ -82,7 +82,7 @@ const integrationCatalog = {
   communication: {
     label: "Communication",
     icon: MessageCircle,
-    color: "bg-blue-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'whatsapp', 
@@ -173,7 +173,7 @@ const integrationCatalog = {
   email: {
     label: "Email",
     icon: Mail,
-    color: "bg-red-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'gmail', 
@@ -232,7 +232,7 @@ const integrationCatalog = {
   google: {
     label: "Google",
     icon: Globe,
-    color: "bg-green-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'google_sheets', 
@@ -291,7 +291,7 @@ const integrationCatalog = {
   crm: {
     label: "CRM & Sales",
     icon: Users,
-    color: "bg-purple-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'hubspot', 
@@ -349,7 +349,7 @@ const integrationCatalog = {
   automation: {
     label: "Automation",
     icon: Zap,
-    color: "bg-orange-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'zapier', 
@@ -400,7 +400,7 @@ const integrationCatalog = {
   storage: {
     label: "Database & Storage",
     icon: Database,
-    color: "bg-cyan-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'airtable', 
@@ -483,7 +483,7 @@ const integrationCatalog = {
   ecommerce: {
     label: "E-commerce",
     icon: ShoppingCart,
-    color: "bg-pink-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'stripe', 
@@ -542,7 +542,7 @@ const integrationCatalog = {
   productivity: {
     label: "Productivity",
     icon: Calendar,
-    color: "bg-indigo-500",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'trello', 
@@ -607,7 +607,7 @@ const integrationCatalog = {
   developer: {
     label: "Developer Tools",
     icon: Webhook,
-    color: "bg-gray-600",
+    color: "bg-muted",
     integrations: [
       { 
         id: 'custom_integration', 
@@ -691,7 +691,7 @@ const integrationCatalog = {
   ai: {
     label: "AI & ML",
     icon: Sparkles,
-    color: "bg-violet-500",
+    color: "bg-muted",
     integrations: [
       {
         id: 'openai',
@@ -758,7 +758,7 @@ const integrationCatalog = {
   marketing: {
     label: "Marketing",
     icon: Target,
-    color: "bg-rose-500",
+    color: "bg-muted",
     integrations: [
       {
         id: 'google_analytics',
@@ -832,7 +832,7 @@ const integrationCatalog = {
   support: {
     label: "Support",
     icon: Bell,
-    color: "bg-amber-500",
+    color: "bg-muted",
     integrations: [
       {
         id: 'zendesk',
@@ -906,7 +906,7 @@ const integrationCatalog = {
   database: {
     label: "Databases",
     icon: HardDrive,
-    color: "bg-emerald-500",
+    color: "bg-muted",
     integrations: [
       {
         id: 'postgresql',
@@ -955,7 +955,7 @@ const integrationCatalog = {
   social: {
     label: "Social Media",
     icon: Globe,
-    color: "bg-sky-500",
+    color: "bg-muted",
     integrations: [
       {
         id: 'twitter',
@@ -1106,7 +1106,7 @@ class IntegrationErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <DashboardLayout>
+        <DashboardLayout title="Integrations">
           <div className="p-6">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -1352,16 +1352,16 @@ function IntegrationsPageContent() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <DashboardLayout title="Integrations">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
               <Zap className="h-8 w-8 text-primary" />
               Integrations
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Connect {allIntegrations.length} apps and automate your workflows like n8n
             </p>
           </div>
@@ -1483,7 +1483,7 @@ function IntegrationsPageContent() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${info?.categoryColor || 'bg-gray-100'}`}>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${info?.categoryColor || 'bg-muted'} border`}>
                               {info?.icon || '🔗'}
                             </div>
                             <div>
@@ -1497,7 +1497,7 @@ function IntegrationsPageContent() {
                                     {integration.errorCount} errors
                                   </Badge>
                                 ) : (
-                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                  <Badge>
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Active
                                   </Badge>
@@ -1590,13 +1590,13 @@ function IntegrationsPageContent() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={`Search ${allIntegrations.length} apps...`}
-                  className="pl-10"
+                  className="pl-10 h-11"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <Select value={activeCategory} onValueChange={setActiveCategory}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] h-11">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1614,20 +1614,20 @@ function IntegrationsPageContent() {
             {activeCategory === 'all' && !searchQuery && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-500" />
+                  <Zap className="h-5 w-5 text-muted-foreground" />
                   Popular Integrations
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {popularIntegrations.map((int) => (
-                    <Card key={int.id} className="hover:border-primary hover:shadow-md transition-all">
+                    <Card key={int.id} className="transition-colors hover:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                       <CardContent className="p-4 text-center space-y-3">
                         <div className={`w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-2xl ${int.categoryColor}`}>
                           {int.icon}
                         </div>
                         <p className="font-medium text-sm">{int.name}</p>
                         <div className="flex items-center justify-center">
-                          <Badge variant="outline" className="text-[10px]">
-                            {isBackendSupported(int.id) ? 'Backend supported' : 'Coming soon'}
+                          <Badge variant={isBackendSupported(int.id) ? 'secondary' : 'outline'} className="text-[10px]">
+                            {isBackendSupported(int.id) ? 'Supported' : 'Coming soon'}
                           </Badge>
                         </div>
                         <Button
@@ -1657,7 +1657,7 @@ function IntegrationsPageContent() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {category.integrations.map((int) => (
-                      <Card key={int.id} className="hover:border-primary hover:shadow-md transition-all">
+                      <Card key={int.id} className="transition-colors hover:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${category.color} text-white`}>
@@ -1666,8 +1666,8 @@ function IntegrationsPageContent() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="font-medium">{int.name}</p>
-                                <Badge variant="outline" className="text-[10px]">
-                                  {isBackendSupported(int.id) ? 'Backend supported' : 'Coming soon'}
+                                <Badge variant={isBackendSupported(int.id) ? 'secondary' : 'outline'} className="text-[10px]">
+                                  {isBackendSupported(int.id) ? 'Supported' : 'Coming soon'}
                                 </Badge>
                               </div>
                               <p className="text-xs text-muted-foreground truncate">{int.description}</p>
@@ -1703,17 +1703,17 @@ function IntegrationsPageContent() {
                   </div>
                 ) : (
                   filteredIntegrations.map((int) => (
-                    <Card key={int.id} className="hover:border-primary hover:shadow-md transition-all">
+                    <Card key={int.id} className="transition-colors hover:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${int.categoryColor} text-white`}>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${int.categoryColor} border`}>
                             {int.icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="font-medium">{int.name}</p>
-                              <Badge variant="outline" className="text-[10px]">
-                                {isBackendSupported(int.id) ? 'Backend supported' : 'Coming soon'}
+                              <Badge variant={isBackendSupported(int.id) ? 'secondary' : 'outline'} className="text-[10px]">
+                                {isBackendSupported(int.id) ? 'Supported' : 'Coming soon'}
                               </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground truncate">{int.description}</p>
@@ -1795,7 +1795,7 @@ function IntegrationsPageContent() {
                       ).map((int) => (
                         <Card
                           key={int.id}
-                          className="group cursor-pointer border-2 border-transparent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
+                          className="group cursor-pointer border-2 border-transparent hover:border-primary/50 hover:shadow-md transition-all duration-200 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
                           onClick={() => {
                             setIsCreateOpen(false);
                             openWorkspace(int);
@@ -1803,7 +1803,7 @@ function IntegrationsPageContent() {
                         >
                           <CardContent className="p-4">
                             <div className="flex items-start gap-3">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${int.categoryColor} text-white shadow-lg group-hover:scale-110 transition-transform duration-200`}>
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${int.categoryColor} border transition-transform duration-200 group-hover:scale-[1.02]`}>
                                 {int.icon}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -1895,12 +1895,12 @@ function IntegrationsPageContent() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {log.status === 'success' ? (
-                              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <CheckCircle className="h-4 w-4 text-primary" />
                               </div>
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                                <XCircle className="h-4 w-4 text-red-600" />
+                              <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                                <XCircle className="h-4 w-4 text-destructive" />
                               </div>
                             )}
                             <div>
@@ -1916,7 +1916,7 @@ function IntegrationsPageContent() {
                           <Badge variant="outline">{log.executionTimeMs}ms</Badge>
                         </div>
                         {log.errorMessage && (
-                          <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+                          <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
                             {log.errorMessage}
                           </div>
                         )}
@@ -6167,7 +6167,7 @@ function IntegrationConfigForm({
           
           {/* App Info Banner */}
           <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg ${integrationType.categoryColor} text-white`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg ${integrationType.categoryColor} border`}>
               {integrationType.icon}
             </div>
             <div className="flex-1">
@@ -6198,7 +6198,7 @@ function IntegrationConfigForm({
                   step === s.num 
                     ? 'bg-background shadow-sm' 
                     : step > s.num 
-                      ? 'text-green-600' 
+                      ? 'text-foreground' 
                       : 'text-muted-foreground hover:bg-muted'
                 }`}
                 onClick={() => {
@@ -6210,7 +6210,7 @@ function IntegrationConfigForm({
                   step === s.num 
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
                     : step > s.num 
-                      ? 'bg-green-500 text-white' 
+                      ? 'bg-primary/80 text-primary-foreground' 
                       : 'bg-muted text-muted-foreground'
                 }`}>
                   {step > s.num ? <CheckCircle className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
@@ -6234,12 +6234,12 @@ function IntegrationConfigForm({
         <div className="space-y-6">
           {/* Quick Setup Templates (if available) */}
           {availableTemplates.length > 0 && (
-            <Card className="border-2 border-dashed border-yellow-500/30 bg-yellow-500/5">
+            <Card className="border-2 border-dashed border-border bg-muted/30">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-yellow-500" />
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <CardTitle className="text-base">Quick Setup Templates</CardTitle>
@@ -6427,7 +6427,7 @@ function IntegrationConfigForm({
                 {aiModel && aiModel !== 'custom' && (
                   <div className="p-3 rounded-lg bg-muted/50 border">
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-primary" />
                       <span className="font-medium">{aiModelOptions.find(m => m.value === aiModel)?.label}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -6453,17 +6453,17 @@ function IntegrationConfigForm({
       {step === 2 && (
         <div className="space-y-6">
           {/* Connection Header Card */}
-          <Card className="border-2 border-dashed border-blue-500/30 bg-blue-500/5">
+          <Card className="border-2 border-dashed border-border bg-muted/30">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <PlugZap className="h-6 w-6 text-blue-500" />
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <PlugZap className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold">Connect {integrationType.name}</h3>
                   <p className="text-sm text-muted-foreground">Enter your API credentials to establish connection</p>
                 </div>
-                <Badge variant="outline" className="border-blue-500/30 text-blue-500">
+                <Badge variant="outline">
                   Step 2 of 4
                 </Badge>
               </div>
@@ -6483,9 +6483,9 @@ function IntegrationConfigForm({
             </CardHeader>
             <CardContent className="space-y-4">
               {fields.length === 0 ? (
-                <div className="text-center py-8 rounded-xl bg-green-500/5 border border-green-500/20">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                  <p className="font-semibold text-green-600">No credentials required!</p>
+                <div className="text-center py-8 rounded-xl bg-muted/50 border">
+                  <CheckCircle className="h-12 w-12 text-primary mx-auto mb-3" />
+                  <p className="font-semibold">No credentials required!</p>
                   <p className="text-sm text-muted-foreground mt-1">This integration is ready to use.</p>
                 </div>
               ) : (
@@ -6494,7 +6494,7 @@ function IntegrationConfigForm({
                     const isMissing = field.required && (!config[field.key] || config[field.key].trim() === '');
                     return (
                       <div key={field.key} className="space-y-2">
-                        <Label className={`text-sm font-medium flex items-center gap-2 ${isMissing ? 'text-red-500' : ''}`}>
+                        <Label className={`text-sm font-medium flex items-center gap-2 ${isMissing ? 'text-destructive' : ''}`}>
                           {field.label}
                           {field.required && <Badge variant="outline" className="text-xs">Required</Badge>}
                         </Label>
@@ -6504,14 +6504,14 @@ function IntegrationConfigForm({
                             onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
                             placeholder={field.placeholder}
                             rows={4}
-                            className={`font-mono text-sm resize-none ${isMissing ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`font-mono text-sm resize-none ${isMissing ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                           />
                         ) : field.type === 'select' && field.options ? (
                           <Select 
                             value={config[field.key] || field.options[0]} 
                             onValueChange={(v) => setConfig({ ...config, [field.key]: v })}
                           >
-                            <SelectTrigger className={`h-11 ${isMissing ? 'border-red-500' : ''}`}>
+                            <SelectTrigger className={`h-11 ${isMissing ? 'border-destructive focus-visible:ring-destructive' : ''}`}>
                               <SelectValue placeholder={field.placeholder} />
                             </SelectTrigger>
                             <SelectContent>
@@ -6526,7 +6526,7 @@ function IntegrationConfigForm({
                             value={config[field.key] || ''}
                             onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
                             placeholder={field.placeholder}
-                            className={`h-11 ${isMissing ? 'border-red-500 focus:ring-red-500' : ''}`}
+                            className={`h-11 ${isMissing ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                           />
                         )}
                         {field.helpText && (
@@ -6571,18 +6571,18 @@ function IntegrationConfigForm({
       {step === 3 && (
         <div className="space-y-6">
           {/* Triggers Header Card */}
-          <Card className="border-2 border-dashed border-orange-500/30 bg-orange-500/5">
+          <Card className="border-2 border-dashed border-border bg-muted/30">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Target className="h-6 w-6 text-orange-500" />
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Target className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold">When should this run?</h3>
                   <p className="text-sm text-muted-foreground">Select events that will trigger this integration</p>
                 </div>
                 {selectedTriggers.length > 0 && (
-                  <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                  <Badge variant="secondary">
                     {selectedTriggers.length} selected
                   </Badge>
                 )}
@@ -6648,7 +6648,7 @@ function IntegrationConfigForm({
           <Card>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-base">AI Behavior Instructions</CardTitle>
                 <Badge variant="outline" className="text-xs">Optional</Badge>
               </div>
@@ -6689,7 +6689,7 @@ function IntegrationConfigForm({
           {/* Workflow Canvas Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Workflow className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -6703,7 +6703,7 @@ function IntegrationConfigForm({
           </div>
 
           {/* ============ VISUAL WORKFLOW CANVAS ============ */}
-          <Card className="border-2 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+          <Card className="border-2 bg-muted/20 overflow-hidden">
             <CardContent className="p-6">
               {/* Workflow Flow */}
               <div className="flex flex-col gap-4">
@@ -6713,18 +6713,18 @@ function IntegrationConfigForm({
                   <div className="flex items-center gap-3">
                     {/* Trigger Node */}
                     <div className="relative group">
-                      <div className="w-48 p-3 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20 border border-blue-400/30">
+                      <div className="w-48 p-3 rounded-xl bg-card/95 backdrop-blur border shadow-sm">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-xl">
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xl">
                             {integrationType.icon}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-blue-200 font-medium">TRIGGER</p>
+                            <p className="text-xs text-muted-foreground font-medium">TRIGGER</p>
                             <p className="text-sm font-semibold truncate">{integrationType.name}</p>
                           </div>
                         </div>
-                        <div className="mt-2 pt-2 border-t border-white/20">
-                          <p className="text-[10px] text-blue-200">
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-[10px] text-muted-foreground">
                             {selectedTriggers.length > 0 
                               ? `${selectedTriggers.length} trigger${selectedTriggers.length > 1 ? 's' : ''} selected`
                               : 'No triggers configured'}
@@ -6732,7 +6732,7 @@ function IntegrationConfigForm({
                         </div>
                       </div>
                       {/* Connection Line Down */}
-                      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-blue-500 to-transparent" />
+                      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-border" />
                     </div>
                   </div>
                 </div>
@@ -6750,7 +6750,7 @@ function IntegrationConfigForm({
                       <div className="flex gap-2">
                         <Button 
                           variant="outline" 
-                          className="h-auto py-3 px-4 border-dashed border-2 hover:border-green-500 hover:bg-green-500/5"
+                          className="h-auto py-3 px-4 border-dashed border-2 hover:border-primary/40 hover:bg-muted"
                           onClick={() => {
                             setIsAddingStep(true);
                             setAddStepType('action');
@@ -6758,20 +6758,20 @@ function IntegrationConfigForm({
                           }}
                         >
                           <div className="flex flex-col items-center gap-1">
-                            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                              <Zap className="h-4 w-4 text-green-500" />
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Zap className="h-4 w-4 text-primary" />
                             </div>
                             <span className="text-xs font-medium">Add Action</span>
                           </div>
                         </Button>
                         <Button 
                           variant="outline" 
-                          className="h-auto py-3 px-4 border-dashed border-2 hover:border-purple-500 hover:bg-purple-500/5"
+                          className="h-auto py-3 px-4 border-dashed border-2 hover:border-primary/40 hover:bg-muted"
                           onClick={() => setUseConditionalLogic(true)}
                         >
                           <div className="flex flex-col items-center gap-1">
-                            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                              <GitBranch className="h-4 w-4 text-purple-500" />
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <GitBranch className="h-4 w-4 text-primary" />
                             </div>
                             <span className="text-xs font-medium">Add Condition</span>
                           </div>
@@ -6783,11 +6783,11 @@ function IntegrationConfigForm({
 
                   {/* Action Selection Panel - Shows when Add Action is clicked */}
                   {!selectedAction && !useConditionalLogic && isAddingStep && addStepType === 'action' && (
-                    <Card className="w-full max-w-md border-green-500/30 bg-card/95 backdrop-blur">
+                    <Card className="w-full max-w-md bg-card/95 backdrop-blur">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-sm flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-green-500" />
+                            <Zap className="h-4 w-4 text-primary" />
                             Select Action
                           </CardTitle>
                           <Button variant="ghost" size="sm" onClick={() => setIsAddingStep(false)}>
@@ -6830,14 +6830,14 @@ function IntegrationConfigForm({
                                   <Button
                                     key={action.id}
                                     variant="outline"
-                                    className="h-auto py-2 px-3 justify-start hover:border-green-500 hover:bg-green-500/5"
+                                    className="h-auto py-2 px-3 justify-start hover:border-primary/40 hover:bg-muted"
                                     onClick={() => {
                                       setSelectedAction(action.id);
                                       setIsAddingStep(false);
                                     }}
                                   >
                                     <div className="flex items-center gap-2">
-                                      <Zap className="h-3 w-3 text-green-500" />
+                                      <Zap className="h-3 w-3 text-primary" />
                                       <span className="text-xs truncate">{action.name}</span>
                                     </div>
                                   </Button>
@@ -6855,21 +6855,21 @@ function IntegrationConfigForm({
                     <div className="relative">
                       {/* Condition Node */}
                       <div 
-                        className="w-56 p-3 rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/20 border border-purple-400/30 cursor-pointer hover:ring-2 hover:ring-purple-400/50 transition-all"
+                        className="w-56 p-3 rounded-xl bg-card/95 backdrop-blur border shadow-sm cursor-pointer hover:ring-2 hover:ring-ring transition-all"
                         onClick={() => setEditingStepId('condition')}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                            <GitBranch className="h-5 w-5" />
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                            <GitBranch className="h-5 w-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-purple-200 font-medium">IF / ELSE</p>
+                            <p className="text-xs text-muted-foreground font-medium">IF / ELSE</p>
                             <p className="text-sm font-semibold">Condition</p>
                           </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20"
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
                             onClick={(e) => {
                               e.stopPropagation();
                               setUseConditionalLogic(false);
@@ -6879,8 +6879,8 @@ function IntegrationConfigForm({
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                        <div className="mt-2 pt-2 border-t border-white/20">
-                          <p className="text-[10px] text-purple-200">
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-[10px] text-muted-foreground">
                             {conditions.length > 0 
                               ? `${conditions.length} condition${conditions.length > 1 ? 's' : ''} defined`
                               : 'Click to configure conditions'}
@@ -6892,12 +6892,12 @@ function IntegrationConfigForm({
                       <div className="absolute -bottom-6 left-0 right-0 flex justify-center">
                         <div className="flex items-end gap-16">
                           <div className="flex flex-col items-center">
-                            <div className="w-0.5 h-6 bg-green-500" />
-                            <span className="text-[10px] text-green-500 font-bold">TRUE</span>
+                            <div className="w-0.5 h-6 bg-primary" />
+                            <span className="text-[10px] text-primary font-bold">TRUE</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="w-0.5 h-6 bg-red-500" />
-                            <span className="text-[10px] text-red-500 font-bold">FALSE</span>
+                            <div className="w-0.5 h-6 bg-destructive" />
+                            <span className="text-[10px] text-destructive font-bold">FALSE</span>
                           </div>
                         </div>
                       </div>
@@ -6908,21 +6908,21 @@ function IntegrationConfigForm({
                   {!useConditionalLogic && selectedAction && (
                     <div className="relative group">
                       <div 
-                        className="w-48 p-3 rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg shadow-green-500/20 border border-green-400/30 cursor-pointer hover:ring-2 hover:ring-green-400/50 transition-all"
+                        className="w-48 p-3 rounded-xl bg-card/95 backdrop-blur border shadow-sm cursor-pointer hover:ring-2 hover:ring-ring transition-all"
                         onClick={() => setEditingStepId('action1')}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-xl">
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xl">
                             {currentAction?.icon || '⚡'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-green-200 font-medium">ACTION 1</p>
+                            <p className="text-xs text-muted-foreground font-medium">ACTION 1</p>
                             <p className="text-sm font-semibold truncate">{currentAction?.name || 'Select action'}</p>
                           </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedAction('');
@@ -6935,12 +6935,12 @@ function IntegrationConfigForm({
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                        <div className="mt-2 pt-2 border-t border-white/20">
-                          <p className="text-[10px] text-green-200">Click to configure</p>
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-[10px] text-muted-foreground">Click to configure</p>
                         </div>
                       </div>
                       {/* Connection Line Down */}
-                      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-green-500 to-transparent" />
+                      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-border" />
                     </div>
                   )}
                 </div>
@@ -6955,17 +6955,17 @@ function IntegrationConfigForm({
                         <div 
                           className={`w-44 p-3 rounded-xl cursor-pointer transition-all ${
                             trueAction 
-                              ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg shadow-green-500/20 border border-green-400/30 hover:ring-2 hover:ring-green-400/50'
-                              : 'bg-muted/50 border-2 border-dashed border-green-500/50 hover:border-green-500 hover:bg-green-500/5'
+                              ? 'bg-card/95 backdrop-blur border shadow-sm hover:ring-2 hover:ring-ring'
+                              : 'bg-muted/50 border-2 border-dashed border-primary/40 hover:border-primary/50 hover:bg-muted'
                           }`}
                           onClick={() => setEditingStepId('trueAction')}
                         >
                           <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${trueAction ? 'bg-white/20 text-lg' : 'bg-green-500/20'}`}>
-                              {trueAction ? (trueActionDetails?.icon || '✅') : <Plus className="h-4 w-4 text-green-500" />}
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${trueAction ? 'bg-muted text-lg' : 'bg-primary/10'}`}>
+                              {trueAction ? (trueActionDetails?.icon || '✅') : <Plus className="h-4 w-4 text-primary" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className={`text-xs font-medium ${trueAction ? 'text-green-200' : 'text-green-600'}`}>IF TRUE</p>
+                              <p className={`text-xs font-medium ${trueAction ? 'text-primary' : 'text-primary'}`}>IF TRUE</p>
                               <p className={`text-sm font-semibold truncate ${trueAction ? '' : 'text-muted-foreground'}`}>
                                 {trueAction ? (trueActionDetails?.name || 'Action') : 'Add Action'}
                               </p>
@@ -6973,7 +6973,7 @@ function IntegrationConfigForm({
                           </div>
                         </div>
                         {trueAction && (
-                          <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-green-500 to-transparent" />
+                          <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-border" />
                         )}
                       </div>
 
@@ -6982,17 +6982,17 @@ function IntegrationConfigForm({
                         <div 
                           className={`w-44 p-3 rounded-xl cursor-pointer transition-all ${
                             falseAction 
-                              ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-lg shadow-red-500/20 border border-red-400/30 hover:ring-2 hover:ring-red-400/50'
-                              : 'bg-muted/50 border-2 border-dashed border-red-500/50 hover:border-red-500 hover:bg-red-500/5'
+                              ? 'bg-card/95 backdrop-blur border shadow-sm hover:ring-2 hover:ring-ring'
+                              : 'bg-muted/50 border-2 border-dashed border-destructive/40 hover:border-destructive/50 hover:bg-muted'
                           }`}
                           onClick={() => setEditingStepId('falseAction')}
                         >
                           <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${falseAction ? 'bg-white/20 text-lg' : 'bg-red-500/20'}`}>
-                              {falseAction ? (falseActionDetails?.icon || '⏭️') : <Plus className="h-4 w-4 text-red-500" />}
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${falseAction ? 'bg-muted text-lg' : 'bg-destructive/10'}`}>
+                              {falseAction ? (falseActionDetails?.icon || '⏭️') : <Plus className="h-4 w-4 text-destructive" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className={`text-xs font-medium ${falseAction ? 'text-red-200' : 'text-red-600'}`}>IF FALSE</p>
+                              <p className={`text-xs font-medium ${falseAction ? 'text-destructive' : 'text-destructive'}`}>IF FALSE</p>
                               <p className={`text-sm font-semibold truncate ${falseAction ? '' : 'text-muted-foreground'}`}>
                                 {falseAction ? (falseActionDetails?.name || 'Action') : 'Skip / Add'}
                               </p>
@@ -7061,13 +7061,13 @@ function IntegrationConfigForm({
                           <SelectContent align="center">
                             <SelectItem value="__condition__">
                               <span className="flex items-center gap-2">
-                                <GitBranch className="h-3 w-3 text-purple-500" />
+                                <GitBranch className="h-3 w-3 text-primary" />
                                 <span>Add Condition</span>
                               </span>
                             </SelectItem>
                             <SelectItem value="__delay__">
                               <span className="flex items-center gap-2">
-                                <Clock className="h-3 w-3 text-orange-500" />
+                                <Clock className="h-3 w-3 text-muted-foreground" />
                                 <span>Add Delay</span>
                               </span>
                             </SelectItem>
@@ -7080,7 +7080,7 @@ function IntegrationConfigForm({
                                 {app.actions.map((action) => (
                                   <SelectItem key={action.id} value={action.id}>
                                     <span className="flex items-center gap-2 pl-2">
-                                      <Zap className="h-3 w-3 text-green-500" />
+                                      <Zap className="h-3 w-3 text-primary" />
                                       <span className="text-xs">{action.name}</span>
                                     </span>
                                   </SelectItem>
@@ -7100,21 +7100,21 @@ function IntegrationConfigForm({
                           <div className="flex items-center justify-center">
                             <div className="relative group">
                               <div 
-                                className="w-48 p-3 rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-500/20 border border-violet-400/30 cursor-pointer hover:ring-2 hover:ring-violet-400/50 transition-all"
+                                className="w-48 p-3 rounded-xl bg-card/95 backdrop-blur border shadow-sm cursor-pointer hover:ring-2 hover:ring-ring transition-all"
                                 onClick={() => setEditingStepId(wfStep.id)}
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-xl">
+                                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xl">
                                     {wfStep.appIcon}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-violet-200 font-medium">STEP {index + 2}</p>
+                                    <p className="text-xs text-muted-foreground font-medium">STEP {index + 2}</p>
                                     <p className="text-sm font-semibold truncate">{wfStep.actionName}</p>
                                   </div>
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeWorkflowStep(wfStep.id);
@@ -7123,13 +7123,13 @@ function IntegrationConfigForm({
                                     <X className="h-3 w-3" />
                                   </Button>
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between">
-                                  <p className="text-[10px] text-violet-200">{wfStep.appName}</p>
-                                  <Settings className="h-3 w-3 text-violet-300" />
+                                <div className="mt-2 pt-2 border-t flex items-center justify-between">
+                                  <p className="text-[10px] text-muted-foreground">{wfStep.appName}</p>
+                                  <Settings className="h-3 w-3 text-muted-foreground" />
                                 </div>
                               </div>
                               {/* Connection Line */}
-                              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-violet-500 to-transparent" />
+                              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-border" />
                             </div>
                           </div>
                         )}
@@ -7140,21 +7140,21 @@ function IntegrationConfigForm({
                             {/* Condition Node */}
                             <div className="relative group">
                               <div 
-                                className="w-56 p-3 rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/20 border border-purple-400/30 cursor-pointer hover:ring-2 hover:ring-purple-400/50 transition-all"
+                                className="w-56 p-3 rounded-xl bg-card/95 backdrop-blur border shadow-sm cursor-pointer hover:ring-2 hover:ring-ring transition-all"
                                 onClick={() => setEditingStepId(wfStep.id)}
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                    <GitBranch className="h-5 w-5" />
+                                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                                    <GitBranch className="h-5 w-5 text-primary" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-purple-200 font-medium">STEP {index + 2} • IF/ELSE</p>
+                                    <p className="text-xs text-muted-foreground font-medium">STEP {index + 2} • IF/ELSE</p>
                                     <p className="text-sm font-semibold">Condition</p>
                                   </div>
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeWorkflowStep(wfStep.id);
@@ -7163,8 +7163,8 @@ function IntegrationConfigForm({
                                     <X className="h-3 w-3" />
                                   </Button>
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-white/20">
-                                  <p className="text-[10px] text-purple-200">
+                                <div className="mt-2 pt-2 border-t">
+                                  <p className="text-[10px] text-muted-foreground">
                                     {(wfStep.conditions?.length || 0)} condition{(wfStep.conditions?.length || 0) !== 1 ? 's' : ''} defined
                                   </p>
                                 </div>
@@ -7174,17 +7174,17 @@ function IntegrationConfigForm({
                             {/* Branch Split Visual */}
                             <div className="flex items-start gap-0 mt-2">
                               {/* Left connector */}
-                              <div className="w-24 h-4 border-l-2 border-t-2 border-green-500 rounded-tl-xl" />
+                              <div className="w-24 h-4 border-l-2 border-t-2 border-primary rounded-tl-xl" />
                               {/* Right connector */}
-                              <div className="w-24 h-4 border-r-2 border-t-2 border-red-500 rounded-tr-xl" />
+                              <div className="w-24 h-4 border-r-2 border-t-2 border-destructive rounded-tr-xl" />
                             </div>
                             
                             {/* n8n-Style Branch Columns */}
                             <div className="flex gap-6 w-full max-w-xl justify-center">
                               {/* TRUE Branch Column */}
                               <div className="flex flex-col items-center flex-1 max-w-[200px]">
-                                <div className="w-0.5 h-3 bg-green-500" />
-                                <div className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold mb-2 border border-green-500/30">
+                                <div className="w-0.5 h-3 bg-primary" />
+                                <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold mb-2 border border-primary/20">
                                   ✓ TRUE PATH
                                 </div>
                                 
@@ -7192,14 +7192,14 @@ function IntegrationConfigForm({
                                 {(wfStep.trueBranch || []).map((branchStep, bIdx) => (
                                   <div key={branchStep.id} className="flex flex-col items-center w-full">
                                     <div className="relative group w-full">
-                                      <div className="w-full p-2 rounded-lg bg-green-600/90 text-white border border-green-400/30 text-center">
+                                      <div className="w-full p-2 rounded-lg bg-card/95 backdrop-blur border text-center">
                                         <div className="flex items-center justify-center gap-2">
                                           <span className="text-base">{branchStep.appIcon}</span>
                                           <span className="text-xs font-medium truncate">{branchStep.actionName}</span>
                                           <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100"
+                                            className="h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               removeStepFromBranch(wfStep.id, 'true', branchStep.id);
@@ -7210,7 +7210,7 @@ function IntegrationConfigForm({
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="w-0.5 h-3 bg-green-500/50" />
+                                    <div className="w-0.5 h-3 bg-border" />
                                   </div>
                                 ))}
                                 
@@ -7233,7 +7233,7 @@ function IntegrationConfigForm({
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className="h-8 text-[10px] border-dashed border-green-500/50 hover:border-green-500 bg-green-500/5 text-green-600 w-full">
+                                  <SelectTrigger className="h-8 text-[10px] border-dashed border-primary/40 hover:border-primary/50 bg-muted text-primary w-full">
                                     <SelectValue placeholder="➕ Add Action..." />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -7258,8 +7258,8 @@ function IntegrationConfigForm({
 
                               {/* FALSE Branch Column */}
                               <div className="flex flex-col items-center flex-1 max-w-[200px]">
-                                <div className="w-0.5 h-3 bg-red-500" />
-                                <div className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold mb-2 border border-red-500/30">
+                                <div className="w-0.5 h-3 bg-destructive" />
+                                <div className="px-3 py-1 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold mb-2 border border-destructive/20">
                                   ✗ FALSE PATH
                                 </div>
                                 
@@ -7267,14 +7267,14 @@ function IntegrationConfigForm({
                                 {(wfStep.falseBranch || []).map((branchStep, bIdx) => (
                                   <div key={branchStep.id} className="flex flex-col items-center w-full">
                                     <div className="relative group w-full">
-                                      <div className="w-full p-2 rounded-lg bg-red-600/90 text-white border border-red-400/30 text-center">
+                                      <div className="w-full p-2 rounded-lg bg-card/95 backdrop-blur border text-center">
                                         <div className="flex items-center justify-center gap-2">
                                           <span className="text-base">{branchStep.appIcon}</span>
                                           <span className="text-xs font-medium truncate">{branchStep.actionName}</span>
                                           <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100"
+                                            className="h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               removeStepFromBranch(wfStep.id, 'false', branchStep.id);
@@ -7285,7 +7285,7 @@ function IntegrationConfigForm({
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="w-0.5 h-3 bg-red-500/50" />
+                                    <div className="w-0.5 h-3 bg-border" />
                                   </div>
                                 ))}
                                 
@@ -7308,7 +7308,7 @@ function IntegrationConfigForm({
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className="h-8 text-[10px] border-dashed border-red-500/50 hover:border-red-500 bg-red-500/5 text-red-600 w-full">
+                                  <SelectTrigger className="h-8 text-[10px] border-dashed border-destructive/40 hover:border-destructive/50 bg-muted text-destructive w-full">
                                     <SelectValue placeholder={(wfStep.falseBranch || []).length === 0 ? "➕ Add or Skip..." : "➕ Add Action..."} />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -7448,7 +7448,7 @@ function IntegrationConfigForm({
                               <SelectContent align="center">
                                 <SelectItem value="__condition__">
                                   <span className="flex items-center gap-2">
-                                    <GitBranch className="h-3 w-3 text-purple-500" />
+                                    <GitBranch className="h-3 w-3 text-muted-foreground" />
                                     <span>Add Condition</span>
                                   </span>
                                 </SelectItem>
@@ -7467,7 +7467,7 @@ function IntegrationConfigForm({
                                     {app.actions.map((action) => (
                                       <SelectItem key={action.id} value={action.id}>
                                         <span className="flex items-center gap-2 pl-2">
-                                          <Zap className="h-3 w-3 text-green-500" />
+                                          <Zap className="h-3 w-3 text-primary" />
                                           <span className="text-xs">{action.name}</span>
                                         </span>
                                       </SelectItem>
@@ -7488,22 +7488,22 @@ function IntegrationConfigForm({
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="border-dashed border-2 hover:border-green-500 hover:bg-green-500/5 gap-2"
+                            className="border-dashed border-2 hover:border-primary/60 hover:bg-muted gap-2"
                             onClick={() => {
                               setIsAddingStep(true);
                               setAddStepType('action');
                             }}
                           >
-                            <Zap className="h-4 w-4 text-green-500" />
+                            <Zap className="h-4 w-4 text-primary" />
                             Add Action
                           </Button>
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="border-dashed border-2 hover:border-purple-500 hover:bg-purple-500/5 gap-2"
+                            className="border-dashed border-2 hover:border-border hover:bg-muted gap-2"
                             onClick={() => addConditionStep()}
                           >
-                            <GitBranch className="h-4 w-4 text-purple-500" />
+                            <GitBranch className="h-4 w-4 text-muted-foreground" />
                             Add Condition
                           </Button>
                           <Button 
@@ -7544,10 +7544,10 @@ function IntegrationConfigForm({
           {/* Action Selection Panel */}
           {((editingStepId === 'action1' && !useConditionalLogic) || 
             (!selectedAction && !useConditionalLogic && !editingStepId)) && (
-            <Card className="border-green-500/30">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-green-500" />
+                  <Zap className="h-4 w-4 text-primary" />
                   Select Action
                 </CardTitle>
                 <CardDescription>Choose what action to perform</CardDescription>
@@ -7564,8 +7564,8 @@ function IntegrationConfigForm({
                         key={action.id}
                         className={`p-3 rounded-xl cursor-pointer transition-all border-2 ${
                           selectedAction === action.id
-                            ? 'border-green-500 bg-green-500/10 ring-2 ring-green-500/20'
-                            : 'border-transparent bg-muted/50 hover:border-green-500/50 hover:bg-muted'
+                            ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                            : 'border-transparent bg-muted/50 hover:border-primary/40 hover:bg-muted'
                         }`}
                         onClick={() => {
                           setSelectedAction(action.id);
@@ -7590,7 +7590,7 @@ function IntegrationConfigForm({
 
           {/* Action Configuration Panel */}
           {selectedAction && currentAction && editingStepId === 'action1' && (currentAction.fields || currentAction.templates) && (
-            <Card className="border-green-500/30">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -7653,11 +7653,11 @@ function IntegrationConfigForm({
 
           {/* Condition Configuration Panel */}
           {editingStepId === 'condition' && useConditionalLogic && (
-            <Card className="border-purple-500/30">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <GitBranch className="h-4 w-4 text-purple-500" />
+                    <GitBranch className="h-4 w-4 text-muted-foreground" />
                     Configure Conditions
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
@@ -7767,11 +7767,11 @@ function IntegrationConfigForm({
 
           {/* TRUE Action Selection Panel */}
           {editingStepId === 'trueAction' && useConditionalLogic && (
-            <Card className="border-green-500/30">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-primary" />
                     IF TRUE → Select Action
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
@@ -7787,8 +7787,8 @@ function IntegrationConfigForm({
                       key={action.id}
                       className={`p-3 rounded-xl cursor-pointer transition-all border-2 ${
                         trueAction === action.id
-                          ? 'border-green-500 bg-green-500/10 ring-2 ring-green-500/20'
-                          : 'border-transparent bg-muted/50 hover:border-green-500/50 hover:bg-muted'
+                          ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                          : 'border-transparent bg-muted/50 hover:border-primary/40 hover:bg-muted'
                       }`}
                       onClick={() => {
                         setTrueAction(action.id);
@@ -7824,11 +7824,11 @@ function IntegrationConfigForm({
 
           {/* FALSE Action Selection Panel */}
           {editingStepId === 'falseAction' && useConditionalLogic && (
-            <Card className="border-red-500/30">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
+                    <XCircle className="h-4 w-4 text-destructive" />
                     IF FALSE → Select Action (Optional)
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
@@ -7861,8 +7861,8 @@ function IntegrationConfigForm({
                       key={action.id}
                       className={`p-3 rounded-xl cursor-pointer transition-all border-2 ${
                         falseAction === action.id
-                          ? 'border-red-500 bg-red-500/10 ring-2 ring-red-500/20'
-                          : 'border-transparent bg-muted/50 hover:border-red-500/50 hover:bg-muted'
+                          ? 'border-destructive bg-destructive/10 ring-2 ring-destructive/20'
+                          : 'border-transparent bg-muted/50 hover:border-destructive/40 hover:bg-muted'
                       }`}
                       onClick={() => {
                         setFalseAction(action.id);
@@ -7882,11 +7882,11 @@ function IntegrationConfigForm({
 
           {/* Add App Step Panel */}
           {isAddingStep && addStepType === 'action' && (
-            <Card className="border-violet-500/30">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-green-500" />
+                    <Zap className="h-4 w-4 text-primary" />
                     Add Action Step
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => {
@@ -7944,8 +7944,8 @@ function IntegrationConfigForm({
                               key={action.id}
                               className={`p-2 rounded-lg cursor-pointer transition-all border-2 ${
                                 addStepActionId === action.id
-                                  ? 'border-violet-500 bg-violet-500/10'
-                                  : 'border-transparent bg-muted/50 hover:border-violet-500/50'
+                                  ? 'border-primary bg-primary/10'
+                                  : 'border-transparent bg-muted/50 hover:border-primary/40'
                               }`}
                               onClick={() => setAddStepActionId(action.id)}
                             >
@@ -7963,10 +7963,7 @@ function IntegrationConfigForm({
 
                 {/* Add Button */}
                 {addStepAppId && addStepActionId && (
-                  <Button 
-                    className="w-full bg-violet-600 hover:bg-violet-700"
-                    onClick={() => addWorkflowStep(addStepAppId, addStepActionId)}
-                  >
+                  <Button className="w-full" onClick={() => addWorkflowStep(addStepAppId, addStepActionId)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add to Workflow
                   </Button>
@@ -7985,7 +7982,7 @@ function IntegrationConfigForm({
               const stepFields = getStepActionFields(editingStep.appId || '', editingStep.actionId || '');
               
               return (
-                <Card className="border-violet-500/30">
+                <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -8049,11 +8046,11 @@ function IntegrationConfigForm({
             // Handle Condition Step Configuration
             if (editingStep.type === 'condition') {
               return (
-                <Card className="border-purple-500/30">
+                <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm flex items-center gap-2">
-                        <GitBranch className="h-4 w-4 text-purple-500" />
+                        <GitBranch className="h-4 w-4 text-muted-foreground" />
                         Configure Condition Step
                       </CardTitle>
                       <Button variant="ghost" size="sm" onClick={() => setEditingStepId(null)}>
@@ -8066,7 +8063,7 @@ function IntegrationConfigForm({
                     {/* Conditions Builder */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium flex items-center gap-2">
-                        <span className="text-purple-500">IF</span> Conditions
+                        <span className="text-muted-foreground">IF</span> Conditions
                       </Label>
                       
                       {(editingStep.conditions || []).length === 0 ? (
@@ -8164,9 +8161,9 @@ function IntegrationConfigForm({
                     {/* TRUE Branch - n8n Style */}
                     <div className="space-y-3 pt-3 border-t">
                       <Label className="text-sm font-medium flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-green-500">TRUE PATH</span>
-                        <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-500">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                        <span className="text-primary">TRUE PATH</span>
+                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
                           {(editingStep.trueBranch || []).length} step{(editingStep.trueBranch || []).length !== 1 ? 's' : ''}
                         </Badge>
                       </Label>
@@ -8174,8 +8171,8 @@ function IntegrationConfigForm({
                       {(editingStep.trueBranch || []).length > 0 ? (
                         <div className="space-y-2">
                           {(editingStep.trueBranch || []).map((step, idx) => (
-                            <div key={step.id} className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                              <div className="w-6 h-6 rounded bg-green-500/20 flex items-center justify-center text-xs font-bold text-green-600">
+                            <div key={step.id} className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                              <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                                 {idx + 1}
                               </div>
                               <span className="text-lg">{step.appIcon}</span>
@@ -8192,7 +8189,7 @@ function IntegrationConfigForm({
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-3 border-2 border-dashed border-green-500/30 rounded-lg bg-green-500/5">
+                        <div className="text-center py-3 border-2 border-dashed border-primary/30 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground">No actions in TRUE path</p>
                         </div>
                       )}
@@ -8216,7 +8213,7 @@ function IntegrationConfigForm({
                           }
                         }}
                       >
-                        <SelectTrigger className="h-9 border-dashed border-green-500/50 hover:border-green-500">
+                        <SelectTrigger className="h-9 border-dashed border-primary/40 hover:border-primary/50">
                           <SelectValue placeholder="➕ Add action to TRUE path..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -8228,7 +8225,7 @@ function IntegrationConfigForm({
                               {app.actions.map((action) => (
                                 <SelectItem key={action.id} value={action.id}>
                                   <span className="flex items-center gap-2 pl-3">
-                                    <Zap className="h-3 w-3 text-green-500" />
+                                    <Zap className="h-3 w-3 text-primary" />
                                     <span>{action.name}</span>
                                   </span>
                                 </SelectItem>
@@ -8242,9 +8239,9 @@ function IntegrationConfigForm({
                     {/* FALSE Branch - n8n Style */}
                     <div className="space-y-3 pt-3 border-t">
                       <Label className="text-sm font-medium flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-red-500" />
-                        <span className="text-red-500">FALSE PATH</span>
-                        <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-500">
+                        <XCircle className="h-4 w-4 text-destructive" />
+                        <span className="text-destructive">FALSE PATH</span>
+                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive">
                           {(editingStep.falseBranch || []).length === 0 ? 'Skip' : `${(editingStep.falseBranch || []).length} step${(editingStep.falseBranch || []).length !== 1 ? 's' : ''}`}
                         </Badge>
                       </Label>
@@ -8252,8 +8249,8 @@ function IntegrationConfigForm({
                       {(editingStep.falseBranch || []).length > 0 ? (
                         <div className="space-y-2">
                           {(editingStep.falseBranch || []).map((step, idx) => (
-                            <div key={step.id} className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                              <div className="w-6 h-6 rounded bg-red-500/20 flex items-center justify-center text-xs font-bold text-red-600">
+                            <div key={step.id} className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                              <div className="w-6 h-6 rounded bg-destructive/10 flex items-center justify-center text-xs font-bold text-destructive">
                                 {idx + 1}
                               </div>
                               <span className="text-lg">{step.appIcon}</span>
@@ -8270,7 +8267,7 @@ function IntegrationConfigForm({
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-3 border-2 border-dashed border-red-500/30 rounded-lg bg-red-500/5">
+                        <div className="text-center py-3 border-2 border-dashed border-destructive/30 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground">Skip (no actions)</p>
                         </div>
                       )}
@@ -8294,7 +8291,7 @@ function IntegrationConfigForm({
                           }
                         }}
                       >
-                        <SelectTrigger className="h-9 border-dashed border-red-500/50 hover:border-red-500">
+                        <SelectTrigger className="h-9 border-dashed border-destructive/40 hover:border-destructive/50">
                           <SelectValue placeholder="➕ Add action to FALSE path..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -8312,7 +8309,7 @@ function IntegrationConfigForm({
                               {app.actions.map((action) => (
                                 <SelectItem key={action.id} value={action.id}>
                                   <span className="flex items-center gap-2 pl-3">
-                                    <Zap className="h-3 w-3 text-red-500" />
+                                    <Zap className="h-3 w-3 text-destructive" />
                                     <span>{action.name}</span>
                                   </span>
                                 </SelectItem>
@@ -8422,7 +8419,7 @@ function IntegrationConfigForm({
           <Card className="bg-gradient-to-br from-muted/50 to-muted/30">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-primary" />
                 Integration Summary
               </CardTitle>
             </CardHeader>
@@ -8478,7 +8475,7 @@ function IntegrationConfigForm({
               onClick={handleSubmit} 
               disabled={isLoading || !isStep4Valid} 
               size="lg" 
-              className="gap-2 bg-green-600 hover:bg-green-700"
+              className="gap-2"
             >
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <Zap className="h-4 w-4" />

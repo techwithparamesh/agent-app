@@ -235,7 +235,7 @@ export default function PhoneNumbersPage() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Phone Numbers">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -243,8 +243,8 @@ export default function PhoneNumbersPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold">Phone Numbers</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Phone Numbers</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Manage WhatsApp phone numbers for this business account
             </p>
           </div>

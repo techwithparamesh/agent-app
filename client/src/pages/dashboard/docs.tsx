@@ -78,7 +78,7 @@ function DocsCodeBlock({ children, language = "text", title }: { children: strin
           onClick={copyCode} 
           className="absolute right-3 top-3 p-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-700 transition-all duration-200 opacity-0 group-hover:opacity-100" 
         >
-          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4 text-zinc-400" />}
+          {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4 text-zinc-400" />}
         </button>
       </div>
     </div>
@@ -88,9 +88,9 @@ function DocsCodeBlock({ children, language = "text", title }: { children: strin
 type CalloutType = "info" | "warning" | "tip";
 function DocsCallout({ type = "info", title, children }: { type?: CalloutType; title?: string; children: React.ReactNode }) {
   const config = {
-    info: { icon: Info, className: "border-l-4 border-blue-500 bg-blue-500/10" },
-    warning: { icon: AlertTriangle, className: "border-l-4 border-amber-500 bg-amber-500/10" },
-    tip: { icon: Lightbulb, className: "border-l-4 border-emerald-500 bg-emerald-500/10" },
+    info: { icon: Info, className: "border-l-4 border-primary bg-muted/40" },
+    warning: { icon: AlertTriangle, className: "border-l-4 border-border bg-muted/40" },
+    tip: { icon: Lightbulb, className: "border-l-4 border-primary bg-muted/40" },
   };
   const { icon: Icon, className } = config[type];
   return (
@@ -176,7 +176,7 @@ function ProductOverviewSection() {
             { title: "Multi-channel deployment", desc: "Website widget, WhatsApp, and more" },
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-3 p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200">
-              <Check className="h-5 w-5 text-emerald-500 mt-0.5" />
+              <Check className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <h4 className="font-medium">{item.title}</h4>
                 <p className="text-sm text-muted-foreground">{item.desc}</p>
@@ -307,14 +307,14 @@ function WhatsAppGuideSection() {
         <h2 className="text-xl font-semibold mb-4">Message Flow</h2>
         <div className="flex flex-col md:flex-row gap-4 items-center justify-center p-8 bg-gradient-to-br from-muted/30 to-background rounded-2xl border">
           {[
-            { icon: MessageSquare, label: "Customer sends message", color: "text-green-500" },
-            { icon: Workflow, label: "Platform processes", color: "text-blue-500" },
-            { icon: Bot, label: "AI finds answer", color: "text-purple-500" },
-            { icon: MessageSquare, label: "Reply sent", color: "text-green-500" },
+            { icon: MessageSquare, label: "Customer sends message" },
+            { icon: Workflow, label: "Platform processes" },
+            { icon: Bot, label: "AI finds answer" },
+            { icon: MessageSquare, label: "Reply sent" },
           ].map((step, i) => (
             <div key={i} className="flex items-center gap-4">
               <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
-                <step.icon className={cn("h-8 w-8 mx-auto mb-2", step.color)} />
+                <step.icon className={cn("h-8 w-8 mx-auto mb-2 text-primary")} />
                 <p className="text-sm font-medium">{step.label}</p>
               </div>
               {i < 3 && <ArrowRight className="h-6 w-6 text-muted-foreground hidden md:block" />}
@@ -345,16 +345,16 @@ function ApiReferenceSection() {
         <h2 className="text-xl font-semibold mb-4">Endpoints</h2>
         <div className="space-y-4">
           {[
-            { method: "POST", path: "/chat", desc: "Send a message to an AI agent", color: "bg-green-500" },
-            { method: "GET", path: "/agents", desc: "List all your AI agents", color: "bg-blue-500" },
-            { method: "GET", path: "/conversations", desc: "Retrieve conversation history", color: "bg-blue-500" },
-            { method: "POST", path: "/knowledge", desc: "Add knowledge to an agent", color: "bg-green-500" },
-            { method: "DELETE", path: "/knowledge/:id", desc: "Remove knowledge entry", color: "bg-red-500" },
+            { method: "POST", path: "/chat", desc: "Send a message to an AI agent", variant: "default" as const },
+            { method: "GET", path: "/agents", desc: "List all your AI agents", variant: "secondary" as const },
+            { method: "GET", path: "/conversations", desc: "Retrieve conversation history", variant: "secondary" as const },
+            { method: "POST", path: "/knowledge", desc: "Add knowledge to an agent", variant: "default" as const },
+            { method: "DELETE", path: "/knowledge/:id", desc: "Remove knowledge entry", variant: "destructive" as const },
           ].map((endpoint, i) => (
             <Card key={i} className="border-0 shadow-lg hover:shadow-xl transition-all duration-200">
               <CardHeader className="py-4">
                 <div className="flex items-center gap-3">
-                  <Badge className={endpoint.color}>{endpoint.method}</Badge>
+                  <Badge variant={endpoint.variant}>{endpoint.method}</Badge>
                   <code className="text-sm font-mono">{endpoint.path}</code>
                 </div>
                 <CardDescription>{endpoint.desc}</CardDescription>
@@ -410,7 +410,7 @@ function BestPracticesSection() {
       <div className="grid md:grid-cols-2 gap-4">
         {tips.map((tip, i) => (
           <div key={i} className="flex items-start gap-3 p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
-            <Check className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
+            <Check className="h-5 w-5 text-primary mt-0.5 shrink-0" />
             <span className="text-sm">{tip}</span>
           </div>
         ))}

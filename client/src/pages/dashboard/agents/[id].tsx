@@ -280,11 +280,9 @@ export default function AgentDetails() {
           <Card>
             <CardContent className="p-8">
               <div className="flex items-start gap-6">
-                <div className={`w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  isWhatsAppAgent ? "bg-green-500/10" : "bg-primary/10"
-                }`}>
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10">
                   {isWhatsAppAgent ? (
-                    <Smartphone className="h-8 w-8 text-green-500" />
+                    <Smartphone className="h-8 w-8 text-primary" />
                   ) : (
                     <Bot className="h-8 w-8 text-primary" />
                   )}
@@ -296,7 +294,7 @@ export default function AgentDetails() {
                       {agent.isActive ? "Active" : "Inactive"}
                     </Badge>
                     {isWhatsAppAgent && (
-                      <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                      <Badge variant="outline">
                         <Smartphone className="h-3 w-3 mr-1" />
                         WhatsApp
                       </Badge>
@@ -1049,7 +1047,7 @@ export default function AgentDetails() {
                   </CardHeader>
                   <CardContent>
                     <div className="relative">
-                      <pre className="p-4 rounded-lg bg-slate-900 text-green-400 text-sm overflow-x-auto font-mono">
+                      <pre className="p-4 rounded-lg bg-muted text-foreground text-sm overflow-x-auto font-mono border border-border">
                         {generateEmbedCode()}
                       </pre>
                       <Button
@@ -1068,7 +1066,7 @@ export default function AgentDetails() {
                       >
                         {copied === "embedCode" ? (
                           <>
-                            <Check className="h-4 w-4 mr-1 text-green-500" />
+                            <Check className="h-4 w-4 mr-1 text-primary" />
                             Copied
                           </>
                         ) : (
@@ -1080,9 +1078,9 @@ export default function AgentDetails() {
                       </Button>
                     </div>
                     
-                    <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">💡 Installation Tips</h4>
-                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <div className="mt-4 p-4 rounded-lg bg-muted/30 border border-border">
+                      <h4 className="font-medium text-foreground mb-2">💡 Installation Tips</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
                         <li>• Works with any website: HTML, WordPress, Shopify, React, etc.</li>
                         <li>• Place the script just before &lt;/body&gt; for best performance</li>
                         <li>• The widget loads asynchronously and won't slow down your site</li>

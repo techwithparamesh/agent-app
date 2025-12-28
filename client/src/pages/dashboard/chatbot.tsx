@@ -304,7 +304,14 @@ export default function ChatbotPage() {
 
   return (
     <DashboardLayout title="Test Agents">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Test Agents</h1>
+          <p className="text-sm text-muted-foreground">
+            Preview how your agent responds across channels.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat Area */}
           <div className="lg:col-span-2">
@@ -321,9 +328,9 @@ export default function ChatbotPage() {
                           <SelectItem key={agent.id} value={agent.id}>
                             <div className="flex items-center gap-2">
                               {(agent as any).agentType === 'whatsapp' ? (
-                                <Smartphone className="h-4 w-4 text-green-500" />
+                                <Smartphone className="h-4 w-4" />
                               ) : (
-                                <Globe className="h-4 w-4 text-blue-500" />
+                                <Globe className="h-4 w-4" />
                               )}
                               {agent.name}
                             </div>
@@ -540,45 +547,45 @@ export default function ChatbotPage() {
                       <p className="text-xs font-semibold text-foreground">Platform Instructions:</p>
                       
                       {/* WordPress */}
-                      <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                      <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
                           📘 WordPress
                         </p>
-                        <ol className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1 list-decimal list-inside">
+                        <ol className="text-xs text-muted-foreground mt-1 space-y-1 list-decimal list-inside">
                           <li>Go to <strong>Appearance → Theme Editor</strong> (or use a plugin like "Insert Headers and Footers")</li>
                           <li>Open <strong>footer.php</strong> or use the Footer Scripts section</li>
-                          <li>Paste the code just before <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">&lt;/body&gt;</code></li>
+                          <li>Paste the code just before <code className="bg-muted px-1 rounded">&lt;/body&gt;</code></li>
                           <li>Save changes</li>
                         </ol>
-                        <p className="text-xs text-blue-500 dark:text-blue-400 mt-2 italic">
+                        <p className="text-xs text-muted-foreground mt-2 italic">
                           💡 Tip: Use "WPCode" plugin for easier script insertion
                         </p>
                       </div>
                       
                       {/* HTML/Static Sites */}
-                      <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg border border-green-200 dark:border-green-800">
-                        <p className="text-xs font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
+                      <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
                           📄 HTML / Static Sites
                         </p>
-                        <ol className="text-xs text-green-600 dark:text-green-400 mt-1 space-y-1 list-decimal list-inside">
+                        <ol className="text-xs text-muted-foreground mt-1 space-y-1 list-decimal list-inside">
                           <li>Open your HTML file in a code editor</li>
-                          <li>Find the closing <code className="bg-green-100 dark:bg-green-900 px-1 rounded">&lt;/body&gt;</code> tag</li>
+                          <li>Find the closing <code className="bg-muted px-1 rounded">&lt;/body&gt;</code> tag</li>
                           <li>Paste the code just before it</li>
                           <li>Save and upload to your server</li>
                         </ol>
                       </div>
                       
                       {/* React/Next.js */}
-                      <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
-                        <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                      <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
                           ⚛️ React / Next.js / Vue
                         </p>
-                        <ol className="text-xs text-purple-600 dark:text-purple-400 mt-1 space-y-1 list-decimal list-inside">
+                        <ol className="text-xs text-muted-foreground mt-1 space-y-1 list-decimal list-inside">
                           <li>Add to your <strong>index.html</strong> (React) or <strong>_document.js</strong> (Next.js)</li>
-                          <li>Or use a Script component with <code className="bg-purple-100 dark:bg-purple-900 px-1 rounded">strategy="afterInteractive"</code></li>
+                          <li>Or use a Script component with <code className="bg-muted px-1 rounded">strategy="afterInteractive"</code></li>
                           <li>For Vue: add to <strong>index.html</strong> in public folder</li>
                         </ol>
-                        <pre className="text-xs bg-purple-100 dark:bg-purple-900 p-2 rounded mt-2 overflow-x-auto">
+                        <pre className="text-xs bg-muted p-2 rounded mt-2 overflow-x-auto border border-border">
 {`// Next.js example
 import Script from 'next/script'
 
@@ -591,11 +598,11 @@ import Script from 'next/script'
                       </div>
                       
                       {/* Shopify/Wix/Squarespace */}
-                      <div className="bg-orange-50 dark:bg-orange-950/30 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                        <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 flex items-center gap-1">
+                      <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
                           🛒 Shopify / Wix / Squarespace
                         </p>
-                        <ul className="text-xs text-orange-600 dark:text-orange-400 mt-1 space-y-1">
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-1">
                           <li><strong>Shopify:</strong> Settings → Checkout → Additional scripts</li>
                           <li><strong>Wix:</strong> Settings → Advanced → Custom Code → Body end</li>
                           <li><strong>Squarespace:</strong> Settings → Advanced → Code Injection → Footer</li>

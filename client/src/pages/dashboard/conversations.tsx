@@ -185,6 +185,13 @@ export default function ConversationsPage() {
   return (
     <DashboardLayout title="Conversations">
       <div className="max-w-6xl mx-auto space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Conversations</h1>
+          <p className="text-sm text-muted-foreground">
+            Review and manage conversations across your agents.
+          </p>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
@@ -247,9 +254,9 @@ export default function ConversationsPage() {
                       <SelectItem key={agent.id} value={agent.id}>
                         <div className="flex items-center gap-2">
                           {(agent as any).agentType === 'whatsapp' ? (
-                            <Smartphone className="h-4 w-4 text-green-500" />
+                            <Smartphone className="h-4 w-4" />
                           ) : (
-                            <Globe className="h-4 w-4 text-blue-500" />
+                            <Globe className="h-4 w-4" />
                           )}
                           {agent.name}
                         </div>
@@ -333,9 +340,9 @@ export default function ConversationsPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                               {getAgentType(conversation.agentId) === 'whatsapp' ? (
-                                <Smartphone className="h-5 w-5 text-green-500" />
+                                <Smartphone className="h-5 w-5" />
                               ) : (
-                                <Globe className="h-5 w-5 text-blue-500" />
+                                <Globe className="h-5 w-5" />
                               )}
                             </div>
                             <div>

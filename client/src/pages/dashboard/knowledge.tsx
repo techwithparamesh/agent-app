@@ -112,9 +112,16 @@ export default function KnowledgeBasePage() {
 
   return (
     <DashboardLayout title="Knowledge Base">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Knowledge Base</h1>
+          <p className="text-sm text-muted-foreground">
+            Search, manage, and expand your agent knowledge sources.
+          </p>
+        </div>
+
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Select value={currentAgentId} onValueChange={handleAgentChange}>
               <SelectTrigger className="w-[200px]" data-testid="select-knowledge-agent">

@@ -241,7 +241,14 @@ export default function WebsiteScanner() {
 
   return (
     <DashboardLayout title="Website Scanner">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Website Scanner</h1>
+          <p className="text-sm text-muted-foreground">
+            Extract content from a website and add it to an agent knowledge base.
+          </p>
+        </div>
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-4">

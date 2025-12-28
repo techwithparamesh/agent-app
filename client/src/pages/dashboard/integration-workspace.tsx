@@ -386,6 +386,34 @@ export function IntegrationWorkspace() {
   
   const previousNodes = getPreviousNodes(selectedNodeId);
 
+  // Connector geometry (approximate node card size)
+  const NODE_WIDTH = 260;
+  const NODE_HEIGHT = 154;
+
+  const getNodeCenter = (node: FlowNodeType) => ({
+    x: node.position.x + NODE_WIDTH / 2,
+    y: node.position.y + NODE_HEIGHT / 2,
+  });
+
+  const getNodeBottom = (node: FlowNodeType) => ({
+    x: node.position.x + NODE_WIDTH / 2,
+    y: node.position.y + NODE_HEIGHT,
+  });
+
+  const getNodeTop = (node: FlowNodeType) => ({
+    x: node.position.x + NODE_WIDTH / 2,
+    y: node.position.y,
+  });
+
+  const buildBezierPath = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const dx = Math.abs(to.x - from.x);
+    const dy = Math.abs(to.y - from.y);
+    const curvature = Math.min(180, Math.max(80, (dx + dy) / 3));
+    const c1 = { x: from.x, y: from.y + curvature };
+    const c2 = { x: to.x, y: to.y - curvature };
+    return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+  };
+
   return (
     <TooltipProvider>
       <div className="h-screen w-full flex flex-col bg-background">
@@ -540,9 +568,53 @@ export function IntegrationWorkspace() {
               <WorkflowStatus validation={workflowValidation} />
             </div>
 
-            {/* Render nodes */}
-            <div className="relative">
-              {nodes.map((node, index) => (
+            {/* Render nodes + connectors */}
+            <div className="relative min-w-[2000px] min-h-[2000px]">
+              {/* Connectors (n8n-like curved bezier paths) */}
+              <svg
+                className="absolute inset-0 pointer-events-none w-full h-full overflow-visible"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <marker
+                    id="flow-arrow"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="7"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 Z" fill="hsl(var(--muted-foreground) / 0.65)" />
+                  </marker>
+                </defs>
+
+                {connections.map((conn) => {
+                  const source = nodes.find((n) => n.id === conn.sourceId);
+                  const target = nodes.find((n) => n.id === conn.targetId);
+                  if (!source || !target) return null;
+
+                  const from = getNodeBottom(source);
+                  const to = getNodeTop(target);
+                  const d = buildBezierPath(from, to);
+
+                  return (
+                    <g key={conn.id}>
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke={conn.animated ? "hsl(var(--primary) / 0.35)" : "hsl(var(--muted-foreground) / 0.45)"}
+                        strokeWidth="2"
+                        strokeDasharray={conn.animated ? "6 6" : undefined}
+                        markerEnd="url(#flow-arrow)"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+
+              {nodes.map((node) => (
                 <div
                   key={node.id}
                   className="absolute"
@@ -551,37 +623,6 @@ export function IntegrationWorkspace() {
                     top: node.position.y,
                   }}
                 >
-                  {/* Connection line to previous node */}
-                  {index > 0 && (
-                    <svg
-                      className="absolute pointer-events-none"
-                      style={{
-                        left: 120,
-                        top: -100,
-                        width: 2,
-                        height: 100,
-                        overflow: 'visible',
-                      }}
-                    >
-                      <line
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="100"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="2"
-                        strokeDasharray="4 4"
-                        className="animate-pulse"
-                      />
-                      <circle
-                        cx="0"
-                        cy="100"
-                        r="4"
-                        fill="hsl(var(--primary))"
-                      />
-                    </svg>
-                  )}
-                  
                   <FlowNode
                     node={node}
                     isSelected={selectedNodeId === node.id}

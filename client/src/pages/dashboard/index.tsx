@@ -189,19 +189,18 @@ export default function Dashboard() {
   return (
     <DashboardLayout title="Dashboard">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Welcome Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in-up">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight mb-1" data-testid="text-dashboard-welcome">
-              Welcome back, <span className="bg-gradient-to-r from-primary to-chart-3 bg-clip-text text-transparent">{firstName}</span>!
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-dashboard-welcome">
+              Dashboard
             </h1>
-            <p className="text-muted-foreground">
-              Here's what's happening with your AI agents today.
+            <p className="text-sm text-muted-foreground">
+              Welcome back, {firstName}. Here's what's happening with your AI agents.
             </p>
           </div>
           <Link href="/dashboard/agents/new">
-            <Button className="btn-shine group" data-testid="button-create-agent">
-              <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+            <Button data-testid="button-create-agent">
+              <PlusCircle className="mr-2 h-4 w-4" />
               Create Agent
             </Button>
           </Link>

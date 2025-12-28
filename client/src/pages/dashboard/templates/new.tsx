@@ -186,10 +186,10 @@ export default function CreateTemplatePage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
+    <DashboardLayout title="Create Template">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <Link href="/dashboard/templates">
             <Button variant="ghost" className="group">
               <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
@@ -202,6 +202,13 @@ export default function CreateTemplatePage() {
               {showPreview ? "Hide Preview" : "Preview"}
             </Button>
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Create Template</h1>
+          <p className="text-sm text-muted-foreground">
+            Design a reusable AI agent template for your team.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

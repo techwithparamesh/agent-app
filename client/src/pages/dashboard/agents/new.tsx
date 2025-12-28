@@ -221,7 +221,7 @@ export default function CreateAgent() {
 
   return (
     <DashboardLayout title="Create New Agent">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto space-y-6">
         {/* Back Button - Context-aware */}
         <Link href={fromTemplate ? "/dashboard/templates" : "/dashboard/agents"}>
           <Button variant="ghost" className="mb-6 group">
@@ -229,6 +229,17 @@ export default function CreateAgent() {
             {fromTemplate ? "Back to Templates" : "Back to Agents"}
           </Button>
         </Link>
+
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {template ? `Create ${template.name}` : "Create Agent"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {template
+              ? "Customize your agent settings and deploy."
+              : "Configure your agent personality and knowledge sources."}
+          </p>
+        </div>
 
         {/* Template Badge */}
         {template && (
@@ -272,7 +283,7 @@ export default function CreateAgent() {
               </div>
               <div>
                 <CardTitle className="font-display text-2xl">
-                  {template ? `Create ${template.name}` : "Create AI Agent"}
+                  Agent Details
                 </CardTitle>
                 <CardDescription>
                   {template 

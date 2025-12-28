@@ -88,10 +88,10 @@ const planIcons: Record<string, React.ReactNode> = {
 };
 
 const planColors: Record<string, string> = {
-  free: "border-gray-200",
-  starter: "border-blue-200",
-  pro: "border-purple-200 ring-2 ring-purple-100",
-  enterprise: "border-amber-200",
+  free: "border-border",
+  starter: "border-border",
+  pro: "border-primary/30 ring-2 ring-ring/20",
+  enterprise: "border-border",
 };
 
 export default function BillingPage() {
@@ -193,12 +193,12 @@ export default function BillingPage() {
     : 0;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Billing">
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your subscription plan and billing information
           </p>
         </div>
@@ -327,7 +327,7 @@ export default function BillingPage() {
                   >
                     {plan.slug === "pro" && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-purple-600">Most Popular</Badge>
+                        <Badge>Most Popular</Badge>
                       </div>
                     )}
                     <CardHeader>

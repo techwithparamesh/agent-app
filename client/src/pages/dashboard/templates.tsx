@@ -75,8 +75,8 @@ const templates: Template[] = [
     icon: ShoppingCart,
     category: "Retail",
     tags: ["Sales", "Support", "Products", "Orders"],
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Product search & recommendations",
       "Order tracking assistance",
@@ -113,8 +113,8 @@ Be friendly, efficient, and always aim to provide excellent customer service. If
     icon: HeadphonesIcon,
     category: "Support",
     tags: ["Help Desk", "Tickets", "FAQ", "Troubleshooting"],
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Issue troubleshooting",
       "FAQ handling",
@@ -151,8 +151,8 @@ Always be patient, understanding, and solution-oriented. If you can't solve an i
     icon: GraduationCap,
     category: "Education",
     tags: ["Learning", "Tutoring", "Courses", "Training"],
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Concept explanations",
       "Course guidance",
@@ -189,8 +189,8 @@ Be patient, encouraging, and break down difficult topics into manageable pieces.
     icon: Home,
     category: "Real Estate",
     tags: ["Properties", "Listings", "Viewings", "Mortgages"],
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Property search",
       "Viewing scheduling",
@@ -227,8 +227,8 @@ Be knowledgeable, helpful, and guide clients through their property journey with
     icon: Stethoscope,
     category: "Healthcare",
     tags: ["Appointments", "Health Info", "Medical", "Insurance"],
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Appointment scheduling",
       "Insurance verification",
@@ -266,8 +266,8 @@ Important: Always recommend consulting a healthcare professional for medical adv
     icon: UtensilsCrossed,
     category: "Hospitality",
     tags: ["Reservations", "Menu", "Dining", "Events"],
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Table reservations",
       "Menu information",
@@ -304,8 +304,8 @@ Be warm, welcoming, and create an excellent first impression of the restaurant.`
     icon: Car,
     category: "Automotive",
     tags: ["Vehicles", "Test Drives", "Financing", "Trade-ins"],
-    color: "text-slate-500",
-    bgColor: "bg-slate-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Vehicle search",
       "Test drive scheduling",
@@ -342,8 +342,8 @@ Be knowledgeable, helpful, and never pushy. Focus on understanding customer need
     icon: Building2,
     category: "Business",
     tags: ["Sales", "Demos", "Enterprise", "Lead Qualification"],
-    color: "text-violet-500",
-    bgColor: "bg-violet-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Lead qualification",
       "Demo scheduling",
@@ -380,8 +380,8 @@ Be professional, consultative, and focused on providing value. Qualify leads by 
     icon: Briefcase,
     category: "Human Resources",
     tags: ["Jobs", "Benefits", "Onboarding", "Recruiting"],
-    color: "text-pink-500",
-    bgColor: "bg-pink-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Job listings",
       "Application screening",
@@ -419,8 +419,8 @@ Be professional, informative, and represent the company positively. Respect conf
     icon: Clock,
     category: "Appointments",
     tags: ["Booking", "Schedule", "Calendar", "Reminders"],
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Book new appointments",
       "Reschedule existing bookings",
@@ -478,8 +478,8 @@ You: "When would you prefer - any specific date and time?"
     icon: Building2,
     category: "Billing",
     tags: ["Invoice", "Payment", "Billing", "Reminders"],
-    color: "text-yellow-500",
-    bgColor: "bg-yellow-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Send invoices on request",
       "Payment reminders",
@@ -533,8 +533,8 @@ Help customers with payment and invoice related queries.
     icon: TrendingUp,
     category: "Sales",
     tags: ["Leads", "Sales", "Demo", "Qualification"],
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Capture lead information",
       "Qualify prospects",
@@ -583,8 +583,8 @@ Engage with potential customers, understand their needs, and capture lead inform
     icon: ShoppingCart,
     category: "Orders",
     tags: ["Orders", "Delivery", "Returns", "Tracking"],
-    color: "text-teal-500",
-    bgColor: "bg-teal-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Order status tracking",
       "Delivery updates",
@@ -639,8 +639,8 @@ Help customers with order tracking, returns, and delivery queries.
     icon: UtensilsCrossed,
     category: "Hospitality",
     tags: ["Reservation", "Menu", "Orders", "Dining"],
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Table reservations",
       "Menu information",
@@ -689,8 +689,8 @@ Help guests with table reservations, menu inquiries, and food orders.
     icon: Stethoscope,
     category: "Healthcare",
     tags: ["Appointments", "Doctors", "Reports", "Medical"],
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Doctor appointments",
       "Specialist consultations",
@@ -743,8 +743,8 @@ Help patients with appointments, reports, and general queries.
     icon: Car,
     category: "Automotive",
     tags: ["Service", "Repair", "Pickup", "Automotive"],
-    color: "text-slate-500",
-    bgColor: "bg-slate-500/10",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     features: [
       "Service booking",
       "Repair status updates",
@@ -871,25 +871,33 @@ export default function TemplatesPage() {
   const getPopularityBadge = (popularity: string) => {
     switch (popularity) {
       case "High":
-        return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><Star className="h-3 w-3 mr-1" /> Popular</Badge>;
+        return (
+          <Badge variant="secondary">
+            <Star className="h-3 w-3 mr-1" /> Popular
+          </Badge>
+        );
       case "New":
-        return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30"><Zap className="h-3 w-3 mr-1" /> New</Badge>;
+        return (
+          <Badge variant="outline">
+            <Zap className="h-3 w-3 mr-1" /> New
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <DashboardLayout title="Templates">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
               <LayoutTemplate className="h-8 w-8 text-primary" />
               {selectedCategory === "all" ? "Agent Templates" : `${selectedCategory} Templates`}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {selectedCategory === "all" 
                 ? "Start quickly with pre-built AI agent templates optimized for your industry"
                 : `Browse ${filteredTemplates.length} template${filteredTemplates.length !== 1 ? 's' : ''} in the ${selectedCategory} category`
@@ -948,8 +956,8 @@ export default function TemplatesPage() {
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Star className="h-5 w-5 text-green-500" />
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Star className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{filteredTemplates.filter(t => t.popularity === "High").length}</p>
@@ -959,8 +967,8 @@ export default function TemplatesPage() {
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-blue-500" />
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{filteredTemplates.filter(t => t.popularity === "New").length}</p>
@@ -970,8 +978,8 @@ export default function TemplatesPage() {
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-amber-500" />
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">5 min</p>
@@ -1110,7 +1118,7 @@ export default function TemplatesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {previewTemplate.features.map((feature, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
-                          <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                          <Check className="h-4 w-4 text-primary flex-shrink-0" />
                           <span>{feature}</span>
                         </div>
                       ))}

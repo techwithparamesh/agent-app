@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
+import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -524,130 +525,131 @@ export default function AutomationsPage() {
   // Builder view
   if (isBuilderOpen) {
     return (
-      <div className="h-full">
-        <SimpleAutomationBuilder
-          automation={selectedAutomation || undefined}
-          initialApp={initialApp}
-          onSave={handleSave}
-          onRun={(automation) => console.log('Running:', automation)}
-          className="h-full"
-        />
-        <div className="fixed top-4 left-4 z-50">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setIsBuilderOpen(false);
-              setSelectedAutomation(null);
-              setInitialApp(null);
-            }}
-          >
-            ← Back to Automations
-          </Button>
+      <DashboardLayout title="Automations">
+        <div className="-m-6 md:-m-8 h-[calc(100vh-4rem)] relative">
+          <SimpleAutomationBuilder
+            automation={selectedAutomation || undefined}
+            initialApp={initialApp}
+            onSave={handleSave}
+            onRun={(automation) => console.log('Running:', automation)}
+            className="h-full"
+          />
+          <div className="absolute top-4 left-4 z-50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsBuilderOpen(false);
+                setSelectedAutomation(null);
+                setInitialApp(null);
+              }}
+            >
+              ← Back to Automations
+            </Button>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b">
-        <div>
-          <h1 className="text-2xl font-bold">Automations</h1>
-          <p className="text-muted-foreground mt-1">
-            Create and manage your workflow automations
-          </p>
+    <DashboardLayout title="Automations">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Automations</h1>
+            <p className="text-sm text-muted-foreground">
+              Create and manage your workflow automations.
+            </p>
+          </div>
+          <Button onClick={handleCreateNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Automation
+          </Button>
         </div>
-        <Button onClick={handleCreateNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Automation
-        </Button>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4 p-6 pb-0">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Workflow className="h-5 w-5 text-blue-600" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Workflow className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-sm text-muted-foreground">Total Automations</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Total Automations</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-chart-2/10">
+                  <CheckCircle className="h-5 w-5 text-chart-2" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.active}</p>
+                  <p className="text-sm text-muted-foreground">Active</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-chart-3/10">
+                  <BarChart3 className="h-5 w-5 text-chart-3" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalExecutions}</p>
+                  <p className="text-sm text-muted-foreground">Total Executions</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.active}</p>
-                <p className="text-sm text-muted-foreground">Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <BarChart3 className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.totalExecutions}</p>
-                <p className="text-sm text-muted-foreground">Total Executions</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-4 p-6 border-b">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search automations..."
-            className="pl-9"
-          />
+            </CardContent>
+          </Card>
         </div>
-        
-        <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-          <SelectTrigger className="w-[150px]">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active Only</SelectItem>
-            <SelectItem value="inactive">Inactive Only</SelectItem>
-          </SelectContent>
-        </Select>
 
-        <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-          <SelectTrigger className="w-[180px]">
-            <ArrowUpDown className="h-4 w-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="lastRun">Sort by Last Run</SelectItem>
-            <SelectItem value="name">Sort by Name</SelectItem>
-            <SelectItem value="executions">Sort by Executions</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search automations..."
+              className="pl-9"
+            />
+          </div>
 
-      {/* Automations List */}
-      <ScrollArea className="flex-1">
-        <div className="p-6 space-y-4">
+          <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+            <SelectTrigger className="w-full md:w-[170px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active Only</SelectItem>
+              <SelectItem value="inactive">Inactive Only</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="w-full md:w-[200px]">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lastRun">Sort by Last Run</SelectItem>
+              <SelectItem value="name">Sort by Name</SelectItem>
+              <SelectItem value="executions">Sort by Executions</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Automations List */}
+        <div className="space-y-4">
           {filteredAutomations.length === 0 ? (
             <div className="text-center py-12">
               <Workflow className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -676,30 +678,30 @@ export default function AutomationsPage() {
             ))
           )}
         </div>
-      </ScrollArea>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Automation</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this automation? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteDialog && handleDelete(deleteDialog)}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Automation</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this automation? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialog(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteDialog && handleDelete(deleteDialog)}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
   );
 }
