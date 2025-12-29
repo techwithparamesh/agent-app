@@ -62,7 +62,7 @@ import {
 
 // Workspace components
 import { AppsPanel, appCatalog } from "@/components/workspace/AppsPanel";
-import { FlowCanvas, type FlowCanvasRef } from "@/components/workspace/FlowCanvas";
+import { FlowCanvas, type FlowCanvasRef, snapToGrid } from "@/components/workspace/FlowCanvas";
 import { FlowConnections } from "@/components/workspace/FlowConnections";
 import { EnhancedFlowNode } from "@/components/workspace/EnhancedFlowNode";
 import { ConfigPanelV2 } from "@/components/workspace/ConfigPanelV2";
@@ -441,7 +441,14 @@ export function EnhancedWorkspace() {
   // ============================================
 
   // Handle app drop from panel - determine node type based on app capabilities
+  // n8n style: snap position to 10px grid for alignment
   const handleAppDrop = useCallback((appData: typeof appCatalog[0], position: { x: number; y: number }) => {
+    // Snap drop position to grid (n8n uses 10px grid for node positioning)
+    const snappedPosition = {
+      x: snapToGrid(position.x),
+      y: snapToGrid(position.y),
+    };
+    
     const isFirstNode = flowState.nodes.length === 0;
     const hasTrigger = flowState.nodes.some(n => n.type === 'trigger');
     
@@ -481,7 +488,7 @@ export function EnhancedWorkspace() {
       appColor: appData.color,
       name: nodeName,
       description: appData.description,
-      position,
+      position: snappedPosition,  // Use snapped position for grid alignment
       status: 'incomplete',
       config: {},
       connections: [],
@@ -489,7 +496,7 @@ export function EnhancedWorkspace() {
       triggerId: nodeType === 'trigger' ? appData.id : undefined,
     };
 
-    const newId = flowActions.addNode(nodeData, position);
+    const newId = flowActions.addNode(nodeData, snappedPosition);
 
     // Auto-connect to last node if not first
     if (!isFirstNode && flowState.nodes.length > 0) {
@@ -543,16 +550,18 @@ export function EnhancedWorkspace() {
   }, [flowActions, flowState.selectedNodeIds]);
 
   // Handle mouse move for dragging
+  // n8n style: snap node positions to 10px grid during drag
   const handleCanvasMouseMove = useCallback((e: MouseEvent) => {
     if (!canvasRef.current) return;
 
     const canvasPos = canvasRef.current.screenToCanvas(e.clientX, e.clientY);
 
-    // Node dragging
+    // Node dragging with grid snapping
     if (draggingNodeId) {
+      // Calculate new position and snap to grid (n8n uses 10px)
       const newPosition = {
-        x: canvasPos.x - dragOffset.x,
-        y: canvasPos.y - dragOffset.y,
+        x: snapToGrid(canvasPos.x - dragOffset.x),
+        y: snapToGrid(canvasPos.y - dragOffset.y),
       };
 
       // Move selected nodes if multiple selected
@@ -566,7 +575,11 @@ export function EnhancedWorkspace() {
             const node = flowActions.getNode(id)!;
             return {
               nodeId: id,
-              position: { x: node.position.x + dx, y: node.position.y + dy },
+              // Snap each node's new position to grid
+              position: { 
+                x: snapToGrid(node.position.x + dx), 
+                y: snapToGrid(node.position.y + dy) 
+              },
             };
           });
           flowActions.moveNodes(moves);

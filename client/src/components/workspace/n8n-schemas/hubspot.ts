@@ -71,7 +71,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'create_contact',
           name: 'Create',
-          value: 'create',
+          value: 'create_contact',
           description: 'Create a contact',
           action: 'Create a contact',
           fields: [
@@ -219,7 +219,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'get_contact',
           name: 'Get',
-          value: 'get',
+          value: 'get_contact',
           description: 'Get a contact by ID',
           action: 'Get a contact',
           fields: [
@@ -313,7 +313,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'update_contact',
           name: 'Update',
-          value: 'update',
+          value: 'update_contact',
           description: 'Update a contact',
           action: 'Update a contact',
           fields: [
@@ -539,7 +539,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'create_company',
           name: 'Create',
-          value: 'create',
+          value: 'create_company',
           description: 'Create a company',
           action: 'Create a company',
           fields: [
@@ -824,7 +824,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'create_deal',
           name: 'Create',
-          value: 'create',
+          value: 'create_deal',
           description: 'Create a deal',
           action: 'Create a deal',
           fields: [
@@ -983,7 +983,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'update_deal',
           name: 'Update',
-          value: 'update',
+          value: 'update_deal',
           description: 'Update a deal',
           action: 'Update a deal',
           fields: [

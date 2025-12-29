@@ -905,6 +905,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = (props) => {
 
 // ============================================
 // FIELD WRAPPER WITH LABEL
+// n8n style: Labels ABOVE inputs, 16px vertical spacing, required marker
 // ============================================
 
 interface FieldWrapperProps {
@@ -913,6 +914,14 @@ interface FieldWrapperProps {
   error?: string | string[];
 }
 
+/**
+ * n8n-style Field Wrapper
+ * - Label positioned ABOVE input (not inline)
+ * - Required fields marked with red asterisk (*)
+ * - Helper text below input
+ * - Inline validation errors with icon
+ * - 16px vertical spacing between fields
+ */
 const FieldWrapper: React.FC<FieldWrapperProps> = ({ field, children, error }) => {
   const isRequired = field.validation?.required;
   
@@ -922,12 +931,16 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ field, children, error }) =
   }
   
   return (
-    <div className="space-y-1.5">
+    // n8n uses 16px (space-y-4) between fields
+    <div className="space-y-2">
+      {/* Label row - ABOVE input (n8n style) */}
       <div className="flex items-center gap-1.5">
-        <Label className="text-sm font-medium">
+        <Label className="text-sm font-medium text-foreground">
           {field.name}
-          {isRequired && <span className="text-red-500 ml-0.5">*</span>}
+          {/* Required marker - red asterisk (n8n style) */}
+          {isRequired && <span className="text-destructive ml-0.5">*</span>}
         </Label>
+        {/* Info tooltip for description/AI help */}
         {(field.description || field.aiHelp) && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -942,10 +955,23 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ field, children, error }) =
           </Tooltip>
         )}
       </div>
-      {children}
+      
+      {/* Input component (full width - n8n style) */}
+      <div className="w-full">
+        {children}
+      </div>
+      
+      {/* Helper text - below input (n8n style) */}
+      {field.description && !error && (
+        <p className="text-[11px] text-muted-foreground leading-tight">
+          {field.description}
+        </p>
+      )}
+      
+      {/* Inline validation error - n8n style */}
       {error && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
+        <p className="text-xs text-destructive flex items-center gap-1">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" />
           {formatError(error)}
         </p>
       )}
@@ -955,6 +981,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ field, children, error }) =
 
 // ============================================
 // FIELD GROUP COMPONENT
+// n8n style: Collapsible sections for Optional/Advanced fields
 // ============================================
 
 interface FieldGroupProps {
@@ -968,6 +995,12 @@ interface FieldGroupProps {
   disabled?: boolean;
 }
 
+/**
+ * n8n-style Field Group (Collapsible Section)
+ * - Optional fields collapsed by default
+ * - Advanced settings in accordion
+ * - 16px spacing between fields within group
+ */
 const FieldGroupComponent: React.FC<FieldGroupProps> = ({
   group,
   fields,
@@ -978,6 +1011,7 @@ const FieldGroupComponent: React.FC<FieldGroupProps> = ({
   errors,
   disabled,
 }) => {
+  // n8n: Optional and Advanced groups start collapsed
   const [isOpen, setIsOpen] = useState(!group.collapsed);
   
   const visibleFields = fields.filter(field => isFieldVisible(field, values));
@@ -985,21 +1019,31 @@ const FieldGroupComponent: React.FC<FieldGroupProps> = ({
   if (visibleFields.length === 0) return null;
   
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border rounded-lg">
+      {/* n8n-style group header */}
       <CollapsibleTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full justify-between h-8 px-2 hover:bg-muted/50"
+          className="w-full justify-between h-10 px-3 hover:bg-muted/50 rounded-lg"
         >
           <span className="text-sm font-medium">{group.name}</span>
-          {isOpen ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
+          <div className="flex items-center gap-2">
+            {/* Show field count when collapsed */}
+            {!isOpen && (
+              <Badge variant="secondary" className="text-[10px] h-5">
+                {visibleFields.length} field{visibleFields.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            {isOpen ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
         </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-4 pt-2">
+      {/* n8n: 16px spacing between fields */}
+      <CollapsibleContent className="px-3 pb-3 space-y-4">
         {visibleFields.map((field) => (
           <FieldWrapper key={field.id} field={field} error={errors?.[field.id]}>
             <FieldRenderer

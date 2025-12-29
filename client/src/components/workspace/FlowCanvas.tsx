@@ -75,8 +75,17 @@ export interface FlowCanvasRef {
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 2;
 const ZOOM_SENSITIVITY = 0.001;
+// n8n uses 20px grid for visual pattern, 10px snap for precision
 const GRID_SIZE = 20;
-const SNAP_THRESHOLD = 10;
+const SNAP_SIZE = 10;  // Node positions snap to 10px grid
+
+/**
+ * Snap a value to the nearest grid point
+ * n8n snaps node positions to 10px increments
+ */
+export const snapToGrid = (value: number, gridSize: number = SNAP_SIZE): number => {
+  return Math.round(value / gridSize) * gridSize;
+};
 
 // ============================================
 // COMPONENT
@@ -402,18 +411,14 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
   // RENDER
   // ============================================
 
-  // n8n-style line grid pattern for professional appearance
+  /**
+   * n8n-style dotted grid pattern
+   * - Subtle dots at 20px intervals
+   * - Scales with zoom for consistent visual density
+   * - Provides visual reference without being distracting
+   */
   const gridPattern = showGrid
-    ? [
-        // Fine horizontal lines
-        `linear-gradient(hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)`,
-        // Fine vertical lines
-        `linear-gradient(90deg, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)`,
-        // Major horizontal lines (every 5 units)
-        `linear-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`,
-        // Major vertical lines (every 5 units)
-        `linear-gradient(90deg, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`,
-      ].join(',')
+    ? `radial-gradient(circle, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)`
     : 'none';
 
   return (
@@ -438,19 +443,14 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
         onDrop={handleDrop}
         tabIndex={0}
       >
-        {/* Grid Background - n8n-style intersecting lines */}
+        {/* Grid Background - n8n-style dotted pattern */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: gridPattern,
-            backgroundSize: [
-              `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
-              `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
-              `${GRID_SIZE * 5 * viewport.zoom}px ${GRID_SIZE * 5 * viewport.zoom}px`,
-              `${GRID_SIZE * 5 * viewport.zoom}px ${GRID_SIZE * 5 * viewport.zoom}px`,
-            ].join(', '),
+            backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
             backgroundPosition: `${viewport.x}px ${viewport.y}px`,
-            opacity: Math.min(1, viewport.zoom * 1.2),
+            opacity: Math.min(1, viewport.zoom * 1.5), // Fade in as zoom increases
           }}
         />
 

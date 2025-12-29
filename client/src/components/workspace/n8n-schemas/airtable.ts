@@ -121,9 +121,9 @@ export const airtableSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'get_records',
-          name: 'Get Records',
-          value: 'getMany',
+          id: 'list_records',
+          name: 'List Records',
+          value: 'list_records',
           description: 'Get all records from a table',
           action: 'List records',
           fields: [
@@ -183,8 +183,8 @@ export const airtableSchema: N8nAppSchema = {
               description: 'Array of sort objects: [{"field": "Name", "direction": "asc"}]',
             },
             {
-              id: 'view',
-              name: 'view',
+              id: 'view_id',
+              name: 'viewId',
               displayName: 'View',
               type: 'string',
               required: false,

@@ -37,10 +37,11 @@ export interface FlowConnectionsProps {
 // CONSTANTS
 // ============================================
 
-const NODE_WIDTH = 280;
-const NODE_HEIGHT = 140;
-const HANDLE_OFFSET = 10;
-const CURVE_OFFSET = 80;
+// n8n-style: 240px fixed width, horizontal flow (left-to-right)
+const NODE_WIDTH = 240;
+const NODE_HEIGHT = 100; // Approximate height for calculations
+const HANDLE_OFFSET = 7;  // Handle protrusion from node edge
+const CURVE_OFFSET = 60;  // Bezier curve control point offset
 const STROKE_WIDTH = 2;
 const STROKE_WIDTH_HOVER = 3;
 const HIT_AREA_WIDTH = 20;
@@ -61,36 +62,39 @@ const CONNECTION_COLORS = {
 // ============================================
 
 /**
- * Get the output position of a node (bottom center)
+ * Get the output position of a node (RIGHT side, vertically centered)
+ * n8n style: outputs on the right edge
  */
 const getNodeOutputPosition = (node: FlowNode): ConnectionPoint => ({
-  x: node.position.x + NODE_WIDTH / 2,
-  y: node.position.y + NODE_HEIGHT + HANDLE_OFFSET,
+  x: node.position.x + NODE_WIDTH + HANDLE_OFFSET,
+  y: node.position.y + NODE_HEIGHT / 2,
 });
 
 /**
- * Get the input position of a node (top center)
+ * Get the input position of a node (LEFT side, vertically centered)
+ * n8n style: inputs on the left edge
  */
 const getNodeInputPosition = (node: FlowNode): ConnectionPoint => ({
-  x: node.position.x + NODE_WIDTH / 2,
-  y: node.position.y - HANDLE_OFFSET,
+  x: node.position.x - HANDLE_OFFSET,
+  y: node.position.y + NODE_HEIGHT / 2,
 });
 
 /**
- * Get specific handle position for condition nodes
+ * Get specific handle position for condition nodes (multiple outputs on right)
+ * n8n style: Yes/No outputs stacked vertically on right side
  */
 const getHandlePosition = (node: FlowNode, handle?: string): ConnectionPoint => {
   if (node.type === 'condition') {
     if (handle === 'true') {
       return {
-        x: node.position.x + NODE_WIDTH / 4,
-        y: node.position.y + NODE_HEIGHT + HANDLE_OFFSET,
+        x: node.position.x + NODE_WIDTH + HANDLE_OFFSET,
+        y: node.position.y + NODE_HEIGHT / 3,  // Upper third
       };
     }
     if (handle === 'false') {
       return {
-        x: node.position.x + (NODE_WIDTH * 3) / 4,
-        y: node.position.y + NODE_HEIGHT + HANDLE_OFFSET,
+        x: node.position.x + NODE_WIDTH + HANDLE_OFFSET,
+        y: node.position.y + (NODE_HEIGHT * 2) / 3,  // Lower third
       };
     }
   }
@@ -99,40 +103,30 @@ const getHandlePosition = (node: FlowNode, handle?: string): ConnectionPoint => 
 
 /**
  * Generate a smooth bezier curve path
+ * n8n style: horizontal flow (left-to-right) is the default
  */
 const generateBezierPath = (
   start: ConnectionPoint,
   end: ConnectionPoint,
-  isVertical: boolean = true
+  isHorizontal: boolean = true  // n8n default: horizontal flow
 ): string => {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   
-  if (isVertical) {
-    // Vertical flow (top to bottom)
-    const curveOffset = Math.min(Math.abs(dy) / 2, CURVE_OFFSET);
-    const midY = start.y + dy / 2;
+  if (isHorizontal) {
+    // Horizontal flow (left to right) - n8n default
+    const curveOffset = Math.min(Math.max(Math.abs(dx) / 2, 40), CURVE_OFFSET);
     
-    // If going upward, create a loop-back curve
-    if (dy < 50) {
+    // If going backwards (right to left), create a loop-around curve
+    if (dx < 50) {
       const loopOffset = 80;
       return `
         M ${start.x} ${start.y}
-        C ${start.x} ${start.y + loopOffset},
-          ${end.x} ${end.y - loopOffset},
+        C ${start.x + loopOffset} ${start.y},
+          ${end.x - loopOffset} ${end.y},
           ${end.x} ${end.y}
       `;
     }
-    
-    return `
-      M ${start.x} ${start.y}
-      C ${start.x} ${start.y + curveOffset},
-        ${end.x} ${end.y - curveOffset},
-        ${end.x} ${end.y}
-    `;
-  } else {
-    // Horizontal flow (left to right)
-    const curveOffset = Math.min(Math.abs(dx) / 2, CURVE_OFFSET);
     
     return `
       M ${start.x} ${start.y}
@@ -140,28 +134,41 @@ const generateBezierPath = (
         ${end.x - curveOffset} ${end.y},
         ${end.x} ${end.y}
     `;
+  } else {
+    // Vertical flow (top to bottom) - fallback
+    const curveOffset = Math.min(Math.abs(dy) / 2, CURVE_OFFSET);
+    
+    return `
+      M ${start.x} ${start.y}
+      C ${start.x} ${start.y + curveOffset},
+        ${end.x} ${end.y - curveOffset},
+        ${end.x} ${end.y}
+    `;
   }
 };
 
 /**
  * Generate arrow marker path
+ * n8n style: arrow points right (horizontal flow)
  */
 const generateArrowPath = (
   end: ConnectionPoint,
-  isVertical: boolean = true
+  isHorizontal: boolean = true  // n8n default: horizontal
 ): string => {
-  const size = 8;
-  if (isVertical) {
+  const size = 6;  // Slightly smaller for cleaner look
+  if (isHorizontal) {
+    // Arrow pointing right (for horizontal flow)
     return `
-      M ${end.x - size} ${end.y - size * 1.5}
+      M ${end.x - size * 1.5} ${end.y - size}
       L ${end.x} ${end.y}
-      L ${end.x + size} ${end.y - size * 1.5}
+      L ${end.x - size * 1.5} ${end.y + size}
     `;
   }
+  // Arrow pointing down (for vertical flow)
   return `
-    M ${end.x - size * 1.5} ${end.y - size}
+    M ${end.x - size} ${end.y - size * 1.5}
     L ${end.x} ${end.y}
-    L ${end.x - size * 1.5} ${end.y + size}
+    L ${end.x + size} ${end.y - size * 1.5}
   `;
 };
 

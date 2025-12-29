@@ -750,7 +750,7 @@ export const slackSchema: N8nAppSchema = {
         {
           id: 'send_message',
           name: 'Send',
-          value: 'send',
+          value: 'send_message',
           description: 'Send a message to a channel',
           action: 'Send a message',
           fields: [
@@ -963,9 +963,72 @@ export const slackSchema: N8nAppSchema = {
           },
         },
         {
+          id: 'send_dm',
+          name: 'Send DM',
+          value: 'send_dm',
+          description: 'Send a direct message to a user',
+          action: 'Send a direct message',
+          fields: [
+            {
+              id: 'user',
+              displayName: 'User',
+              name: 'user',
+              type: 'string',
+              required: true,
+              description: 'User ID to send the direct message to',
+              placeholder: 'U1234567890',
+            },
+            {
+              id: 'text',
+              displayName: 'Message Text',
+              name: 'text',
+              type: 'text',
+              required: true,
+              description: 'The message text to send',
+              typeOptions: { rows: 4 },
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'send_blocks',
+          name: 'Send Blocks',
+          value: 'send_blocks',
+          description: 'Send a message with Block Kit blocks',
+          action: 'Send a message with blocks',
+          fields: [
+            {
+              id: 'channel',
+              displayName: 'Channel',
+              name: 'channel',
+              type: 'string',
+              required: true,
+              description: 'Channel to send the message to',
+            },
+            {
+              id: 'text',
+              displayName: 'Fallback Text',
+              name: 'text',
+              type: 'string',
+              required: true,
+              description: 'Fallback text for notifications',
+            },
+            {
+              id: 'blocks',
+              displayName: 'Blocks (JSON)',
+              name: 'blocks',
+              type: 'json',
+              required: true,
+              description: 'Block Kit JSON array',
+              typeOptions: { alwaysOpenEditWindow: true },
+            },
+          ],
+          optionalFields: [],
+        },
+        {
           id: 'update_message',
           name: 'Update',
-          value: 'update',
+          value: 'update_message',
           description: 'Update a message',
           action: 'Update a message',
           fields: [
@@ -1205,7 +1268,7 @@ export const slackSchema: N8nAppSchema = {
         {
           id: 'upload_file',
           name: 'Upload',
-          value: 'upload',
+          value: 'upload_file',
           description: 'Upload a file to Slack',
           action: 'Upload a file',
           fields: [
@@ -1221,27 +1284,13 @@ export const slackSchema: N8nAppSchema = {
               },
             },
             {
-              id: 'binary_data',
-              displayName: 'Binary Data',
-              name: 'binaryData',
-              type: 'boolean',
-              default: false,
-              description: 'Whether the file is binary data or URL/path',
-            },
-            {
-              id: 'file_content',
-              displayName: 'File Content',
-              name: 'fileContent',
-              type: 'text',
-              description: 'The file content as text',
-              displayOptions: {
-                show: {
-                  binaryData: [false],
-                },
-              },
-              typeOptions: {
-                rows: 6,
-              },
+              id: 'file_url',
+              displayName: 'File URL',
+              name: 'fileUrl',
+              type: 'string',
+              required: true,
+              description: 'URL of the file to upload',
+              placeholder: 'https://example.com/file.pdf',
             },
           ],
           optionalFields: [
@@ -1435,7 +1484,7 @@ export const slackSchema: N8nAppSchema = {
         {
           id: 'add_reaction',
           name: 'Add',
-          value: 'add',
+          value: 'add_reaction',
           description: 'Add a reaction to a message',
           action: 'Add a reaction',
           fields: [

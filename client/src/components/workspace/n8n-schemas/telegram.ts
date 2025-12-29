@@ -35,9 +35,9 @@ export const telegramSchema: N8nAppSchema = {
       description: 'Send and manage messages',
       operations: [
         {
-          id: 'send_text',
-          name: 'Send Text',
-          value: 'sendText',
+          id: 'send_message',
+          name: 'Send Message',
+          value: 'send_message',
           description: 'Send a text message',
           action: 'Send a text message to a chat',
           fields: [
@@ -108,7 +108,7 @@ export const telegramSchema: N8nAppSchema = {
         {
           id: 'send_photo',
           name: 'Send Photo',
-          value: 'sendPhoto',
+          value: 'send_photo',
           description: 'Send a photo',
           action: 'Send a photo to a chat',
           fields: [
@@ -156,7 +156,7 @@ export const telegramSchema: N8nAppSchema = {
         {
           id: 'send_document',
           name: 'Send Document',
-          value: 'sendDocument',
+          value: 'send_document',
           description: 'Send a document/file',
           action: 'Send a document to a chat',
           fields: [
@@ -319,7 +319,7 @@ export const telegramSchema: N8nAppSchema = {
         {
           id: 'edit_message',
           name: 'Edit Message',
-          value: 'editMessageText',
+          value: 'edit_message',
           description: 'Edit a sent message',
           action: 'Edit text of a message',
           fields: [
@@ -362,7 +362,7 @@ export const telegramSchema: N8nAppSchema = {
         {
           id: 'delete_message',
           name: 'Delete Message',
-          value: 'deleteMessage',
+          value: 'delete_message',
           description: 'Delete a message',
           action: 'Delete a message from a chat',
           fields: [
@@ -379,6 +379,41 @@ export const telegramSchema: N8nAppSchema = {
               displayName: 'Message ID',
               type: 'number',
               required: true,
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'send_buttons',
+          name: 'Send Buttons',
+          value: 'send_buttons',
+          description: 'Send a message with inline keyboard buttons',
+          action: 'Send a message with inline buttons',
+          fields: [
+            {
+              id: 'chat_id',
+              name: 'chatId',
+              displayName: 'Chat ID',
+              type: 'string',
+              required: true,
+              description: 'Unique identifier for the target chat',
+            },
+            {
+              id: 'text',
+              name: 'text',
+              displayName: 'Message Text',
+              type: 'text',
+              required: true,
+              description: 'Text of the message',
+            },
+            {
+              id: 'buttons',
+              name: 'buttons',
+              displayName: 'Buttons (JSON)',
+              type: 'json',
+              required: true,
+              description: 'JSON array of button rows, e.g. [[{"text": "Button 1", "callback_data": "btn1"}]]',
+              placeholder: '[[{"text": "Button", "callback_data": "action"}]]',
             },
           ],
           optionalFields: [],

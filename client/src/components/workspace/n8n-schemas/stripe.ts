@@ -49,18 +49,19 @@ export const stripeSchema: N8nAppSchema = {
         {
           id: 'create_customer',
           name: 'Create Customer',
-          value: 'create',
+          value: 'create_customer',
           description: 'Create a new customer',
           action: 'Create a new customer',
-          fields: [],
-          optionalFields: [
+          fields: [
             {
               id: 'email',
               name: 'email',
               displayName: 'Email',
               type: 'string',
-              required: false,
+              required: true,
             },
+          ],
+          optionalFields: [
             {
               id: 'name',
               name: 'name',
@@ -123,7 +124,7 @@ export const stripeSchema: N8nAppSchema = {
         {
           id: 'get_customer',
           name: 'Get Customer',
-          value: 'get',
+          value: 'get_customer',
           description: 'Get a customer by ID',
           action: 'Retrieve a customer',
           fields: [
@@ -463,7 +464,7 @@ export const stripeSchema: N8nAppSchema = {
         {
           id: 'create_payment_intent',
           name: 'Create Payment Intent',
-          value: 'create',
+          value: 'create_payment_intent',
           description: 'Create a payment intent',
           action: 'Create a payment intent',
           fields: [
@@ -703,31 +704,44 @@ export const stripeSchema: N8nAppSchema = {
         {
           id: 'create_subscription',
           name: 'Create Subscription',
-          value: 'create',
+          value: 'create_subscription',
           description: 'Create a subscription',
           action: 'Create a subscription',
           fields: [
             {
-              id: 'customer',
-              name: 'customer',
+              id: 'customerId',
+              name: 'customerId',
               displayName: 'Customer ID',
               type: 'string',
               required: true,
               placeholder: 'cus_...',
             },
             {
-              id: 'items',
-              name: 'items',
-              displayName: 'Items (JSON)',
-              type: 'json',
+              id: 'priceId',
+              name: 'priceId',
+              displayName: 'Price ID',
+              type: 'string',
               required: true,
-              placeholder: '[{"price": "price_..."}]',
+              placeholder: 'price_...',
             },
           ],
           optionalFields: [
             {
-              id: 'default_payment_method',
-              name: 'default_payment_method',
+              id: 'trialPeriodDays',
+              name: 'trialPeriodDays',
+              displayName: 'Trial Period (Days)',
+              type: 'number',
+              required: false,
+            },
+            {
+              id: 'metadata',
+              name: 'metadata',
+              displayName: 'Metadata (JSON)',
+              type: 'json',
+              required: false,
+            },
+          ],
+        },
               displayName: 'Default Payment Method',
               type: 'string',
               required: false,
@@ -903,12 +917,12 @@ export const stripeSchema: N8nAppSchema = {
         {
           id: 'cancel_subscription',
           name: 'Cancel Subscription',
-          value: 'cancel',
+          value: 'cancel_subscription',
           description: 'Cancel a subscription',
           action: 'Cancel a subscription',
           fields: [
             {
-              id: 'subscription_id',
+              id: 'subscriptionId',
               name: 'subscriptionId',
               displayName: 'Subscription ID',
               type: 'string',
@@ -917,20 +931,13 @@ export const stripeSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'invoice_now',
-              name: 'invoice_now',
-              displayName: 'Invoice Now',
+              id: 'cancelAtPeriodEnd',
+              name: 'cancelAtPeriodEnd',
+              displayName: 'Cancel At Period End',
               type: 'boolean',
               required: false,
-              default: false,
-            },
-            {
-              id: 'prorate',
-              name: 'prorate',
-              displayName: 'Prorate',
-              type: 'boolean',
-              required: false,
-              default: false,
+              default: true,
+              description: 'If true, subscription will be cancelled at the end of the current billing period',
             },
           ],
         },
@@ -949,13 +956,13 @@ export const stripeSchema: N8nAppSchema = {
         {
           id: 'create_invoice',
           name: 'Create Invoice',
-          value: 'create',
+          value: 'create_invoice',
           description: 'Create an invoice',
           action: 'Create an invoice',
           fields: [
             {
-              id: 'customer',
-              name: 'customer',
+              id: 'customerId',
+              name: 'customerId',
               displayName: 'Customer ID',
               type: 'string',
               required: true,
@@ -963,8 +970,8 @@ export const stripeSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'auto_advance',
-              name: 'auto_advance',
+              id: 'autoAdvance',
+              name: 'autoAdvance',
               displayName: 'Auto Advance',
               type: 'boolean',
               required: false,
@@ -972,12 +979,14 @@ export const stripeSchema: N8nAppSchema = {
               description: 'Automatically finalize and collect',
             },
             {
-              id: 'collection_method',
-              name: 'collection_method',
-              displayName: 'Collection Method',
-              type: 'options',
+              id: 'description',
+              name: 'description',
+              displayName: 'Description',
+              type: 'string',
               required: false,
-              default: 'charge_automatically',
+            },
+          ],
+        },
               options: [
                 { name: 'Charge Automatically', value: 'charge_automatically' },
                 { name: 'Send Invoice', value: 'send_invoice' },
@@ -1168,29 +1177,22 @@ export const stripeSchema: N8nAppSchema = {
       description: 'Payment refunds',
       operations: [
         {
-          id: 'create_refund',
+          id: 'refund_payment',
           name: 'Create Refund',
-          value: 'create',
+          value: 'refund_payment',
           description: 'Create a refund',
           action: 'Create a refund',
-          fields: [],
-          optionalFields: [
+          fields: [
             {
-              id: 'charge',
-              name: 'charge',
-              displayName: 'Charge ID',
-              type: 'string',
-              required: false,
-              placeholder: 'ch_...',
-            },
-            {
-              id: 'payment_intent',
-              name: 'payment_intent',
+              id: 'paymentIntentId',
+              name: 'paymentIntentId',
               displayName: 'Payment Intent ID',
               type: 'string',
-              required: false,
+              required: true,
               placeholder: 'pi_...',
             },
+          ],
+          optionalFields: [
             {
               id: 'amount',
               name: 'amount',

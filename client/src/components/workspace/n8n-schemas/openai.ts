@@ -66,9 +66,9 @@ export const openAiSchema: N8nAppSchema = {
       description: 'Generate and manipulate text using GPT models',
       operations: [
         {
-          id: 'message_model',
+          id: 'chat_completion',
           name: 'Message a Model',
-          value: 'message',
+          value: 'chat_completion',
           description: 'Send a message to a model and receive a response',
           action: 'Message a model',
           fields: [
@@ -92,44 +92,9 @@ export const openAiSchema: N8nAppSchema = {
               ],
             },
             {
-              id: 'messages',
-              displayName: 'Messages',
-              name: 'messages',
-              type: 'fixedCollection',
-              required: true,
-              description: 'The messages to send to the model',
-              fixedCollectionFields: [
-                {
-                  id: 'role',
-                  displayName: 'Role',
-                  name: 'role',
-                  type: 'options',
-                  required: true,
-                  default: 'user',
-                  options: [
-                    { name: 'System', value: 'system', description: 'Sets the behavior of the assistant' },
-                    { name: 'User', value: 'user', description: 'Messages from the user' },
-                    { name: 'Assistant', value: 'assistant', description: 'Previous assistant responses' },
-                  ],
-                },
-                {
-                  id: 'content',
-                  displayName: 'Content',
-                  name: 'content',
-                  type: 'text',
-                  required: true,
-                  description: 'The content of the message',
-                  placeholder: 'Enter your message here...',
-                  typeOptions: {
-                    rows: 4,
-                  },
-                },
-              ],
-            },
-            {
-              id: 'prompt',
-              displayName: 'Prompt',
-              name: 'prompt',
+              id: 'userMessage',
+              displayName: 'User Message',
+              name: 'userMessage',
               type: 'text',
               required: true,
               description: 'The user prompt/question to send to the model',
@@ -141,9 +106,9 @@ export const openAiSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'system_message',
-              displayName: 'System Message',
-              name: 'systemMessage',
+              id: 'system_prompt',
+              displayName: 'System Prompt',
+              name: 'systemPrompt',
               type: 'text',
               default: 'You are a helpful assistant.',
               description: 'Sets the behavior and personality of the assistant',
@@ -428,7 +393,7 @@ export const openAiSchema: N8nAppSchema = {
         {
           id: 'generate_image',
           name: 'Generate Image',
-          value: 'generate',
+          value: 'generate_image',
           description: 'Create an image from a text prompt',
           action: 'Generate an image',
           fields: [
@@ -944,9 +909,9 @@ export const openAiSchema: N8nAppSchema = {
           },
         },
         {
-          id: 'generate_speech',
+          id: 'text_to_speech',
           name: 'Generate Speech',
-          value: 'speech',
+          value: 'text_to_speech',
           description: 'Convert text to natural-sounding speech',
           action: 'Generate speech from text',
           fields: [
@@ -1502,7 +1467,7 @@ export const openAiSchema: N8nAppSchema = {
         {
           id: 'create_embedding',
           name: 'Create Embedding',
-          value: 'create',
+          value: 'create_embedding',
           description: 'Create an embedding vector from input text',
           action: 'Create an embedding',
           fields: [

@@ -35,9 +35,9 @@ export const gmailSchema: N8nAppSchema = {
       description: 'Send and manage emails',
       operations: [
         {
-          id: 'send_message',
+          id: 'send_email',
           name: 'Send Email',
-          value: 'send',
+          value: 'send_email',
           description: 'Send an email',
           action: 'Send a new email',
           fields: [
@@ -72,16 +72,13 @@ export const gmailSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'body_type',
-              name: 'bodyType',
-              displayName: 'Body Type',
-              type: 'options',
+              id: 'is_html',
+              name: 'isHtml',
+              displayName: 'Send as HTML',
+              type: 'boolean',
               required: false,
-              default: 'text',
-              options: [
-                { name: 'Plain Text', value: 'text' },
-                { name: 'HTML', value: 'html' },
-              ],
+              default: false,
+              description: 'Enable to send body content as HTML instead of plain text',
             },
             {
               id: 'cc',
@@ -115,29 +112,29 @@ export const gmailSchema: N8nAppSchema = {
               description: 'Sender display name',
             },
             {
-              id: 'attachments',
-              name: 'attachments',
-              displayName: 'Attachments (JSON)',
+              id: 'attachment_urls',
+              name: 'attachmentUrls',
+              displayName: 'Attachment URLs',
               type: 'json',
               required: false,
-              description: 'Array of attachment objects',
+              description: 'JSON array of URLs to files to attach (e.g. ["https://..."])',
             },
           ],
         },
         {
-          id: 'reply',
+          id: 'reply_email',
           name: 'Reply',
-          value: 'reply',
+          value: 'reply_email',
           description: 'Reply to an email',
           action: 'Reply to an existing email',
           fields: [
             {
-              id: 'message_id',
-              name: 'messageId',
-              displayName: 'Message ID',
+              id: 'thread_id',
+              name: 'threadId',
+              displayName: 'Thread ID',
               type: 'string',
               required: true,
-              description: 'ID of the message to reply to',
+              description: 'ID of the thread to reply to',
             },
             {
               id: 'body',
@@ -287,11 +284,11 @@ export const gmailSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'mark_as_read',
-          name: 'Mark as Read',
-          value: 'markAsRead',
-          description: 'Mark email as read',
-          action: 'Mark an email as read',
+          id: 'mark_read',
+          name: 'Mark Read/Unread',
+          value: 'mark_read',
+          description: 'Mark email as read or unread',
+          action: 'Mark an email as read or unread',
           fields: [
             {
               id: 'message_id',
@@ -300,30 +297,25 @@ export const gmailSchema: N8nAppSchema = {
               type: 'string',
               required: true,
             },
-          ],
-          optionalFields: [],
-        },
-        {
-          id: 'mark_as_unread',
-          name: 'Mark as Unread',
-          value: 'markAsUnread',
-          description: 'Mark email as unread',
-          action: 'Mark an email as unread',
-          fields: [
             {
-              id: 'message_id',
-              name: 'messageId',
-              displayName: 'Message ID',
-              type: 'string',
+              id: 'mark_as',
+              name: 'markAs',
+              displayName: 'Mark As',
+              type: 'options',
               required: true,
+              default: 'read',
+              options: [
+                { name: 'Read', value: 'read' },
+                { name: 'Unread', value: 'unread' },
+              ],
             },
           ],
           optionalFields: [],
         },
         {
-          id: 'add_labels',
+          id: 'add_label',
           name: 'Add Labels',
-          value: 'addLabels',
+          value: 'add_label',
           description: 'Add labels to an email',
           action: 'Add labels to an email',
           fields: [

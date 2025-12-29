@@ -85,9 +85,9 @@ export const whatsappSchema: N8nAppSchema = {
       description: 'Send and manage messages',
       operations: [
         {
-          id: 'send_text',
+          id: 'send_message',
           name: 'Send Text',
-          value: 'sendText',
+          value: 'send_message',
           description: 'Send a text message',
           action: 'Send a text message',
           fields: [
@@ -101,9 +101,9 @@ export const whatsappSchema: N8nAppSchema = {
               placeholder: '+1234567890',
             },
             {
-              id: 'text',
+              id: 'message',
               displayName: 'Message',
-              name: 'text',
+              name: 'message',
               type: 'text',
               required: true,
               description: 'The message text to send',
@@ -512,7 +512,7 @@ export const whatsappSchema: N8nAppSchema = {
         {
           id: 'send_interactive',
           name: 'Send Interactive',
-          value: 'sendInteractive',
+          value: 'send_interactive',
           description: 'Send an interactive message with buttons or list',
           action: 'Send interactive message',
           fields: [
@@ -613,7 +613,7 @@ export const whatsappSchema: N8nAppSchema = {
         {
           id: 'mark_read',
           name: 'Mark as Read',
-          value: 'markRead',
+          value: 'mark_read',
           description: 'Mark a message as read',
           action: 'Mark message as read',
           fields: [
@@ -692,7 +692,7 @@ export const whatsappSchema: N8nAppSchema = {
         {
           id: 'send_template',
           name: 'Send',
-          value: 'send',
+          value: 'send_template',
           description: 'Send a template message',
           action: 'Send a template message',
           fields: [
@@ -718,7 +718,7 @@ export const whatsappSchema: N8nAppSchema = {
             {
               id: 'language',
               displayName: 'Language',
-              name: 'language',
+              name: 'templateLanguage',
               type: 'options',
               required: true,
               default: 'en_US',

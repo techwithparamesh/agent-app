@@ -86,7 +86,8 @@ export interface EnhancedFlowNodeProps {
 // CONSTANTS
 // ============================================
 
-const NODE_WIDTH = 280;
+// n8n uses fixed 240px width for consistent node sizing
+const NODE_WIDTH = 240;
 
 // Status configuration
 const statusConfig = {
@@ -256,6 +257,13 @@ interface ConnectionHandleProps {
   onMouseLeave?: () => void;
 }
 
+/**
+ * n8n-style Connection Handle
+ * - Input handles on LEFT (centered vertically)
+ * - Output handles on RIGHT (centered vertically)
+ * - Larger 14px handles for better visibility and click target
+ * - Smooth 150ms transitions for all interactions
+ */
 const ConnectionHandle: React.FC<ConnectionHandleProps> = ({
   type,
   position,
@@ -268,18 +276,19 @@ const ConnectionHandle: React.FC<ConnectionHandleProps> = ({
   onMouseEnter,
   onMouseLeave,
 }) => {
+  // n8n positions: input=left, output=right (both vertically centered)
   const positionClasses = {
-    top: "-top-2 left-1/2 -translate-x-1/2",
-    bottom: "-bottom-2 left-1/2 -translate-x-1/2",
-    left: "top-1/2 -left-2 -translate-y-1/2",
-    right: "top-1/2 -right-2 -translate-y-1/2",
+    top: "-top-[7px] left-1/2 -translate-x-1/2",
+    bottom: "-bottom-[7px] left-1/2 -translate-x-1/2",
+    left: "top-1/2 -left-[7px] -translate-y-1/2",   // Input handle
+    right: "top-1/2 -right-[7px] -translate-y-1/2", // Output handle
   };
 
   const labelPositionClasses = {
     top: "-top-6 left-1/2 -translate-x-1/2",
     bottom: "-bottom-6 left-1/2 -translate-x-1/2",
-    left: "top-1/2 -left-8 -translate-y-1/2",
-    right: "top-1/2 -right-8 -translate-y-1/2",
+    left: "top-1/2 right-full mr-2 -translate-y-1/2",
+    right: "top-1/2 left-full ml-2 -translate-y-1/2",
   };
 
   return (
@@ -289,11 +298,11 @@ const ConnectionHandle: React.FC<ConnectionHandleProps> = ({
         positionClasses[position]
       )}
     >
-      {/* Label */}
+      {/* Label - shows on hover for better UX */}
       {label && (
         <span className={cn(
           "absolute text-[10px] font-medium whitespace-nowrap",
-          "opacity-0 group-hover/handle:opacity-100 transition-opacity",
+          "opacity-0 group-hover/handle:opacity-100 transition-opacity duration-150",
           labelPositionClasses[position],
           isActive ? "text-primary" : "text-muted-foreground"
         )}>
@@ -301,17 +310,24 @@ const ConnectionHandle: React.FC<ConnectionHandleProps> = ({
         </span>
       )}
       
-      {/* Handle */}
+      {/* Handle - n8n style: larger, more prominent */}
       <div
         className={cn(
-          "w-4 h-4 rounded-full border-2 cursor-crosshair transition-all duration-150",
+          // Base: 14px circle (larger than before for better UX)
+          "w-[14px] h-[14px] rounded-full border-2 cursor-crosshair",
+          // Smooth 150ms transition for all states
+          "transition-all duration-150 ease-out",
           "flex items-center justify-center",
+          // Input vs Output styling (n8n convention)
           type === 'input' 
-            ? "bg-background border-muted-foreground/40" 
-            : "bg-primary/20 border-primary",
-          isActive && "scale-125 border-primary bg-primary/30 shadow-lg shadow-primary/20",
-          isValidTarget && "scale-150 border-emerald-500 bg-emerald-500/30 animate-pulse",
-          "hover:scale-125 hover:border-primary hover:bg-primary/20"
+            ? "bg-background border-muted-foreground/50 hover:border-primary hover:bg-primary/10" 
+            : "bg-background border-muted-foreground/50 hover:border-primary hover:bg-primary/10",
+          // Active state (when dragging connection)
+          isActive && "scale-125 border-primary bg-primary/20 shadow-md shadow-primary/25",
+          // Valid drop target (pulse animation)
+          isValidTarget && "scale-150 border-emerald-500 bg-emerald-500/20 shadow-md shadow-emerald-500/25 animate-pulse",
+          // Hover state
+          "hover:scale-110"
         )}
         onMouseDown={(e) => {
           e.stopPropagation();
@@ -436,97 +452,95 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Main card with n8n-style colored left accent border */}
+        {/* Main card - n8n style: 8px radius, visible shadow, smooth transitions */}
         <div
           className={cn(
-            "relative rounded-xl border bg-card overflow-hidden",
-            "transition-shadow duration-150",
-            "shadow-sm hover:shadow-md",
-            isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-primary/20",
+            // Base: 8px rounded corners (rounded-lg), card background
+            "relative rounded-lg border bg-card overflow-hidden",
+            // Shadow: visible but light (n8n style)
+            "shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)]",
+            // Smooth 150ms transition for all state changes
+            "transition-all duration-150 ease-out",
+            // Hover: slightly elevated shadow
+            "hover:shadow-[0_4px_12px_rgba(0,0,0,0.15),0_2px_4px_rgba(0,0,0,0.1)]",
+            // Selected state: primary ring
+            isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_4px_12px_rgba(0,0,0,0.15)]",
+            // Valid drop target: emerald ring
             isValidDropTarget && "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background",
-            isDragging && "shadow-2xl cursor-grabbing",
+            // Dragging state: elevated shadow
+            isDragging && "shadow-[0_8px_24px_rgba(0,0,0,0.2)] cursor-grabbing",
             !isDragging && "cursor-grab",
             status.borderColor,
           )}
         >
-          {/* n8n-style colored left accent border */}
+          {/* n8n-style colored left accent border - 3px wide */}
           <div 
-            className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+            className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg"
             style={{ backgroundColor: nodeType.accentColor }}
           />
           
-          {/* Header */}
-          <div className="relative flex items-start gap-3 p-3 pb-2 pl-4">
-            {/* Drag handle */}
-            <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
-              <GripVertical className="h-4 w-4 text-muted-foreground/50" />
-            </div>
-
-            {/* App Icon */}
+          {/* 
+           * Header - n8n style layout:
+           * [Icon] [Title + Subtitle] [Status] [Menu]
+           * - App icon on left (36x36)
+           * - Bold title = App name
+           * - Subtitle = "resource • operation" pattern
+           * - Status indicator (small, right side)
+           */}
+          <div className="relative flex items-center gap-2.5 p-3 pl-4">
+            {/* App Icon - n8n style: 36x36, subtle background */}
             <div
-              className="w-11 h-11 rounded-lg flex items-center justify-center text-xl shadow-md flex-shrink-0 mt-1"
+              className="w-9 h-9 rounded-md flex items-center justify-center text-lg flex-shrink-0"
               style={{ 
-                backgroundColor: node.appColor + '25',
-                border: `1px solid ${node.appColor}40`,
+                backgroundColor: node.appColor + '18',
+                border: `1px solid ${node.appColor}25`,
               }}
             >
               {node.appIcon}
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0 pt-0.5">
-              {/* Type and status badges */}
-              <div className="flex items-center gap-1.5 mb-1.5">
-                {/* Type badge - only show icon for cleaner look */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        "h-5 px-1.5 text-[10px] font-medium",
-                        nodeType.badgeClassName
-                      )}
-                    >
-                      <TypeIcon className="h-3 w-3" />
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">{nodeType.label}</TooltipContent>
-                </Tooltip>
-
-                {/* Status indicator - clean icon only with tooltip */}
-                {node.status !== 'configured' && node.status !== 'complete' && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className={cn(
-                        "flex items-center justify-center w-5 h-5 rounded-full",
-                        node.status === 'incomplete' && "bg-amber-500/15",
-                        node.status === 'error' && "bg-destructive/15",
-                        node.status === 'running' && "bg-primary/15",
-                        status.color
-                      )}>
-                        <StatusIcon className={cn(
-                          "h-3 w-3",
-                          status.pulse && "animate-spin"
-                        )} />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{status.label}</TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-
-              {/* App name */}
-              <h3 className="font-semibold text-sm truncate leading-tight">
+            {/* Title + Subtitle container */}
+            <div className="flex-1 min-w-0">
+              {/* Bold title: App name */}
+              <h3 className="font-semibold text-[13px] truncate leading-tight text-foreground">
                 {node.appName}
               </h3>
               
-              {/* Step name */}
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                {node.name}
+              {/* 
+               * Subtitle: "resource • operation" pattern (n8n style)
+               * Falls back to node.name if no resource/action
+               */}
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                {node.triggerId || node.actionId 
+                  ? `${node.type === 'trigger' ? 'Trigger' : node.config?.resource || 'Action'} • ${node.triggerId || node.actionId}`
+                  : node.name
+                }
               </p>
             </div>
 
-            {/* Actions menu */}
+            {/* Status indicator - small dot in corner (n8n style) */}
+            {node.status !== 'configured' && node.status !== 'complete' && node.status !== 'idle' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(
+                    "flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0",
+                    node.status === 'incomplete' && "bg-amber-500/15",
+                    node.status === 'error' && "bg-destructive/15",
+                    node.status === 'success' && "bg-emerald-500/15",
+                    node.status === 'running' && "bg-primary/15",
+                    status.color
+                  )}>
+                    <StatusIcon className={cn(
+                      "h-3 w-3",
+                      status.pulse && "animate-spin"
+                    )} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">{status.label}</TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Actions menu - appears on hover */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -534,7 +548,7 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
                   size="icon"
                   className={cn(
                     "h-7 w-7 flex-shrink-0",
-                    "opacity-0 group-hover:opacity-100 transition-opacity",
+                    "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
                     isHovered && "opacity-100"
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -645,44 +659,45 @@ export const EnhancedFlowNode: React.FC<EnhancedFlowNodeProps> = ({
           )}
         </div>
 
-        {/* Connection Handles */}
-        {/* Input handle (top) - not for triggers */}
+        {/* Connection Handles - n8n style: INPUT on LEFT, OUTPUT on RIGHT */}
+        
+        {/* Input handle (LEFT side) - not shown for trigger nodes */}
         {node.type !== 'trigger' && (
           <ConnectionHandle
             type="input"
-            position="top"
+            position="left"  // n8n: input handles on left
             isActive={isConnecting}
             isValidTarget={isValidDropTarget}
             onMouseUp={(e) => handleConnectionEnd('input')}
           />
         )}
 
-        {/* Output handle (bottom) */}
+        {/* Output handle (RIGHT side) */}
         {node.type !== 'condition' ? (
           <ConnectionHandle
             type="output"
-            position="bottom"
+            position="right"  // n8n: output handles on right
             isActive={activeHandle === 'output'}
             onMouseDown={() => handleConnectionStart('output')}
             onMouseUp={() => handleConnectionEnd('output')}
           />
         ) : (
-          // Condition node has true/false outputs
+          // Condition node: two outputs (Yes/No) stacked vertically on right
           <>
-            <div className="absolute -bottom-2 left-1/4 -translate-x-1/2">
+            <div className="absolute top-1/3 -right-[7px] -translate-y-1/2">
               <ConnectionHandle
                 type="output"
-                position="bottom"
+                position="right"
                 handleId="true"
                 label="Yes"
                 isActive={activeHandle === 'true'}
                 onMouseDown={() => handleConnectionStart('true')}
               />
             </div>
-            <div className="absolute -bottom-2 left-3/4 -translate-x-1/2">
+            <div className="absolute top-2/3 -right-[7px] -translate-y-1/2">
               <ConnectionHandle
                 type="output"
-                position="bottom"
+                position="right"
                 handleId="false"
                 label="No"
                 isActive={activeHandle === 'false'}

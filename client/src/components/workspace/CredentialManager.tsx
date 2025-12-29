@@ -723,6 +723,33 @@ export function CredentialManager({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {/* Test Button - prominent visibility */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-2"
+                                disabled={isTesting}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTest(credential.id);
+                                }}
+                              >
+                                {isTesting ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-4 h-4" />
+                                )}
+                                <span className="ml-1.5 text-xs">Test</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Test connection</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -792,6 +819,17 @@ export function CredentialManager({
                       </Badge>
                       <span>•</span>
                       <span>Updated {credential.updatedAt.toLocaleDateString()}</span>
+                      {credential.lastTestedAt && (
+                        <>
+                          <span>•</span>
+                          <span className={cn(
+                            credential.status === 'valid' && 'text-green-600',
+                            credential.status === 'invalid' && 'text-red-600'
+                          )}>
+                            Tested {credential.lastTestedAt.toLocaleDateString()}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
