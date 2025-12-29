@@ -440,7 +440,7 @@ export function ConfigPanelV2({
         },
       }));
     }
-  }, [dynamicFields, resolveLoadOptionsPath]);
+  }, [dynamicFields, resolveLoadOptionsPath, credentialId, node?.config?.credentialId]);
 
   // When selected trigger/action changes or dependency values change, refresh any loadOptions fields.
   useEffect(() => {
@@ -456,7 +456,7 @@ export function ConfigPanelV2({
     for (const f of fieldsToLoad) {
       void fetchOptionsForField(f);
     }
-  }, [node?.appId, selectedActionId, selectedTriggerId, fetchOptionsForField, dynamicFields]);
+  }, [node?.appId, selectedActionId, selectedTriggerId, fetchOptionsForField, dynamicFields, credentialId, node?.config?.credentialId]);
   
   // Testing state
   const [isTesting, setIsTesting] = useState(false);
@@ -1993,7 +1993,9 @@ export function ConfigPanelV2({
 
       case 'select':
         const loadedSelect = field.loadOptions ? asyncFieldOptions[field.key] : null;
-        const selectOptions = field.loadOptions ? (loadedSelect?.options || []) : (field.options || []);
+        const selectOptions = field.loadOptions
+          ? ((loadedSelect?.options && loadedSelect.options.length > 0) ? loadedSelect.options : (field.options || []))
+          : (field.options || []);
         return (
           <div key={field.key} className="space-y-1.5">
             {fieldLabel}
@@ -2003,6 +2005,8 @@ export function ConfigPanelV2({
                   placeholder={
                     loadedSelect?.loading
                       ? 'Loading…'
+                      : (field.loadOptions && selectOptions.length === 0)
+                        ? 'Connect to load options'
                       : field.placeholder || `Select ${field.label}`
                   }
                 />
@@ -2024,7 +2028,9 @@ export function ConfigPanelV2({
       case 'multiselect':
         const selectedValues = Array.isArray(value) ? value : [];
         const loadedMulti = field.loadOptions ? asyncFieldOptions[field.key] : null;
-        const multiOptions = field.loadOptions ? (loadedMulti?.options || []) : (field.options || []);
+        const multiOptions = field.loadOptions
+          ? ((loadedMulti?.options && loadedMulti.options.length > 0) ? loadedMulti.options : (field.options || []))
+          : (field.options || []);
         return (
           <div key={field.key} className="space-y-1.5">
             {fieldLabel}
@@ -2052,6 +2058,9 @@ export function ConfigPanelV2({
             </div>
             {loadedMulti?.loading && (
               <p className="text-[10px] text-muted-foreground">Loading…</p>
+            )}
+            {field.loadOptions && !loadedMulti?.loading && multiOptions.length === 0 && (
+              <p className="text-[10px] text-muted-foreground">Connect to load options</p>
             )}
             {loadedMulti?.error && (
               <p className="text-[10px] text-destructive">{loadedMulti.error}</p>
