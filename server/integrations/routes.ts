@@ -240,6 +240,7 @@ integrationRoutes.use('/options/gmail', gmailOptionsRouter);
 integrationRoutes.use('/options/outlook', outlookOptionsRouter);
 integrationRoutes.use('/options/smtp', smtpOptionsRouter);
 integrationRoutes.use('/options/slack_bot', slackBotOptionsRouter);
+integrationRoutes.use('/options/openai', openaiRouter);
 integrationRoutes.use('/options/square', squareOptionsRouter);
 integrationRoutes.use('/options/webhook_outgoing', webhookOutgoingOptionsRouter);
 integrationRoutes.use('/options/custom_api', customApiOptionsRouter);

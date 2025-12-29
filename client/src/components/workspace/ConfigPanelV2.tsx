@@ -298,6 +298,13 @@ export function ConfigPanelV2({
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [availableCredentials, setAvailableCredentials] = useState<ApiCredential[]>([]);
   const [isLoadingCredentials, setIsLoadingCredentials] = useState(false);
+  const [googleOAuthStatus, setGoogleOAuthStatus] = useState<{
+    loading: boolean;
+    configured: boolean;
+    supportsOAuth: boolean;
+    missing: string[];
+    message?: string;
+  } | null>(null);
   
   // Data mapping state
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
@@ -554,6 +561,54 @@ export function ConfigPanelV2({
     void refreshCredentials();
   }, [isOpen, refreshCredentials]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!node?.appId) {
+      setGoogleOAuthStatus(null);
+      return;
+    }
+
+    // Gmail uses server-side Google OAuth flow; show config status inline.
+    if (node.appId !== 'gmail') {
+      setGoogleOAuthStatus(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setGoogleOAuthStatus({ loading: true, configured: false, supportsOAuth: true, missing: [] });
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/integrations/oauth/google/status?appId=${encodeURIComponent(String(node.appId))}`,
+          { credentials: 'include', signal: controller.signal }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data?.message || 'Failed to read OAuth status');
+        }
+        setGoogleOAuthStatus({
+          loading: false,
+          configured: Boolean(data?.configured),
+          supportsOAuth: Boolean(data?.supportsOAuth),
+          missing: Array.isArray(data?.missing) ? data.missing : [],
+          message: typeof data?.message === 'string' ? data.message : undefined,
+        });
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
+        setGoogleOAuthStatus({
+          loading: false,
+          configured: false,
+          supportsOAuth: true,
+          missing: [],
+          message: String(e?.message || e || 'Failed to read OAuth status'),
+        });
+      }
+    })();
+
+    return () => controller.abort();
+  }, [isOpen, node?.appId]);
+
   // ============================================================================
   // n8n-like helpers: resource/operation parsing + required checks
   // ============================================================================
@@ -790,66 +845,91 @@ export function ConfigPanelV2({
     const supportsApiKey = (appConfig?.auth || []).some(
       (a) => a.type === 'api-key' || a.type === 'bearer'
     );
-    
-    if (authConfig?.oauthUrls?.authorize) {
-      // Real OAuth flow - redirect to authorization URL
-      const state = JSON.stringify({ nodeId: node.id, appId: node.appId });
-      const redirectUri = `${window.location.origin}/api/oauth/callback`;
-      const scopes = authConfig.scopes?.join(' ') || '';
-      
-      const authUrl = `${authConfig.oauthUrls.authorize}?` +
-        `client_id=${encodeURIComponent(process.env.VITE_OAUTH_CLIENT_ID || 'demo')}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&response_type=code` +
-        `&scope=${encodeURIComponent(scopes)}` +
-        `&state=${encodeURIComponent(state)}`;
-      
-      // Open OAuth window
-      const width = 600;
-      const height = 700;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-      
-      const authWindow = window.open(
-        authUrl,
-        'OAuth',
-        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+
+    if (!authConfig) {
+      toast({
+        title: 'OAuth not supported',
+        description: `${node.appName} does not support OAuth in this app.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (node?.appId === 'gmail' && googleOAuthStatus?.loading) {
+      toast({
+        title: 'Please wait',
+        description: 'Checking OAuth configuration…',
+      });
+      return;
+    }
+
+    if (node?.appId === 'gmail' && googleOAuthStatus && !googleOAuthStatus.configured) {
+      toast({
+        title: 'OAuth Not Configured',
+        description: googleOAuthStatus.missing?.length
+          ? `Missing: ${googleOAuthStatus.missing.join(', ')}`
+          : (googleOAuthStatus.message || 'Please configure Google OAuth env vars.'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsAuthenticating(true);
+    try {
+      // For Google integrations (Gmail etc.), OAuth must be initiated server-side.
+      const res = await fetch(
+        `/api/integrations/oauth/google/start?appId=${encodeURIComponent(String(node.appId || ''))}&nodeId=${encodeURIComponent(String(node.id || ''))}`,
+        { credentials: 'include' }
       );
-      
-      // Listen for OAuth completion
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.authUrl) {
+        throw new Error(data?.message || 'OAuth not configured');
+      }
+
+      const authWindow = window.open(
+        data.authUrl,
+        'OAuth',
+        `width=600,height=700,left=${window.screen.width / 2 - 300},top=${window.screen.height / 2 - 350},scrollbars=yes`
+      );
+
+      if (!authWindow) {
+        throw new Error('Popup blocked. Please allow popups and try again.');
+      }
+
       const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
         if (event.data?.type === 'oauth_complete' && event.data?.nodeId === node.id) {
+          if (event.data?.credentialId) {
+            setCredentialId(String(event.data.credentialId));
+          }
           setIsAuthenticated(true);
           toast({
-            title: "Connected!",
+            title: 'Connected!',
             description: `Your ${node.appName} account has been connected.`,
           });
+          onCredentialsChanged?.();
           window.removeEventListener('message', handleMessage);
-        } else if (event.data?.type === 'oauth_error') {
+        } else if (event.data?.type === 'oauth_error' && event.data?.nodeId === node.id) {
           toast({
-            title: "Connection failed",
-            description: event.data?.error || "Please try again.",
-            variant: "destructive",
+            title: 'Connection failed',
+            description: event.data?.error || 'Please try again.',
+            variant: 'destructive',
           });
           window.removeEventListener('message', handleMessage);
         }
       };
-      
-      window.addEventListener('message', handleMessage);
-      return;
-    }
-    
-    // OAuth isn't configured for this integration.
-    toast({
-      title: "OAuth Not Configured",
-      description: supportsApiKey
-        ? `Please use API Key authentication for ${node.appName}.`
-        : `OAuth isn't configured for ${node.appName} in this app yet.`,
-      variant: "default",
-    });
 
-    // Only switch when the app actually supports API key auth.
-    if (supportsApiKey) setAuthMethod('apikey');
+      window.addEventListener('message', handleMessage);
+    } catch (e: any) {
+      toast({
+        title: 'OAuth Not Configured',
+        description: String(e?.message || e || 'Please configure Google OAuth env vars.'),
+        variant: supportsApiKey ? 'default' : 'destructive',
+      });
+      if (supportsApiKey) setAuthMethod('apikey');
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   const handleApiKeyVerify = async () => {
@@ -1282,7 +1362,7 @@ export function ConfigPanelV2({
     const hasApiKey = availableAuthMethods.some(a => a.type === 'api-key' || a.type === 'bearer');
     const apiKeyConfig = availableAuthMethods.find(a => a.type === 'api-key' || a.type === 'bearer');
     const oauthConfig = availableAuthMethods.find((a) => a.type === 'oauth2');
-    const oauthConfigured = Boolean((oauthConfig as any)?.oauthUrls?.authorize);
+    const oauthConfigured = Boolean((oauthConfig as any)?.oauthUrls?.authorize) || node?.appId === 'gmail';
     
     const resolvedCredentialId = credentialId || node?.config?.credentialId;
     const credentialSelectValue = resolvedCredentialId || '__none__';

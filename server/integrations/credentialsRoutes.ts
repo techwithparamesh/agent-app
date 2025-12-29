@@ -35,6 +35,228 @@ router.get('/supported-apps', isAuthenticated, async (_req: any, res) => {
   res.json({ appIds: Object.keys(APP_CONFIGS) });
 });
 
+// ========== OAUTH ROUTES (Workflow Credentials) ==========
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || '';
+
+function getGoogleAuthorizeUrl() {
+  return 'https://accounts.google.com/o/oauth2/v2/auth';
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+router.get('/oauth/google/start', isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.claims.sub;
+    const appId = String(req.query.appId || '').trim();
+    const nodeId = String(req.query.nodeId || '').trim();
+    const origin = String(req.headers.origin || '').trim();
+
+    if (!appId) return res.status(400).json({ message: 'appId is required' });
+    const appConfig = (APP_CONFIGS as any)[appId];
+    if (!appConfig) return res.status(404).json({ message: `Unknown appId: ${appId}` });
+
+    const oauthConfig = (appConfig.auth || []).find((a: any) => a.type === 'oauth2');
+    if (!oauthConfig) return res.status(400).json({ message: `${appId} does not support OAuth2` });
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+      const missing = [
+        !GOOGLE_CLIENT_ID ? 'GOOGLE_CLIENT_ID' : null,
+        !GOOGLE_CLIENT_SECRET ? 'GOOGLE_CLIENT_SECRET' : null,
+        !GOOGLE_REDIRECT_URI ? 'GOOGLE_REDIRECT_URI' : null,
+      ].filter(Boolean);
+
+      return res.status(500).json({
+        message: `Google OAuth not configured (missing ${missing.join(', ')})`,
+      });
+    }
+
+    const scopes: string[] = Array.isArray(oauthConfig.scopes) ? oauthConfig.scopes : [];
+    const state = JSON.stringify({ userId, appId, nodeId, origin });
+
+    const authUrl = `${getGoogleAuthorizeUrl()}?` +
+      `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
+      `&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent(scopes.join(' '))}` +
+      `&access_type=offline` +
+      `&prompt=consent` +
+      `&include_granted_scopes=true` +
+      `&state=${encodeURIComponent(state)}`;
+
+    res.json({ authUrl });
+  } catch (error: any) {
+    console.error('[OAuth] Error starting Google OAuth:', error);
+    res.status(500).json({ message: 'Failed to start OAuth flow' });
+  }
+});
+
+router.get('/oauth/google/status', isAuthenticated, async (req: any, res) => {
+  try {
+    const appId = String(req.query.appId || '').trim();
+    if (!appId) return res.status(400).json({ message: 'appId is required' });
+
+    const appConfig = (APP_CONFIGS as any)[appId];
+    if (!appConfig) return res.status(404).json({ message: `Unknown appId: ${appId}` });
+
+    const oauthConfig = (appConfig.auth || []).find((a: any) => a.type === 'oauth2');
+    if (!oauthConfig) {
+      return res.json({ configured: false, supportsOAuth: false, missing: [] });
+    }
+
+    const missing = [
+      !GOOGLE_CLIENT_ID ? 'GOOGLE_CLIENT_ID' : null,
+      !GOOGLE_CLIENT_SECRET ? 'GOOGLE_CLIENT_SECRET' : null,
+      !GOOGLE_REDIRECT_URI ? 'GOOGLE_REDIRECT_URI' : null,
+    ].filter(Boolean);
+
+    return res.json({
+      configured: missing.length === 0,
+      supportsOAuth: true,
+      missing,
+      redirectUri: GOOGLE_REDIRECT_URI || null,
+    });
+  } catch (error: any) {
+    console.error('[OAuth] Error reading Google OAuth status:', error);
+    res.status(500).json({ message: 'Failed to read OAuth status' });
+  }
+});
+
+router.get('/oauth/google/callback', isAuthenticated, async (req: any, res) => {
+  const respondWithPopup = (payload: Record<string, any>, origin: string) => {
+    const safeOrigin = origin || '*';
+    const json = escapeHtml(JSON.stringify(payload));
+    res.setHeader('content-type', 'text/html; charset=utf-8');
+    return res.send(`<!doctype html><html><head><meta charset="utf-8" /></head><body>
+<script>
+(function(){
+  var payload = JSON.parse('${json}');
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(payload, '${escapeHtml(safeOrigin)}');
+    }
+  } catch (e) {}
+  window.close();
+})();
+</script>
+</body></html>`);
+  };
+
+  try {
+    const userId = req.user.claims.sub;
+    const code = String(req.query.code || '').trim();
+    const error = String(req.query.error || '').trim();
+    const stateRaw = String(req.query.state || '').trim();
+
+    let state: any = {};
+    try {
+      state = stateRaw ? JSON.parse(stateRaw) : {};
+    } catch {
+      state = {};
+    }
+
+    const origin = typeof state?.origin === 'string' ? state.origin : '';
+    const appId = typeof state?.appId === 'string' ? state.appId : '';
+    const nodeId = typeof state?.nodeId === 'string' ? state.nodeId : '';
+
+    if (error) {
+      return respondWithPopup({ type: 'oauth_error', nodeId, appId, error }, origin);
+    }
+    if (!code) {
+      return respondWithPopup({ type: 'oauth_error', nodeId, appId, error: 'Missing code' }, origin);
+    }
+    if (!appId) {
+      return respondWithPopup({ type: 'oauth_error', nodeId, appId, error: 'Missing appId in state' }, origin);
+    }
+    if (state?.userId && state.userId !== userId) {
+      return respondWithPopup({ type: 'oauth_error', nodeId, appId, error: 'OAuth state user mismatch' }, origin);
+    }
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+      return respondWithPopup({ type: 'oauth_error', nodeId, appId, error: 'Google OAuth not configured' }, origin);
+    }
+
+    // Exchange code for tokens
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: GOOGLE_REDIRECT_URI,
+      }),
+    });
+
+    const tokenText = await tokenRes.text().catch(() => '');
+    let tokenJson: any = null;
+    try {
+      tokenJson = tokenText ? JSON.parse(tokenText) : null;
+    } catch {
+      tokenJson = tokenText;
+    }
+
+    if (!tokenRes.ok) {
+      return respondWithPopup(
+        { type: 'oauth_error', nodeId, appId, error: `Token exchange failed: ${typeof tokenJson === 'string' ? tokenJson : JSON.stringify(tokenJson)}` },
+        origin
+      );
+    }
+
+    const accessToken = String(tokenJson?.access_token || '').trim();
+    const refreshToken = tokenJson?.refresh_token ? String(tokenJson.refresh_token).trim() : '';
+    const expiresIn = Number(tokenJson?.expires_in || 0);
+
+    if (!accessToken) {
+      return respondWithPopup({ type: 'oauth_error', nodeId, appId, error: 'OAuth token response missing access_token' }, origin);
+    }
+
+    const appConfig = (APP_CONFIGS as any)[appId];
+    const oauthConfig = (appConfig?.auth || []).find((a: any) => a.type === 'oauth2');
+    const scopes: string[] = Array.isArray(oauthConfig?.scopes) ? oauthConfig.scopes : [];
+
+    const encryptedData = encryptCredentialData({
+      accessToken,
+      refreshToken: refreshToken || undefined,
+      tokenType: tokenJson?.token_type ? String(tokenJson.token_type) : undefined,
+      scopes,
+    });
+
+    const name = `${appConfig?.name || appId} (OAuth)`;
+
+    const credential = await storage.createCredential(userId, {
+      name,
+      appId,
+      credentialType: 'oauth2',
+      encryptedData,
+      scopes,
+      isValid: true,
+      lastValidatedAt: new Date(),
+      // Mirror OAuth fields for easier admin/debugging
+      accessToken,
+      refreshToken: refreshToken || null,
+      tokenExpiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : null,
+    } as any);
+
+    return respondWithPopup(
+      { type: 'oauth_complete', nodeId, appId, credentialId: credential.id },
+      origin
+    );
+  } catch (err: any) {
+    console.error('[OAuth] Google callback error:', err);
+    return res.status(500).send('OAuth error');
+  }
+});
+
 // ========== CREDENTIALS ROUTES ==========
 
 // Validation schemas
