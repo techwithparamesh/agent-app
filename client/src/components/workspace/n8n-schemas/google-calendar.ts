@@ -77,7 +77,7 @@ export const googleCalendarSchema: N8nAppSchema = {
         {
           id: 'create_event',
           name: 'Create Event',
-          value: 'create',
+          value: 'create_event',
           description: 'Create a calendar event',
           action: 'Create event',
           fields: [
@@ -97,16 +97,16 @@ export const googleCalendarSchema: N8nAppSchema = {
               required: true,
             },
             {
-              id: 'start',
-              name: 'start',
+              id: 'startDateTime',
+              name: 'startDateTime',
               displayName: 'Start Time',
               type: 'string',
               required: true,
-              description: 'ISO 8601 datetime or date',
+              description: 'ISO 8601 datetime',
             },
             {
-              id: 'end',
-              name: 'end',
+              id: 'endDateTime',
+              name: 'endDateTime',
               displayName: 'End Time',
               type: 'string',
               required: true,
@@ -256,9 +256,9 @@ export const googleCalendarSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'list_events',
+          id: 'get_events',
           name: 'List Events',
-          value: 'getMany',
+          value: 'get_events',
           description: 'List calendar events',
           action: 'List events',
           fields: [
@@ -270,14 +270,12 @@ export const googleCalendarSchema: N8nAppSchema = {
               required: true,
               default: 'primary',
             },
-          ],
-          optionalFields: [
             {
               id: 'time_min',
               name: 'timeMin',
               displayName: 'Start Time',
               type: 'string',
-              required: false,
+              required: true,
               description: 'ISO 8601 datetime',
             },
             {
@@ -285,33 +283,16 @@ export const googleCalendarSchema: N8nAppSchema = {
               name: 'timeMax',
               displayName: 'End Time',
               type: 'string',
-              required: false,
+              required: true,
             },
+          ],
+          optionalFields: [
             {
               id: 'q',
-              name: 'q',
+              name: 'searchQuery',
               displayName: 'Search Query',
               type: 'string',
               required: false,
-            },
-            {
-              id: 'single_events',
-              name: 'singleEvents',
-              displayName: 'Expand Recurring',
-              type: 'boolean',
-              required: false,
-              default: true,
-            },
-            {
-              id: 'order_by',
-              name: 'orderBy',
-              displayName: 'Order By',
-              type: 'options',
-              required: false,
-              options: [
-                { name: 'Start Time', value: 'startTime' },
-                { name: 'Updated', value: 'updated' },
-              ],
             },
             {
               id: 'max_results',
@@ -319,22 +300,17 @@ export const googleCalendarSchema: N8nAppSchema = {
               displayName: 'Max Results',
               type: 'number',
               required: false,
-              default: 250,
+              default: 10,
             },
-            {
-              id: 'show_deleted',
-              name: 'showDeleted',
-              displayName: 'Show Deleted',
-              type: 'boolean',
-              required: false,
-              default: false,
+          ],
+        },
             },
           ],
         },
         {
           id: 'update_event',
           name: 'Update Event',
-          value: 'update',
+          value: 'update_event',
           description: 'Update an event',
           action: 'Update event',
           fields: [
@@ -434,7 +410,7 @@ export const googleCalendarSchema: N8nAppSchema = {
         {
           id: 'delete_event',
           name: 'Delete Event',
-          value: 'delete',
+          value: 'delete_event',
           description: 'Delete an event',
           action: 'Delete event',
           fields: [
@@ -517,7 +493,7 @@ export const googleCalendarSchema: N8nAppSchema = {
         {
           id: 'quick_add',
           name: 'Quick Add Event',
-          value: 'quickAdd',
+          value: 'quick_add',
           description: 'Create event from text',
           action: 'Quick add event',
           fields: [

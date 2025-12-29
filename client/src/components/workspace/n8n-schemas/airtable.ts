@@ -48,7 +48,7 @@ export const airtableSchema: N8nAppSchema = {
         {
           id: 'create_record',
           name: 'Create Record',
-          value: 'create',
+          value: 'create_record',
           description: 'Create a new record',
           action: 'Create a record',
           fields: [
@@ -91,7 +91,7 @@ export const airtableSchema: N8nAppSchema = {
         {
           id: 'get_record',
           name: 'Get Record',
-          value: 'get',
+          value: 'get_record',
           description: 'Get a record by ID',
           action: 'Retrieve a record',
           fields: [
@@ -221,7 +221,7 @@ export const airtableSchema: N8nAppSchema = {
         {
           id: 'update_record',
           name: 'Update Record',
-          value: 'update',
+          value: 'update_record',
           description: 'Update a record',
           action: 'Update a record',
           fields: [
@@ -318,7 +318,7 @@ export const airtableSchema: N8nAppSchema = {
         {
           id: 'delete_record',
           name: 'Delete Record',
-          value: 'delete',
+          value: 'delete_record',
           description: 'Delete a record',
           action: 'Delete a record',
           fields: [

@@ -23,7 +23,7 @@ export const helpscoutSchema: N8nAppSchema = {
     {
       id: 'conversation', name: 'Conversation', value: 'conversation', description: 'Conversation operations',
       operations: [
-        { id: 'create', name: 'Create', value: 'create', description: 'Create conversation', action: 'Create conversation',
+        { id: 'create', name: 'Create', value: 'create_conversation', description: 'Create conversation', action: 'Create conversation',
           fields: [
             { id: 'mailboxId', name: 'mailboxId', displayName: 'Mailbox ID', type: 'string', required: true },
             { id: 'customerEmail', name: 'customerEmail', displayName: 'Customer Email', type: 'string', required: true },
@@ -62,7 +62,7 @@ export const helpscoutSchema: N8nAppSchema = {
     {
       id: 'thread', name: 'Thread', value: 'thread', description: 'Thread/Reply operations',
       operations: [
-        { id: 'createReply', name: 'Create Reply', value: 'createReply', description: 'Create reply', action: 'Create reply',
+        { id: 'createReply', name: 'Create Reply', value: 'reply_conversation', description: 'Create reply', action: 'Create reply',
           fields: [
             { id: 'conversationId', name: 'conversationId', displayName: 'Conversation ID', type: 'string', required: true },
             { id: 'text', name: 'text', displayName: 'Message', type: 'string', required: true, typeOptions: { rows: 3 } },

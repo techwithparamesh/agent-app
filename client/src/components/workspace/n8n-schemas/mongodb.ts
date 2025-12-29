@@ -55,7 +55,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'insert_one',
           name: 'Insert One',
-          value: 'insertOne',
+          value: 'insert_document',
           description: 'Insert a single document',
           action: 'Insert one document',
           fields: [
@@ -86,7 +86,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'insert_many',
           name: 'Insert Many',
-          value: 'insertMany',
+          value: 'insert_document',
           description: 'Insert multiple documents',
           action: 'Insert many documents',
           fields: [
@@ -127,7 +127,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'find_one',
           name: 'Find One',
-          value: 'findOne',
+          value: 'find_documents',
           description: 'Find a single document',
           action: 'Find one document',
           fields: [
@@ -148,8 +148,8 @@ export const mongodbSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'query',
-              name: 'query',
+              id: 'filter',
+              name: 'filter',
               displayName: 'Query Filter',
               type: 'json',
               required: false,
@@ -168,7 +168,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'find',
           name: 'Find',
-          value: 'find',
+          value: 'find_documents',
           description: 'Find multiple documents',
           action: 'Find documents',
           fields: [
@@ -189,8 +189,8 @@ export const mongodbSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'query',
-              name: 'query',
+              id: 'filter',
+              name: 'filter',
               displayName: 'Query Filter',
               type: 'json',
               required: false,
@@ -230,7 +230,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'update_one',
           name: 'Update One',
-          value: 'updateOne',
+          value: 'update_document',
           description: 'Update a single document',
           action: 'Update one document',
           fields: [
@@ -278,7 +278,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'update_many',
           name: 'Update Many',
-          value: 'updateMany',
+          value: 'update_document',
           description: 'Update multiple documents',
           action: 'Update many documents',
           fields: [
@@ -372,7 +372,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'delete_one',
           name: 'Delete One',
-          value: 'deleteOne',
+          value: 'delete_documents',
           description: 'Delete a single document',
           action: 'Delete one document',
           fields: [
@@ -403,7 +403,7 @@ export const mongodbSchema: N8nAppSchema = {
         {
           id: 'delete_many',
           name: 'Delete Many',
-          value: 'deleteMany',
+          value: 'delete_documents',
           description: 'Delete multiple documents',
           action: 'Delete many documents',
           fields: [

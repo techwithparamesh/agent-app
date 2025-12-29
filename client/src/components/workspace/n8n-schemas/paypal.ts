@@ -65,7 +65,7 @@ export const paypalSchema: N8nAppSchema = {
         {
           id: 'create_order',
           name: 'Create Order',
-          value: 'create',
+          value: 'create_order',
           description: 'Create a new order',
           action: 'Create an order',
           fields: [
@@ -112,7 +112,7 @@ export const paypalSchema: N8nAppSchema = {
         {
           id: 'get_order',
           name: 'Get Order',
-          value: 'get',
+          value: 'get_order',
           description: 'Get an order by ID',
           action: 'Retrieve an order',
           fields: [
@@ -129,7 +129,7 @@ export const paypalSchema: N8nAppSchema = {
         {
           id: 'capture_order',
           name: 'Capture Order',
-          value: 'capture',
+          value: 'capture_order',
           description: 'Capture payment for an order',
           action: 'Capture an order',
           fields: [
@@ -223,9 +223,9 @@ export const paypalSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'refund_payment',
+          id: 'refund_capture',
           name: 'Refund Captured Payment',
-          value: 'refund',
+          value: 'refund_capture',
           description: 'Refund a captured payment',
           action: 'Refund a payment',
           fields: [
@@ -427,7 +427,7 @@ export const paypalSchema: N8nAppSchema = {
         {
           id: 'create_payout',
           name: 'Create Payout',
-          value: 'create',
+          value: 'create_payout',
           description: 'Create a payout batch',
           action: 'Create a payout',
           fields: [

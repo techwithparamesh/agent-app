@@ -48,7 +48,7 @@ export const anthropicSchema: N8nAppSchema = {
         {
           id: 'create_message',
           name: 'Create Message',
-          value: 'create',
+          value: 'message',
           description: 'Create a message using Claude',
           action: 'Create message',
           fields: [
@@ -179,7 +179,7 @@ export const anthropicSchema: N8nAppSchema = {
         {
           id: 'create_message_simple',
           name: 'Create Simple Message',
-          value: 'createSimple',
+          value: 'message',
           description: 'Create a simple single-turn message',
           action: 'Create simple message',
           fields: [

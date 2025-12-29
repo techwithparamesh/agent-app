@@ -48,7 +48,7 @@ export const asanaSchema: N8nAppSchema = {
         {
           id: 'create_task',
           name: 'Create Task',
-          value: 'create',
+          value: 'create_task',
           description: 'Create a new task',
           action: 'Create a task',
           fields: [
@@ -102,8 +102,8 @@ export const asanaSchema: N8nAppSchema = {
               required: false,
             },
             {
-              id: 'due_on',
-              name: 'due_on',
+              id: 'dueOn',
+              name: 'dueOn',
               displayName: 'Due Date',
               type: 'dateTime',
               required: false,
@@ -207,7 +207,7 @@ export const asanaSchema: N8nAppSchema = {
         {
           id: 'update_task',
           name: 'Update Task',
-          value: 'update',
+          value: 'update_task',
           description: 'Update a task',
           action: 'Update a task',
           fields: [
@@ -242,8 +242,8 @@ export const asanaSchema: N8nAppSchema = {
               required: false,
             },
             {
-              id: 'due_on',
-              name: 'due_on',
+              id: 'dueOn',
+              name: 'dueOn',
               displayName: 'Due Date',
               type: 'dateTime',
               required: false,
@@ -380,6 +380,48 @@ export const asanaSchema: N8nAppSchema = {
               displayName: 'Project ID',
               type: 'string',
               required: true,
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'complete_task',
+          name: 'Complete Task',
+          value: 'complete_task',
+          description: 'Mark a task as complete',
+          action: 'Complete task',
+          fields: [
+            {
+              id: 'task_id',
+              name: 'taskId',
+              displayName: 'Task ID',
+              type: 'string',
+              required: true,
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'add_comment',
+          name: 'Add Comment',
+          value: 'add_comment',
+          description: 'Add a comment to a task',
+          action: 'Add comment',
+          fields: [
+            {
+              id: 'task_id',
+              name: 'taskId',
+              displayName: 'Task ID',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'text',
+              name: 'text',
+              displayName: 'Comment Text',
+              type: 'text',
+              required: true,
+              typeOptions: { rows: 3 },
             },
           ],
           optionalFields: [],
@@ -795,7 +837,7 @@ export const asanaSchema: N8nAppSchema = {
         {
           id: 'create_subtask',
           name: 'Create Subtask',
-          value: 'create',
+          value: 'create_subtask',
           description: 'Create a subtask',
           action: 'Create a subtask',
           fields: [

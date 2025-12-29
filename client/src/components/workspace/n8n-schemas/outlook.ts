@@ -35,9 +35,9 @@ export const outlookSchema: N8nAppSchema = {
       description: 'Email messages',
       operations: [
         {
-          id: 'send_message',
+          id: 'send_email',
           name: 'Send Message',
-          value: 'send',
+          value: 'send_email',
           description: 'Send an email',
           action: 'Send an email message',
           fields: [
@@ -207,9 +207,9 @@ export const outlookSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'reply_message',
+          id: 'reply_email',
           name: 'Reply to Message',
-          value: 'reply',
+          value: 'reply_email',
           description: 'Reply to an email',
           action: 'Reply to an email message',
           fields: [
@@ -243,9 +243,9 @@ export const outlookSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'forward_message',
+          id: 'forward_email',
           name: 'Forward Message',
-          value: 'forward',
+          value: 'forward_email',
           description: 'Forward an email',
           action: 'Forward an email message',
           fields: [
@@ -275,9 +275,9 @@ export const outlookSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'move_message',
+          id: 'move_email',
           name: 'Move Message',
-          value: 'move',
+          value: 'move_email',
           description: 'Move to another folder',
           action: 'Move an email to a folder',
           fields: [

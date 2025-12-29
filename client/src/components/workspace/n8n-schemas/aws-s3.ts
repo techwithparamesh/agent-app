@@ -57,11 +57,11 @@ export const awsS3Schema: N8nAppSchema = {
       value: 'file',
       description: 'File/object operations',
       operations: [
-        { id: 'upload', name: 'Upload', value: 'upload', description: 'Upload file', action: 'Upload file',
+        { id: 'upload_file', name: 'Upload', value: 'upload_file', description: 'Upload file', action: 'Upload file',
           fields: [
-            { id: 'bucketName', name: 'bucketName', displayName: 'Bucket Name', type: 'string', required: true },
-            { id: 'fileName', name: 'fileName', displayName: 'File Name', type: 'string', required: true },
-            { id: 'binaryData', name: 'binaryData', displayName: 'Binary Data', type: 'boolean', required: true, default: true },
+            { id: 'bucket', name: 'bucket', displayName: 'Bucket Name', type: 'string', required: true },
+            { id: 'key', name: 'key', displayName: 'Key (File Path)', type: 'string', required: true },
+            { id: 'body', name: 'body', displayName: 'Body (URL)', type: 'string', required: true },
           ],
           optionalFields: [
             { id: 'contentType', name: 'contentType', displayName: 'Content Type', type: 'string', required: false },
@@ -72,22 +72,22 @@ export const awsS3Schema: N8nAppSchema = {
             { id: 'tagging', name: 'tagging', displayName: 'Tags', type: 'json', required: false },
           ],
         },
-        { id: 'download', name: 'Download', value: 'download', description: 'Download file', action: 'Download file',
+        { id: 'get_object', name: 'Download', value: 'get_object', description: 'Download file', action: 'Download file',
           fields: [
-            { id: 'bucketName', name: 'bucketName', displayName: 'Bucket Name', type: 'string', required: true },
-            { id: 'fileName', name: 'fileName', displayName: 'File Name', type: 'string', required: true },
+            { id: 'bucket', name: 'bucket', displayName: 'Bucket Name', type: 'string', required: true },
+            { id: 'key', name: 'key', displayName: 'Key (File Path)', type: 'string', required: true },
           ],
           optionalFields: [{ id: 'binaryPropertyName', name: 'binaryPropertyName', displayName: 'Binary Property', type: 'string', required: false, default: 'data' }],
         },
-        { id: 'delete', name: 'Delete', value: 'delete', description: 'Delete file', action: 'Delete file',
+        { id: 'delete_object', name: 'Delete', value: 'delete_object', description: 'Delete file', action: 'Delete file',
           fields: [
-            { id: 'bucketName', name: 'bucketName', displayName: 'Bucket Name', type: 'string', required: true },
-            { id: 'fileName', name: 'fileName', displayName: 'File Name', type: 'string', required: true },
+            { id: 'bucket', name: 'bucket', displayName: 'Bucket Name', type: 'string', required: true },
+            { id: 'key', name: 'key', displayName: 'Key (File Path)', type: 'string', required: true },
           ],
           optionalFields: [{ id: 'versionId', name: 'versionId', displayName: 'Version ID', type: 'string', required: false }],
         },
-        { id: 'getAll', name: 'List', value: 'getAll', description: 'List files in bucket', action: 'List files',
-          fields: [{ id: 'bucketName', name: 'bucketName', displayName: 'Bucket Name', type: 'string', required: true }],
+        { id: 'list_objects', name: 'List', value: 'list_objects', description: 'List files in bucket', action: 'List files',
+          fields: [{ id: 'bucket', name: 'bucket', displayName: 'Bucket Name', type: 'string', required: true }],
           optionalFields: [
             { id: 'prefix', name: 'prefix', displayName: 'Prefix', type: 'string', required: false },
             { id: 'delimiter', name: 'delimiter', displayName: 'Delimiter', type: 'string', required: false },
@@ -95,7 +95,7 @@ export const awsS3Schema: N8nAppSchema = {
             { id: 'returnAll', name: 'returnAll', displayName: 'Return All', type: 'boolean', required: false, default: false },
           ],
         },
-        { id: 'copy', name: 'Copy', value: 'copy', description: 'Copy file', action: 'Copy file',
+        { id: 'copy_object', name: 'Copy', value: 'copy_object', description: 'Copy file', action: 'Copy file',
           fields: [
             { id: 'sourceBucket', name: 'sourceBucket', displayName: 'Source Bucket', type: 'string', required: true },
             { id: 'sourceKey', name: 'sourceKey', displayName: 'Source Key', type: 'string', required: true },
@@ -112,10 +112,10 @@ export const awsS3Schema: N8nAppSchema = {
       value: 'presignedUrl',
       description: 'Presigned URL operations',
       operations: [
-        { id: 'create', name: 'Create', value: 'create', description: 'Create presigned URL', action: 'Create presigned URL',
+        { id: 'generate_presigned_url', name: 'Create', value: 'generate_presigned_url', description: 'Create presigned URL', action: 'Create presigned URL',
           fields: [
-            { id: 'bucketName', name: 'bucketName', displayName: 'Bucket Name', type: 'string', required: true },
-            { id: 'fileName', name: 'fileName', displayName: 'File Name', type: 'string', required: true },
+            { id: 'bucket', name: 'bucket', displayName: 'Bucket Name', type: 'string', required: true },
+            { id: 'key', name: 'key', displayName: 'Key (File Path)', type: 'string', required: true },
             { id: 'operation', name: 'operation', displayName: 'Operation', type: 'options', required: true, options: [{ name: 'Get Object', value: 'getObject' }, { name: 'Put Object', value: 'putObject' }] },
           ],
           optionalFields: [

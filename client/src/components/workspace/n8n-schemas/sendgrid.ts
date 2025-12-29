@@ -37,7 +37,7 @@ export const sendgridSchema: N8nAppSchema = {
         {
           id: 'send_email',
           name: 'Send Email',
-          value: 'send',
+          value: 'send_email',
           description: 'Send an email',
           action: 'Send a new email via SendGrid',
           fields: [
@@ -81,8 +81,8 @@ export const sendgridSchema: N8nAppSchema = {
               ],
             },
             {
-              id: 'text',
-              name: 'text',
+              id: 'text_content',
+              name: 'textContent',
               displayName: 'Plain Text Content',
               type: 'text',
               required: false,
@@ -96,8 +96,8 @@ export const sendgridSchema: N8nAppSchema = {
               },
             },
             {
-              id: 'html',
-              name: 'html',
+              id: 'html_content',
+              name: 'htmlContent',
               displayName: 'HTML Content',
               type: 'text',
               required: false,
@@ -194,6 +194,72 @@ export const sendgridSchema: N8nAppSchema = {
             },
           ],
         },
+        {
+          id: 'send_template',
+          name: 'Send Template',
+          value: 'send_template',
+          description: 'Send an email using a dynamic template',
+          action: 'Send templated email',
+          fields: [
+            {
+              id: 'to',
+              name: 'to',
+              displayName: 'To Email',
+              type: 'string',
+              required: true,
+              description: 'Recipient email address',
+              placeholder: 'recipient@example.com',
+            },
+            {
+              id: 'from',
+              name: 'from',
+              displayName: 'From Email',
+              type: 'string',
+              required: true,
+              description: 'Verified sender email',
+              placeholder: 'sender@yourdomain.com',
+            },
+            {
+              id: 'template_id',
+              name: 'templateId',
+              displayName: 'Template ID',
+              type: 'string',
+              required: true,
+              description: 'SendGrid dynamic template ID',
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'dynamic_template_data',
+              name: 'dynamicTemplateData',
+              displayName: 'Template Data (JSON)',
+              type: 'json',
+              required: false,
+              description: 'Data to merge with template',
+            },
+            {
+              id: 'reply_to',
+              name: 'replyTo',
+              displayName: 'Reply To',
+              type: 'string',
+              required: false,
+            },
+            {
+              id: 'cc',
+              name: 'cc',
+              displayName: 'CC',
+              type: 'string',
+              required: false,
+            },
+            {
+              id: 'bcc',
+              name: 'bcc',
+              displayName: 'BCC',
+              type: 'string',
+              required: false,
+            },
+          ],
+        },
       ],
     },
     
@@ -207,9 +273,9 @@ export const sendgridSchema: N8nAppSchema = {
       description: 'Manage marketing contacts',
       operations: [
         {
-          id: 'create_contact',
+          id: 'add_contact',
           name: 'Create/Update Contact',
-          value: 'upsert',
+          value: 'add_contact',
           description: 'Create or update a contact',
           action: 'Create or update a marketing contact',
           fields: [

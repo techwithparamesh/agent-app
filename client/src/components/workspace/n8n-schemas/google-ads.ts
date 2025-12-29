@@ -31,7 +31,7 @@ export const googleAdsSchema: N8nAppSchema = {
           fields: [{ id: 'campaignId', name: 'campaignId', displayName: 'Campaign ID', type: 'string', required: true }],
           optionalFields: [],
         },
-        { id: 'getAll', name: 'List', value: 'getAll', description: 'List campaigns', action: 'List campaigns',
+        { id: 'getAll', name: 'List', value: 'get_campaigns', description: 'List campaigns', action: 'List campaigns',
           fields: [],
           optionalFields: [{ id: 'status', name: 'status', displayName: 'Status', type: 'options', required: false, options: [{ name: 'All', value: '' }, { name: 'Enabled', value: 'ENABLED' }, { name: 'Paused', value: 'PAUSED' }, { name: 'Removed', value: 'REMOVED' }] }],
         },
@@ -42,6 +42,20 @@ export const googleAdsSchema: N8nAppSchema = {
             { id: 'status', name: 'status', displayName: 'Status', type: 'options', required: false, options: [{ name: 'Enabled', value: 'ENABLED' }, { name: 'Paused', value: 'PAUSED' }] },
             { id: 'budget', name: 'budget', displayName: 'Daily Budget', type: 'number', required: false },
           ],
+        },
+        { id: 'update_campaign_budget', name: 'Update Budget', value: 'update_campaign_budget', description: 'Update campaign budget', action: 'Update campaign budget',
+          fields: [
+            { id: 'campaignId', name: 'campaignId', displayName: 'Campaign ID', type: 'string', required: true },
+            { id: 'budget', name: 'budget', displayName: 'Daily Budget', type: 'number', required: true },
+          ],
+          optionalFields: [],
+        },
+        { id: 'update_campaign_status', name: 'Update Status', value: 'update_campaign_status', description: 'Update campaign status', action: 'Update campaign status',
+          fields: [
+            { id: 'campaignId', name: 'campaignId', displayName: 'Campaign ID', type: 'string', required: true },
+            { id: 'status', name: 'status', displayName: 'Status', type: 'options', required: true, options: [{ name: 'Enabled', value: 'ENABLED' }, { name: 'Paused', value: 'PAUSED' }] },
+          ],
+          optionalFields: [],
         },
       ],
     },
@@ -82,7 +96,7 @@ export const googleAdsSchema: N8nAppSchema = {
     {
       id: 'report', name: 'Report', value: 'report', description: 'Reporting operations',
       operations: [
-        { id: 'get', name: 'Get Report', value: 'get', description: 'Get report data', action: 'Get report',
+        { id: 'get_report', name: 'Get Report', value: 'get_report', description: 'Get report data', action: 'Get report',
           fields: [
             { id: 'query', name: 'query', displayName: 'GAQL Query', type: 'string', required: true, typeOptions: { rows: 5 }, description: 'Google Ads Query Language query' },
           ],

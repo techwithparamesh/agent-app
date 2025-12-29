@@ -52,7 +52,7 @@ export const freshsalesSchema: N8nAppSchema = {
         {
           id: 'create_lead',
           name: 'Create Lead',
-          value: 'create',
+          value: 'create_lead',
           description: 'Create a new lead',
           action: 'Create a new lead',
           fields: [
@@ -316,7 +316,7 @@ export const freshsalesSchema: N8nAppSchema = {
         {
           id: 'create_contact',
           name: 'Create Contact',
-          value: 'create',
+          value: 'create_contact',
           description: 'Create a new contact',
           action: 'Create a new contact',
           fields: [
@@ -698,7 +698,7 @@ export const freshsalesSchema: N8nAppSchema = {
         {
           id: 'create_deal',
           name: 'Create Deal',
-          value: 'create',
+          value: 'create_deal',
           description: 'Create a new deal',
           action: 'Create a new deal',
           fields: [
@@ -1065,10 +1065,10 @@ export const freshsalesSchema: N8nAppSchema = {
       description: 'Notes attached to records',
       operations: [
         {
-          id: 'create_note',
-          name: 'Create Note',
-          value: 'create',
-          description: 'Create a new note',
+          id: 'add_note',
+          name: 'Add Note',
+          value: 'add_note',
+          description: 'Add a new note',
           action: 'Create a new note',
           fields: [
             {

@@ -37,7 +37,7 @@ export const zendeskSchema: N8nAppSchema = {
         {
           id: 'create_ticket',
           name: 'Create Ticket',
-          value: 'create',
+          value: 'create_ticket',
           description: 'Create a new ticket',
           action: 'Create a new support ticket',
           fields: [
@@ -159,7 +159,7 @@ export const zendeskSchema: N8nAppSchema = {
         {
           id: 'get_ticket',
           name: 'Get Ticket',
-          value: 'get',
+          value: 'get_ticket',
           description: 'Get a ticket by ID',
           action: 'Retrieve ticket details',
           fields: [
@@ -174,10 +174,10 @@ export const zendeskSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'get_tickets',
-          name: 'Get Tickets',
-          value: 'getMany',
-          description: 'Get multiple tickets',
+          id: 'search_tickets',
+          name: 'Search Tickets',
+          value: 'search_tickets',
+          description: 'Search for tickets',
           action: 'List tickets',
           fields: [],
           optionalFields: [
@@ -235,7 +235,7 @@ export const zendeskSchema: N8nAppSchema = {
         {
           id: 'update_ticket',
           name: 'Update Ticket',
-          value: 'update',
+          value: 'update_ticket',
           description: 'Update a ticket',
           action: 'Update ticket properties',
           fields: [
@@ -764,7 +764,7 @@ export const zendeskSchema: N8nAppSchema = {
         {
           id: 'add_comment',
           name: 'Add Comment',
-          value: 'create',
+          value: 'add_comment',
           description: 'Add a comment to a ticket',
           action: 'Add a comment to a ticket',
           fields: [

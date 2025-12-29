@@ -55,7 +55,7 @@ export const razorpaySchema: N8nAppSchema = {
         {
           id: 'create_order',
           name: 'Create Order',
-          value: 'create',
+          value: 'create_order',
           description: 'Create a new order',
           action: 'Create an order',
           fields: [
@@ -205,7 +205,7 @@ export const razorpaySchema: N8nAppSchema = {
         {
           id: 'get_payment',
           name: 'Get Payment',
-          value: 'get',
+          value: 'get_payment',
           description: 'Get a payment by ID',
           action: 'Retrieve a payment',
           fields: [
@@ -263,7 +263,7 @@ export const razorpaySchema: N8nAppSchema = {
         {
           id: 'capture_payment',
           name: 'Capture Payment',
-          value: 'capture',
+          value: 'capture_payment',
           description: 'Capture a payment',
           action: 'Capture a payment',
           fields: [
@@ -335,7 +335,7 @@ export const razorpaySchema: N8nAppSchema = {
         {
           id: 'create_refund',
           name: 'Create Refund',
-          value: 'create',
+          value: 'create_refund',
           description: 'Create a refund',
           action: 'Create a refund',
           fields: [
@@ -474,7 +474,7 @@ export const razorpaySchema: N8nAppSchema = {
         {
           id: 'create_customer',
           name: 'Create Customer',
-          value: 'create',
+          value: 'create_customer',
           description: 'Create a customer',
           action: 'Create a customer',
           fields: [],

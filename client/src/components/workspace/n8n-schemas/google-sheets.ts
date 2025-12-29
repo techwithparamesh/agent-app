@@ -433,7 +433,7 @@ export const googleSheetsSchema: N8nAppSchema = {
         {
           id: 'append_row',
           name: 'Append',
-          value: 'append',
+          value: 'append_row',
           description: 'Append rows to a sheet',
           action: 'Append rows',
           fields: [
@@ -719,7 +719,7 @@ export const googleSheetsSchema: N8nAppSchema = {
         {
           id: 'delete_row',
           name: 'Delete',
-          value: 'delete',
+          value: 'delete_row',
           description: 'Delete rows from a sheet',
           action: 'Delete rows',
           fields: [
@@ -861,6 +861,49 @@ export const googleSheetsSchema: N8nAppSchema = {
             request: {
               method: 'GET',
               url: '/v4/spreadsheets/{spreadsheetId}/values/{range}',
+            },
+          },
+        },
+        {
+          id: 'clear_range',
+          name: 'Clear',
+          value: 'clear_range',
+          description: 'Clear values from a range',
+          action: 'Clear range',
+          fields: [
+            {
+              id: 'spreadsheet_id',
+              displayName: 'Spreadsheet',
+              name: 'spreadsheetId',
+              type: 'resourceLocator',
+              required: true,
+            },
+            {
+              id: 'sheet_name',
+              displayName: 'Sheet',
+              name: 'sheetName',
+              type: 'options',
+              required: true,
+              typeOptions: {
+                loadOptionsMethod: 'getSheets',
+                loadOptionsDependsOn: ['spreadsheetId'],
+              },
+            },
+            {
+              id: 'range',
+              displayName: 'Range',
+              name: 'range',
+              type: 'string',
+              required: true,
+              description: 'A1 notation range to clear (e.g., A1:D10)',
+              placeholder: 'A1:D10',
+            },
+          ],
+          optionalFields: [],
+          routing: {
+            request: {
+              method: 'POST',
+              url: '/v4/spreadsheets/{spreadsheetId}/values/{range}:clear',
             },
           },
         },

@@ -76,6 +76,14 @@ export const tiktokSchema: N8nAppSchema = {
           fields: [{ id: 'publishId', name: 'publishId', displayName: 'Publish ID', type: 'string', required: true }],
           optionalFields: [],
         },
+        {
+          id: 'create_post', name: 'Create Post', value: 'create_post', description: 'Create a new video post', action: 'Create post',
+          fields: [
+            { id: 'postInfo', name: 'postInfo', displayName: 'Post Info (JSON)', type: 'json', required: true, description: 'Video post information' },
+            { id: 'sourceInfo', name: 'sourceInfo', displayName: 'Source Info (JSON)', type: 'json', required: true, description: 'Video source information' },
+          ],
+          optionalFields: [],
+        },
       ],
     },
     {

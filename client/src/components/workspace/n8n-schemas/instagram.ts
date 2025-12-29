@@ -265,7 +265,7 @@ export const instagramSchema: N8nAppSchema = {
         {
           id: 'create_photo_post',
           name: 'Create Photo Post',
-          value: 'createPhoto',
+          value: 'create_post',
           description: 'Create a photo post',
           action: 'Create photo post',
           fields: [

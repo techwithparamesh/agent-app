@@ -66,7 +66,7 @@ export const notionSchema: N8nAppSchema = {
         {
           id: 'query_database',
           name: 'Query Database',
-          value: 'query',
+          value: 'query_database',
           description: 'Query a database',
           action: 'Query database items',
           fields: [
@@ -293,7 +293,7 @@ export const notionSchema: N8nAppSchema = {
         {
           id: 'get_page',
           name: 'Get Page',
-          value: 'get',
+          value: 'get_page',
           description: 'Get a page',
           action: 'Retrieve a page',
           fields: [
@@ -310,7 +310,7 @@ export const notionSchema: N8nAppSchema = {
         {
           id: 'update_page',
           name: 'Update Page',
-          value: 'update',
+          value: 'update_page',
           description: 'Update a page',
           action: 'Update a page',
           fields: [

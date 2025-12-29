@@ -74,7 +74,7 @@ export const twitterSchema: N8nAppSchema = {
         {
           id: 'create_tweet',
           name: 'Create Tweet',
-          value: 'create',
+          value: 'create_tweet',
           description: 'Post a new tweet',
           action: 'Create tweet',
           fields: [
@@ -472,10 +472,10 @@ export const twitterSchema: N8nAppSchema = {
       description: 'User operations',
       operations: [
         {
-          id: 'get_user',
-          name: 'Get User',
-          value: 'get',
-          description: 'Get user by ID or username',
+          id: 'get_profile',
+          name: 'Get Profile',
+          value: 'get_profile',
+          description: 'Get user profile by ID or username',
           action: 'Get user',
           fields: [
             {

@@ -731,9 +731,9 @@ export const openAiSchema: N8nAppSchema = {
       description: 'Transcribe, translate, and generate audio',
       operations: [
         {
-          id: 'transcribe',
+          id: 'transcribe_audio',
           name: 'Transcribe Audio',
-          value: 'transcribe',
+          value: 'transcribe_audio',
           description: 'Convert audio to text using Whisper',
           action: 'Transcribe audio',
           fields: [

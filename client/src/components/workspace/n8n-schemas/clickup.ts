@@ -48,7 +48,7 @@ export const clickupSchema: N8nAppSchema = {
         {
           id: 'create_task',
           name: 'Create Task',
-          value: 'create',
+          value: 'create_task',
           description: 'Create a new task',
           action: 'Create a task',
           fields: [
@@ -313,7 +313,7 @@ export const clickupSchema: N8nAppSchema = {
         {
           id: 'update_task',
           name: 'Update Task',
-          value: 'update',
+          value: 'update_task',
           description: 'Update a task',
           action: 'Update a task',
           fields: [
@@ -1185,11 +1185,11 @@ export const clickupSchema: N8nAppSchema = {
       description: 'Task comments',
       operations: [
         {
-          id: 'create_comment',
-          name: 'Create Comment',
-          value: 'create',
-          description: 'Create a comment on a task',
-          action: 'Create a comment',
+          id: 'add_comment',
+          name: 'Add Comment',
+          value: 'add_comment',
+          description: 'Add a comment to a task',
+          action: 'Add comment',
           fields: [
             {
               id: 'task_id',

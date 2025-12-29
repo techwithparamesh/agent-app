@@ -63,7 +63,7 @@ export const woocommerceSchema: N8nAppSchema = {
         {
           id: 'create_product',
           name: 'Create Product',
-          value: 'create',
+          value: 'create_product',
           description: 'Create a new product',
           action: 'Create a product',
           fields: [
@@ -344,6 +344,51 @@ export const woocommerceSchema: N8nAppSchema = {
             },
           ],
         },
+        {
+          id: 'update_stock',
+          name: 'Update Stock',
+          value: 'update_stock',
+          description: 'Update product stock quantity',
+          action: 'Update stock',
+          fields: [
+            {
+              id: 'product_id',
+              name: 'productId',
+              displayName: 'Product ID',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'stock_quantity',
+              name: 'stock_quantity',
+              displayName: 'Stock Quantity',
+              type: 'number',
+              required: true,
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'manage_stock',
+              name: 'manage_stock',
+              displayName: 'Manage Stock',
+              type: 'boolean',
+              required: false,
+              default: true,
+            },
+            {
+              id: 'stock_status',
+              name: 'stock_status',
+              displayName: 'Stock Status',
+              type: 'options',
+              required: false,
+              options: [
+                { name: 'In Stock', value: 'instock' },
+                { name: 'Out of Stock', value: 'outofstock' },
+                { name: 'On Backorder', value: 'onbackorder' },
+              ],
+            },
+          ],
+        },
       ],
     },
     
@@ -359,7 +404,7 @@ export const woocommerceSchema: N8nAppSchema = {
         {
           id: 'create_order',
           name: 'Create Order',
-          value: 'create',
+          value: 'create_order',
           description: 'Create a new order',
           action: 'Create an order',
           fields: [],
@@ -445,7 +490,7 @@ export const woocommerceSchema: N8nAppSchema = {
         {
           id: 'get_order',
           name: 'Get Order',
-          value: 'get',
+          value: 'get_order',
           description: 'Get an order by ID',
           action: 'Retrieve an order',
           fields: [
@@ -518,7 +563,7 @@ export const woocommerceSchema: N8nAppSchema = {
         {
           id: 'update_order',
           name: 'Update Order',
-          value: 'update',
+          value: 'update_order',
           description: 'Update an order',
           action: 'Update an order',
           fields: [
@@ -597,7 +642,7 @@ export const woocommerceSchema: N8nAppSchema = {
         {
           id: 'create_customer',
           name: 'Create Customer',
-          value: 'create',
+          value: 'create_customer',
           description: 'Create a new customer',
           action: 'Create a customer',
           fields: [

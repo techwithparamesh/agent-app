@@ -61,7 +61,7 @@ export const firebaseSchema: N8nAppSchema = {
         {
           id: 'create_document',
           name: 'Create Document',
-          value: 'create',
+          value: 'create_document',
           description: 'Create a new document',
           action: 'Create a document',
           fields: [
@@ -95,7 +95,7 @@ export const firebaseSchema: N8nAppSchema = {
         {
           id: 'get_document',
           name: 'Get Document',
-          value: 'get',
+          value: 'get_document',
           description: 'Get a document by ID',
           action: 'Retrieve a document',
           fields: [
@@ -117,9 +117,9 @@ export const firebaseSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'get_documents',
-          name: 'Get Documents',
-          value: 'getMany',
+          id: 'query_collection',
+          name: 'Query Collection',
+          value: 'query_collection',
           description: 'Get documents from a collection',
           action: 'List documents',
           fields: [
@@ -179,7 +179,7 @@ export const firebaseSchema: N8nAppSchema = {
         {
           id: 'update_document',
           name: 'Update Document',
-          value: 'update',
+          value: 'update_document',
           description: 'Update a document',
           action: 'Update a document',
           fields: [
@@ -220,7 +220,7 @@ export const firebaseSchema: N8nAppSchema = {
         {
           id: 'delete_document',
           name: 'Delete Document',
-          value: 'delete',
+          value: 'delete_document',
           description: 'Delete a document',
           action: 'Delete a document',
           fields: [

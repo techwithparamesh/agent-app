@@ -141,7 +141,7 @@ export const whatsappSchema: N8nAppSchema = {
         {
           id: 'send_image',
           name: 'Send Image',
-          value: 'sendImage',
+          value: 'send_media',
           description: 'Send an image message',
           action: 'Send an image',
           fields: [

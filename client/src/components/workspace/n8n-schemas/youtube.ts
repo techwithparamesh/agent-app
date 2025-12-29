@@ -42,7 +42,7 @@ export const youtubeSchema: N8nAppSchema = {
       description: 'Video operations',
       operations: [
         {
-          id: 'upload', name: 'Upload Video', value: 'upload', description: 'Upload a video', action: 'Upload video',
+          id: 'upload', name: 'Upload Video', value: 'upload_video', description: 'Upload a video', action: 'Upload video',
           fields: [
             { id: 'title', name: 'title', displayName: 'Title', type: 'string', required: true },
             { id: 'file', name: 'file', displayName: 'Video File', type: 'string', required: true },

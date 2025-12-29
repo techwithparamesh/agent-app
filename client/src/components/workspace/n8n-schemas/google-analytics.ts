@@ -23,7 +23,7 @@ export const googleAnalyticsSchema: N8nAppSchema = {
     {
       id: 'report', name: 'Report', value: 'report', description: 'Analytics reports',
       operations: [
-        { id: 'get', name: 'Get Report', value: 'get', description: 'Get analytics report', action: 'Get report',
+        { id: 'get', name: 'Get Report', value: 'run_report', description: 'Get analytics report', action: 'Get report',
           fields: [
             { id: 'propertyId', name: 'propertyId', displayName: 'Property ID', type: 'string', required: true },
             { id: 'startDate', name: 'startDate', displayName: 'Start Date', type: 'dateTime', required: true },
@@ -35,7 +35,7 @@ export const googleAnalyticsSchema: N8nAppSchema = {
             { id: 'limit', name: 'limit', displayName: 'Row Limit', type: 'number', required: false, default: 10000 },
           ],
         },
-        { id: 'getRealTime', name: 'Get Realtime Report', value: 'getRealTime', description: 'Get realtime data', action: 'Get realtime report',
+        { id: 'getRealTime', name: 'Get Realtime Report', value: 'get_realtime', description: 'Get realtime data', action: 'Get realtime report',
           fields: [{ id: 'propertyId', name: 'propertyId', displayName: 'Property ID', type: 'string', required: true }],
           optionalFields: [
             { id: 'dimensions', name: 'dimensions', displayName: 'Dimensions', type: 'multiOptions', required: false, options: [{ name: 'Country', value: 'country' }, { name: 'City', value: 'city' }, { name: 'Device Category', value: 'deviceCategory' }] },

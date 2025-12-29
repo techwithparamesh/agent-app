@@ -61,7 +61,7 @@ export const shopifySchema: N8nAppSchema = {
         {
           id: 'create_product',
           name: 'Create Product',
-          value: 'create',
+          value: 'create_product',
           description: 'Create a new product',
           action: 'Create a new product',
           fields: [
@@ -236,7 +236,7 @@ export const shopifySchema: N8nAppSchema = {
         {
           id: 'update_product',
           name: 'Update Product',
-          value: 'update',
+          value: 'update_product',
           description: 'Update a product',
           action: 'Update a product',
           fields: [
@@ -316,7 +316,7 @@ export const shopifySchema: N8nAppSchema = {
         {
           id: 'create_order',
           name: 'Create Order',
-          value: 'create',
+          value: 'create_order',
           description: 'Create a new order',
           action: 'Create a new order',
           fields: [
@@ -417,7 +417,7 @@ export const shopifySchema: N8nAppSchema = {
         {
           id: 'get_order',
           name: 'Get Order',
-          value: 'get',
+          value: 'get_order',
           description: 'Get an order by ID',
           action: 'Retrieve an order',
           fields: [
@@ -508,7 +508,7 @@ export const shopifySchema: N8nAppSchema = {
         {
           id: 'update_order',
           name: 'Update Order',
-          value: 'update',
+          value: 'update_order',
           description: 'Update an order',
           action: 'Update an order',
           fields: [
@@ -631,7 +631,7 @@ export const shopifySchema: N8nAppSchema = {
         {
           id: 'create_customer',
           name: 'Create Customer',
-          value: 'create',
+          value: 'create_customer',
           description: 'Create a new customer',
           action: 'Create a new customer',
           fields: [
@@ -905,29 +905,29 @@ export const shopifySchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'adjust_inventory',
-          name: 'Adjust Inventory',
-          value: 'adjust',
+          id: 'update_inventory',
+          name: 'Update Inventory',
+          value: 'update_inventory',
           description: 'Adjust inventory level',
           action: 'Adjust inventory quantity',
           fields: [
             {
               id: 'inventory_item_id',
-              name: 'inventory_item_id',
+              name: 'inventoryItemId',
               displayName: 'Inventory Item ID',
               type: 'string',
               required: true,
             },
             {
               id: 'location_id',
-              name: 'location_id',
+              name: 'locationId',
               displayName: 'Location ID',
               type: 'string',
               required: true,
             },
             {
               id: 'adjustment',
-              name: 'available_adjustment',
+              name: 'adjustment',
               displayName: 'Adjustment',
               type: 'number',
               required: true,
@@ -980,10 +980,10 @@ export const shopifySchema: N8nAppSchema = {
       description: 'Order fulfillments',
       operations: [
         {
-          id: 'create_fulfillment',
-          name: 'Create Fulfillment',
-          value: 'create',
-          description: 'Create a fulfillment',
+          id: 'fulfill_order',
+          name: 'Fulfill Order',
+          value: 'fulfill_order',
+          description: 'Fulfill an order',
           action: 'Fulfill an order',
           fields: [
             {
@@ -996,28 +996,27 @@ export const shopifySchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'location_id',
-              name: 'location_id',
-              displayName: 'Location ID',
-              type: 'string',
+              id: 'notify_customer',
+              name: 'notifyCustomer',
+              displayName: 'Notify Customer',
+              type: 'boolean',
               required: false,
+              default: true,
             },
             {
               id: 'tracking_number',
-              name: 'tracking_number',
+              name: 'trackingNumber',
               displayName: 'Tracking Number',
               type: 'string',
               required: false,
             },
             {
               id: 'tracking_company',
-              name: 'tracking_company',
+              name: 'trackingCompany',
               displayName: 'Tracking Company',
               type: 'string',
               required: false,
             },
-            {
-              id: 'tracking_url',
               name: 'tracking_url',
               displayName: 'Tracking URL',
               type: 'string',

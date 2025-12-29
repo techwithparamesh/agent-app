@@ -40,11 +40,11 @@ export const facebookAdsSchema: N8nAppSchema = {
           fields: [{ id: 'campaignId', name: 'campaignId', displayName: 'Campaign ID', type: 'string', required: true }],
           optionalFields: [],
         },
-        { id: 'getAll', name: 'List', value: 'getAll', description: 'List campaigns', action: 'List campaigns',
+        { id: 'get_campaigns', name: 'List', value: 'get_campaigns', description: 'List campaigns', action: 'List campaigns',
           fields: [{ id: 'accountId', name: 'accountId', displayName: 'Ad Account ID', type: 'string', required: true }],
           optionalFields: [{ id: 'status', name: 'status', displayName: 'Status Filter', type: 'options', required: false, options: [{ name: 'All', value: '' }, { name: 'Active', value: 'ACTIVE' }, { name: 'Paused', value: 'PAUSED' }, { name: 'Archived', value: 'ARCHIVED' }] }],
         },
-        { id: 'update', name: 'Update', value: 'update', description: 'Update campaign', action: 'Update campaign',
+        { id: 'update_campaign', name: 'Update', value: 'update_campaign', description: 'Update campaign', action: 'Update campaign',
           fields: [{ id: 'campaignId', name: 'campaignId', displayName: 'Campaign ID', type: 'string', required: true }],
           optionalFields: [
             { id: 'name', name: 'name', displayName: 'Name', type: 'string', required: false },
@@ -108,7 +108,7 @@ export const facebookAdsSchema: N8nAppSchema = {
     {
       id: 'insights', name: 'Insights', value: 'insights', description: 'Analytics insights',
       operations: [
-        { id: 'get', name: 'Get Insights', value: 'get', description: 'Get performance insights', action: 'Get insights',
+        { id: 'get_insights', name: 'Get Insights', value: 'get_insights', description: 'Get performance insights', action: 'Get insights',
           fields: [
             { id: 'objectId', name: 'objectId', displayName: 'Object ID', type: 'string', required: true },
             { id: 'level', name: 'level', displayName: 'Level', type: 'options', required: true, options: [{ name: 'Account', value: 'account' }, { name: 'Campaign', value: 'campaign' }, { name: 'Ad Set', value: 'adset' }, { name: 'Ad', value: 'ad' }] },

@@ -1326,7 +1326,7 @@ export const hubspotSchema: N8nAppSchema = {
         {
           id: 'create_engagement',
           name: 'Create',
-          value: 'create',
+          value: 'add_note',
           description: 'Create an engagement',
           action: 'Create an engagement',
           fields: [

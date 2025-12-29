@@ -35,9 +35,9 @@ export const mailchimpSchema: N8nAppSchema = {
       description: 'Manage list members/subscribers',
       operations: [
         {
-          id: 'create_member',
-          name: 'Create Member',
-          value: 'create',
+          id: 'add_subscriber',
+          name: 'Add Subscriber',
+          value: 'add_subscriber',
           description: 'Add a new subscriber',
           action: 'Add a new member to a list',
           fields: [
@@ -54,7 +54,7 @@ export const mailchimpSchema: N8nAppSchema = {
             },
             {
               id: 'email',
-              name: 'emailAddress',
+              name: 'email',
               displayName: 'Email Address',
               type: 'string',
               required: true,
@@ -309,11 +309,11 @@ export const mailchimpSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'delete_member',
-          name: 'Delete Member',
-          value: 'delete',
-          description: 'Delete a member permanently',
-          action: 'Permanently delete a member',
+          id: 'remove_subscriber',
+          name: 'Remove Subscriber',
+          value: 'remove_subscriber',
+          description: 'Remove a subscriber permanently',
+          action: 'Permanently remove a subscriber',
           fields: [
             {
               id: 'list_id',
@@ -324,7 +324,7 @@ export const mailchimpSchema: N8nAppSchema = {
             },
             {
               id: 'email',
-              name: 'emailAddress',
+              name: 'email',
               displayName: 'Email Address',
               type: 'string',
               required: true,
@@ -418,7 +418,7 @@ export const mailchimpSchema: N8nAppSchema = {
         {
           id: 'create_campaign',
           name: 'Create Campaign',
-          value: 'create',
+          value: 'create_campaign',
           description: 'Create a new campaign',
           action: 'Create a new email campaign',
           fields: [
@@ -669,9 +669,9 @@ export const mailchimpSchema: N8nAppSchema = {
       description: 'Manage member tags',
       operations: [
         {
-          id: 'add_tags',
-          name: 'Add Tags',
-          value: 'add',
+          id: 'add_tag',
+          name: 'Add Tag',
+          value: 'add_tag',
           description: 'Add tags to a member',
           action: 'Add tags to a list member',
           fields: [
@@ -684,7 +684,7 @@ export const mailchimpSchema: N8nAppSchema = {
             },
             {
               id: 'email',
-              name: 'emailAddress',
+              name: 'email',
               displayName: 'Email Address',
               type: 'string',
               required: true,
@@ -693,9 +693,9 @@ export const mailchimpSchema: N8nAppSchema = {
               id: 'tags',
               name: 'tags',
               displayName: 'Tags',
-              type: 'string',
+              type: 'json',
               required: true,
-              description: 'Comma-separated tag names',
+              description: 'JSON array of tag names, e.g. ["tag1", "tag2"]',
             },
           ],
           optionalFields: [],

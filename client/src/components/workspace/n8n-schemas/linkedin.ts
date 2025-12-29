@@ -32,7 +32,7 @@ export const linkedinSchema: N8nAppSchema = {
       value: 'post',
       description: 'Post operations',
       operations: [
-        { id: 'create', name: 'Create', value: 'create', description: 'Create post', action: 'Create post',
+        { id: 'create_post', name: 'Create', value: 'create_post', description: 'Create post', action: 'Create post',
           fields: [
             { id: 'text', name: 'text', displayName: 'Text', type: 'string', required: true, typeOptions: { rows: 5 } },
             { id: 'visibility', name: 'visibility', displayName: 'Visibility', type: 'options', required: true, options: [{ name: 'Anyone', value: 'PUBLIC' }, { name: 'Connections Only', value: 'CONNECTIONS' }] },
@@ -60,7 +60,7 @@ export const linkedinSchema: N8nAppSchema = {
       value: 'profile',
       description: 'Profile operations',
       operations: [
-        { id: 'get', name: 'Get Profile', value: 'get', description: 'Get own profile', action: 'Get profile',
+        { id: 'get_profile', name: 'Get Profile', value: 'get_profile', description: 'Get own profile', action: 'Get profile',
           fields: [],
           optionalFields: [],
         },
@@ -103,7 +103,7 @@ export const linkedinSchema: N8nAppSchema = {
       value: 'message',
       description: 'Messaging operations',
       operations: [
-        { id: 'send', name: 'Send Message', value: 'send', description: 'Send direct message', action: 'Send message',
+        { id: 'send_message', name: 'Send Message', value: 'send_message', description: 'Send direct message', action: 'Send message',
           fields: [
             { id: 'recipientId', name: 'recipientId', displayName: 'Recipient ID', type: 'string', required: true },
             { id: 'message', name: 'message', displayName: 'Message', type: 'string', required: true, typeOptions: { rows: 3 } },
@@ -144,7 +144,7 @@ export const linkedinSchema: N8nAppSchema = {
       value: 'connection',
       description: 'Connection operations',
       operations: [
-        { id: 'getConnections', name: 'Get Connections', value: 'getConnections', description: 'Get connections', action: 'Get connections',
+        { id: 'get_connections', name: 'Get Connections', value: 'get_connections', description: 'Get connections', action: 'Get connections',
           fields: [],
           optionalFields: [
             { id: 'start', name: 'start', displayName: 'Start', type: 'number', required: false, default: 0 },

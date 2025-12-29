@@ -37,7 +37,7 @@ export const freshdeskSchema: N8nAppSchema = {
         {
           id: 'create_ticket',
           name: 'Create Ticket',
-          value: 'create',
+          value: 'create_ticket',
           description: 'Create a new ticket',
           action: 'Create a new support ticket',
           fields: [
@@ -304,7 +304,7 @@ export const freshdeskSchema: N8nAppSchema = {
         {
           id: 'update_ticket',
           name: 'Update Ticket',
-          value: 'update',
+          value: 'update_ticket',
           description: 'Update a ticket',
           action: 'Update ticket properties',
           fields: [
@@ -412,7 +412,7 @@ export const freshdeskSchema: N8nAppSchema = {
         {
           id: 'create_contact',
           name: 'Create Contact',
-          value: 'create',
+          value: 'create_contact',
           description: 'Create a new contact',
           action: 'Create a new contact',
           fields: [
@@ -765,9 +765,9 @@ export const freshdeskSchema: N8nAppSchema = {
       description: 'Manage ticket conversations',
       operations: [
         {
-          id: 'create_reply',
-          name: 'Create Reply',
-          value: 'createReply',
+          id: 'reply_ticket',
+          name: 'Reply to Ticket',
+          value: 'reply_ticket',
           description: 'Reply to a ticket',
           action: 'Add a reply to a ticket',
           fields: [
@@ -815,9 +815,9 @@ export const freshdeskSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'create_note',
-          name: 'Create Note',
-          value: 'createNote',
+          id: 'add_note',
+          name: 'Add Note',
+          value: 'add_note',
           description: 'Add a private note',
           action: 'Add a private note to a ticket',
           fields: [

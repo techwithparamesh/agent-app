@@ -37,7 +37,7 @@ export const intercomSchema: N8nAppSchema = {
         {
           id: 'create_contact',
           name: 'Create Contact',
-          value: 'create',
+          value: 'create_contact',
           description: 'Create a new contact',
           action: 'Create a new contact (lead or user)',
           fields: [
@@ -166,7 +166,7 @@ export const intercomSchema: N8nAppSchema = {
         {
           id: 'update_contact',
           name: 'Update Contact',
-          value: 'update',
+          value: 'update_contact',
           description: 'Update a contact',
           action: 'Update a contact',
           fields: [
@@ -344,7 +344,7 @@ export const intercomSchema: N8nAppSchema = {
         {
           id: 'reply_conversation',
           name: 'Reply to Conversation',
-          value: 'reply',
+          value: 'reply_conversation',
           description: 'Reply to a conversation',
           action: 'Reply to a conversation',
           fields: [
@@ -530,6 +530,41 @@ export const intercomSchema: N8nAppSchema = {
           ],
           optionalFields: [],
         },
+        {
+          id: 'create_note',
+          name: 'Create Note',
+          value: 'create_note',
+          description: 'Add a note to a contact',
+          action: 'Create note',
+          fields: [
+            {
+              id: 'contact_id',
+              name: 'contactId',
+              displayName: 'Contact ID',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'body',
+              name: 'body',
+              displayName: 'Note Body',
+              type: 'text',
+              required: true,
+              typeOptions: {
+                rows: 4,
+              },
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'admin_id',
+              name: 'admin_id',
+              displayName: 'Admin ID',
+              type: 'string',
+              required: false,
+            },
+          ],
+        },
       ],
     },
     
@@ -545,7 +580,7 @@ export const intercomSchema: N8nAppSchema = {
         {
           id: 'send_message',
           name: 'Send Message',
-          value: 'send',
+          value: 'send_message',
           description: 'Send a message to a contact',
           action: 'Send an in-app or email message',
           fields: [
@@ -646,9 +681,9 @@ export const intercomSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'tag_contact',
-          name: 'Tag Contact',
-          value: 'tagContact',
+          id: 'add_tag',
+          name: 'Add Tag',
+          value: 'add_tag',
           description: 'Add a tag to a contact',
           action: 'Tag a contact',
           fields: [

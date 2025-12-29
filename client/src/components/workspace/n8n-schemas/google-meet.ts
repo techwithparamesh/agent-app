@@ -75,11 +75,11 @@ export const googleMeetSchema: N8nAppSchema = {
       description: 'Meeting space operations',
       operations: [
         {
-          id: 'create_space',
-          name: 'Create Space',
-          value: 'create',
+          id: 'create_meeting',
+          name: 'Create Meeting',
+          value: 'create_meeting',
           description: 'Create a meeting space',
-          action: 'Create space',
+          action: 'Create meeting',
           fields: [],
           optionalFields: [
             {
@@ -128,11 +128,29 @@ export const googleMeetSchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'update_space',
-          name: 'Update Space',
-          value: 'update',
+          id: 'get_meeting_link',
+          name: 'Get Meeting Link',
+          value: 'get_meeting_link',
+          description: 'Get the meeting link for a space',
+          action: 'Get meeting link',
+          fields: [
+            {
+              id: 'name',
+              name: 'name',
+              displayName: 'Space Name',
+              type: 'string',
+              required: true,
+              description: 'Format: spaces/{space}',
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'update_meeting',
+          name: 'Update Meeting',
+          value: 'update_meeting',
           description: 'Update a meeting space',
-          action: 'Update space',
+          action: 'Update meeting',
           fields: [
             {
               id: 'name',
@@ -169,11 +187,11 @@ export const googleMeetSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'end_active_conference',
-          name: 'End Active Conference',
-          value: 'endActiveConference',
+          id: 'delete_meeting',
+          name: 'Delete Meeting',
+          value: 'delete_meeting',
           description: 'End an active conference',
-          action: 'End active conference',
+          action: 'Delete meeting',
           fields: [
             {
               id: 'name',

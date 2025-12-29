@@ -77,7 +77,7 @@ export const googleDocsSchema: N8nAppSchema = {
         {
           id: 'create_document',
           name: 'Create Document',
-          value: 'create',
+          value: 'create_document',
           description: 'Create a new document',
           action: 'Create document',
           fields: [
@@ -142,9 +142,9 @@ export const googleDocsSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'get_as_text',
-          name: 'Get Document as Text',
-          value: 'getAsText',
+          id: 'get_content',
+          name: 'Get Document Content',
+          value: 'get_content',
           description: 'Get document content as plain text',
           action: 'Get document as text',
           fields: [
@@ -175,6 +175,39 @@ export const googleDocsSchema: N8nAppSchema = {
           ],
           optionalFields: [],
         },
+        {
+          id: 'create_from_template',
+          name: 'Create from Template',
+          value: 'create_from_template',
+          description: 'Create a document from a template',
+          action: 'Create from template',
+          fields: [
+            {
+              id: 'template_id',
+              name: 'templateId',
+              displayName: 'Template ID',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'title',
+              name: 'title',
+              displayName: 'Title',
+              type: 'string',
+              required: true,
+            },
+          ],
+          optionalFields: [
+            {
+              id: 'placeholders',
+              name: 'placeholders',
+              displayName: 'Placeholders',
+              type: 'json',
+              required: false,
+              description: 'JSON object of placeholder replacements',
+            },
+          ],
+        },
       ],
     },
     
@@ -188,9 +221,9 @@ export const googleDocsSchema: N8nAppSchema = {
       description: 'Document content operations',
       operations: [
         {
-          id: 'insert_text',
-          name: 'Insert Text',
-          value: 'insertText',
+          id: 'append_text',
+          name: 'Append Text',
+          value: 'append_text',
           description: 'Insert text at a location',
           action: 'Insert text',
           fields: [
@@ -284,7 +317,7 @@ export const googleDocsSchema: N8nAppSchema = {
         {
           id: 'replace_text',
           name: 'Replace All Text',
-          value: 'replaceAllText',
+          value: 'replace_text',
           description: 'Replace all occurrences of text',
           action: 'Replace all text',
           fields: [

@@ -37,7 +37,7 @@ export const pipedriveSchema: N8nAppSchema = {
         {
           id: 'create_deal',
           name: 'Create Deal',
-          value: 'create',
+          value: 'create_deal',
           description: 'Create a new deal',
           action: 'Create a new deal',
           fields: [
@@ -215,7 +215,7 @@ export const pipedriveSchema: N8nAppSchema = {
         {
           id: 'update_deal',
           name: 'Update Deal',
-          value: 'update',
+          value: 'update_deal',
           description: 'Update a deal',
           action: 'Update a deal',
           fields: [
@@ -341,7 +341,7 @@ export const pipedriveSchema: N8nAppSchema = {
         {
           id: 'create_person',
           name: 'Create Person',
-          value: 'create',
+          value: 'create_person',
           description: 'Create a new person',
           action: 'Create a new contact person',
           fields: [
@@ -689,7 +689,7 @@ export const pipedriveSchema: N8nAppSchema = {
         {
           id: 'create_activity',
           name: 'Create Activity',
-          value: 'create',
+          value: 'create_activity',
           description: 'Create a new activity',
           action: 'Create a new activity',
           fields: [
@@ -725,6 +725,48 @@ export const pipedriveSchema: N8nAppSchema = {
               required: false,
             },
             {
+          {
+            id: 'add_note',
+            name: 'Add Note',
+            value: 'add_note',
+            description: 'Add a note to a deal/person/organization',
+            action: 'Add note',
+            fields: [
+              {
+                id: 'content',
+                name: 'content',
+                displayName: 'Content',
+                type: 'text',
+                required: true,
+                typeOptions: {
+                  rows: 4,
+                },
+              },
+            ],
+            optionalFields: [
+              {
+                id: 'deal_id',
+                name: 'deal_id',
+                displayName: 'Deal ID',
+                type: 'number',
+                required: false,
+              },
+              {
+                id: 'person_id',
+                name: 'person_id',
+                displayName: 'Person ID',
+                type: 'number',
+                required: false,
+              },
+              {
+                id: 'org_id',
+                name: 'org_id',
+                displayName: 'Organization ID',
+                type: 'number',
+                required: false,
+              },
+            ],
+          },
               id: 'person_id',
               name: 'person_id',
               displayName: 'Person ID',

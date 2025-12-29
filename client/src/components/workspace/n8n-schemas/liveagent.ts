@@ -26,7 +26,7 @@ export const liveagentSchema: N8nAppSchema = {
     {
       id: 'ticket', name: 'Ticket', value: 'ticket', description: 'Ticket operations',
       operations: [
-        { id: 'create', name: 'Create', value: 'create', description: 'Create ticket', action: 'Create ticket',
+        { id: 'create', name: 'Create', value: 'create_ticket', description: 'Create ticket', action: 'Create ticket',
           fields: [
             { id: 'subject', name: 'subject', displayName: 'Subject', type: 'string', required: true },
             { id: 'message', name: 'message', displayName: 'Message', type: 'string', required: true, typeOptions: { rows: 5 } },

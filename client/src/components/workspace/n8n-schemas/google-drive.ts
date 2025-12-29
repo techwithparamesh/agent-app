@@ -77,24 +77,24 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'upload_file',
           name: 'Upload File',
-          value: 'upload',
+          value: 'upload_file',
           description: 'Upload a file to Drive',
           action: 'Upload file',
           fields: [
             {
-              id: 'name',
-              name: 'name',
+              id: 'fileName',
+              name: 'fileName',
               displayName: 'File Name',
               type: 'string',
               required: true,
             },
             {
-              id: 'content',
-              name: 'content',
-              displayName: 'Content',
+              id: 'fileContent',
+              name: 'fileContent',
+              displayName: 'Content URL',
               type: 'string',
               required: true,
-              description: 'File content or base64 encoded binary',
+              description: 'URL to fetch file content from',
             },
           ],
           optionalFields: [
@@ -140,7 +140,7 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'get_file',
           name: 'Get File',
-          value: 'get',
+          value: 'get_file',
           description: 'Get file metadata',
           action: 'Get file',
           fields: [
@@ -326,7 +326,7 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'copy_file',
           name: 'Copy File',
-          value: 'copy',
+          value: 'copy_file',
           description: 'Copy a file',
           action: 'Copy file',
           fields: [
@@ -358,7 +358,7 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'delete_file',
           name: 'Delete File',
-          value: 'delete',
+          value: 'delete_file',
           description: 'Delete a file',
           action: 'Delete file',
           fields: [
@@ -385,7 +385,7 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'move_file',
           name: 'Move File',
-          value: 'move',
+          value: 'move_file',
           description: 'Move a file to another folder',
           action: 'Move file',
           fields: [
@@ -397,8 +397,8 @@ export const googleDriveSchema: N8nAppSchema = {
               required: true,
             },
             {
-              id: 'destination_folder_id',
-              name: 'destinationFolderId',
+              id: 'new_folder_id',
+              name: 'newFolderId',
               displayName: 'Destination Folder ID',
               type: 'string',
               required: true,
@@ -421,13 +421,13 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'create_folder',
           name: 'Create Folder',
-          value: 'create',
+          value: 'create_folder',
           description: 'Create a folder',
           action: 'Create folder',
           fields: [
             {
-              id: 'name',
-              name: 'name',
+              id: 'folderName',
+              name: 'folderName',
               displayName: 'Folder Name',
               type: 'string',
               required: true,
@@ -524,7 +524,7 @@ export const googleDriveSchema: N8nAppSchema = {
         {
           id: 'share_file',
           name: 'Share File',
-          value: 'create',
+          value: 'share_file',
           description: 'Share a file',
           action: 'Share file',
           fields: [
@@ -565,12 +565,12 @@ export const googleDriveSchema: N8nAppSchema = {
           ],
           optionalFields: [
             {
-              id: 'email_address',
-              name: 'emailAddress',
+              id: 'email',
+              name: 'email',
               displayName: 'Email Address',
               type: 'string',
-              required: false,
-              description: 'Required for user/group type',
+              required: true,
+              description: 'Email address of the user to share with',
             },
             {
               id: 'domain',

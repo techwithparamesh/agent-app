@@ -32,7 +32,7 @@ export const pinterestSchema: N8nAppSchema = {
       value: 'pin',
       description: 'Pin operations',
       operations: [
-        { id: 'create', name: 'Create', value: 'create', description: 'Create pin', action: 'Create pin',
+        { id: 'create', name: 'Create', value: 'create_pin', description: 'Create pin', action: 'Create pin',
           fields: [
             { id: 'boardId', name: 'boardId', displayName: 'Board ID', type: 'string', required: true },
             { id: 'mediaSource', name: 'mediaSource', displayName: 'Media Source', type: 'options', required: true, options: [{ name: 'Image URL', value: 'image_url' }, { name: 'Image Base64', value: 'image_base64' }, { name: 'Video ID', value: 'video_id' }] },

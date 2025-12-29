@@ -317,7 +317,7 @@ export const mondaySchema: N8nAppSchema = {
         {
           id: 'create_item',
           name: 'Create Item',
-          value: 'create',
+          value: 'create_item',
           description: 'Create a new item',
           action: 'Create an item',
           fields: [
@@ -422,7 +422,7 @@ export const mondaySchema: N8nAppSchema = {
         {
           id: 'update_item',
           name: 'Update Item',
-          value: 'update',
+          value: 'update_item',
           description: 'Update an item',
           action: 'Update an item',
           fields: [
@@ -495,9 +495,9 @@ export const mondaySchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'move_item_to_group',
+          id: 'move_item',
           name: 'Move Item to Group',
-          value: 'moveToGroup',
+          value: 'move_item',
           description: 'Move an item to a different group',
           action: 'Move item to group',
           fields: [
@@ -627,7 +627,7 @@ export const mondaySchema: N8nAppSchema = {
         {
           id: 'create_update',
           name: 'Create Update',
-          value: 'create',
+          value: 'create_update',
           description: 'Create an update on an item',
           action: 'Create an update',
           fields: [

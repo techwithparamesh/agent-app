@@ -46,9 +46,9 @@ export const elevenLabsSchema: N8nAppSchema = {
       description: 'Text to speech conversion',
       operations: [
         {
-          id: 'convert',
-          name: 'Convert Text to Speech',
-          value: 'convert',
+          id: 'text_to_speech',
+          name: 'Text to Speech',
+          value: 'text_to_speech',
           description: 'Convert text to speech audio',
           action: 'Convert text to speech',
           fields: [
@@ -498,9 +498,9 @@ export const elevenLabsSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'list_voices',
-          name: 'List Voices',
-          value: 'getMany',
+          id: 'get_voices',
+          name: 'Get Voices',
+          value: 'get_voices',
           description: 'List all available voices',
           action: 'List voices',
           fields: [],
@@ -516,10 +516,10 @@ export const elevenLabsSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'add_voice',
-          name: 'Add Voice',
-          value: 'create',
-          description: 'Add a new voice from samples',
+          id: 'voice_clone',
+          name: 'Clone Voice',
+          value: 'voice_clone',
+          description: 'Clone a voice from samples',
           action: 'Add voice',
           fields: [
             {

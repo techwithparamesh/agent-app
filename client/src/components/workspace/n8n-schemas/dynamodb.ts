@@ -83,7 +83,7 @@ export const dynamodbSchema: N8nAppSchema = {
         {
           id: 'put_item',
           name: 'Put Item',
-          value: 'put',
+          value: 'put_item',
           description: 'Put an item into a table',
           action: 'Put item',
           fields: [
@@ -141,7 +141,7 @@ export const dynamodbSchema: N8nAppSchema = {
         {
           id: 'get_item',
           name: 'Get Item',
-          value: 'get',
+          value: 'get_item',
           description: 'Get an item by key',
           action: 'Get item',
           fields: [

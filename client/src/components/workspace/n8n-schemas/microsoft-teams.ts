@@ -37,7 +37,7 @@ export const microsoftTeamsSchema: N8nAppSchema = {
         {
           id: 'send_message',
           name: 'Send Message',
-          value: 'send',
+          value: 'send_message',
           description: 'Send a message to a chat or channel',
           action: 'Send a message to a Teams chat or channel',
           fields: [
@@ -253,6 +253,70 @@ export const microsoftTeamsSchema: N8nAppSchema = {
               displayName: 'Reply Content',
               type: 'text',
               required: true,
+            },
+          ],
+          optionalFields: [],
+        },
+      ],
+    },
+
+    // ============================================
+    // WEBHOOK RESOURCE
+    // ============================================
+    {
+      id: 'webhook',
+      name: 'Webhook',
+      value: 'webhook',
+      description: 'Send messages via incoming webhook',
+      operations: [
+        {
+          id: 'webhook_send',
+          name: 'Send (Webhook)',
+          value: 'webhook_send',
+          description: 'Send a message via an incoming webhook URL',
+          action: 'Send webhook message',
+          fields: [
+            {
+              id: 'webhook_url',
+              name: 'webhookUrl',
+              displayName: 'Webhook URL',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'text',
+              name: 'text',
+              displayName: 'Text',
+              type: 'text',
+              required: true,
+              typeOptions: {
+                rows: 4,
+              },
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'send_card',
+          name: 'Send Card (Webhook)',
+          value: 'send_card',
+          description: 'Send an Adaptive Card payload via an incoming webhook URL',
+          action: 'Send webhook card',
+          fields: [
+            {
+              id: 'webhook_url',
+              name: 'webhookUrl',
+              displayName: 'Webhook URL',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'card',
+              name: 'card',
+              displayName: 'Card Payload (JSON)',
+              type: 'json',
+              required: true,
+              description: 'Adaptive Card JSON payload',
             },
           ],
           optionalFields: [],

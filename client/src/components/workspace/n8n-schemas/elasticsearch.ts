@@ -85,7 +85,7 @@ export const elasticsearchSchema: N8nAppSchema = {
         {
           id: 'index_document',
           name: 'Index Document',
-          value: 'index',
+          value: 'index_document',
           description: 'Index a new document',
           action: 'Index document',
           fields: [

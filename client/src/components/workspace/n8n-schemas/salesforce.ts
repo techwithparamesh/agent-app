@@ -37,7 +37,7 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'create_lead',
           name: 'Create Lead',
-          value: 'create',
+          value: 'create_record',
           description: 'Create a new lead',
           action: 'Create a new lead',
           fields: [
@@ -204,13 +204,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'get_lead',
           name: 'Get Lead',
-          value: 'get',
+          value: 'get_record',
           description: 'Get a lead by ID',
           action: 'Retrieve a lead',
           fields: [
             {
               id: 'lead_id',
-              name: 'leadId',
+              name: 'recordId',
               displayName: 'Lead ID',
               type: 'string',
               required: true,
@@ -221,7 +221,7 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'get_leads',
           name: 'Get Leads',
-          value: 'getMany',
+          value: 'query',
           description: 'Get all leads',
           action: 'List all leads',
           fields: [],
@@ -247,13 +247,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'update_lead',
           name: 'Update Lead',
-          value: 'update',
+          value: 'update_record',
           description: 'Update a lead',
           action: 'Update a lead',
           fields: [
             {
               id: 'lead_id',
-              name: 'leadId',
+              name: 'recordId',
               displayName: 'Lead ID',
               type: 'string',
               required: true,
@@ -306,13 +306,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'delete_lead',
           name: 'Delete Lead',
-          value: 'delete',
+          value: 'delete_record',
           description: 'Delete a lead',
           action: 'Delete a lead',
           fields: [
             {
               id: 'lead_id',
-              name: 'leadId',
+              name: 'recordId',
               displayName: 'Lead ID',
               type: 'string',
               required: true,
@@ -390,7 +390,7 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'create_contact',
           name: 'Create Contact',
-          value: 'create',
+          value: 'create_record',
           description: 'Create a new contact',
           action: 'Create a new contact',
           fields: [
@@ -502,13 +502,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'get_contact',
           name: 'Get Contact',
-          value: 'get',
+          value: 'get_record',
           description: 'Get a contact by ID',
           action: 'Retrieve a contact',
           fields: [
             {
               id: 'contact_id',
-              name: 'contactId',
+              name: 'recordId',
               displayName: 'Contact ID',
               type: 'string',
               required: true,
@@ -519,7 +519,7 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'get_contacts',
           name: 'Get Contacts',
-          value: 'getMany',
+          value: 'query',
           description: 'Get all contacts',
           action: 'List all contacts',
           fields: [],
@@ -552,13 +552,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'update_contact',
           name: 'Update Contact',
-          value: 'update',
+          value: 'update_record',
           description: 'Update a contact',
           action: 'Update a contact',
           fields: [
             {
               id: 'contact_id',
-              name: 'contactId',
+              name: 'recordId',
               displayName: 'Contact ID',
               type: 'string',
               required: true,
@@ -598,13 +598,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'delete_contact',
           name: 'Delete Contact',
-          value: 'delete',
+          value: 'delete_record',
           description: 'Delete a contact',
           action: 'Delete a contact',
           fields: [
             {
               id: 'contact_id',
-              name: 'contactId',
+              name: 'recordId',
               displayName: 'Contact ID',
               type: 'string',
               required: true,
@@ -627,7 +627,7 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'create_account',
           name: 'Create Account',
-          value: 'create',
+          value: 'create_record',
           description: 'Create a new account',
           action: 'Create a new account',
           fields: [
@@ -755,13 +755,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'get_account',
           name: 'Get Account',
-          value: 'get',
+          value: 'get_record',
           description: 'Get an account by ID',
           action: 'Retrieve an account',
           fields: [
             {
               id: 'account_id',
-              name: 'accountId',
+              name: 'recordId',
               displayName: 'Account ID',
               type: 'string',
               required: true,
@@ -772,7 +772,7 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'get_accounts',
           name: 'Get Accounts',
-          value: 'getMany',
+          value: 'query',
           description: 'Get all accounts',
           action: 'List all accounts',
           fields: [],
@@ -797,13 +797,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'update_account',
           name: 'Update Account',
-          value: 'update',
+          value: 'update_record',
           description: 'Update an account',
           action: 'Update an account',
           fields: [
             {
               id: 'account_id',
-              name: 'accountId',
+              name: 'recordId',
               displayName: 'Account ID',
               type: 'string',
               required: true,
@@ -836,13 +836,13 @@ export const salesforceSchema: N8nAppSchema = {
         {
           id: 'delete_account',
           name: 'Delete Account',
-          value: 'delete',
+          value: 'delete_record',
           description: 'Delete an account',
           action: 'Delete an account',
           fields: [
             {
               id: 'account_id',
-              name: 'accountId',
+              name: 'recordId',
               displayName: 'Account ID',
               type: 'string',
               required: true,

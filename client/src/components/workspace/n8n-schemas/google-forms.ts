@@ -103,7 +103,7 @@ export const googleFormsSchema: N8nAppSchema = {
         {
           id: 'get_form',
           name: 'Get Form',
-          value: 'get',
+          value: 'get_form',
           description: 'Get form details',
           action: 'Get form',
           fields: [
@@ -932,7 +932,7 @@ export const googleFormsSchema: N8nAppSchema = {
         {
           id: 'list_responses',
           name: 'List Responses',
-          value: 'getMany',
+          value: 'get_responses',
           description: 'List all responses',
           action: 'List responses',
           fields: [

@@ -66,9 +66,9 @@ export const googleAISchema: N8nAppSchema = {
       description: 'Text generation operations',
       operations: [
         {
-          id: 'generate_text',
-          name: 'Generate Text',
-          value: 'generate',
+          id: 'generate_content',
+          name: 'Generate Content',
+          value: 'generate_content',
           description: 'Generate text using Gemini',
           action: 'Generate text',
           fields: [
@@ -328,7 +328,7 @@ export const googleAISchema: N8nAppSchema = {
         {
           id: 'analyze_image',
           name: 'Analyze Image',
-          value: 'analyzeImage',
+          value: 'analyze_image',
           description: 'Analyze an image using Gemini',
           action: 'Analyze image',
           fields: [
@@ -845,9 +845,9 @@ export const googleAISchema: N8nAppSchema = {
       description: 'Text embedding operations',
       operations: [
         {
-          id: 'create_embedding',
-          name: 'Create Embedding',
-          value: 'create',
+          id: 'embed_content',
+          name: 'Embed Content',
+          value: 'embed_content',
           description: 'Create text embeddings',
           action: 'Create embedding',
           fields: [

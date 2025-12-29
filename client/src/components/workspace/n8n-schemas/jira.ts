@@ -61,7 +61,7 @@ export const jiraSchema: N8nAppSchema = {
         {
           id: 'create_issue',
           name: 'Create Issue',
-          value: 'create',
+          value: 'create_issue',
           description: 'Create a new issue',
           action: 'Create an issue',
           fields: [
@@ -214,7 +214,7 @@ export const jiraSchema: N8nAppSchema = {
         {
           id: 'search_issues',
           name: 'Search Issues',
-          value: 'search',
+          value: 'search_issues',
           description: 'Search issues using JQL',
           action: 'Search issues',
           fields: [
@@ -258,7 +258,7 @@ export const jiraSchema: N8nAppSchema = {
         {
           id: 'update_issue',
           name: 'Update Issue',
-          value: 'update',
+          value: 'update_issue',
           description: 'Update an issue',
           action: 'Update an issue',
           fields: [
@@ -351,7 +351,7 @@ export const jiraSchema: N8nAppSchema = {
         {
           id: 'transition_issue',
           name: 'Transition Issue',
-          value: 'transition',
+          value: 'transition_issue',
           description: 'Transition an issue to a new status',
           action: 'Transition an issue',
           fields: [
@@ -425,6 +425,33 @@ export const jiraSchema: N8nAppSchema = {
               displayName: 'Issue Key',
               type: 'string',
               required: true,
+            },
+          ],
+          optionalFields: [],
+        },
+        {
+          id: 'add_comment',
+          name: 'Add Comment',
+          value: 'add_comment',
+          description: 'Add a comment to an issue',
+          action: 'Add a comment',
+          fields: [
+            {
+              id: 'issue_key',
+              name: 'issueKey',
+              displayName: 'Issue Key',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'body',
+              name: 'body',
+              displayName: 'Comment',
+              type: 'text',
+              required: true,
+              typeOptions: {
+                rows: 4,
+              },
             },
           ],
           optionalFields: [],

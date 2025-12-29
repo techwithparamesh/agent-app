@@ -75,7 +75,7 @@ export const smtpSchema: N8nAppSchema = {
         {
           id: 'send_email',
           name: 'Send Email',
-          value: 'send',
+          value: 'send_email',
           description: 'Send an email',
           action: 'Send an email via SMTP',
           fields: [

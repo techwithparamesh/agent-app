@@ -292,7 +292,7 @@ export const gitlabSchema: N8nAppSchema = {
         {
           id: 'create_issue',
           name: 'Create Issue',
-          value: 'create',
+          value: 'create_issue',
           description: 'Create a new issue',
           action: 'Create issue',
           fields: [
@@ -482,7 +482,7 @@ export const gitlabSchema: N8nAppSchema = {
         {
           id: 'update_issue',
           name: 'Update Issue',
-          value: 'update',
+          value: 'update_issue',
           description: 'Update an issue',
           action: 'Update issue',
           fields: [
@@ -567,6 +567,38 @@ export const gitlabSchema: N8nAppSchema = {
           ],
           optionalFields: [],
         },
+        {
+          id: 'add_comment',
+          name: 'Add Comment',
+          value: 'add_comment',
+          description: 'Add a comment to an issue',
+          action: 'Add comment',
+          fields: [
+            {
+              id: 'project_id',
+              name: 'projectId',
+              displayName: 'Project ID or Path',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'issue_iid',
+              name: 'issueIid',
+              displayName: 'Issue IID',
+              type: 'number',
+              required: true,
+            },
+            {
+              id: 'body',
+              name: 'body',
+              displayName: 'Comment Body',
+              type: 'text',
+              required: true,
+              typeOptions: { rows: 3 },
+            },
+          ],
+          optionalFields: [],
+        },
       ],
     },
     
@@ -582,7 +614,7 @@ export const gitlabSchema: N8nAppSchema = {
         {
           id: 'create_mr',
           name: 'Create Merge Request',
-          value: 'create',
+          value: 'create_mr',
           description: 'Create a merge request',
           action: 'Create merge request',
           fields: [
@@ -854,10 +886,10 @@ export const gitlabSchema: N8nAppSchema = {
       description: 'CI/CD pipeline operations',
       operations: [
         {
-          id: 'create_pipeline',
-          name: 'Create Pipeline',
-          value: 'create',
-          description: 'Create a new pipeline',
+          id: 'trigger_pipeline',
+          name: 'Trigger Pipeline',
+          value: 'trigger_pipeline',
+          description: 'Trigger a new pipeline',
           action: 'Create pipeline',
           fields: [
             {

@@ -320,7 +320,7 @@ export const bitbucketSchema: N8nAppSchema = {
         {
           id: 'create_pr',
           name: 'Create Pull Request',
-          value: 'create',
+          value: 'create_pr',
           description: 'Create a pull request',
           action: 'Create pull request',
           fields: [
@@ -641,6 +641,45 @@ export const bitbucketSchema: N8nAppSchema = {
           ],
           optionalFields: [],
         },
+        {
+          id: 'add_comment',
+          name: 'Add Comment',
+          value: 'add_comment',
+          description: 'Add a comment to a pull request',
+          action: 'Add comment',
+          fields: [
+            {
+              id: 'workspace',
+              name: 'workspace',
+              displayName: 'Workspace',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'repo_slug',
+              name: 'repoSlug',
+              displayName: 'Repository Slug',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'pull_request_id',
+              name: 'pullRequestId',
+              displayName: 'Pull Request ID',
+              type: 'number',
+              required: true,
+            },
+            {
+              id: 'content',
+              name: 'content',
+              displayName: 'Comment Content',
+              type: 'text',
+              required: true,
+              typeOptions: { rows: 3 },
+            },
+          ],
+          optionalFields: [],
+        },
       ],
     },
     
@@ -656,7 +695,7 @@ export const bitbucketSchema: N8nAppSchema = {
         {
           id: 'create_issue',
           name: 'Create Issue',
-          value: 'create',
+          value: 'create_issue',
           description: 'Create an issue',
           action: 'Create issue',
           fields: [
@@ -1296,7 +1335,7 @@ export const bitbucketSchema: N8nAppSchema = {
         {
           id: 'trigger_pipeline',
           name: 'Trigger Pipeline',
-          value: 'create',
+          value: 'trigger_pipeline',
           description: 'Trigger a pipeline',
           action: 'Trigger pipeline',
           fields: [

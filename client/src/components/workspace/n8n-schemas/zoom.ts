@@ -37,7 +37,7 @@ export const zoomSchema: N8nAppSchema = {
         {
           id: 'create_meeting',
           name: 'Create Meeting',
-          value: 'create',
+          value: 'create_meeting',
           description: 'Create a new meeting',
           action: 'Create a new Zoom meeting',
           fields: [
@@ -167,7 +167,7 @@ export const zoomSchema: N8nAppSchema = {
         {
           id: 'get_meeting',
           name: 'Get Meeting',
-          value: 'get',
+          value: 'get_meeting',
           description: 'Get meeting details',
           action: 'Retrieve meeting information',
           fields: [
@@ -191,9 +191,9 @@ export const zoomSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'get_meetings',
-          name: 'Get Meetings',
-          value: 'getMany',
+          id: 'list_meetings',
+          name: 'List Meetings',
+          value: 'list_meetings',
           description: 'Get all meetings',
           action: 'List all meetings for a user',
           fields: [],
@@ -228,7 +228,7 @@ export const zoomSchema: N8nAppSchema = {
         {
           id: 'update_meeting',
           name: 'Update Meeting',
-          value: 'update',
+          value: 'update_meeting',
           description: 'Update a meeting',
           action: 'Update meeting details',
           fields: [
@@ -274,7 +274,7 @@ export const zoomSchema: N8nAppSchema = {
         {
           id: 'delete_meeting',
           name: 'Delete Meeting',
-          value: 'delete',
+          value: 'delete_meeting',
           description: 'Delete a meeting',
           action: 'Delete a scheduled meeting',
           fields: [
@@ -329,7 +329,7 @@ export const zoomSchema: N8nAppSchema = {
         {
           id: 'add_registrant',
           name: 'Add Registrant',
-          value: 'create',
+          value: 'add_registrant',
           description: 'Register someone for a meeting',
           action: 'Add a registrant to a meeting',
           fields: [
@@ -580,7 +580,7 @@ export const zoomSchema: N8nAppSchema = {
         {
           id: 'get_recordings',
           name: 'Get Recordings',
-          value: 'getMany',
+          value: 'get_recordings',
           description: 'Get meeting recordings',
           action: 'List all cloud recordings',
           fields: [],

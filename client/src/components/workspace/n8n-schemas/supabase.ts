@@ -65,7 +65,7 @@ export const supabaseSchema: N8nAppSchema = {
         {
           id: 'insert_row',
           name: 'Insert Row',
-          value: 'insert',
+          value: 'insert_row',
           description: 'Insert a new row',
           action: 'Insert a row',
           fields: [
@@ -106,7 +106,7 @@ export const supabaseSchema: N8nAppSchema = {
         {
           id: 'select_rows',
           name: 'Select Rows',
-          value: 'select',
+          value: 'select_rows',
           description: 'Select rows from a table',
           action: 'Select rows',
           fields: [
@@ -169,9 +169,9 @@ export const supabaseSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'update_row',
-          name: 'Update Row',
-          value: 'update',
+          id: 'update_rows',
+          name: 'Update Rows',
+          value: 'update_rows',
           description: 'Update rows in a table',
           action: 'Update rows',
           fields: [
@@ -273,9 +273,9 @@ export const supabaseSchema: N8nAppSchema = {
           ],
         },
         {
-          id: 'delete_row',
-          name: 'Delete Row',
-          value: 'delete',
+          id: 'delete_rows',
+          name: 'Delete Rows',
+          value: 'delete_rows',
           description: 'Delete rows from a table',
           action: 'Delete rows',
           fields: [

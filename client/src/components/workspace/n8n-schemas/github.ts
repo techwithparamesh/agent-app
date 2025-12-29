@@ -265,7 +265,7 @@ export const githubSchema: N8nAppSchema = {
         {
           id: 'create_issue',
           name: 'Create Issue',
-          value: 'create',
+          value: 'create_issue',
           description: 'Create a new issue',
           action: 'Create issue',
           fields: [
@@ -433,7 +433,7 @@ export const githubSchema: N8nAppSchema = {
         {
           id: 'update_issue',
           name: 'Update Issue',
-          value: 'update',
+          value: 'update_issue',
           description: 'Update an issue',
           action: 'Update issue',
           fields: [
@@ -546,6 +546,45 @@ export const githubSchema: N8nAppSchema = {
             },
           ],
         },
+        {
+          id: 'create_comment',
+          name: 'Create Comment',
+          value: 'create_comment',
+          description: 'Add a comment to an issue',
+          action: 'Create comment',
+          fields: [
+            {
+              id: 'owner',
+              name: 'owner',
+              displayName: 'Owner',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'repo',
+              name: 'repo',
+              displayName: 'Repository',
+              type: 'string',
+              required: true,
+            },
+            {
+              id: 'issue_number',
+              name: 'issueNumber',
+              displayName: 'Issue Number',
+              type: 'number',
+              required: true,
+            },
+            {
+              id: 'body',
+              name: 'body',
+              displayName: 'Comment Body',
+              type: 'text',
+              required: true,
+              typeOptions: { rows: 4 },
+            },
+          ],
+          optionalFields: [],
+        },
       ],
     },
     
@@ -561,7 +600,7 @@ export const githubSchema: N8nAppSchema = {
         {
           id: 'create_pr',
           name: 'Create Pull Request',
-          value: 'create',
+          value: 'create_pr',
           description: 'Create a pull request',
           action: 'Create pull request',
           fields: [
@@ -730,7 +769,7 @@ export const githubSchema: N8nAppSchema = {
         {
           id: 'merge_pr',
           name: 'Merge Pull Request',
-          value: 'merge',
+          value: 'merge_pr',
           description: 'Merge a pull request',
           action: 'Merge pull request',
           fields: [
@@ -1019,7 +1058,7 @@ export const githubSchema: N8nAppSchema = {
         {
           id: 'create_release',
           name: 'Create Release',
-          value: 'create',
+          value: 'create_release',
           description: 'Create a release',
           action: 'Create release',
           fields: [
@@ -1189,7 +1228,7 @@ export const githubSchema: N8nAppSchema = {
         {
           id: 'dispatch_workflow',
           name: 'Dispatch Workflow',
-          value: 'dispatch',
+          value: 'dispatch_workflow',
           description: 'Trigger a workflow dispatch',
           action: 'Dispatch workflow',
           fields: [

@@ -48,7 +48,7 @@ export const calendlySchema: N8nAppSchema = {
         {
           id: 'get_event',
           name: 'Get Event',
-          value: 'get',
+          value: 'get_event',
           description: 'Get an event by UUID',
           action: 'Retrieve an event',
           fields: [
@@ -63,9 +63,9 @@ export const calendlySchema: N8nAppSchema = {
           optionalFields: [],
         },
         {
-          id: 'get_events',
-          name: 'Get Events',
-          value: 'getMany',
+          id: 'list_events',
+          name: 'List Events',
+          value: 'list_events',
           description: 'Get scheduled events',
           action: 'List events',
           fields: [
@@ -142,7 +142,7 @@ export const calendlySchema: N8nAppSchema = {
         {
           id: 'cancel_event',
           name: 'Cancel Event',
-          value: 'cancel',
+          value: 'cancel_event',
           description: 'Cancel a scheduled event',
           action: 'Cancel an event',
           fields: [

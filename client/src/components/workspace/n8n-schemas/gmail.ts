@@ -377,7 +377,7 @@ export const gmailSchema: N8nAppSchema = {
         {
           id: 'create_draft',
           name: 'Create Draft',
-          value: 'create',
+          value: 'create_draft',
           description: 'Create a new draft',
           action: 'Create a new email draft',
           fields: [

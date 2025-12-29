@@ -387,7 +387,7 @@ export const trelloSchema: N8nAppSchema = {
         {
           id: 'create_card',
           name: 'Create Card',
-          value: 'create',
+          value: 'create_card',
           description: 'Create a new card',
           action: 'Create a card',
           fields: [
@@ -534,7 +534,7 @@ export const trelloSchema: N8nAppSchema = {
         {
           id: 'update_card',
           name: 'Update Card',
-          value: 'update',
+          value: 'update_card',
           description: 'Update a card',
           action: 'Update a card',
           fields: [
@@ -1091,7 +1091,7 @@ export const trelloSchema: N8nAppSchema = {
         {
           id: 'add_comment',
           name: 'Add Comment',
-          value: 'create',
+          value: 'add_comment',
           description: 'Add a comment to a card',
           action: 'Add comment',
           fields: [
