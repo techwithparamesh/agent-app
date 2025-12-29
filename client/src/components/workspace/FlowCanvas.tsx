@@ -415,10 +415,10 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
    * n8n-style dotted grid pattern
    * - Subtle dots at 20px intervals
    * - Scales with zoom for consistent visual density
-   * - Provides visual reference without being distracting
+   * - Professional appearance with cross-pattern at intersections
    */
   const gridPattern = showGrid
-    ? `radial-gradient(circle, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)`
+    ? `radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`
     : 'none';
 
   return (
@@ -426,10 +426,11 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
       <div
         ref={containerRef}
         className={cn(
-          "relative w-full h-full overflow-hidden bg-background select-none",
+          "relative w-full h-full overflow-hidden select-none",
+          "bg-[hsl(var(--background))]",
           tool === 'pan' && "cursor-grab",
           isPanning && "cursor-grabbing",
-          isDragOver && "ring-2 ring-primary ring-inset",
+          isDragOver && "ring-2 ring-primary/50 ring-inset",
           className
         )}
         onMouseDown={handleMouseDown}
@@ -445,7 +446,7 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
       >
         {/* Grid Background - n8n-style dotted pattern */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-200"
           style={{
             backgroundImage: gridPattern,
             backgroundSize: `${GRID_SIZE * viewport.zoom}px ${GRID_SIZE * viewport.zoom}px`,
@@ -479,55 +480,55 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
           />
         )}
 
-        {/* Top Toolbar */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 px-2 py-1.5 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg">
+        {/* Top Toolbar - n8n style floating controls */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 px-1.5 py-1 bg-background/95 backdrop-blur-md border border-border/60 rounded-xl shadow-lg">
           {/* Tool selection */}
-          <div className="flex items-center gap-0.5 pr-2 border-r">
+          <div className="flex items-center gap-0.5 pr-1.5 mr-1.5 border-r border-border/40">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant={tool === 'select' ? 'secondary' : 'ghost'}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={() => setTool('select')}
                 >
-                  <MousePointer2 className="h-4 w-4" />
+                  <MousePointer2 className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Select (V)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Select (V)</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant={tool === 'pan' ? 'secondary' : 'ghost'}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={() => setTool('pan')}
                 >
-                  <Hand className="h-4 w-4" />
+                  <Hand className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Pan (Hold Space)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Pan (Space)</TooltipContent>
             </Tooltip>
           </div>
 
           {/* Zoom controls */}
-          <div className="flex items-center gap-0.5 px-2 border-r">
+          <div className="flex items-center gap-0.5 pr-1.5 mr-1.5 border-r border-border/40">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={handleZoomOut}
                 >
-                  <ZoomOut className="h-4 w-4" />
+                  <ZoomOut className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Zoom Out (Ctrl+-)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Zoom Out</TooltipContent>
             </Tooltip>
             
-            <Badge variant="secondary" className="min-w-[50px] justify-center font-mono text-xs">
+            <Badge variant="secondary" className="min-w-[44px] h-6 justify-center font-mono text-[10px] rounded-md px-1.5">
               {Math.round(viewport.zoom * 100)}%
             </Badge>
             
@@ -536,13 +537,13 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={handleZoomIn}
                 >
-                  <ZoomIn className="h-4 w-4" />
+                  <ZoomIn className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Zoom In (Ctrl++)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Zoom In</TooltipContent>
             </Tooltip>
             
             <Tooltip>
@@ -550,43 +551,43 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={handleFitView}
                 >
-                  <Maximize2 className="h-4 w-4" />
+                  <Maximize2 className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Fit View (Ctrl+0)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Fit View</TooltipContent>
             </Tooltip>
           </div>
 
           {/* View options */}
-          <div className="flex items-center gap-0.5 px-2 border-r">
+          <div className="flex items-center gap-0.5 pr-1.5 mr-1.5 border-r border-border/40">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant={showGrid ? 'secondary' : 'ghost'}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={() => setShowGrid(!showGrid)}
                 >
-                  <Grid3X3 className="h-4 w-4" />
+                  <Grid3X3 className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Toggle Grid</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Toggle Grid</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant={isLocked ? 'secondary' : 'ghost'}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={() => setIsLocked(!isLocked)}
                 >
-                  {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                  {isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{isLocked ? 'Unlock Canvas' : 'Lock Canvas'}</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">{isLocked ? 'Unlock' : 'Lock'}</TooltipContent>
             </Tooltip>
           </div>
 
@@ -597,39 +598,39 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={onUndo}
                   disabled={!canUndo}
                 >
-                  <Undo2 className="h-4 w-4" />
+                  <Undo2 className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Undo</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 rounded-lg"
                   onClick={onRedo}
                   disabled={!canRedo}
                 >
-                  <Redo2 className="h-4 w-4" />
+                  <Redo2 className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Redo</TooltipContent>
             </Tooltip>
           </div>
         </div>
 
-        {/* Minimap */}
-        <div className="absolute bottom-4 right-4 w-40 h-28 bg-background/90 backdrop-blur-sm border rounded-lg z-20 overflow-hidden shadow-lg">
-          <div className="w-full h-full p-1.5">
-            <div className="w-full h-full bg-muted/30 rounded relative">
+        {/* Minimap - n8n style compact */}
+        <div className="absolute bottom-4 right-4 w-36 h-24 bg-background/90 backdrop-blur-md border border-border/60 rounded-lg z-20 overflow-hidden shadow-lg">
+          <div className="w-full h-full p-1">
+            <div className="w-full h-full bg-muted/20 rounded relative">
               {/* Viewport indicator */}
               <div 
-                className="absolute border-2 border-primary bg-primary/20 rounded transition-all duration-75"
+                className="absolute border border-primary/60 bg-primary/10 rounded-sm transition-all duration-100"
                 style={{
                   width: `${Math.min(100, 100 / viewport.zoom)}%`,
                   height: `${Math.min(100, 100 / viewport.zoom)}%`,
@@ -637,36 +638,31 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(({
                   top: `${Math.max(0, Math.min(80, 50 - viewport.y / 15))}%`,
                 }}
               />
-              {/* Node indicators */}
-              <div className="absolute inset-0 p-1">
-                {/* Will be populated with node dots */}
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Coordinates */}
-        <div className="absolute bottom-4 left-4 z-20 px-2 py-1 bg-background/90 backdrop-blur-sm border rounded text-xs font-mono text-muted-foreground shadow-lg">
-          <span className="text-primary">{Math.round(-viewport.x / viewport.zoom)}</span>
-          <span className="mx-1">,</span>
-          <span className="text-primary">{Math.round(-viewport.y / viewport.zoom)}</span>
+        {/* Coordinates - n8n style subtle */}
+        <div className="absolute bottom-4 left-4 z-20 px-2 py-1 bg-background/80 backdrop-blur-sm border border-border/40 rounded-md text-[10px] font-mono text-muted-foreground">
+          <span className="text-foreground/70">{Math.round(-viewport.x / viewport.zoom)}</span>
+          <span className="mx-1 opacity-50">,</span>
+          <span className="text-foreground/70">{Math.round(-viewport.y / viewport.zoom)}</span>
         </div>
 
-        {/* Empty state */}
+        {/* Empty state - subtle hint when no children */}
         {React.Children.count(children) === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className={cn(
-              "text-center p-8 rounded-2xl border-2 border-dashed transition-all duration-200",
+              "text-center p-6 rounded-xl border-2 border-dashed transition-all duration-200",
               isDragOver 
-                ? "border-primary bg-primary/5 scale-105" 
-                : "border-muted-foreground/20"
+                ? "border-primary/50 bg-primary/5 scale-[1.02]" 
+                : "border-muted-foreground/15 bg-transparent"
             )}>
-              <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
-                <Crosshair className="h-8 w-8 text-muted-foreground" />
+              <div className="w-12 h-12 rounded-xl bg-muted/50 mx-auto mb-3 flex items-center justify-center">
+                <Crosshair className="h-5 w-5 text-muted-foreground/60" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Start Building Your Flow</h3>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Drag an app from the left panel or double-click to add your first node
+              <p className="text-sm text-muted-foreground/70 max-w-[200px]">
+                Drag apps here to build your flow
               </p>
             </div>
           </div>

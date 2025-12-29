@@ -1603,13 +1603,14 @@ export function EnhancedWorkspace() {
   return (
     <TooltipProvider>
       <div className="h-screen w-full flex flex-col bg-background overflow-hidden">
-        {/* Header */}
-        <header className="h-14 border-b bg-background/95 backdrop-blur-sm flex items-center justify-between px-4 z-30 flex-shrink-0">
-          {/* Left */}
-          <div className="flex items-center gap-4">
+        {/* Header - n8n style with tabs */}
+        <header className="h-12 border-b bg-background/95 backdrop-blur-sm flex items-center justify-between px-3 z-30 flex-shrink-0">
+          {/* Left - Back and name */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => {
                 if (flowState.isDirty) {
                   setLeaveConfirmOpen(true);
@@ -1617,39 +1618,56 @@ export function EnhancedWorkspace() {
                 }
                 setLocation('/dashboard/integrations');
               }}
-              className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
             </Button>
-            
-            <div className="h-6 w-px bg-border" />
             
             <div className="flex items-center gap-2">
               <Input
                 value={flowName}
                 onChange={(e) => setFlowName(e.target.value)}
-                className="h-8 w-40 sm:w-60 border-none bg-transparent font-medium text-sm"
+                className="h-7 w-32 sm:w-48 border-none bg-transparent font-medium text-sm px-1 focus-visible:ring-1 focus-visible:ring-offset-0"
               />
               {flowState.isDirty && (
-                <Badge variant="outline" className="text-[10px]">Unsaved</Badge>
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" title="Unsaved changes" />
               )}
             </div>
           </div>
 
-          {/* Center */}
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-1">
-              {flowState.nodes.length} steps
-            </Badge>
+          {/* Center - Editor/Executions tabs (n8n style) */}
+          <div className="flex items-center">
+            <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
+              <button
+                className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-md transition-all duration-150",
+                  !executionPanelOpen 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setExecutionPanelOpen(false)}
+              >
+                Editor
+              </button>
+              <button
+                className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-md transition-all duration-150",
+                  executionPanelOpen 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setExecutionPanelOpen(true)}
+              >
+                Executions
+              </button>
+            </div>
           </div>
 
-          {/* Right */}
-          <div className="flex items-center gap-2">
+          {/* Right - Actions */}
+          <div className="flex items-center gap-1.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => setShortcutsDialogOpen(true)}
@@ -1657,13 +1675,13 @@ export function EnhancedWorkspace() {
                   <Keyboard className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Keyboard Shortcuts</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Shortcuts</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => setCredentialsPanelOpen(true)}
@@ -1671,87 +1689,59 @@ export function EnhancedWorkspace() {
                   <Key className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Credentials</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Credentials</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={pinnedData.length > 0 ? "secondary" : "outline"}
+                  variant={pinnedData.length > 0 ? "secondary" : "ghost"}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 relative"
                   onClick={() => setDataPinningPanelOpen(true)}
                 >
                   <Pin className="h-4 w-4" />
                   {pinnedData.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-[10px] rounded-full flex items-center justify-center text-primary-foreground">
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary text-[9px] rounded-full flex items-center justify-center text-primary-foreground font-medium">
                       {pinnedData.length}
                     </span>
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Pinned Data ({pinnedData.length})</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs">Pinned Data</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setTemplatesGalleryOpen(true)}
-                >
-                  <Layout className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Templates</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setExecutionPanelOpen(!executionPanelOpen)}
-                >
-                  <Activity className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Execution Logs</TooltipContent>
-            </Tooltip>
-
-            <div className="h-6 w-px bg-border" />
+            <div className="w-px h-5 bg-border mx-1" />
 
             <Button
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="h-7 text-xs gap-1.5 px-2.5"
               onClick={handleSave}
               disabled={isSaving}
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-3.5 w-3.5" />
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
 
             <Button
               size="sm"
-              className="gap-2"
+              className="h-7 text-xs gap-1.5 px-2.5"
               onClick={handleStartExecution}
               disabled={flowState.nodes.length === 0}
             >
-              <Play className="h-4 w-4" />
-              Execute
+              <Play className="h-3.5 w-3.5" />
+              Test
             </Button>
 
             <Button
-              variant={isActive ? "destructive" : "default"}
+              variant={isActive ? "destructive" : "secondary"}
               size="sm"
-              className="gap-2"
+              className="h-7 text-xs gap-1.5 px-2.5"
               onClick={() => setIsActive(!isActive)}
             >
-              <Power className="h-4 w-4" />
-              {isActive ? 'Deactivate' : 'Activate'}
+              <Power className="h-3.5 w-3.5" />
+              {isActive ? 'Active' : 'Inactive'}
             </Button>
 
             <DropdownMenu>
@@ -1760,7 +1750,16 @@ export function EnhancedWorkspace() {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setTemplatesGalleryOpen(true);
+                  }}
+                >
+                  <Layout className="h-4 w-4 mr-2" />
+                  Templates
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(e) => {
                     e.preventDefault();
@@ -1768,7 +1767,7 @@ export function EnhancedWorkspace() {
                   }}
                 >
                   <Copy className="h-4 w-4 mr-2" />
-                  Duplicate Flow
+                  Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(e) => {
@@ -1788,15 +1787,6 @@ export function EnhancedWorkspace() {
                   <Share2 className="h-4 w-4 mr-2" />
                   Share
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    toast({ title: 'Coming soon', description: 'Version history is not available yet.' });
-                  }}
-                >
-                  <History className="h-4 w-4 mr-2" />
-                  Version History
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive"
@@ -1806,7 +1796,7 @@ export function EnhancedWorkspace() {
                   }}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Flow
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1917,31 +1907,30 @@ export function EnhancedWorkspace() {
                 </div>
               ))}
 
-              {/* Empty canvas onboarding */}
-              {flowState.nodes.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-[520px] max-w-[92vw] rounded-xl border bg-background/95 p-8 shadow-sm text-center pointer-events-auto">
-                    <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl">
-                      ⚡
+              {/* Empty canvas onboarding - n8n style dashed node */}
+              {flowState.nodes.length === 0 && !emptyCanvasTriggerOpen && (
+                <div 
+                  className="absolute pointer-events-auto cursor-pointer group"
+                  style={{ left: 400, top: 200 }}
+                  onClick={() => setEmptyCanvasTriggerOpen(true)}
+                >
+                  {/* Dashed trigger node placeholder */}
+                  <div className="w-[280px] min-h-[80px] rounded-xl border-2 border-dashed border-muted-foreground/30 bg-background/50 backdrop-blur-sm flex flex-col items-center justify-center p-6 transition-all duration-200 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg hover:scale-[1.02]">
+                    <div className="w-10 h-10 rounded-lg bg-muted/80 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+                      <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                    <h2 className="mt-4 text-xl font-semibold">Start your workflow</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Pick a trigger to create your first step.
-                    </p>
-                    <div className="mt-6 flex flex-col items-center gap-3">
-                      <Button
-                        className="w-full"
-                        onClick={() => setEmptyCanvasTriggerOpen(true)}
-                      >
-                        Add first step
-                      </Button>
-                      <button
-                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                        onClick={() => setTemplatesGalleryOpen(true)}
-                      >
-                        Or start from a template
-                      </button>
-                    </div>
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                      Add first step
+                    </span>
+                    <span className="text-xs text-muted-foreground/60 mt-1">
+                      Click to select a trigger
+                    </span>
+                  </div>
+                  
+                  {/* Connection line hint going right */}
+                  <div className="absolute top-1/2 -right-8 -translate-y-1/2 flex items-center opacity-30 group-hover:opacity-50 transition-opacity">
+                    <div className="w-6 h-0.5 bg-muted-foreground/40" />
+                    <div className="w-2 h-2 border-t-2 border-r-2 border-muted-foreground/40 rotate-45 -ml-1" />
                   </div>
                 </div>
               )}

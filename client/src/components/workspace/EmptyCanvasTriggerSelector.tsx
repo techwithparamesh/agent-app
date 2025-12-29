@@ -143,27 +143,27 @@ function TriggerItem({ trigger, onClick, showArrow }: TriggerItemProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+      className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-muted/60 transition-all duration-150 text-left group border border-transparent hover:border-muted-foreground/10"
     >
       <div
-        className="w-8 h-8 rounded-md flex items-center justify-center text-lg shrink-0"
-        style={{ backgroundColor: `${trigger.color}20` }}
+        className="w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 shadow-sm transition-transform duration-150 group-hover:scale-105"
+        style={{ backgroundColor: `${trigger.color}18`, border: `1px solid ${trigger.color}30` }}
       >
         {trigger.icon}
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pt-0.5">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm">{trigger.name}</span>
+          <span className="font-medium text-sm group-hover:text-foreground transition-colors">{trigger.name}</span>
           {trigger.popular && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded">Popular</span>
+            <span className="px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded font-medium">Popular</span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
           {trigger.description}
         </p>
       </div>
       {(showArrow || trigger.hasSubmenu) && (
-        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-150 mt-2.5 group-hover:translate-x-0.5" />
       )}
     </button>
   );
@@ -208,78 +208,91 @@ export function EmptyCanvasTriggerSelector({
   };
 
   return (
-    <div className={cn("absolute inset-0 flex items-center justify-center sm:justify-end sm:pr-6 px-4 pointer-events-none", className)}>
-      {/* Right side - Trigger selector panel */}
-      <div className="w-full max-w-md sm:w-96 bg-background border rounded-lg shadow-lg overflow-hidden pointer-events-auto max-h-[80vh]">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold text-lg">
-            {showAppEvents ? 'Select an app' : 'What triggers this workflow?'}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {showAppEvents 
-              ? 'Choose which app event should trigger this workflow'
-              : 'A trigger is a step that starts your workflow'
-            }
-          </p>
+    <div className={cn("absolute inset-0 flex items-center justify-center pointer-events-none", className)}>
+      {/* Centered trigger selector - n8n style */}
+      <div 
+        className="pointer-events-auto flex gap-4 items-start"
+        style={{ marginLeft: '280px' }} // Offset to account for dashed node width
+      >
+        {/* Connection line from dashed node */}
+        <div className="flex items-center self-center opacity-40">
+          <div className="w-8 h-0.5 bg-muted-foreground/60" />
         </div>
-
-        {/* Search */}
-        <div className="p-3 border-b">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search triggers..."
-              className="pl-9"
-            />
+        
+        {/* Trigger panel */}
+        <div className="w-[380px] bg-background border rounded-xl shadow-xl overflow-hidden max-h-[75vh] flex flex-col">
+          {/* Header */}
+          <div className="p-5 border-b bg-gradient-to-b from-muted/30 to-transparent">
+            <h3 className="font-semibold text-base">
+              {showAppEvents ? 'Select an app' : 'What triggers this workflow?'}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              {showAppEvents 
+                ? 'Choose which app event should trigger this workflow'
+                : 'Select a trigger to start building your automation'
+              }
+            </p>
           </div>
-        </div>
 
-        {/* Trigger list */}
-        <ScrollArea className="h-[350px]">
-          <div className="p-2">
-            {showAppEvents ? (
-              <>
-                <button
-                  onClick={() => setShowAppEvents(false)}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2 px-2"
-                >
-                  ← Back to triggers
-                </button>
-                {filteredAppEvents.map((trigger) => (
+          {/* Search */}
+          <div className="px-4 py-3 border-b bg-muted/20">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search triggers..."
+                className="pl-9 h-9 bg-background border-muted-foreground/20 focus:border-primary"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          {/* Trigger list */}
+          <ScrollArea className="flex-1 max-h-[380px]">
+            <div className="p-2">
+              {showAppEvents ? (
+                <>
+                  <button
+                    onClick={() => setShowAppEvents(false)}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-3 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors"
+                  >
+                    ← Back to triggers
+                  </button>
+                  {filteredAppEvents.map((trigger) => (
+                    <TriggerItem
+                      key={trigger.id}
+                      trigger={trigger}
+                      onClick={() => onSelectTrigger(trigger.id)}
+                    />
+                  ))}
+                </>
+              ) : (
+                filteredTriggers.map((trigger) => (
                   <TriggerItem
                     key={trigger.id}
                     trigger={trigger}
-                    onClick={() => onSelectTrigger(trigger.id)}
+                    onClick={() => handleTriggerClick(trigger)}
+                    showArrow={trigger.hasSubmenu}
                   />
-                ))}
-              </>
-            ) : (
-              filteredTriggers.map((trigger) => (
-                <TriggerItem
-                  key={trigger.id}
-                  trigger={trigger}
-                  onClick={() => handleTriggerClick(trigger)}
-                  showArrow={trigger.hasSubmenu}
-                />
-              ))
-            )}
-          </div>
-        </ScrollArea>
-        
-        {/* Template shortcut */}
-        {onStartFromTemplate && (
-          <div className="p-3 border-t bg-muted/30">
-            <button
-              onClick={onStartFromTemplate}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-            >
-              <Layout className="h-4 w-4" />
-              Or start from a template
-            </button>
-          </div>
-        )}
+                ))
+              )}
+            </div>
+          </ScrollArea>
+          
+          {/* Template shortcut */}
+          {onStartFromTemplate && (
+            <div className="p-4 border-t bg-muted/20">
+              <button
+                onClick={onStartFromTemplate}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-muted/50"
+              >
+                <Layout className="h-4 w-4" />
+                Or start from a template
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

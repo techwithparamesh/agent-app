@@ -144,25 +144,19 @@ export const appCatalog: AppDefinition[] = (() => {
   return out;
 })();
 
-// Categories list
+// Categories list - n8n style ordering: Triggers first, then Actions, then Logic
 const categories = [
-  { id: 'all', label: 'All Apps', count: appCatalog.length },
-  { id: 'triggers', label: '⚡ Triggers' },
-  { id: 'logic', label: '🔀 Logic' },
+  { id: 'all', label: 'All' },
+  { id: 'triggers', label: 'Triggers', icon: '⚡' },
+  { id: 'actions', label: 'Actions', icon: '▶️' },
+  { id: 'logic', label: 'Logic', icon: '🔀' },
+  { id: 'ai', label: 'AI' },
   { id: 'communication', label: 'Communication' },
   { id: 'email', label: 'Email' },
-  { id: 'google', label: 'Google' },
-  { id: 'crm', label: 'CRM & Sales' },
+  { id: 'crm', label: 'CRM' },
   { id: 'automation', label: 'Automation' },
-  { id: 'storage', label: 'Database & Storage' },
-  { id: 'ecommerce', label: 'E-commerce' },
-  { id: 'productivity', label: 'Productivity' },
-  { id: 'developer', label: 'Developer Tools' },
-  { id: 'ai', label: 'AI & ML' },
-  { id: 'marketing', label: 'Marketing' },
-  { id: 'support', label: 'Support' },
-  { id: 'voice', label: 'Voice' },
-  { id: 'video', label: 'Video' },
+  { id: 'storage', label: 'Storage' },
+  { id: 'developer', label: 'Developer' },
 ];
 
 interface AppsPanelProps {
@@ -282,76 +276,79 @@ export function AppsPanel({
 
   return (
     <div className={cn(
-      "w-72 h-full bg-background/95 backdrop-blur-sm border-r flex flex-col",
-      highlightAddAction && "ring-2 ring-primary ring-inset"
+      "w-64 h-full bg-background border-r flex flex-col",
+      highlightAddAction && "ring-2 ring-primary/50 ring-inset"
     )}>
-      {/* Header */}
-      <div className="p-4 border-b space-y-3">
+      {/* Header - n8n style compact */}
+      <div className="px-3 py-3 border-b space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-sm">
-            {highlightAddAction ? "Select an App" : "Apps"}
-          </h2>
+          <span className="font-medium text-sm text-foreground/90">
+            {highlightAddAction ? "Add step" : "Nodes"}
+          </span>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
             onClick={onToggleCollapse}
           >
-            <ChevronRight className="h-4 w-4 rotate-180" />
+            <ChevronRight className="h-3.5 w-3.5 rotate-180" />
           </Button>
         </div>
 
         {highlightAddAction && (
-          <div className="p-2 bg-primary/10 border border-primary/30 rounded-lg">
-            <p className="text-xs text-primary font-medium">
-              👆 Click an app below to add it as the next action in your flow
+          <div className="px-2.5 py-2 bg-primary/5 border border-primary/20 rounded-lg">
+            <p className="text-xs text-primary/90">
+              Select a node to add to your workflow
             </p>
           </div>
         )}
         
-        {/* Search */}
+        {/* Search - n8n style */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search apps..."
+            placeholder="Search nodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9 bg-muted/50"
+            className="pl-8 h-8 text-sm bg-muted/30 border-muted-foreground/20 focus:border-primary/50"
             autoFocus={highlightAddAction}
           />
         </div>
       </div>
 
-      {/* Categories tabs */}
-      <div className="px-3 py-2 border-b overflow-x-auto">
-        <div className="flex gap-1 pb-1">
-          {categories.slice(0, 6).map(category => (
-            <Button
+      {/* Categories tabs - n8n style pill tabs */}
+      <div className="px-2 py-2 border-b bg-muted/20">
+        <div className="flex flex-wrap gap-1">
+          {categories.slice(0, 7).map(category => (
+            <button
               key={category.id}
-              variant={activeCategory === category.id ? "secondary" : "ghost"}
-              size="sm"
-              className="h-7 px-2.5 text-xs whitespace-nowrap flex-shrink-0"
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all duration-150",
+                activeCategory === category.id 
+                  ? "bg-background text-foreground shadow-sm border border-border/50" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
               onClick={() => setActiveCategory(category.id)}
             >
               {category.label}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
 
       {/* Apps list */}
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-3">
+        <div className="p-2 space-y-2">
           {/* Recent Apps */}
           {!searchQuery && activeCategory === 'all' && (
             <Collapsible
               open={expandedCategories.includes('recent')}
               onOpenChange={() => toggleCategory('recent')}
             >
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5" />
-                  Recently Used
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  Recent
                 </div>
                 <ChevronRight className={cn(
                   "h-3.5 w-3.5 transition-transform",
@@ -380,9 +377,9 @@ export function AppsPanel({
               open={expandedCategories.includes('popular')}
               onOpenChange={() => toggleCategory('popular')}
             >
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                <div className="flex items-center gap-2">
-                  <Star className="h-3.5 w-3.5" />
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide">
+                <div className="flex items-center gap-1.5">
+                  <Star className="h-3 w-3" />
                   Popular
                 </div>
                 <ChevronRight className={cn(
@@ -391,7 +388,7 @@ export function AppsPanel({
                 )} />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-2 gap-1.5 mt-2">
                   {popularApps.slice(0, 8).map(app => (
                     <AppCard
                       key={app.id}
@@ -406,7 +403,7 @@ export function AppsPanel({
             </Collapsible>
           )}
 
-          <Separator className="my-2" />
+          <Separator className="my-1.5" />
 
           {/* Grouped Apps by Category */}
           {activeCategory === 'all' ? (
@@ -418,26 +415,26 @@ export function AppsPanel({
                   open={expandedCategories.includes(category)}
                   onOpenChange={() => toggleCategory(category)}
                 >
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    <div className="flex items-center gap-2">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5">
                       <div className={cn(
-                        "w-5 h-5 rounded flex items-center justify-center",
+                        "w-4 h-4 rounded flex items-center justify-center",
                         categoryColors[category] || "bg-gray-500"
                       )}>
-                        <CategoryIcon className="h-3 w-3 text-white" />
+                        <CategoryIcon className="h-2.5 w-2.5 text-white" />
                       </div>
                       {categories.find(c => c.id === category)?.label || category}
-                      <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal">
                         {apps.length}
                       </Badge>
                     </div>
                     <ChevronRight className={cn(
-                      "h-3.5 w-3.5 transition-transform",
+                      "h-3 w-3 transition-transform",
                       expandedCategories.includes(category) && "rotate-90"
                     )} />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="space-y-1 mt-2">
+                    <div className="space-y-0.5 mt-1.5">
                       {apps.map(app => (
                         <AppCard
                           key={app.id}
@@ -503,15 +500,15 @@ function AppCard({
         draggable
         onDragStart={(e) => onDragStart?.(e, app)}
         onClick={onClick}
-        className="flex items-center gap-2 p-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 cursor-grab active:cursor-grabbing transition-all group"
+        className="flex items-center gap-1.5 p-1.5 rounded-md border border-transparent bg-muted/30 hover:bg-muted/60 hover:border-border/50 cursor-grab active:cursor-grabbing transition-all duration-150 group"
       >
         <div
-          className="w-8 h-8 rounded-md flex items-center justify-center text-sm flex-shrink-0"
-          style={{ backgroundColor: app.color + '20' }}
+          className="w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0"
+          style={{ backgroundColor: app.color + '15' }}
         >
           {app.icon}
         </div>
-        <span className="text-xs font-medium truncate">{app.name}</span>
+        <span className="text-[11px] font-medium truncate text-muted-foreground group-hover:text-foreground transition-colors">{app.name}</span>
       </div>
     );
   }
@@ -521,23 +518,23 @@ function AppCard({
       draggable
       onDragStart={(e) => onDragStart?.(e, app)}
       onClick={onClick}
-      className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 cursor-grab active:cursor-grabbing transition-all group"
+      className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-all duration-150 group"
     >
       <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
-        style={{ backgroundColor: app.color + '20' }}
+        className="w-7 h-7 rounded-md flex items-center justify-center text-sm flex-shrink-0"
+        style={{ backgroundColor: app.color + '15' }}
       >
         {app.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+        <p className="text-[13px] font-medium truncate group-hover:text-foreground text-muted-foreground transition-colors">
           {app.name}
         </p>
-        <p className="text-xs text-muted-foreground truncate">
+        <p className="text-[10px] text-muted-foreground/70 truncate leading-tight">
           {app.description}
         </p>
       </div>
-      <GripVertical className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+      <GripVertical className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors opacity-0 group-hover:opacity-100" />
     </div>
   );
 }
