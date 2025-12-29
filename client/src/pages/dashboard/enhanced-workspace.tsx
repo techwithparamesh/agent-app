@@ -58,6 +58,7 @@ import {
   Pin,
   Layout,
   Database,
+  Plus,
 } from "lucide-react";
 
 // Workspace components
