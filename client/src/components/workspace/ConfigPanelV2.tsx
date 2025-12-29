@@ -613,7 +613,7 @@ export function ConfigPanelV2({
   }, [node?.appId, selectedTriggerId, getMissingRequiredFields]);
 
   // Helper functions (must be defined before step calculation)
-  function isTriggerSettingsComplete(): boolean {
+  const isTriggerSettingsComplete = useCallback((): boolean => {
     if (!triggerType) return false;
     switch (triggerType) {
       case 'poll':
@@ -629,17 +629,15 @@ export function ConfigPanelV2({
         if (selectedTriggerId) return missingTriggerFields.length === 0;
         return true;
     }
-  }
-
-  function isSelectedActionConfigured(): boolean {
-    if (!selectedActionId) return false;
-    const appConfig = node?.appId ? getAppConfig(node.appId) : null;
-    const selectedAction = appConfig?.actions?.find((a) => a.id === selectedActionId);
-    if (!selectedAction) return false;
-    
-    const missingFields = getMissingRequiredFields(selectedAction.fields || []);
-    return missingFields.length === 0;
-  }
+  }, [
+    triggerType,
+    pollingInterval,
+    schedulePreset,
+    customCron,
+    selectedTriggerId,
+    missingTriggerFields.length,
+    eventType,
+  ]);
 
   // Determine whether this node/app actually requires credentials.
   const stepAppConfig = node?.appId ? getAppConfig(node.appId) : null;
@@ -764,6 +762,8 @@ export function ConfigPanelV2({
     testResult,
     selectedActionId,
     isManualTrigger,
+    isSelectedActionConfigured,
+    isTriggerSettingsComplete,
   ]);
 
   const progress = ((currentStep + 1) / steps.length) * 100;
