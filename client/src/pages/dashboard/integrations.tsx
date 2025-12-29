@@ -1198,6 +1198,18 @@ function IntegrationsPageContent() {
     },
   });
 
+  // Fetch user's saved workflows (flows)
+  const { data: workflowsData, isLoading: workflowsLoading } = useQuery({
+    queryKey: ['/api/workflows'],
+    queryFn: async () => {
+      const res = await fetch('/api/workflows', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch workflows');
+      return res.json() as Promise<any[]>;
+    },
+  });
+
+  const savedWorkflows = workflowsData || [];
+
   // Fetch supported apps from backend (used to badge/disable catalog items)
   const { data: supportedAppsData } = useQuery({
     queryKey: ['/api/integrations/supported-apps'],
@@ -1580,6 +1592,108 @@ function IntegrationsPageContent() {
                 })}
               </div>
             )}
+
+            {/* My Flows Section */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Workflow className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">My Flows</h3>
+                  <Badge variant="secondary">{savedWorkflows.length}</Badge>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => openWorkspace()}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Flow
+                </Button>
+              </div>
+              
+              {workflowsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : savedWorkflows.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-10 text-center">
+                    <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Workflow className="h-7 w-7 text-primary" />
+                    </div>
+                    <h4 className="font-medium mb-1">No flows yet</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Create automated workflows using the flow builder
+                    </p>
+                    <Button size="sm" onClick={() => openWorkspace()}>
+                      <Layout className="h-4 w-4 mr-2" />
+                      Open Flow Builder
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {savedWorkflows.map((workflow: any) => (
+                    <Card 
+                      key={workflow.id} 
+                      className="hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => setLocation(`/dashboard/integrations/workspace/${workflow.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Workflow className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{workflow.name || 'Untitled Flow'}</span>
+                                {workflow.isActive ? (
+                                  <Badge className="h-5">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Active
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="h-5">Inactive</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                <span className="flex items-center gap-1">
+                                  <GitBranch className="h-3 w-3" />
+                                  {workflow.nodes?.length || 0} nodes
+                                </span>
+                                {workflow.updatedAt && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {new Date(workflow.updatedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/dashboard/integrations/workspace/${workflow.id}`);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* Browse Apps Tab */}
