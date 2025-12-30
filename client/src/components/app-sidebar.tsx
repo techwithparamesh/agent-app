@@ -373,7 +373,7 @@ export function AppSidebar() {
                         <SidebarMenuSubItem key={item.category}>
                           <SidebarMenuSubButton asChild>
                             <Link 
-                              href={`/dashboard/templates?category=${item.category}`}
+                              href={`/dashboard/templates?category=${encodeURIComponent(item.category)}`}
                               className="flex items-center gap-2"
                             >
                               <item.icon className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,9 @@ interface Template {
   useCases: string[];
   estimatedSetup: string;
   popularity: "High" | "Medium" | "New";
+  toneOfVoice?: string;
+  purpose?: string;
+  welcomeMessage?: string;
 }
 
 const templates: Template[] = [
@@ -418,7 +421,7 @@ Be professional, informative, and represent the company positively. Respect conf
     description: "Perfect for clinics, salons, consultants - schedule, reschedule, and manage appointments via chat",
     icon: Clock,
     category: "Appointments",
-    tags: ["Booking", "Schedule", "Calendar", "Reminders"],
+    tags: ["WhatsApp", "Booking", "Schedule", "Calendar", "Reminders"],
     color: "text-primary",
     bgColor: "bg-primary/10",
     features: [
@@ -477,7 +480,7 @@ You: "When would you prefer - any specific date and time?"
     description: "Handle payment queries, send invoices, payment reminders, and billing support via WhatsApp",
     icon: Building2,
     category: "Billing",
-    tags: ["Invoice", "Payment", "Billing", "Reminders"],
+    tags: ["WhatsApp", "Invoice", "Payment", "Billing", "Reminders"],
     color: "text-primary",
     bgColor: "bg-primary/10",
     features: [
@@ -532,7 +535,7 @@ Help customers with payment and invoice related queries.
     description: "Capture leads, qualify prospects, schedule demos, and nurture potential customers",
     icon: TrendingUp,
     category: "Sales",
-    tags: ["Leads", "Sales", "Demo", "Qualification"],
+    tags: ["WhatsApp", "Leads", "Sales", "Demo", "Qualification"],
     color: "text-primary",
     bgColor: "bg-primary/10",
     features: [
@@ -582,7 +585,7 @@ Engage with potential customers, understand their needs, and capture lead inform
     description: "Track orders, handle returns, delivery updates, and e-commerce customer support",
     icon: ShoppingCart,
     category: "Orders",
-    tags: ["Orders", "Delivery", "Returns", "Tracking"],
+    tags: ["WhatsApp", "Orders", "Delivery", "Returns", "Tracking"],
     color: "text-primary",
     bgColor: "bg-primary/10",
     features: [
@@ -810,7 +813,73 @@ const categories = [
   { value: "Business", label: "Business & B2B" },
   { value: "Human Resources", label: "Human Resources" },
   { value: "WhatsApp", label: "WhatsApp" },
+  { value: "Finance", label: "Finance & Banking" },
+  { value: "Legal", label: "Legal Services" },
+  { value: "Other", label: "Other" },
 ];
+
+type SavedCustomTemplate = {
+  id?: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  systemPrompt?: string;
+  suggestedQuestions?: unknown;
+  tags?: unknown;
+  toneOfVoice?: string;
+  purpose?: string;
+  welcomeMessage?: string;
+};
+
+const WHATSAPP_CATEGORY = "WhatsApp";
+
+function safeReadCustomTemplates(): Template[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("customTemplates");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((item: SavedCustomTemplate): Template | null => {
+        const id = typeof item.id === "string" ? item.id : `custom_${Date.now()}`;
+        const name = typeof item.name === "string" ? item.name : "";
+        const description = typeof item.description === "string" ? item.description : "";
+        const category = typeof item.category === "string" ? item.category : "Other";
+        const systemPrompt = typeof item.systemPrompt === "string" ? item.systemPrompt : "";
+        const suggestedQuestions = Array.isArray(item.suggestedQuestions)
+          ? item.suggestedQuestions.filter((q): q is string => typeof q === "string")
+          : [];
+        const tags = Array.isArray(item.tags) ? item.tags.filter((t): t is string => typeof t === "string") : [];
+
+        if (!name || !systemPrompt) return null;
+
+        return {
+          id,
+          name,
+          description,
+          icon: LayoutTemplate,
+          category,
+          tags,
+          systemPrompt,
+          suggestedQuestions,
+          color: "text-primary",
+          bgColor: "bg-primary/10",
+          features: [],
+          useCases: [],
+          estimatedSetup: "Custom",
+          popularity: "New",
+          toneOfVoice: typeof item.toneOfVoice === "string" ? item.toneOfVoice : undefined,
+          purpose: typeof item.purpose === "string" ? item.purpose : undefined,
+          welcomeMessage: typeof item.welcomeMessage === "string" ? item.welcomeMessage : undefined,
+        };
+      })
+      .filter((t): t is Template => t !== null);
+  } catch {
+    return [];
+  }
+}
 
 export default function TemplatesPage() {
   const { toast } = useToast();
@@ -819,6 +888,16 @@ export default function TemplatesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
+
+  useEffect(() => {
+    setCustomTemplates(safeReadCustomTemplates());
+  }, []);
+
+  const allTemplates = useMemo(() => {
+    if (customTemplates.length === 0) return templates;
+    return [...templates, ...customTemplates];
+  }, [customTemplates]);
 
   // Read category from URL query parameter and react to URL changes
   useEffect(() => {
@@ -842,12 +921,16 @@ export default function TemplatesPage() {
     }
   };
 
-  const filteredTemplates = templates.filter((template) => {
+  const filteredTemplates = allTemplates.filter((template) => {
     const matchesSearch =
       template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
+    const matchesCategory =
+      selectedCategory === "all" ||
+      (selectedCategory === WHATSAPP_CATEGORY
+        ? template.category === WHATSAPP_CATEGORY || template.tags.includes(WHATSAPP_CATEGORY)
+        : template.category === selectedCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -855,9 +938,13 @@ export default function TemplatesPage() {
     // Store template in sessionStorage for the create agent page to pick up
     sessionStorage.setItem("agentTemplate", JSON.stringify({
       name: template.name,
+      description: template.description,
       systemPrompt: template.systemPrompt,
       suggestedQuestions: template.suggestedQuestions,
       category: template.category,
+      toneOfVoice: template.toneOfVoice,
+      purpose: template.purpose,
+      welcomeMessage: template.welcomeMessage,
     }));
     
     toast({
@@ -906,7 +993,7 @@ export default function TemplatesPage() {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Bot className="h-4 w-4" />
-            <span>{filteredTemplates.length} of {templates.length} templates</span>
+            <span>{filteredTemplates.length} of {allTemplates.length} templates</span>
           </div>
         </div>
 

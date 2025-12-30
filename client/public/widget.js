@@ -6,6 +6,7 @@
  * 
  * Configuration options (data attributes):
  * - data-agent-id: Required. Your agent ID
+ * - data-widget-key: Optional. Public widget key for the agent (recommended)
  * - data-position: Widget position (bottom-right, bottom-left, top-right, top-left)
  * - data-primary-color: Main color for the widget (hex code)
  * - data-agent-name: Display name for the agent
@@ -21,9 +22,12 @@
   // Get configuration from script tag
   const scriptTag = document.currentScript || document.querySelector('script[data-agent-id]');
   const agentId = scriptTag?.getAttribute('data-agent-id');
+  const widgetKey = scriptTag?.getAttribute('data-widget-key') || '';
   const position = scriptTag?.getAttribute('data-position') || 'bottom-right';
-  const primaryColor = scriptTag?.getAttribute('data-primary-color') || '#6366f1';
-  const agentName = scriptTag?.getAttribute('data-agent-name') || 'AI Assistant';
+  // Backward compatibility: older docs used data-color
+  const primaryColor = scriptTag?.getAttribute('data-primary-color') || scriptTag?.getAttribute('data-color') || '#6366f1';
+  // Backward compatibility: older docs used data-name
+  const agentName = scriptTag?.getAttribute('data-agent-name') || scriptTag?.getAttribute('data-name') || 'AI Assistant';
   const greeting = scriptTag?.getAttribute('data-greeting') || 'Hi! How can I help you today?';
   const avatarUrl = scriptTag?.getAttribute('data-avatar-url') || '';
   const showBranding = scriptTag?.getAttribute('data-show-branding') !== 'false';
@@ -610,10 +614,14 @@
       const response = await fetch(`${baseUrl}/api/widget/chat`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          // Use a "simple" request to avoid CORS preflight (OPTIONS).
+          // Server accepts both legacy application/json and text/plain.
+          'Content-Type': 'text/plain',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           agentId: agentId,
+          widgetKey: widgetKey || undefined,
           message: message,
           sessionId: sessionId,
         }),
@@ -621,11 +629,14 @@
 
       hideTyping();
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        const errorText = data.response || data.message || 'Sorry, I encountered an error. Please try again.';
+        addMessage(errorText, 'assistant');
+        return;
       }
 
-      const data = await response.json();
       addMessage(data.response, 'assistant');
     } catch (error) {
       hideTyping();

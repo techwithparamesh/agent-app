@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import crypto from "crypto";
 import { storage } from "./storage";
+import { isSameOrigin, parseHttpUrl, validateScanTargetUrl } from "./utils/scanSecurity";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertAgentSchema, insertKnowledgeBaseSchema, type KnowledgeBase, leads } from "@shared/schema";
@@ -25,6 +26,86 @@ import {
 } from "./middleware/rateLimit";
 import { v4 as uuidv4 } from "uuid";
 import rateLimit from "express-rate-limit";
+import {
+  isUuidLike,
+  generateWidgetKey,
+  isOriginAllowed,
+  deriveAllowedOriginsFromWebsiteUrl,
+  deriveSaasAllowedOriginsFromAppUrl,
+  parseBooleanEnv,
+  parseCsvEnv,
+  parseIntEnv,
+} from "./utils/widgetSecurity";
+import { APP_CONFIG } from "./config";
+
+type ScanUserGateState = {
+  active: boolean;
+  activeSinceMs: number;
+  cooldownUntilMs: number;
+};
+
+const scanUserGateStore = new Map<string, ScanUserGateState>();
+
+setInterval(() => {
+  const now = Date.now();
+  const keysToDelete: string[] = [];
+  scanUserGateStore.forEach((state, key) => {
+    const isIdle = !state.active;
+    const cooldownExpired = now > state.cooldownUntilMs;
+    if (isIdle && cooldownExpired) keysToDelete.push(key);
+
+    // Safety valve: if something went wrong and a scan is "active" forever,
+    // clear it after 30 minutes.
+    if (state.active && now - state.activeSinceMs > 30 * 60 * 1000) {
+      scanUserGateStore.set(key, {
+        active: false,
+        activeSinceMs: 0,
+        cooldownUntilMs: now + 60 * 1000,
+      });
+    }
+  });
+  keysToDelete.forEach((key) => scanUserGateStore.delete(key));
+}, 5 * 60 * 1000);
+
+function getScanUserKey(req: any) {
+  const userId = req.user?.claims?.sub;
+  return `user:${userId || req.ip || req.socket?.remoteAddress || 'unknown'}`;
+}
+
+function tryAcquireScanGate(params: { key: string; cooldownMs: number }) {
+  const { key, cooldownMs } = params;
+  const now = Date.now();
+  const state = scanUserGateStore.get(key);
+
+  if (state?.active) {
+    return { allowed: false as const, retryAfterSeconds: 5, reason: 'active' as const };
+  }
+
+  if (state && now < state.cooldownUntilMs) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((state.cooldownUntilMs - now) / 1000));
+    return { allowed: false as const, retryAfterSeconds, reason: 'cooldown' as const };
+  }
+
+  scanUserGateStore.set(key, {
+    active: true,
+    activeSinceMs: now,
+    cooldownUntilMs: 0,
+  });
+
+  return { allowed: true as const, retryAfterSeconds: 0, reason: 'ok' as const };
+}
+
+function releaseScanGate(params: { key: string; cooldownMs: number }) {
+  const { key, cooldownMs } = params;
+  const now = Date.now();
+  const existing = scanUserGateStore.get(key);
+  scanUserGateStore.set(key, {
+    active: false,
+    activeSinceMs: 0,
+    cooldownUntilMs: now + cooldownMs,
+  });
+  return existing;
+}
 
 // Schema for updating agents - only allow safe fields
 const updateAgentSchema = z.object({
@@ -38,7 +119,7 @@ const updateAgentSchema = z.object({
   suggestedQuestions: z.string().max(2000).optional().nullable(),
   isActive: z.boolean().optional(),
   // WhatsApp agent fields
-  agentType: z.string().max(50).optional(),
+  agentType: z.enum(["website", "whatsapp"]).optional(),
   businessCategory: z.string().max(100).optional(),
   capabilities: z.array(z.string()).optional(),
   // Allow nulls (client often sends null to clear fields) and allow custom keys
@@ -61,11 +142,35 @@ const updateAgentSchema = z.object({
   widgetConfig: z.object({
     displayName: z.string().max(100).optional().nullable(),
     primaryColor: z.string().max(20).optional().nullable(),
-    position: z.string().max(20).optional().nullable(),
-    avatarUrl: z.string().optional().nullable(),
+    position: z.enum(["bottom-right", "bottom-left", "top-right", "top-left"]).optional().nullable(),
+    avatarUrl: z.string().url().optional().nullable(),
     showBranding: z.boolean().optional().nullable(),
     autoOpen: z.boolean().optional().nullable(),
-    responseFormat: z.string().optional().nullable(),
+    responseFormat: z.enum(["structured", "conversational"]).optional().nullable(),
+    widgetKey: z.string().max(128).optional().nullable(),
+    allowedOrigins: z
+      .array(
+        z
+          .string()
+          .max(2048)
+          .refine(
+            (value) => {
+              if (value === "*") return true;
+              // allow wildcard subdomains like https://*.example.com
+              const normalized = value.replace("*.", "wildcard.");
+              try {
+                const parsed = new URL(normalized);
+                return parsed.protocol === "http:" || parsed.protocol === "https:";
+              } catch {
+                return false;
+              }
+            },
+            { message: "Invalid origin pattern" }
+          )
+      )
+      .max(50)
+      .optional()
+      .nullable(),
   }).optional().nullable(),
 });
 
@@ -523,7 +628,28 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const agents = await storage.getAgentsByUserId(userId);
-      res.json(agents);
+
+      // Backfill widgetKey/allowedOrigins for existing website agents (one-time, on authenticated fetch).
+      await Promise.all(
+        agents.map(async (agent) => {
+          if ((agent as any).agentType !== "website") return;
+          const widgetConfig = ((agent as any).widgetConfig || {}) as any;
+          const nextWidgetKey = widgetConfig.widgetKey || generateWidgetKey();
+          const nextAllowedOrigins =
+            Array.isArray(widgetConfig.allowedOrigins) && widgetConfig.allowedOrigins.length > 0
+              ? widgetConfig.allowedOrigins
+              : deriveAllowedOriginsFromWebsiteUrl((agent as any).websiteUrl);
+
+          if (nextWidgetKey === widgetConfig.widgetKey && nextAllowedOrigins === widgetConfig.allowedOrigins) return;
+
+          await storage.updateAgent(agent.id, {
+            widgetConfig: { ...widgetConfig, widgetKey: nextWidgetKey, allowedOrigins: nextAllowedOrigins },
+          } as any);
+        })
+      );
+
+      const updatedAgents = await storage.getAgentsByUserId(userId);
+      res.json(updatedAgents);
     } catch (error) {
       console.error("Error fetching agents:", error);
       res.status(500).json({ message: "Failed to fetch agents" });
@@ -539,10 +665,50 @@ export async function registerRoutes(
       if (agent.userId !== req.user.claims.sub) {
         return res.status(403).json({ message: "Forbidden" });
       }
+
+      // Backfill widgetKey/allowedOrigins for existing website agents (one-time, on authenticated fetch).
+      if ((agent as any).agentType === "website") {
+        const widgetConfig = ((agent as any).widgetConfig || {}) as any;
+        const nextWidgetKey = widgetConfig.widgetKey || generateWidgetKey();
+        const nextAllowedOrigins =
+          Array.isArray(widgetConfig.allowedOrigins) && widgetConfig.allowedOrigins.length > 0
+            ? widgetConfig.allowedOrigins
+            : deriveAllowedOriginsFromWebsiteUrl((agent as any).websiteUrl);
+
+        if (!widgetConfig.widgetKey || !widgetConfig.allowedOrigins) {
+          const updated = await storage.updateAgent(agent.id, {
+            widgetConfig: { ...widgetConfig, widgetKey: nextWidgetKey, allowedOrigins: nextAllowedOrigins },
+          } as any);
+          return res.json(updated);
+        }
+      }
+
       res.json(agent);
     } catch (error) {
       console.error("Error fetching agent:", error);
       res.status(500).json({ message: "Failed to fetch agent" });
+    }
+  });
+
+  // Rotate public widget key (non-secret) for a website agent
+  app.post("/api/agents/:id/widget-key/rotate", isAuthenticated, async (req: any, res) => {
+    try {
+      const agent = await storage.getAgentById(req.params.id);
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
+      if (agent.userId !== req.user.claims.sub) return res.status(403).json({ message: "Forbidden" });
+      if ((agent as any).agentType !== "website") {
+        return res.status(400).json({ message: "Widget key is only supported for website agents" });
+      }
+
+      const widgetConfig = ((agent as any).widgetConfig || {}) as any;
+      const newKey = generateWidgetKey();
+      const updated = await storage.updateAgent(agent.id, {
+        widgetConfig: { ...widgetConfig, widgetKey: newKey },
+      } as any);
+      return res.json({ widgetKey: newKey, agent: updated });
+    } catch (error) {
+      console.error("[WidgetKey] Rotate error:", error);
+      return res.status(500).json({ message: "Failed to rotate widget key" });
     }
   });
 
@@ -624,7 +790,10 @@ export async function registerRoutes(
         capabilities: originalAgent.capabilities,
         businessInfo: originalAgent.businessInfo,
         language: originalAgent.language,
-        widgetConfig: originalAgent.widgetConfig,
+        widgetConfig: {
+          ...(originalAgent.widgetConfig as any),
+          widgetKey: undefined,
+        },
       };
 
       const newAgent = await storage.createAgent(userId, newAgentData);
@@ -653,17 +822,11 @@ export async function registerRoutes(
   app.post("/api/agents", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      console.log("=== CREATE AGENT REQUEST ===");
-      console.log("User ID:", userId);
-      console.log("User ID Type:", typeof userId);
-      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      console.log("[Agents] Create request", { userId });
       
       const validated = insertAgentSchema.parse(req.body);
-      console.log("Validated data:", JSON.stringify(validated, null, 2));
-      
-      console.log("Calling storage.createAgent...");
       const agent = await storage.createAgent(userId, validated);
-      console.log("Agent created successfully:", JSON.stringify(agent, null, 2));
+      console.log("[Agents] Created", { id: agent.id, agentType: (agent as any).agentType });
       res.status(201).json(agent);
     } catch (error: any) {
       console.error("=== AGENT CREATION ERROR ===");
@@ -691,7 +854,73 @@ export async function registerRoutes(
       }
       // Validate update payload - only allow safe fields
       const validated = updateAgentSchema.parse(req.body);
-      const updated = await storage.updateAgent(req.params.id, validated as any);
+
+      const normalizeUrlForCompare = (value: unknown) => {
+        if (typeof value !== "string") return null;
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        try {
+          const parsed = new URL(trimmed);
+          // Normalize away trailing slashes and fragments/query for stable comparisons.
+          const normalized = `${parsed.protocol}//${parsed.host}${parsed.pathname}`.replace(/\/+$/, "");
+          return normalized;
+        } catch {
+          return trimmed.replace(/\/+$/, "");
+        }
+      };
+
+      const isWebsiteAgent = ((validated as any).agentType ?? (agent as any).agentType) === "website";
+      const existingWebsiteUrl = normalizeUrlForCompare((agent as any).websiteUrl);
+      const nextWebsiteUrl = validated.websiteUrl !== undefined ? normalizeUrlForCompare(validated.websiteUrl) : existingWebsiteUrl;
+      const websiteUrlChanged =
+        isWebsiteAgent && validated.websiteUrl !== undefined && existingWebsiteUrl !== nextWebsiteUrl;
+
+      const existingWidgetConfig = (((agent as any).widgetConfig || {}) as any) ?? {};
+      const userWidgetConfigPatch = (validated as any).widgetConfig;
+      const userProvidedAllowedOrigins =
+        userWidgetConfigPatch && userWidgetConfigPatch !== null && Object.prototype.hasOwnProperty.call(userWidgetConfigPatch, "allowedOrigins");
+
+      // Merge widgetConfig patches (avoids accidentally dropping keys when client sends partial updates).
+      let mergedWidgetConfig: any = undefined;
+      if (userWidgetConfigPatch === null) {
+        mergedWidgetConfig = null;
+      } else if (userWidgetConfigPatch !== undefined) {
+        mergedWidgetConfig = { ...existingWidgetConfig, ...userWidgetConfigPatch };
+      }
+
+      // Safe auto-refresh of derived allowedOrigins on websiteUrl change.
+      // Only refresh if allowedOrigins still matches what we'd have derived previously
+      // (i.e. user hasn't customized it).
+      if (websiteUrlChanged && !userProvidedAllowedOrigins) {
+        const existingAllowedOrigins = Array.isArray(existingWidgetConfig.allowedOrigins)
+          ? (existingWidgetConfig.allowedOrigins as unknown[]).filter((o) => typeof o === "string")
+          : [];
+        const oldDerived = deriveAllowedOriginsFromWebsiteUrl((agent as any).websiteUrl);
+
+        const normalizeOriginForCompare = (origin: string) => origin.trim().replace(/\/+$/, "");
+        const normalizeList = (origins: string[]) =>
+          Array.from(new Set(origins.map(normalizeOriginForCompare).filter(Boolean))).sort();
+
+        const existingNormalized = normalizeList(existingAllowedOrigins as string[]);
+        const oldDerivedNormalized = normalizeList(oldDerived);
+
+        const looksAutoDerived = existingNormalized.length === 0 || JSON.stringify(existingNormalized) === JSON.stringify(oldDerivedNormalized);
+
+        if (looksAutoDerived) {
+          const refreshed = deriveAllowedOriginsFromWebsiteUrl(validated.websiteUrl ?? (agent as any).websiteUrl);
+          mergedWidgetConfig = {
+            ...(mergedWidgetConfig ?? existingWidgetConfig),
+            allowedOrigins: refreshed,
+          };
+        }
+      }
+
+      const updatePayload: any = {
+        ...validated,
+        ...(mergedWidgetConfig !== undefined ? { widgetConfig: mergedWidgetConfig } : {}),
+      };
+
+      const updated = await storage.updateAgent(req.params.id, updatePayload);
       res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -842,17 +1071,50 @@ export async function registerRoutes(
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.flushHeaders();
     
     // Helper to send SSE message with immediate flush
     const sendProgress = (data: any) => {
+      if (res.writableEnded) return;
       res.write(`data: ${JSON.stringify(data)}\n\n`);
       // Force flush to prevent buffering
       if (typeof (res as any).flush === 'function') {
         (res as any).flush();
       }
     };
+
+    const scanUserKey = getScanUserKey(req);
+    const scanCooldownMs = parseIntEnv(process.env.SCAN_COOLDOWN_SECONDS, 60) * 1000;
+    let scanGateAcquired = false;
+    const releaseGateOnce = () => {
+      if (!scanGateAcquired) return;
+      scanGateAcquired = false;
+      releaseScanGate({ key: scanUserKey, cooldownMs: scanCooldownMs });
+    };
+
+    let clientDisconnected = false;
+    let browser: any = null;
+    const abortScan = async () => {
+      clientDisconnected = true;
+      try {
+        if (browser) await browser.close();
+      } catch {}
+      try {
+        if (agentId) {
+          await storage.updateAgent(agentId as string, {
+            scanStatus: 'error',
+            scanProgress: 0,
+            scanMessage: 'Scan canceled',
+          });
+        }
+      } catch {}
+      releaseGateOnce();
+      try {
+        res.end();
+      } catch {}
+    };
+
+    req.on('close', abortScan);
     
     try {
       if (!agentId || !url) {
@@ -873,22 +1135,52 @@ export async function registerRoutes(
         return;
       }
       
+      const parsedBaseUrl = parseHttpUrl(String(url));
+      if (!parsedBaseUrl) {
+        sendProgress({ type: 'error', message: 'Invalid URL format. Please enter a valid website address.' });
+        res.end();
+        return;
+      }
+
+      const validation = await validateScanTargetUrl(parsedBaseUrl);
+      if (!validation.ok) {
+        sendProgress({ type: 'error', message: validation.message || 'URL not allowed.' });
+        res.end();
+        return;
+      }
+
+      const gate = tryAcquireScanGate({ key: scanUserKey, cooldownMs: scanCooldownMs });
+      if (!gate.allowed) {
+        sendProgress({
+          type: 'error',
+          message:
+            gate.reason === 'active'
+              ? 'A scan is already running for your account. Please wait for it to finish.'
+              : `Please wait ${gate.retryAfterSeconds}s before starting another scan.`,
+          retryAfter: gate.retryAfterSeconds,
+          rateLimited: true,
+        });
+        res.end();
+        return;
+      }
+      scanGateAcquired = true;
+
       // Update agent scan status to scanning
       await storage.updateAgent(agentId as string, {
         scanStatus: 'scanning',
         scanProgress: 2,
         scanMessage: 'Starting scan...',
       });
-      
+
       sendProgress({ type: 'status', message: 'Starting scan...', progress: 2 });
-      
+
       // If rescan is true, delete all existing knowledge entries
       let deletedEntries = 0;
       if (rescan === 'true') {
         deletedEntries = await storage.deleteAllKnowledgeByAgentId(agentId as string);
         sendProgress({ type: 'status', message: `Cleared ${deletedEntries} old entries`, progress: 5 });
       }
-      
+
       // Parse additional URLs from query param
       let additionalUrls: string[] = [];
       if (additionalUrlsParam) {
@@ -897,29 +1189,11 @@ export async function registerRoutes(
         } catch (e) {}
       }
 
-      // Normalize URL - add https:// if missing
-      let normalizedUrl = (url as string).trim();
-      if (!normalizedUrl.match(/^https?:\/\//i)) {
-        // Remove www. prefix if present to avoid https://www.www.
-        normalizedUrl = normalizedUrl.replace(/^www\./i, '');
-        normalizedUrl = 'https://' + normalizedUrl;
-      }
-      console.log(`Normalized URL: ${url} -> ${normalizedUrl}`);
-
-      // Parse the base URL to get the domain
-      let baseUrl: URL;
-      try {
-        baseUrl = new URL(normalizedUrl);
-      } catch (e) {
-        sendProgress({ type: 'error', message: 'Invalid URL format. Please enter a valid website address.' });
-        res.end();
-        return;
-      }
-      const baseDomain = baseUrl.origin;
+      const baseDomain = parsedBaseUrl.origin;
       
       // Track visited URLs and pages to scan
       const visitedUrls = new Set<string>();
-      const urlsToScan: string[] = [normalizedUrl];
+      const urlsToScan: string[] = [parsedBaseUrl.href];
       
       // Add any additional URLs provided by the user
       for (const additionalUrl of additionalUrls) {
@@ -936,6 +1210,9 @@ export async function registerRoutes(
                 fullUrl = 'https://' + fullUrl.replace(/^www\./i, '');
               }
             }
+            if (!isSameOrigin(fullUrl, baseDomain)) {
+              continue;
+            }
             if (!urlsToScan.includes(fullUrl)) {
               urlsToScan.push(fullUrl);
             }
@@ -946,7 +1223,6 @@ export async function registerRoutes(
       // ========== PUPPETEER BROWSER FOR UNIVERSAL SCANNING ==========
       // ALWAYS use Puppeteer by default for maximum compatibility
       // This ensures we can scan ANY website: React, Vue, Angular, WordPress, Shopify, etc.
-      let browser: any = null;
       let usePuppeteer = true; // DEFAULT TO TRUE - scan everything with JS rendering
       let puppeteerAvailable = true; // Track if Puppeteer can be used
       
@@ -1845,7 +2121,7 @@ export async function registerRoutes(
       if (puppeteerAvailable) {
         try {
           sendProgress({ type: 'status', message: 'Launching browser for full content extraction...', progress: 16 });
-          const homeResult = await fetchWithPuppeteer(url as string);
+          const homeResult = await fetchWithPuppeteer(parsedBaseUrl.href);
           homepageHtml = homeResult.html;
           
           // Detect website type for logging
@@ -1866,11 +2142,11 @@ export async function registerRoutes(
             const titleMatch = homepageHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
             const homeTitle = titleMatch ? titleMatch[1].trim().replace(/\s+/g, ' ').replace(/\|.*$/, '').replace(/-.*$/, '').trim() : 'Homepage';
             scannedPages.push({ 
-              url: url as string, 
+              url: parsedBaseUrl.href, 
               title: homeTitle, 
               content: homeResult.textContent 
             });
-            visitedUrls.add(url as string);
+            visitedUrls.add(parsedBaseUrl.href);
             sendProgress({ type: 'found', message: `Found content: ${homeTitle}`, pagesFound: 1, progress: 18 });
           }
         } catch (e: any) {
@@ -1882,7 +2158,7 @@ export async function registerRoutes(
       // Fallback to regular fetch only if Puppeteer failed
       if (!homepageHtml && !puppeteerAvailable) {
         try {
-          const homeResponse = await fetch(url as string, {
+          const homeResponse = await fetch(parsedBaseUrl.href, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             signal: AbortSignal.timeout(15000)
           });
@@ -1897,7 +2173,7 @@ export async function registerRoutes(
       
       // Get common routes from homepage HTML
       if (homepageHtml) {
-        const commonRoutes = getCommonRoutes(homepageHtml, url as string);
+        const commonRoutes = getCommonRoutes(homepageHtml, parsedBaseUrl.href);
         for (const route of commonRoutes) {
           // Routes are already absolute URLs now
           if (!urlsToScan.includes(route)) {
@@ -1920,7 +2196,12 @@ export async function registerRoutes(
       let lastProgressUpdate = Date.now();
       
       while (urlsToScan.length > 0 && scannedPages.length < maxPages) {
+        if (clientDisconnected || res.writableEnded) break;
         const currentUrl = urlsToScan.shift()!;
+
+        if (!isSameOrigin(currentUrl, baseDomain)) {
+          continue;
+        }
         
         if (visitedUrls.has(currentUrl)) continue;
         visitedUrls.add(currentUrl);
@@ -2089,6 +2370,10 @@ export async function registerRoutes(
           await browser.close();
         } catch (e) {}
       }
+
+      if (clientDisconnected || res.writableEnded) {
+        return;
+      }
       
       sendProgress({ type: 'status', message: 'Saving content to knowledge base...', progress: 92 });
       
@@ -2154,6 +2439,8 @@ export async function registerRoutes(
         pagesFound: urlsToScan.length + scannedCount,
         deletedEntries
       });
+
+      releaseGateOnce();
       
       res.end();
       
@@ -2170,12 +2457,22 @@ export async function registerRoutes(
       }
       
       sendProgress({ type: 'error', message: error.message || 'Scan failed' });
+      releaseGateOnce();
       res.end();
     }
   });
 
   // Original scan endpoint (kept for fallback)
   app.post("/api/scan", isAuthenticated, async (req: any, res) => {
+    const scanUserKey = getScanUserKey(req);
+    const scanCooldownMs = parseIntEnv(process.env.SCAN_COOLDOWN_SECONDS, 60) * 1000;
+    let scanGateAcquired = false;
+    const releaseGateOnce = () => {
+      if (!scanGateAcquired) return;
+      scanGateAcquired = false;
+      releaseScanGate({ key: scanUserKey, cooldownMs: scanCooldownMs });
+    };
+
     try {
       const { agentId, url, rescan = false, additionalUrls = [] } = req.body;
 
@@ -2198,26 +2495,34 @@ export async function registerRoutes(
         console.log(`Rescan: Deleted ${deletedEntries} existing entries`);
       }
 
-      // Normalize URL - add https:// if missing
-      let normalizedUrl = url.trim();
-      if (!normalizedUrl.match(/^https?:\/\//i)) {
-        normalizedUrl = normalizedUrl.replace(/^www\./i, '');
-        normalizedUrl = 'https://' + normalizedUrl;
-      }
-      console.log(`Normalized URL: ${url} -> ${normalizedUrl}`);
-
-      // Parse the base URL to get the domain
-      let baseUrl: URL;
-      try {
-        baseUrl = new URL(normalizedUrl);
-      } catch (e) {
+      const parsedBaseUrl = parseHttpUrl(String(url));
+      if (!parsedBaseUrl) {
         return res.status(400).json({ message: 'Invalid URL format. Please enter a valid website address.' });
       }
-      const baseDomain = baseUrl.origin;
+
+      const validation = await validateScanTargetUrl(parsedBaseUrl);
+      if (!validation.ok) {
+        return res.status(400).json({ message: validation.message || 'URL not allowed.' });
+      }
+
+      const gate = tryAcquireScanGate({ key: scanUserKey, cooldownMs: scanCooldownMs });
+      if (!gate.allowed) {
+        res.set('Retry-After', String(gate.retryAfterSeconds));
+        return res.status(429).json({
+          message:
+            gate.reason === 'active'
+              ? 'A scan is already running for your account. Please wait for it to finish.'
+              : `Please wait ${gate.retryAfterSeconds}s before starting another scan.`,
+          retryAfter: gate.retryAfterSeconds,
+        });
+      }
+      scanGateAcquired = true;
+
+      const baseDomain = parsedBaseUrl.origin;
       
       // Track visited URLs and pages to scan
       const visitedUrls = new Set<string>();
-      const urlsToScan: string[] = [normalizedUrl];
+      const urlsToScan: string[] = [parsedBaseUrl.href];
       
       // Add any additional URLs provided by the user (for SPAs where links are JS-rendered)
       if (additionalUrls && Array.isArray(additionalUrls)) {
@@ -2232,6 +2537,9 @@ export async function registerRoutes(
                 } else {
                   fullUrl = 'https://' + fullUrl.replace(/^www\./i, '');
                 }
+              }
+              if (!isSameOrigin(fullUrl, baseDomain)) {
+                continue;
               }
               if (!urlsToScan.includes(fullUrl)) {
                 urlsToScan.push(fullUrl);
@@ -3205,6 +3513,7 @@ export async function registerRoutes(
         await storage.updateAgent(agentId, { websiteUrl: baseDomain });
       }
 
+      releaseGateOnce();
       res.json({
         success: true,
         entriesCreated,
@@ -3216,6 +3525,7 @@ export async function registerRoutes(
     } catch (error) {
       // Browser cleanup is already done in the try block above
       console.error("Error scanning website:", error);
+      releaseGateOnce();
       res.status(500).json({ message: "Failed to scan website" });
     }
   });
@@ -3322,27 +3632,81 @@ export async function registerRoutes(
     return relevant;
   }
   
-  // Widget rate limiter - 30 requests per minute per IP
+  const widgetRateLimitWindowMs = parseIntEnv(process.env.WIDGET_RATE_LIMIT_WINDOW_MS, 60 * 1000);
+  const widgetRateLimitMax = parseIntEnv(process.env.WIDGET_RATE_LIMIT_MAX, 30);
+
+  // Widget rate limiter - composite key: agentId + widgetKey + IP
   const widgetRateLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 30,
-    message: { message: 'Too many chat requests. Please wait a moment.' },
+    windowMs: widgetRateLimitWindowMs,
+    max: widgetRateLimitMax,
+    keyGenerator: (req) => {
+      const agentId = (req as any)?.body?.agentId;
+      const widgetKey = (req as any)?.body?.widgetKey;
+      return `${req.ip}|${typeof agentId === "string" ? agentId : "no-agent"}|${typeof widgetKey === "string" ? widgetKey : "no-key"}`;
+    },
+    handler: (req, res) => {
+      res.header("Access-Control-Allow-Origin", req.get("Origin") || "*");
+      res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type");
+      return res.status(429).json({
+        message: "Too many chat requests. Please wait a moment.",
+        response: "Too many chat requests. Please wait a moment.",
+        rateLimited: true,
+      });
+    },
     standardHeaders: true,
     legacyHeaders: false,
   });
+
+  const parseWidgetBodyIfNeeded = (req: any, _res: any, next: any) => {
+    // Support both legacy application/json and new text/plain (to avoid CORS preflight).
+    if (typeof req.body === "string") {
+      try {
+        req.body = req.body.length ? JSON.parse(req.body) : {};
+      } catch {
+        req.body = {};
+      }
+    }
+    next();
+  };
   
   // ========== WIDGET CHAT (for embedded chatbots - no auth required) ==========
-  app.post("/api/widget/chat", widgetRateLimiter, async (req: any, res) => {
-    // Enable CORS for widget
-    res.header("Access-Control-Allow-Origin", "*");
+  app.post(
+    "/api/widget/chat",
+    express.text({ type: "text/plain" }),
+    parseWidgetBodyIfNeeded,
+    widgetRateLimiter,
+    async (req: any, res) => {
+    // CORS: origin is validated below (if enabled); fall back to '*' when Origin is absent.
+    const requestOrigin = req.get("Origin") || "";
+    res.header("Access-Control-Allow-Origin", requestOrigin || "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
     
     try {
-      const { agentId, message, sessionId: clientSessionId } = req.body;
+      const { agentId, widgetKey, message, sessionId: clientSessionId } = req.body;
 
-      if (!agentId || !message) {
-        return res.status(400).json({ message: "Agent ID and message are required" });
+      // Validate agentId format early (before any DB work).
+      if (typeof agentId !== "string" || !isUuidLike(agentId)) {
+        return res.status(400).json({
+          message: "Invalid agentId",
+          response: "This assistant is not configured correctly.",
+        });
+      }
+
+      // Bound message size to reduce abuse/cost and prevent accidental huge prompts.
+      const messageText = typeof message === 'string' ? message.trim() : '';
+      if (messageText.length === 0) {
+        return res.status(200).json({
+          response: 'Please type a message to get started.',
+          sessionId: clientSessionId || `widget_${crypto.randomUUID()}`,
+        });
+      }
+      if (messageText.length > 2000) {
+        return res.status(200).json({
+          response: 'That message is a bit long. Please shorten it and try again.',
+          sessionId: clientSessionId || `widget_${crypto.randomUUID()}`,
+        });
       }
 
       // Use provided session ID or generate one
@@ -3350,7 +3714,78 @@ export async function registerRoutes(
 
       const agent = await storage.getAgentById(agentId);
       if (!agent) {
-        return res.status(404).json({ message: "Agent not found" });
+        return res.status(404).json({
+          message: "Agent not found",
+          response: "This assistant is not available right now. Please try again later.",
+        });
+      }
+
+      // Only website agents are supported via the embedded widget endpoint.
+      if ((agent as any).agentType && (agent as any).agentType !== 'website') {
+        return res.status(403).json({
+          message: "Agent type not allowed",
+          response: "This assistant is not available via the website widget.",
+        });
+      }
+
+      const widgetKeyEnforced = parseBooleanEnv(process.env.WIDGET_KEY_ENFORCED);
+      const originEnforced =
+        process.env.WIDGET_ORIGIN_ENFORCED !== undefined
+          ? parseBooleanEnv(process.env.WIDGET_ORIGIN_ENFORCED)
+          : APP_CONFIG.isProduction;
+
+      const globalAllowedOrigins = Array.from(
+        new Set([
+          ...parseCsvEnv(process.env.WIDGET_ALLOWED_ORIGINS),
+          ...deriveSaasAllowedOriginsFromAppUrl(APP_CONFIG.appUrl),
+        ])
+      );
+
+      const agentWidgetConfig = ((agent as any).widgetConfig || {}) as any;
+      const agentAllowedOrigins = Array.isArray(agentWidgetConfig.allowedOrigins)
+        ? (agentWidgetConfig.allowedOrigins as any[]).filter((o) => typeof o === "string")
+        : [];
+
+      const originCheck = isOriginAllowed({
+        origin: requestOrigin || undefined,
+        globalAllowedOrigins,
+        agentAllowedOrigins,
+        enforce: originEnforced,
+      });
+
+      if (originEnforced && !originCheck.allowed) {
+        console.warn("[Widget] Origin blocked", {
+          agentId,
+          origin: requestOrigin || null,
+          reason: originCheck.reason,
+        });
+        return res.status(403).json({
+          message: "Origin not allowed",
+          response: "This widget is not allowed on this domain.",
+        });
+      }
+
+      if (widgetKeyEnforced) {
+        const storedWidgetKey = agentWidgetConfig.widgetKey as string | undefined;
+        if (!storedWidgetKey) {
+          return res.status(403).json({
+            message: "Widget key not configured",
+            response: "This assistant is not fully configured yet. Please contact the site owner.",
+          });
+        }
+        if (typeof widgetKey !== "string" || widgetKey.length === 0) {
+          return res.status(401).json({
+            message: "Missing widget key",
+            response: "This widget is missing a required configuration.",
+          });
+        }
+        if (widgetKey !== storedWidgetKey) {
+          console.warn("[Widget] Invalid widget key", { agentId, origin: requestOrigin || null });
+          return res.status(401).json({
+            message: "Invalid widget key",
+            response: "This widget configuration is not valid.",
+          });
+        }
       }
 
       // Check if agent is active
@@ -3361,6 +3796,22 @@ export async function registerRoutes(
         });
       }
 
+      // Enforce message limits for the *owner* of this agent.
+      // This prevents unbounded API spend via the public widget endpoint.
+      const usageCheck = await storage.canSendMessage(agent.userId);
+      if (!usageCheck.allowed) {
+        return res.status(403).json({
+          message: "Message limit reached",
+          response: "This assistant has reached its message limit. Please try again later.",
+          limitReached: true,
+          usage: {
+            remaining: 0,
+            limit: usageCheck.limit,
+            plan: usageCheck.plan,
+          },
+        });
+      }
+
       // Track conversation and messages
       const conversation = await storage.getOrCreateConversation(agentId, sessionId);
       
@@ -3368,12 +3819,12 @@ export async function registerRoutes(
       await storage.addMessage({
         conversationId: conversation.id,
         role: 'user',
-        content: message,
+        content: messageText,
       });
 
       const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
       // Use smart search to find relevant knowledge based on user's query
-      const relevantKnowledge = findRelevantKnowledge(allKnowledge, message, 15);
+      const relevantKnowledge = findRelevantKnowledge(allKnowledge, messageText, 15);
       const knowledgeContext = relevantKnowledge
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
@@ -3419,6 +3870,14 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
           role: 'assistant',
           content: fallbackResponse,
         });
+        // Usage behavior is intentionally COST-based by default: we only increment
+        // message usage when an LLM call is made successfully (to track spend).
+        // If you want PRODUCT-based limits, set WIDGET_USAGE_MODE=product.
+        const usageMode = (process.env.WIDGET_USAGE_MODE || "cost").toLowerCase();
+        if (usageMode === "product") {
+          await storage.incrementMessageCount(agent.userId);
+        }
+
         return res.json({
           response: fallbackResponse,
           sessionId,
@@ -3431,7 +3890,7 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
         model: "claude-sonnet-4-20250514",
         max_tokens: 256,
         system: systemPrompt,
-        messages: [{ role: "user", content: message }],
+        messages: [{ role: "user", content: messageText }],
       });
 
       const responseText =
@@ -3446,9 +3905,21 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
         content: responseText,
       });
 
-      res.json({ response: responseText, sessionId });
+      // COST-based usage (default): only count after successful LLM response.
+      await storage.incrementMessageCount(agent.userId);
+      const updatedUsage = await storage.canSendMessage(agent.userId);
+
+      res.json({
+        response: responseText,
+        sessionId,
+        usage: {
+          remaining: updatedUsage.remaining,
+          limit: updatedUsage.limit,
+          plan: updatedUsage.plan,
+        },
+      });
     } catch (error: any) {
-      console.error("Error in widget chat:", error);
+      console.error("[Widget] Error", { message: error?.message });
       
       // Check for specific error types
       if (error?.message?.includes('credit balance is too low') || 
@@ -3462,11 +3933,12 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
         response: "I apologize, but I'm having trouble responding right now. Please try again in a moment."
       });
     }
-  });
+  }
+  );
 
   // Handle OPTIONS request for CORS preflight
   app.options("/api/widget/chat", (req, res) => {
-    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Origin", req.get("Origin") || "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
     res.sendStatus(200);
@@ -3479,6 +3951,19 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
 
       if (!agentId || !message) {
         return res.status(400).json({ message: "Agent ID and message are required" });
+      }
+
+      // Validate agentId early to avoid unnecessary DB queries.
+      if (typeof agentId !== "string" || !isUuidLike(agentId)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+
+      const messageText = typeof message === "string" ? message.trim() : "";
+      if (messageText.length === 0) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      if (messageText.length > 2000) {
+        return res.status(400).json({ message: "Message is too long" });
       }
 
       // Use provided session ID or generate one based on user
@@ -3501,6 +3986,11 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
         return res.status(404).json({ message: "Agent not found" });
       }
 
+      // Dashboard chat must only access the authenticated user's agents.
+      if (agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       // Track conversation and messages
       const conversation = await storage.getOrCreateConversation(agentId, sessionId);
       
@@ -3508,12 +3998,12 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
       await storage.addMessage({
         conversationId: conversation.id,
         role: 'user',
-        content: message,
+        content: messageText,
       });
 
       const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
       // Use smart search to find relevant knowledge based on user's query
-      const relevantKnowledge = findRelevantKnowledge(allKnowledge, message, 15);
+      const relevantKnowledge = findRelevantKnowledge(allKnowledge, messageText, 15);
       const knowledgeContext = relevantKnowledge
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
@@ -3566,7 +4056,7 @@ ${knowledgeContext ? `Here is the relevant information from the knowledge base t
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
         system: systemPrompt,
-        messages: [{ role: "user", content: message }],
+        messages: [{ role: "user", content: messageText }],
       });
 
       const responseText =

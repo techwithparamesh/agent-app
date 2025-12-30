@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { eq, and, desc, count, sql, inArray, gte, lte } from "drizzle-orm";
+import { deriveAllowedOriginsFromWebsiteUrl, generateWidgetKey } from "./utils/widgetSecurity";
 import {
   users,
   agents,
@@ -221,18 +222,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgent(userId: string, agentData: InsertAgent): Promise<Agent> {
-    console.log("=== STORAGE: createAgent ===");
-    console.log("userId:", userId);
-    console.log("agentData:", JSON.stringify(agentData, null, 2));
-    
     const id = crypto.randomUUID();
-    console.log("Generated agent ID:", id);
+    console.log("[Storage] createAgent", { userId, id, agentType: (agentData as any)?.agentType });
+
+    const agentType = (agentData as any)?.agentType || "website";
+    const widgetConfig = (agentData as any)?.widgetConfig || undefined;
+    const shouldEnsureWidgetKey = agentType === "website";
+    const widgetKey = widgetConfig?.widgetKey || (shouldEnsureWidgetKey ? generateWidgetKey() : undefined);
+    const derivedAllowedOrigins = shouldEnsureWidgetKey
+      ? deriveAllowedOriginsFromWebsiteUrl((agentData as any)?.websiteUrl)
+      : [];
+
+    const existingAllowedOrigins = Array.isArray(widgetConfig?.allowedOrigins)
+      ? widgetConfig.allowedOrigins
+      : undefined;
+
+    const allowedOrigins = shouldEnsureWidgetKey
+      ? (existingAllowedOrigins && existingAllowedOrigins.length > 0
+          ? existingAllowedOrigins
+          : derivedAllowedOrigins)
+      : undefined;
+
+    const widgetConfigWithKey = shouldEnsureWidgetKey
+      ? { ...(widgetConfig || {}), widgetKey, allowedOrigins }
+      : widgetConfig;
     
     try {
       await db
         .insert(agents)
-        .values({ ...agentData, id, userId });
-      console.log("Insert successful, fetching agent...");
+        .values({ ...agentData, id, userId, widgetConfig: widgetConfigWithKey as any });
       return this.getAgentById(id) as Promise<Agent>;
     } catch (dbError: any) {
       console.error("=== DATABASE INSERT ERROR ===");

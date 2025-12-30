@@ -168,10 +168,17 @@ Before going live, test that your agent works correctly:
 <script
   src="https://your-agentforge-url.com/widget.js"
   data-agent-id="your-agent-id"
+   data-widget-key="your-widget-key"
   data-position="bottom-right"
-  data-color="#4F46E5"
+   data-primary-color="#4F46E5"
 ></script>
 ```
+
+Security & Limits
+- Widget keys (`data-widget-key`) are public (non-secret) identifiers used to reduce scraping/abuse. Backward compatibility is supported until `WIDGET_KEY_ENFORCED=true`.
+- Restrict widget usage by domain/origin via `WIDGET_ALLOWED_ORIGINS` (global allowlist) and/or per-agent `widgetConfig.allowedOrigins`.
+- Set `APP_URL` to your SaaS domain (e.g. `https://digitalagency4us.cloud`) so the platform can generate absolute links and always allow your SaaS domain + subdomains for widget origin checks.
+- Widget traffic is rate-limited and subject to plan/message limits.
 
 #### Option B: WhatsApp Business
 
@@ -343,9 +350,10 @@ View all conversations between your agents and visitors.
 | Option | Description | Example |
 |--------|-------------|---------|
 | `data-agent-id` | Your agent's unique ID | `"abc123"` |
+| `data-widget-key` | Public widget key for the agent | `"0123abcd..."` |
 | `data-position` | Widget position | `"bottom-right"`, `"bottom-left"` |
-| `data-color` | Primary color | `"#4F46E5"` |
-| `data-name` | Agent display name | `"Sarah"` |
+| `data-primary-color` | Primary color | `"#4F46E5"` |
+| `data-agent-name` | Agent display name | `"Sarah"` |
 | `data-greeting` | Welcome message | `"Hi! How can I help?"` |
 
 #### Basic Installation
@@ -354,6 +362,7 @@ View all conversations between your agents and visitors.
 <script
   src="https://your-url.com/widget.js"
   data-agent-id="YOUR_AGENT_ID"
+   data-widget-key="YOUR_WIDGET_KEY"
 ></script>
 ```
 
@@ -364,8 +373,9 @@ View all conversations between your agents and visitors.
   src="https://your-url.com/widget.js"
   data-agent-id="YOUR_AGENT_ID"
   data-position="bottom-right"
-  data-color="#10B981"
-  data-name="Alex"
+   data-widget-key="YOUR_WIDGET_KEY"
+   data-primary-color="#10B981"
+   data-agent-name="Alex"
   data-greeting="Welcome! I'm here to help you find what you need."
 ></script>
 ```

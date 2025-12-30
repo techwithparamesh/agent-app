@@ -84,7 +84,7 @@ export default function WebsiteAgentPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
-  const [createdAgentId, setCreatedAgentId] = useState<number | null>(null);
+  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const [scanComplete, setScanComplete] = useState(false);
   const [pagesScanned, setPagesScanned] = useState(0);
 
@@ -124,7 +124,7 @@ export default function WebsiteAgentPage() {
   const [scanStatusMessage, setScanStatusMessage] = useState("");
 
   // Scan website using SSE for real-time progress
-  const scanWithProgress = async (agentId: number, url: string): Promise<{ pagesScanned: number }> => {
+  const scanWithProgress = async (agentId: string, url: string): Promise<{ pagesScanned: number }> => {
     return new Promise((resolve, reject) => {
       const encodedUrl = encodeURIComponent(url);
       const eventSource = new EventSource(

@@ -88,6 +88,10 @@ export const agents = mysqlTable("agents", {
     showBranding?: boolean;
     autoOpen?: boolean;
     responseFormat?: 'structured' | 'conversational';
+    // Public (non-secret) widget key. Safe to embed in HTML. Rotatable.
+    widgetKey?: string;
+    // Optional per-agent allowlist for widget Origin checks.
+    allowedOrigins?: string[];
   }>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
@@ -1104,6 +1108,7 @@ export const insertAgentSchema = createInsertSchema(agents)
   // WhatsApp agents store per-business custom fields inside businessInfo.
   // Allow nulls for clearing fields and allow arbitrary custom string keys.
   .extend({
+    agentType: z.enum(["website", "whatsapp"]).optional(),
     businessInfo: z
       .object({
         name: z.string().optional().nullable(),

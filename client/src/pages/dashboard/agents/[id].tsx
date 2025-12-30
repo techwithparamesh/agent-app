@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { buildWidgetEmbedCode } from "@/lib/widgetEmbed";
 import type { Agent, KnowledgeBase } from "@shared/schema";
 import { isValidE164Phone, normalizeE164Phone } from "@shared/phone";
 import {
@@ -70,6 +71,7 @@ export default function AgentDetails() {
     avatarUrl: '',
     showBranding: true,
     autoOpen: false,
+    widgetKey: '',
   });
 
   // WhatsApp config form state
@@ -129,6 +131,7 @@ export default function AgentDetails() {
         avatarUrl: agentWidgetConfig.avatarUrl || '',
         showBranding: agentWidgetConfig.showBranding !== false,
         autoOpen: agentWidgetConfig.autoOpen === true,
+        widgetKey: agentWidgetConfig.widgetKey || '',
       });
     }
   }, [agent]);
@@ -136,33 +139,14 @@ export default function AgentDetails() {
   // Generate embed code
   const generateEmbedCode = () => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    let code = `<script src="${baseUrl}/widget.js"`;
-    code += `\n  data-agent-id="${agentId}"`;
-    
-    if (widgetConfig.displayName && widgetConfig.displayName !== 'AI Assistant') {
-      code += `\n  data-agent-name="${widgetConfig.displayName}"`;
-    }
-    if (widgetConfig.primaryColor && widgetConfig.primaryColor !== '#6366f1') {
-      code += `\n  data-primary-color="${widgetConfig.primaryColor}"`;
-    }
-    if (widgetConfig.position && widgetConfig.position !== 'bottom-right') {
-      code += `\n  data-position="${widgetConfig.position}"`;
-    }
-    if (widgetConfig.avatarUrl) {
-      code += `\n  data-avatar-url="${widgetConfig.avatarUrl}"`;
-    }
-    if (!widgetConfig.showBranding) {
-      code += `\n  data-show-branding="false"`;
-    }
-    if (widgetConfig.autoOpen) {
-      code += `\n  data-auto-open="true"`;
-    }
-    if (agent?.welcomeMessage) {
-      code += `\n  data-greeting="${agent.welcomeMessage.replace(/"/g, '&quot;')}"`;
-    }
-    
-    code += `>\n</script>`;
-    return code;
+    return buildWidgetEmbedCode({
+      baseUrl,
+      agentId: agentId || "",
+      agentName: widgetConfig.displayName,
+      forceAgentName: false,
+      greeting: agent?.welcomeMessage,
+      widgetConfig,
+    });
   };
 
   // Save WhatsApp config mutation

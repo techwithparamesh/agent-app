@@ -43,6 +43,10 @@ interface TemplateFormData {
 }
 
 const categories = [
+  { value: "Appointments", label: "Appointment Booking" },
+  { value: "Sales", label: "Sales & Lead Gen" },
+  { value: "Billing", label: "Billing & Invoicing" },
+  { value: "Orders", label: "Order Management" },
   { value: "Retail", label: "Retail & E-Commerce" },
   { value: "Support", label: "Customer Support" },
   { value: "Education", label: "Education & Training" },
@@ -52,6 +56,7 @@ const categories = [
   { value: "Automotive", label: "Automotive" },
   { value: "Business", label: "Business & B2B" },
   { value: "Human Resources", label: "Human Resources" },
+  { value: "WhatsApp", label: "WhatsApp" },
   { value: "Finance", label: "Finance & Banking" },
   { value: "Legal", label: "Legal Services" },
   { value: "Other", label: "Other" },
@@ -168,7 +173,14 @@ export default function CreateTemplatePage() {
     }
 
     // For now, save to localStorage (in production, this would be an API call)
-    const savedTemplates = JSON.parse(localStorage.getItem("customTemplates") || "[]");
+    let savedTemplates: any[] = [];
+    try {
+      const existing = localStorage.getItem("customTemplates");
+      const parsed = existing ? JSON.parse(existing) : [];
+      savedTemplates = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      savedTemplates = [];
+    }
     const newTemplate = {
       id: `custom_${Date.now()}`,
       ...formData,

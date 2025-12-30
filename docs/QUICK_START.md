@@ -47,8 +47,17 @@ Copy this code to your website (before `</body>`):
 <script
   src="YOUR_AGENTFORGE_URL/widget.js"
   data-agent-id="YOUR_AGENT_ID"
+  data-widget-key="YOUR_WIDGET_KEY"
 ></script>
 ```
+
+Notes:
+- `data-widget-key` is a public (non-secret) per-agent identifier used to reduce scraping/abuse. Existing agents may work without it until `WIDGET_KEY_ENFORCED=true`.
+- You can restrict which domains can use the widget via `WIDGET_ALLOWED_ORIGINS` and/or per-agent `widgetConfig.allowedOrigins`.
+- Widget requests are rate-limited and subject to plan/message limits.
+
+Server config note:
+- Set `APP_URL` to your SaaS domain (e.g. `https://digitalagency4us.cloud`). This is used to generate absolute links and to always allow your own SaaS domain (and subdomains) for widget origin checks.
 
 ---
 
