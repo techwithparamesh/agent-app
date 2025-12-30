@@ -13,6 +13,7 @@ import { knowledgeInjection } from './knowledgeInjection';
 import { responseComposer } from './responseComposer';
 import { whatsappDispatcher } from './whatsappDispatcher';
 import { decrypt } from '../utils/encryption';
+import { maskPhoneForLogs } from './logScrub';
 import type {
   NormalizedMessage,
   AIDecision,
@@ -65,7 +66,7 @@ export class AgentRuntime {
    * This is the main entry point for the agent runtime
    */
   async processMessage(message: NormalizedMessage): Promise<ProcessResult> {
-    console.log(`[AgentRuntime] Processing message from ${message.from}`);
+    console.log(`[AgentRuntime] Processing message from ${maskPhoneForLogs(message.from)}`);
 
     try {
       // Step 1: Resolve agent from phone number

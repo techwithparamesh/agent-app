@@ -6,6 +6,7 @@
 import { Router, type Request, type Response } from 'express';
 import { storage } from '../storage';
 import { z } from 'zod';
+import { isValidE164Phone, normalizeE164Phone } from '@shared/phone';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ const createWabaSchema = z.object({
 
 const createPhoneNumberSchema = z.object({
   wabaId: z.string().uuid(),
-  phoneNumber: z.string().min(10).max(20),
+  phoneNumber: z.string().min(1).max(64),
   displayPhoneNumber: z.string().optional(),
   countryCode: z.string().max(5).optional(),
   numberType: z.enum(['new', 'ported', 'virtual']).default('new'),
@@ -226,6 +227,13 @@ router.post('/phone-numbers', async (req: Request, res: Response) => {
 
     const validated = createPhoneNumberSchema.parse(req.body);
 
+    const normalizedPhone = normalizeE164Phone(String(validated.phoneNumber));
+    if (!isValidE164Phone(normalizedPhone)) {
+      return res.status(400).json({
+        message: 'Phone number must be in E.164 format (e.g., +14155552671)',
+      });
+    }
+
     // Verify user owns the WABA
     const account = await storage.getWhatsappBusinessAccountById(validated.wabaId);
     if (!account || account.userId !== userId) {
@@ -233,13 +241,14 @@ router.post('/phone-numbers', async (req: Request, res: Response) => {
     }
 
     // Check if phone number already exists
-    const existing = await storage.getPhoneNumberByNumber(validated.phoneNumber);
+    const existing = await storage.getPhoneNumberByNumber(normalizedPhone);
     if (existing) {
       return res.status(400).json({ message: 'Phone number already registered' });
     }
 
     const phoneNumber = await storage.createPhoneNumber({
       ...validated,
+      phoneNumber: normalizedPhone,
       userId,
       provisioningStatus: 'pending',
     });

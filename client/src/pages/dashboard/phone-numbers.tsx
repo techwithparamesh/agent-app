@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { isValidE164Phone, normalizeE164Phone } from "@shared/phone";
 
 interface PhoneNumber {
   id: string;
@@ -106,10 +107,14 @@ export default function PhoneNumbersPage() {
   // Create phone number mutation
   const createPhoneMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const normalizedPhone = normalizeE164Phone(data.phoneNumber);
+      if (!isValidE164Phone(normalizedPhone)) {
+        throw new Error("Phone number must be in E.164 format (example: +14155552671)");
+      }
       const res = await fetch("/api/bsp/phone-numbers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, wabaId }),
+        body: JSON.stringify({ ...data, phoneNumber: normalizedPhone, wabaId }),
         credentials: "include",
       });
       if (!res.ok) {
@@ -269,6 +274,12 @@ export default function PhoneNumbersPage() {
                     id="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onBlur={() => {
+                      const normalized = normalizeE164Phone(formData.phoneNumber);
+                      if (normalized && normalized !== formData.phoneNumber) {
+                        setFormData({ ...formData, phoneNumber: normalized });
+                      }
+                    }}
                     placeholder="+1234567890"
                   />
                   <p className="text-xs text-muted-foreground">Enter in E.164 format (e.g., +1234567890)</p>

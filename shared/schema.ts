@@ -1094,12 +1094,30 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
-export const insertAgentSchema = createInsertSchema(agents).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertAgentSchema = createInsertSchema(agents)
+  .omit({
+    id: true,
+    userId: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  // WhatsApp agents store per-business custom fields inside businessInfo.
+  // Allow nulls for clearing fields and allow arbitrary custom string keys.
+  .extend({
+    businessInfo: z
+      .object({
+        name: z.string().optional().nullable(),
+        phone: z.string().optional().nullable(),
+        email: z.string().optional().nullable(),
+        address: z.string().optional().nullable(),
+        workingHours: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+        category: z.string().optional().nullable(),
+      })
+      .catchall(z.union([z.string(), z.null()]).optional())
+      .optional()
+      .nullable(),
+  });
 
 export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
   id: true,

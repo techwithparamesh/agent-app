@@ -7,6 +7,7 @@ import type {
   OutboundMessage,
   AgentConfig,
 } from './types';
+import { maskPhoneForLogs } from './logScrub';
 
 interface WhatsAppApiResponse {
   messaging_product: string;
@@ -64,7 +65,7 @@ export class WhatsAppDispatcher {
     }
 
     try {
-      console.log(`[WhatsAppDispatcher] Sending ${message.type} message to ${message.to}`);
+      console.log(`[WhatsAppDispatcher] Sending ${message.type} message to ${maskPhoneForLogs(message.to)}`);
       
       const response = await fetch(url, {
         method: 'POST',

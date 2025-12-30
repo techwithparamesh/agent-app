@@ -41,13 +41,21 @@ const updateAgentSchema = z.object({
   agentType: z.string().max(50).optional(),
   businessCategory: z.string().max(100).optional(),
   capabilities: z.array(z.string()).optional(),
-  businessInfo: z.object({
-    name: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.string().optional(),
-    address: z.string().optional(),
-    workingHours: z.string().optional(),
-  }).optional().nullable(),
+  // Allow nulls (client often sends null to clear fields) and allow custom keys
+  // for per-business custom fields.
+  businessInfo: z
+    .object({
+      name: z.string().optional().nullable(),
+      phone: z.string().optional().nullable(),
+      email: z.string().optional().nullable(),
+      address: z.string().optional().nullable(),
+      workingHours: z.string().optional().nullable(),
+      description: z.string().optional().nullable(),
+      category: z.string().optional().nullable(),
+    })
+    .catchall(z.union([z.string(), z.null()]).optional())
+    .optional()
+    .nullable(),
   language: z.string().max(10).optional(),
   // Widget customization
   widgetConfig: z.object({

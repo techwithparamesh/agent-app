@@ -180,6 +180,20 @@ WhatsApp doesn't have direct triggers in the flow builder. Instead, use the **We
    - `messages` - Incoming messages
    - `message_status` - Delivery/read receipts
 
+### Environment Variables (Webhook + Security)
+
+These environment variables control webhook verification and security for the WhatsApp agent/webhook endpoints.
+
+| Variable | Required? | Description |
+|---------|-----------|-------------|
+| `WHATSAPP_VERIFY_TOKEN` | Optional | Used for the **GET** webhook verification challenge (`/api/whatsapp/webhook`). If not set, verification can still succeed using an agent-specific verify token stored in the database. |
+| `WHATSAPP_WEBHOOK_SECRET` | Recommended (Required if enforcing) | Meta App Secret used to validate the **POST** webhook signature header `X-Hub-Signature-256`. |
+| `WHATSAPP_WEBHOOK_ENFORCE_SIGNATURE` | Optional | Set to `true` to **reject** unsigned/invalid webhooks with `401`. If `true` while `WHATSAPP_WEBHOOK_SECRET` is missing, the server treats it as a misconfiguration and returns `500`. |
+
+**Production note (important):**
+
+- `ENCRYPTION_KEY` is strongly recommended in production because WhatsApp access tokens are stored encrypted at rest. If it changes between restarts, previously saved tokens can’t be decrypted.
+
 ### Webhook Payload Examples
 
 **Incoming Message:**

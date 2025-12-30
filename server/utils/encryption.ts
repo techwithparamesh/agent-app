@@ -98,7 +98,7 @@ export function generateSecureToken(length: number = 32): string {
 /**
  * Compute HMAC-SHA256 signature for webhook verification
  */
-export function computeHmacSignature(payload: string, secret: string): string {
+export function computeHmacSignature(payload: string | Buffer, secret: string): string {
   return crypto
     .createHmac('sha256', secret)
     .update(payload)
@@ -109,8 +109,8 @@ export function computeHmacSignature(payload: string, secret: string): string {
  * Verify HMAC signature for webhook payloads
  */
 export function verifyHmacSignature(
-  payload: string, 
-  signature: string, 
+  payload: string | Buffer,
+  signature: string,
   secret: string
 ): boolean {
   const expectedSignature = computeHmacSignature(payload, secret);
@@ -118,8 +118,8 @@ export function verifyHmacSignature(
   // Use timing-safe comparison to prevent timing attacks
   try {
     return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
     );
   } catch {
     return false;

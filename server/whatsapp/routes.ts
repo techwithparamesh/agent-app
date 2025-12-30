@@ -9,6 +9,8 @@ import { db } from '../db';
 import { eq, and } from 'drizzle-orm';
 import { agentWhatsappConfig, agents } from '@shared/schema';
 import { encrypt, decrypt, verifyHmacSignature } from '../utils/encryption';
+import { isValidE164Phone, normalizeE164Phone } from '@shared/phone';
+import { sanitizeForLogs } from './logScrub';
 
 const router = Router();
 
@@ -32,9 +34,15 @@ function verifyWebhookSignature(req: Request, secret: string): boolean {
   }
   
   // Get raw body for verification
-  const rawBody = JSON.stringify(req.body);
-  
-  return verifyHmacSignature(rawBody, hash, secret);
+  const rawBody = (req as any).rawBody as unknown;
+
+  if (!rawBody) {
+    console.warn('[WhatsApp Webhook] Missing raw body for signature verification');
+    return false;
+  }
+
+  const payloadBuffer = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody));
+  return verifyHmacSignature(payloadBuffer, hash, secret);
 }
 
 /**
@@ -81,7 +89,7 @@ router.get('/webhook', async (req: Request, res: Response) => {
   const token = req.query['hub.verify_token'] as string;
   const challenge = req.query['hub.challenge'] as string;
 
-  console.log('[WhatsApp Webhook] Verification request:', { mode, token });
+  console.log('[WhatsApp Webhook] Verification request:', { mode });
 
   if (mode !== 'subscribe') {
     console.warn('[WhatsApp Webhook] Invalid mode:', mode);
@@ -118,10 +126,41 @@ router.get('/webhook', async (req: Request, res: Response) => {
  * Meta sends POST requests with incoming messages and status updates
  */
 router.post('/webhook', async (req: Request, res: Response) => {
-  console.log('[WhatsApp Webhook] Received POST:', JSON.stringify(req.body, null, 2));
+  const enforceSignature = String(process.env.WHATSAPP_WEBHOOK_ENFORCE_SIGNATURE || '').toLowerCase() === 'true';
+  const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
 
-  // Always respond with 200 OK quickly to acknowledge receipt
-  // WhatsApp expects a response within 20 seconds
+  // Verify signature if secret is configured.
+  // If enforceSignature=true, requests without a valid signature are rejected.
+  if (enforceSignature && !webhookSecret) {
+    console.error('[WhatsApp Webhook] Signature enforcement enabled but WHATSAPP_WEBHOOK_SECRET is not set');
+    return res.status(500).json({ message: 'Webhook signature verification is misconfigured' });
+  }
+
+  if (webhookSecret) {
+    const ok = verifyWebhookSignature(req, webhookSecret);
+    if (!ok) {
+      console.warn('[WhatsApp Webhook] Invalid webhook signature');
+      if (enforceSignature) {
+        return res.sendStatus(401);
+      }
+
+      // In non-enforced mode, acknowledge but do not process unverified payloads.
+      return res.sendStatus(200);
+    }
+  }
+
+  // Keep webhook logs minimal; avoid printing full payloads.
+  try {
+    const safeSummary = sanitizeForLogs({
+      object: (req.body as any)?.object,
+      entryCount: Array.isArray((req.body as any)?.entry) ? (req.body as any).entry.length : 0,
+    });
+    console.log('[WhatsApp Webhook] Received POST (verified):', JSON.stringify(safeSummary));
+  } catch {
+    console.log('[WhatsApp Webhook] Received POST (verified)');
+  }
+
+  // Always respond quickly to acknowledge receipt.
   res.sendStatus(200);
 
   try {
@@ -188,6 +227,17 @@ router.post('/agents/:agentId/whatsapp-config', verifyAgentOwnership, async (req
       return res.status(400).json({ message: 'WhatsApp phone number is required' });
     }
 
+    if (!whatsappPhoneNumberId) {
+      return res.status(400).json({ message: 'WhatsApp phone number ID is required' });
+    }
+
+    const normalizedPhone = normalizeE164Phone(String(whatsappPhoneNumber));
+    if (!isValidE164Phone(normalizedPhone)) {
+      return res.status(400).json({
+        message: 'WhatsApp phone number must be in E.164 format (e.g., +14155552671)',
+      });
+    }
+
     // Check if agent exists
     const [agent] = await db
       .select()
@@ -206,21 +256,37 @@ router.post('/agents/:agentId/whatsapp-config', verifyAgentOwnership, async (req
       .where(eq(agentWhatsappConfig.agentId, agentId))
       .limit(1);
 
+    // For first-time setup, accessToken is required.
+    // For updates, allow omitting it to keep the previously saved token.
+    if (!existing && !accessToken) {
+      return res.status(400).json({ message: 'Access token is required for initial setup' });
+    }
+
     if (existing) {
       // Update existing config - encrypt the access token
       const encryptedToken = accessToken ? encrypt(accessToken) : undefined;
-      
-      await db
-        .update(agentWhatsappConfig)
-        .set({
-          whatsappBusinessId,
-          whatsappPhoneNumberId,
-          whatsappPhoneNumber,
-          accessToken: encryptedToken || existing.accessToken,
-          verifyToken: verifyToken || existing.verifyToken,
-          updatedAt: new Date(),
-        })
-        .where(eq(agentWhatsappConfig.id, existing.id));
+
+      try {
+        await db
+          .update(agentWhatsappConfig)
+          .set({
+            whatsappBusinessId,
+            whatsappPhoneNumberId,
+            whatsappPhoneNumber: normalizedPhone,
+            accessToken: encryptedToken || existing.accessToken,
+            verifyToken: verifyToken || existing.verifyToken,
+            updatedAt: new Date(),
+          })
+          .where(eq(agentWhatsappConfig.id, existing.id));
+      } catch (error: any) {
+        // MySQL duplicate entry
+        if (error?.code === 'ER_DUP_ENTRY' || error?.errno === 1062) {
+          return res.status(409).json({
+            message: 'This WhatsApp phone number is already connected to another agent',
+          });
+        }
+        throw error;
+      }
 
       const [updated] = await db
         .select()
@@ -236,17 +302,26 @@ router.post('/agents/:agentId/whatsapp-config', verifyAgentOwnership, async (req
     const generatedVerifyToken = verifyToken || crypto.randomUUID().replace(/-/g, '');
     const encryptedToken = accessToken ? encrypt(accessToken) : null;
 
-    await db.insert(agentWhatsappConfig).values({
-      id: configId,
-      agentId,
-      whatsappBusinessId,
-      whatsappPhoneNumberId,
-      whatsappPhoneNumber,
-      accessToken: encryptedToken,
-      verifyToken: generatedVerifyToken,
-      isVerified: false,
-      isActive: true,
-    });
+    try {
+      await db.insert(agentWhatsappConfig).values({
+        id: configId,
+        agentId,
+        whatsappBusinessId,
+        whatsappPhoneNumberId,
+        whatsappPhoneNumber: normalizedPhone,
+        accessToken: encryptedToken,
+        verifyToken: generatedVerifyToken,
+        isVerified: false,
+        isActive: true,
+      });
+    } catch (error: any) {
+      if (error?.code === 'ER_DUP_ENTRY' || error?.errno === 1062) {
+        return res.status(409).json({
+          message: 'This WhatsApp phone number is already connected to another agent',
+        });
+      }
+      throw error;
+    }
 
     const [created] = await db
       .select()

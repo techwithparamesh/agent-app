@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Agent, KnowledgeBase } from "@shared/schema";
+import { isValidE164Phone, normalizeE164Phone } from "@shared/phone";
 import {
   Bot,
   ArrowLeft,
@@ -199,7 +200,40 @@ export default function AgentDetails() {
       });
       return;
     }
-    saveWhatsappConfigMutation.mutate(whatsappForm);
+
+    const normalizedPhone = normalizeE164Phone(whatsappForm.whatsappPhoneNumber);
+    if (!isValidE164Phone(normalizedPhone)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Use E.164 format (example: +14155552671).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!whatsappForm.whatsappPhoneNumberId) {
+      toast({
+        title: "Missing Required Field",
+        description: "Phone Number ID is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Access token is required for first-time setup. For existing configs,
+    // allow leaving it blank so the server can keep the saved token.
+    if (!whatsappConfig && !whatsappForm.accessToken) {
+      toast({
+        title: "Missing Required Field",
+        description: "Access Token is required for initial setup.",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveWhatsappConfigMutation.mutate({
+      ...whatsappForm,
+      whatsappPhoneNumber: normalizedPhone,
+    });
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -585,6 +619,12 @@ export default function AgentDetails() {
                         placeholder="e.g., +1234567890"
                         value={whatsappForm.whatsappPhoneNumber}
                         onChange={(e) => setWhatsappForm({ ...whatsappForm, whatsappPhoneNumber: e.target.value })}
+                        onBlur={() => {
+                          const normalized = normalizeE164Phone(whatsappForm.whatsappPhoneNumber);
+                          if (normalized && normalized !== whatsappForm.whatsappPhoneNumber) {
+                            setWhatsappForm({ ...whatsappForm, whatsappPhoneNumber: normalized });
+                          }
+                        }}
                       />
                       <p className="text-xs text-muted-foreground">
                         Your WhatsApp Business phone number with country code
