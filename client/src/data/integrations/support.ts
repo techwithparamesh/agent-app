@@ -5,7 +5,7 @@ import type { Integration } from './types';
 export const zendeskIntegration: Integration = {
   id: 'zendesk',
   name: 'Zendesk',
-  description: 'Use the Zendesk node to manage tickets, users, and organizations. n8n supports complete helpdesk automation.',
+  description: 'Use the Zendesk integration to manage tickets, users, and organizations. AgentForge supports complete helpdesk automation.',
   shortDescription: 'Customer support platform',
   category: 'communication',
   icon: 'zendesk',
@@ -156,7 +156,7 @@ export const zendeskIntegration: Integration = {
 export const freshdeskIntegration: Integration = {
   id: 'freshdesk',
   name: 'Freshdesk',
-  description: 'Use the Freshdesk node to manage tickets, contacts, and companies. n8n supports helpdesk automation and customer support.',
+  description: 'Use the Freshdesk integration to manage tickets, contacts, and companies. AgentForge supports helpdesk automation and customer support.',
   shortDescription: 'Cloud-based helpdesk',
   category: 'communication',
   icon: 'freshdesk',
@@ -287,7 +287,7 @@ export const freshdeskIntegration: Integration = {
 export const microsoftTeamsIntegration: Integration = {
   id: 'microsoft-teams',
   name: 'Microsoft Teams',
-  description: 'Use the Microsoft Teams node to send messages, manage channels, and handle team collaboration. n8n supports chat, channels, and meetings.',
+  description: 'Use the Microsoft Teams integration to send messages, manage channels, and handle team collaboration. AgentForge supports chat, channels, and meetings.',
   shortDescription: 'Team collaboration and chat',
   category: 'communication',
   icon: 'microsoft-teams',
@@ -415,7 +415,7 @@ export const microsoftTeamsIntegration: Integration = {
 export const zoomIntegration: Integration = {
   id: 'zoom',
   name: 'Zoom',
-  description: 'Use the Zoom node to create and manage meetings, webinars, and recordings. n8n supports full meeting lifecycle management.',
+  description: 'Use the Zoom integration to create and manage meetings, webinars, and recordings. AgentForge supports full meeting lifecycle management.',
   shortDescription: 'Video meetings and webinars',
   category: 'communication',
   icon: 'zoom',
@@ -577,7 +577,7 @@ export const zoomIntegration: Integration = {
 export const linkedinIntegration: Integration = {
   id: 'linkedin',
   name: 'LinkedIn',
-  description: 'Use the LinkedIn node to manage company pages, posts, and engagement. n8n supports marketing and professional networking automation.',
+  description: 'Use the LinkedIn integration to manage company pages, posts, and engagement. AgentForge supports marketing and professional networking automation.',
   shortDescription: 'Professional networking',
   category: 'marketing',
   icon: 'linkedin',
@@ -716,7 +716,7 @@ export const linkedinIntegration: Integration = {
 export const liveagentIntegration: Integration = {
   id: 'liveagent',
   name: 'LiveAgent',
-  description: 'Use the LiveAgent node to manage tickets, live chat, and support workflows. Supports multi-channel customer support automation.',
+  description: 'Use the LiveAgent integration to manage tickets, live chat, and support workflows. Supports multi-channel customer support automation.',
   shortDescription: 'Help desk and live chat',
   category: 'communication',
   icon: 'liveagent',
@@ -859,7 +859,7 @@ export const liveagentIntegration: Integration = {
 export const helpscoutIntegration: Integration = {
   id: 'helpscout',
   name: 'Help Scout',
-  description: 'Use the Help Scout node to manage conversations, customers, and workflows. Perfect for team-based email support automation.',
+  description: 'Use the Help Scout integration to manage conversations, customers, and workflows. Perfect for team-based email support automation.',
   shortDescription: 'Shared inbox and help desk',
   category: 'communication',
   icon: 'helpscout',

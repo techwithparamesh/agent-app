@@ -89,7 +89,7 @@ import { useFlowState } from "@/components/workspace/useFlowState";
 import { useKeyboardShortcuts, buildFlowShortcuts, SHORTCUT_CATEGORIES } from "@/components/workspace/useKeyboardShortcuts";
 import type { FlowNode, Connection } from "@/components/workspace/types";
 
-// New n8n-style components
+// Workspace components
 import { StickyNoteLayer, type StickyNoteData } from "@/components/workspace/StickyNote";
 import { CanvasMiniMap } from "@/components/workspace/CanvasMiniMap";
 import { CredentialManager, type Credential } from "@/components/workspace/CredentialManager";
@@ -107,7 +107,7 @@ import { validateWorkflow } from "@/components/workspace/WorkflowValidator";
 // n8n Schema registry for apps
 import { n8nSchemaRegistry, getAllN8nApps } from "@/components/workspace/n8n-schemas";
 
-// n8n-style node configuration components
+// Node configuration components
 import { N8nNodeConfigModal } from "@/components/workspace/N8nNodeConfigModal";
 import { EmptyCanvasTriggerSelector } from "@/components/workspace/EmptyCanvasTriggerSelector";
 
@@ -164,7 +164,7 @@ export function EnhancedWorkspace() {
   const [templatesGalleryOpen, setTemplatesGalleryOpen] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(true);
 
-  // n8n-style modal state
+  // Node config modal state
   const [n8nModalOpen, setN8nModalOpen] = useState(false);
   const [n8nModalNodeId, setN8nModalNodeId] = useState<string | null>(null);
 
@@ -505,7 +505,7 @@ export function EnhancedWorkspace() {
       flowActions.addConnection(lastNode.id, newId);
     }
 
-    // Select and open right-side configuration panel (n8n-like)
+    // Select and open right-side configuration panel
     flowActions.selectNode(newId);
     setConfigPanelOpen(true);
   }, [flowState.nodes, flowActions]);
@@ -526,7 +526,7 @@ export function EnhancedWorkspace() {
     flowActions.selectNode(nodeId, addToSelection);
   }, [flowActions]);
 
-  // Handle node double click - open right-side configuration panel (n8n-like)
+  // Handle node double click - open right-side configuration panel
   const handleNodeDoubleClick = useCallback((nodeId: string) => {
     flowActions.selectNode(nodeId);
     setConfigPanelOpen(true);
@@ -1208,7 +1208,7 @@ export function EnhancedWorkspace() {
 
   const handleStartExecution = useCallback(async () => {
     try {
-      // n8n-like: block execution until configuration is complete.
+      // Block execution until configuration is complete
       const validation = validateWorkflow(flowState.nodes);
       const hasIncomplete = flowState.nodes.some(n => n.status === 'incomplete' || n.status === 'idle');
       if (!validation.isValid || hasIncomplete) {
@@ -1951,7 +1951,7 @@ export function EnhancedWorkspace() {
             </FlowCanvas>
           </div>
 
-          {/* Right Config Panel - n8n-style wizard */}
+          {/* Right Config Panel - wizard */}
           <ConfigPanelV2
             node={selectedNode}
             isOpen={configPanelOpen}
@@ -2162,7 +2162,7 @@ export function EnhancedWorkspace() {
           </DialogContent>
         </Dialog>
 
-        {/* n8n-Style Node Configuration Modal */}
+        {/* Node Configuration Modal */}
         {n8nModalNodeId && (
           <N8nNodeConfigModal
             isOpen={n8nModalOpen}

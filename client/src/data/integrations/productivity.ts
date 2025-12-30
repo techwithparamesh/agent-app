@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const googleSheetsIntegration: Integration = {
   id: 'google-sheets',
   name: 'Google Sheets',
-  description: 'Use the Google Sheets node to read, write, and manipulate spreadsheet data. n8n supports cell operations, row management, and batch updates for powerful data workflows.',
+  description: 'Use the Google Sheets integration to read, write, and manipulate spreadsheet data. AgentForge supports cell operations, row management, and batch updates for powerful data workflows.',
   shortDescription: 'Spreadsheet data management',
   category: 'productivity',
   icon: 'google-sheets',
@@ -200,7 +200,7 @@ export const googleSheetsIntegration: Integration = {
 export const notionIntegration: Integration = {
   id: 'notion',
   name: 'Notion',
-  description: 'Use the Notion node to manage pages, databases, and blocks in your Notion workspace. n8n supports creating content, querying databases, and updating properties.',
+  description: 'Use the Notion integration to manage pages, databases, and blocks in your Notion workspace. AgentForge supports creating content, querying databases, and updating properties.',
   shortDescription: 'All-in-one workspace management',
   category: 'productivity',
   icon: 'notion',
@@ -378,7 +378,7 @@ export const notionIntegration: Integration = {
 export const trelloIntegration: Integration = {
   id: 'trello',
   name: 'Trello',
-  description: 'Use the Trello node to manage boards, lists, and cards. n8n supports creating cards, moving items, managing checklists, and handling attachments.',
+  description: 'Use the Trello integration to manage boards, lists, and cards. AgentForge supports creating cards, moving items, managing checklists, and handling attachments.',
   shortDescription: 'Kanban-style project management',
   category: 'productivity',
   icon: 'trello',
@@ -555,7 +555,7 @@ export const trelloIntegration: Integration = {
 export const asanaIntegration: Integration = {
   id: 'asana',
   name: 'Asana',
-  description: 'Use the Asana node to manage projects, tasks, and teams. n8n supports task creation, project management, and team collaboration features.',
+  description: 'Use the Asana integration to manage projects, tasks, and teams. AgentForge supports task creation, project management, and team collaboration features.',
   shortDescription: 'Work management and collaboration',
   category: 'productivity',
   icon: 'asana',
@@ -715,7 +715,7 @@ export const asanaIntegration: Integration = {
 export const jiraIntegration: Integration = {
   id: 'jira',
   name: 'Jira',
-  description: 'Use the Jira node to manage issues, projects, and workflows. n8n supports issue creation, transitions, comments, and sprint management.',
+  description: 'Use the Jira integration to manage issues, projects, and workflows. AgentForge supports issue creation, transitions, comments, and sprint management.',
   shortDescription: 'Issue and project tracking',
   category: 'productivity',
   icon: 'jira',
@@ -904,7 +904,7 @@ export const jiraIntegration: Integration = {
 export const mondayIntegration: Integration = {
   id: 'monday',
   name: 'Monday.com',
-  description: 'Use the Monday node to manage boards, items, and columns. n8n supports item CRUD, status updates, and automation triggers for work management.',
+  description: 'Use the Monday integration to manage boards, items, and columns. AgentForge supports item CRUD, status updates, and automation triggers for work management.',
   shortDescription: 'Work management platform',
   category: 'productivity',
   icon: 'monday',
@@ -1063,7 +1063,7 @@ export const mondayIntegration: Integration = {
 export const clickupIntegration: Integration = {
   id: 'clickup',
   name: 'ClickUp',
-  description: 'Use the ClickUp node to manage tasks, lists, and spaces. n8n supports task CRUD, comments, time tracking, and custom fields for productivity workflows.',
+  description: 'Use the ClickUp integration to manage tasks, lists, and spaces. AgentForge supports task CRUD, comments, time tracking, and custom fields for productivity workflows.',
   shortDescription: 'Project management platform',
   category: 'productivity',
   icon: 'clickup',
@@ -1225,7 +1225,7 @@ export const clickupIntegration: Integration = {
 export const calendlyIntegration: Integration = {
   id: 'calendly',
   name: 'Calendly',
-  description: 'Use the Calendly node to manage scheduled events and invitees. n8n supports event triggers, invitee data, and scheduling links for appointment automation.',
+  description: 'Use the Calendly integration to manage scheduled events and invitees. AgentForge supports event triggers, invitee data, and scheduling links for appointment automation.',
   shortDescription: 'Scheduling automation',
   category: 'productivity',
   icon: 'calendly',

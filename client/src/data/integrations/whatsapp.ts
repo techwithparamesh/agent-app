@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const whatsappIntegration: Integration = {
   id: 'whatsapp',
   name: 'WhatsApp Business',
-  description: 'Use the WhatsApp Business node to send and receive messages, templates, media, and interactive elements through WhatsApp Business API. n8n has built-in support for a wide range of WhatsApp features including text messages, template messages, media sharing, and interactive buttons.',
+  description: 'Use the WhatsApp Business integration to send and receive messages, templates, media, and interactive elements through WhatsApp Business API. AgentForge has built-in support for a wide range of WhatsApp features including text messages, template messages, media sharing, and interactive buttons.',
   shortDescription: 'Send and receive WhatsApp messages via Business API',
   category: 'communication',
   icon: 'whatsapp',

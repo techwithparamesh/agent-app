@@ -324,7 +324,7 @@ export const restApiIntegration: Integration = {
 export const githubIntegration: Integration = {
   id: 'github',
   name: 'GitHub',
-  description: 'Use the GitHub node to manage repositories, issues, pull requests, and workflows. n8n supports full GitHub API access for development automation.',
+  description: 'Use the GitHub integration to manage repositories, issues, pull requests, and workflows. AgentForge supports full GitHub API access for development automation.',
   shortDescription: 'Code hosting and collaboration',
   category: 'developer',
   icon: 'github',
@@ -671,7 +671,7 @@ export const zapierIntegration: Integration = {
 export const gitlabIntegration: Integration = {
   id: 'gitlab',
   name: 'GitLab',
-  description: 'Use the GitLab node to manage repositories, issues, merge requests, and pipelines. n8n supports full DevOps workflow automation with webhooks and API.',
+  description: 'Use the GitLab integration to manage repositories, issues, merge requests, and pipelines. AgentForge supports full DevOps workflow automation with webhooks and API.',
   shortDescription: 'DevOps platform',
   category: 'developer',
   icon: 'gitlab',
@@ -845,7 +845,7 @@ export const gitlabIntegration: Integration = {
 export const bitbucketIntegration: Integration = {
   id: 'bitbucket',
   name: 'Bitbucket',
-  description: 'Use the Bitbucket node to manage repositories, pull requests, and pipelines. n8n supports code collaboration workflows with Atlassian integration.',
+  description: 'Use the Bitbucket integration to manage repositories, pull requests, and pipelines. AgentForge supports code collaboration workflows with Atlassian integration.',
   shortDescription: 'Git code management',
   category: 'developer',
   icon: 'bitbucket',
@@ -1003,7 +1003,7 @@ export const bitbucketIntegration: Integration = {
 export const graphqlIntegration: Integration = {
   id: 'graphql',
   name: 'GraphQL',
-  description: 'Use the GraphQL node to query and mutate data from any GraphQL API. Supports queries, mutations, subscriptions, and variables for flexible API integration.',
+  description: 'Use the GraphQL integration to query and mutate data from any GraphQL API. Supports queries, mutations, subscriptions, and variables for flexible API integration.',
   shortDescription: 'GraphQL API client',
   category: 'developer',
   icon: 'graphql',

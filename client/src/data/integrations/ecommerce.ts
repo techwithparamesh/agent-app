@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const shopifyIntegration: Integration = {
   id: 'shopify',
   name: 'Shopify',
-  description: 'Use the Shopify node to manage your e-commerce store. n8n supports products, orders, customers, inventory, and fulfillment operations for complete store automation.',
+  description: 'Use the Shopify integration to manage your e-commerce store. AgentForge supports products, orders, customers, inventory, and fulfillment operations for complete store automation.',
   shortDescription: 'E-commerce store management',
   category: 'ecommerce',
   icon: 'shopify',
@@ -248,7 +248,7 @@ export const shopifyIntegration: Integration = {
 export const stripeIntegration: Integration = {
   id: 'stripe',
   name: 'Stripe',
-  description: 'Use the Stripe node for payment processing, subscription management, and financial operations. n8n supports charges, customers, invoices, and webhook handling.',
+  description: 'Use the Stripe node for payment processing, subscription management, and financial operations. AgentForge supports charges, customers, invoices, and webhook handling.',
   shortDescription: 'Payment processing and subscriptions',
   category: 'ecommerce',
   icon: 'stripe',
@@ -455,7 +455,7 @@ export const stripeIntegration: Integration = {
 export const woocommerceIntegration: Integration = {
   id: 'woocommerce',
   name: 'WooCommerce',
-  description: 'Use the WooCommerce node to manage your WordPress e-commerce store. n8n supports products, orders, customers, and coupons through the REST API.',
+  description: 'Use the WooCommerce integration to manage your WordPress e-commerce store. AgentForge supports products, orders, customers, and coupons through the REST API.',
   shortDescription: 'WordPress e-commerce management',
   category: 'ecommerce',
   icon: 'woocommerce',
@@ -633,7 +633,7 @@ export const woocommerceIntegration: Integration = {
 export const paypalIntegration: Integration = {
   id: 'paypal',
   name: 'PayPal',
-  description: 'Use the PayPal node for payment processing, invoicing, and payouts. n8n supports orders, payments, subscriptions, and webhook handling.',
+  description: 'Use the PayPal node for payment processing, invoicing, and payouts. AgentForge supports orders, payments, subscriptions, and webhook handling.',
   shortDescription: 'Payment processing and invoicing',
   category: 'ecommerce',
   icon: 'paypal',
@@ -805,7 +805,7 @@ export const paypalIntegration: Integration = {
 export const razorpayIntegration: Integration = {
   id: 'razorpay',
   name: 'Razorpay',
-  description: 'Use the Razorpay node to manage payments, orders, and customers. Supports payment capture, refunds, and subscription management for Indian payment workflows.',
+  description: 'Use the Razorpay integration to manage payments, orders, and customers. Supports payment capture, refunds, and subscription management for Indian payment workflows.',
   shortDescription: 'Indian payment gateway',
   category: 'ecommerce',
   icon: 'razorpay',

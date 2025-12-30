@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const openaiIntegration: Integration = {
   id: 'openai',
   name: 'OpenAI',
-  description: 'Use the OpenAI node to integrate GPT models, DALL-E, Whisper, and embeddings into your workflows. n8n supports chat completions, image generation, speech-to-text, and vector embeddings.',
+  description: 'Use the OpenAI integration to integrate GPT models, DALL-E, Whisper, and embeddings into your workflows. AgentForge supports chat completions, image generation, speech-to-text, and vector embeddings.',
   shortDescription: 'GPT, DALL-E, and AI models',
   category: 'ai',
   icon: 'openai',
@@ -192,7 +192,7 @@ export const openaiIntegration: Integration = {
 export const anthropicIntegration: Integration = {
   id: 'anthropic',
   name: 'Anthropic Claude',
-  description: 'Use the Anthropic node to integrate Claude AI models into your workflows. n8n supports chat completions with Claude 3.5 Sonnet, Claude 3 Opus, and other Claude models.',
+  description: 'Use the Anthropic integration to integrate Claude AI models into your workflows. AgentForge supports chat completions with Claude 3.5 Sonnet, Claude 3 Opus, and other Claude models.',
   shortDescription: 'Claude AI models',
   category: 'ai',
   icon: 'anthropic',
@@ -314,7 +314,7 @@ export const anthropicIntegration: Integration = {
 export const googleAiIntegration: Integration = {
   id: 'google-ai',
   name: 'Google Gemini',
-  description: 'Use the Google Gemini node to integrate Google\'s AI models. n8n supports Gemini Pro, Gemini Flash, and multimodal capabilities.',
+  description: 'Use the Google Gemini integration to integrate Google\'s AI models. AgentForge supports Gemini Pro, Gemini Flash, and multimodal capabilities.',
   shortDescription: 'Google\'s Gemini AI models',
   category: 'ai',
   icon: 'google',
@@ -421,7 +421,7 @@ export const googleAiIntegration: Integration = {
 export const elevenLabsIntegration: Integration = {
   id: 'elevenlabs',
   name: 'ElevenLabs',
-  description: 'Use the ElevenLabs node for realistic AI voice generation. n8n supports text-to-speech, voice cloning, and audio manipulation.',
+  description: 'Use the ElevenLabs node for realistic AI voice generation. AgentForge supports text-to-speech, voice cloning, and audio manipulation.',
   shortDescription: 'AI voice generation',
   category: 'ai',
   icon: 'elevenlabs',

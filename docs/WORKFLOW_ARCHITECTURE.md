@@ -1,7 +1,7 @@
-# n8n-Style Integration Workflow Implementation
+# AgentForge Workflow Architecture
 
 ## Overview
-This implementation brings **n8n-inspired** workflow automation to our integration workspace, enforcing a proper trigger → configure → execute pattern similar to n8n's architecture.
+AgentForge provides powerful workflow automation with a proper trigger → configure → execute pattern for building intelligent automations.
 
 ## 🆕 Updated: ConfigPanelV2 - Step-Based Wizard
 
@@ -42,7 +42,7 @@ The new `ConfigPanelV2` component completely redesigns the configuration experie
 
 ### 1. **Trigger-First Architecture**
 - **Mandatory Trigger Selection**: Users must choose a trigger type before configuring anything
-- **5 Trigger Types** (matching n8n patterns):
+- **5 Trigger Types**:
   - **Webhook** - Real-time triggers via HTTP webhooks
   - **Polling** - Periodic checks for new data
   - **Schedule** - Time-based cron triggers
@@ -71,7 +71,7 @@ A dedicated wizard that appears for trigger nodes before any configuration:
 ### 3. **Workflow Validation System**
 **Location**: `client/src/components/workspace/WorkflowValidator.tsx`
 
-Real-time validation that enforces n8n-style workflow rules:
+Real-time validation that enforces AgentForge workflow rules:
 
 #### Validation Rules:
 1. ✅ Must have at least one trigger node
@@ -130,17 +130,17 @@ if (!hasTriggerWithType) {
 - **Disabled Test Button** - Only enabled when `validation.canExecute === true`
 - **Real-time Validation** - Updates on every node change
 
-## n8n Architecture Comparison
+## AgentForge Workflow Features
 
-| Aspect | n8n | Our Implementation |
-|--------|-----|-------------------|
-| **Trigger First** | ✅ Mandatory | ✅ Enforced |
-| **Trigger Types** | Webhook, Poll, Schedule, etc. | ✅ 5 types implemented |
-| **Credentials** | Required before execution | ✅ Validated |
-| **Node Configuration** | Step-by-step wizard | ✅ TriggerSetupWizard |
-| **Execution Stages** | Test → Configure → Activate | ✅ Setup → Configure → Ready |
-| **Visual Feedback** | Real-time validation | ✅ WorkflowStatus component |
-| **Error Prevention** | Can't execute invalid workflows | ✅ Disabled Test button |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Trigger First** | ✅ Enforced | Workflows must start with a trigger |
+| **Trigger Types** | ✅ 5 types | Webhook, Poll, Schedule, Email, Manual |
+| **Credentials** | ✅ Validated | Required before execution |
+| **Node Configuration** | ✅ Wizard | Step-by-step TriggerSetupWizard |
+| **Execution Stages** | ✅ Implemented | Setup → Configure → Ready |
+| **Visual Feedback** | ✅ Real-time | WorkflowStatus component |
+| **Error Prevention** | ✅ Active | Disabled Test button until ready |
 
 ## User Flow
 
@@ -282,7 +282,7 @@ interface FlowNode {
 1. **Clear Guidance** - Wizard-based trigger setup removes confusion
 2. **Error Prevention** - Can't create invalid workflows
 3. **Visual Feedback** - Always know what's missing
-4. **Familiar Pattern** - Matches n8n's proven UX
+4. **Intuitive Design** - User-friendly workflow builder
 
 ### For Developers
 1. **Type Safety** - TypeScript validation functions
@@ -352,9 +352,9 @@ describe('Workflow Validation', () => {
 
 ## Documentation References
 
-- **n8n Documentation**: https://docs.n8n.io/integrations/
-- **n8n Trigger Nodes**: https://docs.n8n.io/integrations/builtin/trigger-nodes/
-- **n8n Google Sheets Integration**: https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.googlesheets/
+- **AgentForge Docs**: See `/docs` folder for complete documentation
+- **Quick Start Guide**: [QUICK_START.md](./QUICK_START.md)
+- **Product Documentation**: [PRODUCT_DOCUMENTATION.md](./PRODUCT_DOCUMENTATION.md)
 
 ## Contributing
 

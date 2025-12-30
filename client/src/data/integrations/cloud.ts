@@ -5,7 +5,7 @@ import type { Integration } from './types';
 export const dropboxIntegration: Integration = {
   id: 'dropbox',
   name: 'Dropbox',
-  description: 'Use the Dropbox node to manage files and folders in the cloud. n8n supports upload, download, sharing, and team folder operations.',
+  description: 'Use the Dropbox integration to manage files and folders in the cloud. AgentForge supports upload, download, sharing, and team folder operations.',
   shortDescription: 'Cloud file storage',
   category: 'database',
   icon: 'dropbox',
@@ -151,7 +151,7 @@ export const dropboxIntegration: Integration = {
 export const awsS3Integration: Integration = {
   id: 'aws-s3',
   name: 'Amazon S3',
-  description: 'Use the AWS S3 node for object storage operations. n8n supports upload, download, and bucket management with scalable cloud storage.',
+  description: 'Use the AWS S3 node for object storage operations. AgentForge supports upload, download, and bucket management with scalable cloud storage.',
   shortDescription: 'Scalable object storage',
   category: 'database',
   icon: 'aws',
@@ -316,7 +316,7 @@ export const awsS3Integration: Integration = {
 export const postgresqlIntegration: Integration = {
   id: 'postgresql',
   name: 'PostgreSQL',
-  description: 'Use the PostgreSQL node for database operations. n8n supports queries, inserts, updates, and transactions with PostgreSQL databases.',
+  description: 'Use the PostgreSQL node for database operations. AgentForge supports queries, inserts, updates, and transactions with PostgreSQL databases.',
   shortDescription: 'Advanced relational database',
   category: 'database',
   icon: 'postgresql',
@@ -449,7 +449,7 @@ ORDER BY avg_ltv DESC`,
 export const mysqlIntegration: Integration = {
   id: 'mysql',
   name: 'MySQL',
-  description: 'Use the MySQL node for database operations. n8n supports queries, stored procedures, and transactions with MySQL and MariaDB.',
+  description: 'Use the MySQL node for database operations. AgentForge supports queries, stored procedures, and transactions with MySQL and MariaDB.',
   shortDescription: 'Popular relational database',
   category: 'database',
   icon: 'mysql',
@@ -577,7 +577,7 @@ ON DUPLICATE KEY UPDATE
 export const redisIntegration: Integration = {
   id: 'redis',
   name: 'Redis',
-  description: 'Use the Redis node for in-memory data operations. n8n supports caching, pub/sub, and data structure operations with Redis.',
+  description: 'Use the Redis node for in-memory data operations. AgentForge supports caching, pub/sub, and data structure operations with Redis.',
   shortDescription: 'In-memory data store',
   category: 'database',
   icon: 'redis',
@@ -721,7 +721,7 @@ EXEC
 export const dynamodbIntegration: Integration = {
   id: 'dynamodb',
   name: 'AWS DynamoDB',
-  description: 'Use the DynamoDB node to manage items in AWS DynamoDB tables. Supports CRUD operations, queries, and scans for NoSQL data workflows.',
+  description: 'Use the DynamoDB integration to manage items in AWS DynamoDB tables. Supports CRUD operations, queries, and scans for NoSQL data workflows.',
   shortDescription: 'AWS NoSQL database',
   category: 'database',
   icon: 'dynamodb',

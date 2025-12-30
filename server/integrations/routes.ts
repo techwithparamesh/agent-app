@@ -120,7 +120,7 @@ export const integrationRoutes = Router();
 // Mount Google Sheets sub-router
 integrationRoutes.use('/google-sheets', googleSheetsRouter);
 
-// Resolve auth fields from a stored credentialId (n8n-style)
+// Resolve auth fields from a stored credentialId
 integrationRoutes.use('/options', async (req, res, next) => {
   try {
     const body = (req as any).body;

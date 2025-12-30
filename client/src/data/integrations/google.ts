@@ -5,7 +5,7 @@ import type { Integration } from './types';
 export const googleDriveIntegration: Integration = {
   id: 'google-drive',
   name: 'Google Drive',
-  description: 'Use the Google Drive node to manage files and folders. n8n supports upload, download, sharing, and organization of Drive files.',
+  description: 'Use the Google Drive integration to manage files and folders. AgentForge supports upload, download, sharing, and organization of Drive files.',
   shortDescription: 'Cloud file storage and sharing',
   category: 'google',
   icon: 'google-drive',
@@ -162,7 +162,7 @@ export const googleDriveIntegration: Integration = {
 export const googleCalendarIntegration: Integration = {
   id: 'google-calendar',
   name: 'Google Calendar',
-  description: 'Use the Google Calendar node to manage events, schedules, and calendars. n8n supports event creation, updates, and availability checking.',
+  description: 'Use the Google Calendar integration to manage events, schedules, and calendars. AgentForge supports event creation, updates, and availability checking.',
   shortDescription: 'Calendar and scheduling',
   category: 'google',
   icon: 'google-calendar',
@@ -457,7 +457,7 @@ export const googleMeetIntegration: Integration = {
 export const googleDocsIntegration: Integration = {
   id: 'google-docs',
   name: 'Google Docs',
-  description: 'Use the Google Docs node to create and manipulate documents. n8n supports document creation, content insertion, and formatting.',
+  description: 'Use the Google Docs integration to create and manipulate documents. AgentForge supports document creation, content insertion, and formatting.',
   shortDescription: 'Document creation and editing',
   category: 'google',
   icon: 'google-docs',
@@ -599,7 +599,7 @@ export const googleDocsIntegration: Integration = {
 export const googleFormsIntegration: Integration = {
   id: 'google-forms',
   name: 'Google Forms',
-  description: 'Use the Google Forms node to create forms and process responses. n8n supports form creation, response retrieval, and automated workflows.',
+  description: 'Use the Google Forms integration to create forms and process responses. AgentForge supports form creation, response retrieval, and automated workflows.',
   shortDescription: 'Form creation and response handling',
   category: 'google',
   icon: 'google-forms',

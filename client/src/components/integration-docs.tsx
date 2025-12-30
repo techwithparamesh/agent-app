@@ -710,7 +710,7 @@ export function IntegrationDocs() {
           <p className="text-muted-foreground mb-6 max-w-2xl">
             {activeCategory 
               ? categoryDescriptions[activeCategory]
-              : "Professional, n8n-style documentation for all supported integrations. Each integration includes detailed setup instructions, operations, triggers, actions, examples, and troubleshooting guides."
+              : "Professional documentation for all supported integrations. Each integration includes detailed setup instructions, operations, triggers, actions, examples, and troubleshooting guides."
             }
           </p>
           

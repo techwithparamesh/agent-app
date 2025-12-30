@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const hubspotIntegration: Integration = {
   id: 'hubspot',
   name: 'HubSpot',
-  description: 'Use the HubSpot node to manage contacts, companies, deals, and tickets. n8n supports the full HubSpot CRM API for sales automation, marketing, and customer service workflows.',
+  description: 'Use the HubSpot integration to manage contacts, companies, deals, and tickets. AgentForge supports the full HubSpot CRM API for sales automation, marketing, and customer service workflows.',
   shortDescription: 'CRM, sales, and marketing automation',
   category: 'crm',
   icon: 'hubspot',
@@ -262,7 +262,7 @@ export const hubspotIntegration: Integration = {
 export const salesforceIntegration: Integration = {
   id: 'salesforce',
   name: 'Salesforce',
-  description: 'Use the Salesforce node to manage leads, contacts, accounts, and opportunities in the world\'s leading CRM. n8n supports SOQL queries, record management, and custom object handling.',
+  description: 'Use the Salesforce integration to manage leads, contacts, accounts, and opportunities in the world\'s leading CRM. AgentForge supports SOQL queries, record management, and custom object handling.',
   shortDescription: 'Enterprise CRM and sales management',
   category: 'crm',
   icon: 'salesforce',
@@ -478,7 +478,7 @@ export const salesforceIntegration: Integration = {
 export const pipedriveIntegration: Integration = {
   id: 'pipedrive',
   name: 'Pipedrive',
-  description: 'Use the Pipedrive node to manage your sales pipeline, deals, contacts, and activities. n8n supports the full Pipedrive CRM API for sales-focused automation.',
+  description: 'Use the Pipedrive integration to manage your sales pipeline, deals, contacts, and activities. AgentForge supports the full Pipedrive CRM API for sales-focused automation.',
   shortDescription: 'Sales CRM and pipeline management',
   category: 'crm',
   icon: 'pipedrive',
@@ -664,7 +664,7 @@ export const pipedriveIntegration: Integration = {
 export const zohoIntegration: Integration = {
   id: 'zoho',
   name: 'Zoho CRM',
-  description: 'Use the Zoho CRM node to manage leads, contacts, accounts, and deals. n8n supports full CRM automation with Zoho\'s comprehensive API.',
+  description: 'Use the Zoho CRM integration to manage leads, contacts, accounts, and deals. AgentForge supports full CRM automation with Zoho\'s comprehensive API.',
   shortDescription: 'Complete CRM solution',
   category: 'crm',
   icon: 'zoho',
@@ -819,7 +819,7 @@ export const zohoIntegration: Integration = {
 export const freshsalesIntegration: Integration = {
   id: 'freshsales',
   name: 'Freshsales',
-  description: 'Use the Freshsales node to manage leads, contacts, accounts, and deals. n8n supports sales automation with Freshworks CRM.',
+  description: 'Use the Freshsales integration to manage leads, contacts, accounts, and deals. AgentForge supports sales automation with Freshworks CRM.',
   shortDescription: 'AI-powered sales CRM',
   category: 'crm',
   icon: 'freshsales',

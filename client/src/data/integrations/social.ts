@@ -5,7 +5,7 @@ import type { Integration } from './types';
 export const twitterIntegration: Integration = {
   id: 'twitter',
   name: 'Twitter/X',
-  description: 'Use the Twitter node to post tweets, manage followers, and interact with the Twitter API. n8n supports posting, searching, and user management.',
+  description: 'Use the Twitter integration to post tweets, manage followers, and interact with the Twitter API. AgentForge supports posting, searching, and user management.',
   shortDescription: 'Social media platform',
   category: 'marketing',
   icon: 'twitter',
@@ -144,7 +144,7 @@ export const twitterIntegration: Integration = {
 export const instagramIntegration: Integration = {
   id: 'instagram',
   name: 'Instagram',
-  description: 'Use the Instagram node to post content, manage stories, and interact with the Instagram Graph API. Requires Facebook Business account.',
+  description: 'Use the Instagram integration to post content, manage stories, and interact with the Instagram Graph API. Requires Facebook Business account.',
   shortDescription: 'Photo sharing platform',
   category: 'marketing',
   icon: 'instagram',
@@ -270,7 +270,7 @@ export const instagramIntegration: Integration = {
 export const youtubeIntegration: Integration = {
   id: 'youtube',
   name: 'YouTube',
-  description: 'Use the YouTube node to upload videos, manage channels, and interact with the YouTube Data API. Supports video uploads, playlists, and analytics.',
+  description: 'Use the YouTube integration to upload videos, manage channels, and interact with the YouTube Data API. Supports video uploads, playlists, and analytics.',
   shortDescription: 'Video sharing platform',
   category: 'marketing',
   icon: 'youtube',
@@ -412,7 +412,7 @@ export const youtubeIntegration: Integration = {
 export const tiktokIntegration: Integration = {
   id: 'tiktok',
   name: 'TikTok',
-  description: 'Use the TikTok node to manage videos and interact with the TikTok API. Supports video posting and analytics for business accounts.',
+  description: 'Use the TikTok integration to manage videos and interact with the TikTok API. Supports video posting and analytics for business accounts.',
   shortDescription: 'Short-form video platform',
   category: 'marketing',
   icon: 'tiktok',
@@ -526,7 +526,7 @@ export const tiktokIntegration: Integration = {
 export const pinterestIntegration: Integration = {
   id: 'pinterest',
   name: 'Pinterest',
-  description: 'Use the Pinterest node to create pins, manage boards, and interact with the Pinterest API. Supports visual content marketing.',
+  description: 'Use the Pinterest integration to create pins, manage boards, and interact with the Pinterest API. Supports visual content marketing.',
   shortDescription: 'Visual discovery platform',
   category: 'marketing',
   icon: 'pinterest',

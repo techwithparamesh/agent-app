@@ -1,5 +1,5 @@
 /**
- * N8n-Style Node Configuration Modal
+ * Node Configuration Modal
  * 
  * Full-screen modal for configuring workflow nodes with:
  * - Parameters tab with dynamic fields

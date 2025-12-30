@@ -76,7 +76,7 @@ import {
   Layout,
 } from "lucide-react";
 
-// ============= INTEGRATION CATALOG (n8n-style) =============
+// ============= INTEGRATION CATALOG =============
 const integrationCatalog = {
   // Communication
   communication: {
@@ -1347,7 +1347,7 @@ function IntegrationsPageContent() {
       return;
     }
 
-    // n8n-like: “Connect” should take the user to Credentials and preselect this app.
+    //  “Connect” should take the user to Credentials and preselect this app.
     sessionStorage.setItem('workspace_open_credentials', '1');
     sessionStorage.setItem('workspace_credentials_appId', String(app.id));
     setLocation('/dashboard/integrations/workspace');
@@ -1374,7 +1374,7 @@ function IntegrationsPageContent() {
               Integrations
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Connect {allIntegrations.length} apps and automate your workflows like n8n
+              Connect {allIntegrations.length} apps and automate your workflows with AgentForge
             </p>
           </div>
           <div className="flex gap-2">
@@ -5435,7 +5435,7 @@ function IntegrationConfigForm({
   const [config, setConfig] = useState<Record<string, string>>({});
   const [actionConfig, setActionConfig] = useState<Record<string, string>>({});
 
-  // ============ n8n-STYLE WORKFLOW DATA MODEL ============
+  // ============ WORKFLOW DATA MODEL ============
   // Each step is a node in the workflow. Conditions have branches that contain their own steps.
   type WorkflowStep = {
     id: string;
@@ -5644,8 +5644,8 @@ function IntegrationConfigForm({
         value: '',
         logicOperator: 'AND'
       }],
-      trueBranch: [],   // n8n-style: array of steps for TRUE path
-      falseBranch: [],  // n8n-style: array of steps for FALSE path
+      trueBranch: [],   // Array of steps for TRUE path
+      falseBranch: [],  // Array of steps for FALSE path
     };
 
     setWorkflowSteps([...workflowSteps, newStep]);
@@ -6798,7 +6798,7 @@ function IntegrationConfigForm({
       {/* Step 4: Action Logic - WHAT should happen? */}
       {step === 4 && (
         <div className="space-y-6">
-          {/* ============ n8n-STYLE VISUAL WORKFLOW BUILDER ============ */}
+          {/* ============ VISUAL WORKFLOW BUILDER ============ */}
           
           {/* Workflow Canvas Header */}
           <div className="flex items-center justify-between">
@@ -7293,7 +7293,7 @@ function IntegrationConfigForm({
                               <div className="w-24 h-4 border-r-2 border-t-2 border-destructive rounded-tr-xl" />
                             </div>
                             
-                            {/* n8n-Style Branch Columns */}
+                            {/* Branch Columns */}
                             <div className="flex gap-6 w-full max-w-xl justify-center">
                               {/* TRUE Branch Column */}
                               <div className="flex flex-col items-center flex-1 max-w-[200px]">

@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const gmailIntegration: Integration = {
   id: 'gmail',
   name: 'Gmail',
-  description: 'Use the Gmail node to send, receive, and manage emails through Gmail. n8n supports sending emails, reading inbox, managing labels, and searching messages with full OAuth2 authentication.',
+  description: 'Use the Gmail integration to send, receive, and manage emails through Gmail. AgentForge supports sending emails, reading inbox, managing labels, and searching messages with full OAuth2 authentication.',
   shortDescription: 'Send and receive emails via Gmail',
   category: 'email',
   icon: 'gmail',
@@ -233,7 +233,7 @@ export const gmailIntegration: Integration = {
 export const sendgridIntegration: Integration = {
   id: 'sendgrid',
   name: 'SendGrid',
-  description: 'Use the SendGrid node to send transactional and marketing emails at scale. n8n supports single and bulk email sending, dynamic templates, and contact management.',
+  description: 'Use the SendGrid integration to send transactional and marketing emails at scale. AgentForge supports single and bulk email sending, dynamic templates, and contact management.',
   shortDescription: 'Send transactional and marketing emails',
   category: 'email',
   icon: 'sendgrid',
@@ -423,7 +423,7 @@ export const sendgridIntegration: Integration = {
 export const mailchimpIntegration: Integration = {
   id: 'mailchimp',
   name: 'Mailchimp',
-  description: 'Use the Mailchimp node to manage email marketing campaigns, subscriber lists, and automations. n8n supports contact management, campaign creation, and audience segmentation.',
+  description: 'Use the Mailchimp integration to manage email marketing campaigns, subscriber lists, and automations. AgentForge supports contact management, campaign creation, and audience segmentation.',
   shortDescription: 'Email marketing and audience management',
   category: 'email',
   icon: 'mailchimp',
@@ -599,7 +599,7 @@ export const mailchimpIntegration: Integration = {
 export const outlookIntegration: Integration = {
   id: 'outlook',
   name: 'Microsoft Outlook',
-  description: 'Use the Outlook node to send, receive, and manage emails through Microsoft 365. n8n supports full email operations, calendar integration, and contact management.',
+  description: 'Use the Outlook integration to send, receive, and manage emails through Microsoft 365. AgentForge supports full email operations, calendar integration, and contact management.',
   shortDescription: 'Microsoft 365 email management',
   category: 'email',
   icon: 'outlook',
@@ -769,7 +769,7 @@ export const outlookIntegration: Integration = {
 export const smtpIntegration: Integration = {
   id: 'smtp',
   name: 'SMTP Email',
-  description: 'Use the SMTP node to send emails through any SMTP server. n8n supports custom mail servers, authentication, and advanced email formatting.',
+  description: 'Use the SMTP integration to send emails through any SMTP server. AgentForge supports custom mail servers, authentication, and advanced email formatting.',
   shortDescription: 'Send email via any SMTP server',
   category: 'email',
   icon: 'email',

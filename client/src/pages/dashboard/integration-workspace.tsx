@@ -142,7 +142,7 @@ export function IntegrationWorkspace() {
         console.error('Failed to parse initial app data:', e);
       }
     } else if (nodes.length === 0) {
-      // n8n-style: Create default Manual Trigger node when workspace loads
+      // Create default Manual Trigger node when workspace loads
       const defaultTrigger: FlowNodeType = {
         id: generateId(),
         type: 'trigger',
@@ -174,7 +174,7 @@ export function IntegrationWorkspace() {
     const appConfig = appData.id ? getAppConfig(appData.id) : null;
     const hasTriggers = appConfig?.triggers && appConfig.triggers.length > 0;
     
-    // n8n-style enforcement: First node must be a trigger app
+    // Enforcement: First node must be a trigger app
     if (isFirstNode) {
       if (!hasTriggers) {
         // This app doesn't support triggers - can't be first node
@@ -205,7 +205,7 @@ export function IntegrationWorkspace() {
       return;
     }
     
-    // n8n-style enforcement: Can only add actions if trigger is configured
+    // Enforcement: Can only add actions if trigger is configured
     const hasTriggerWithType = nodes.some(n => n.type === 'trigger' && n.config?.triggerType);
     if (!hasTriggerWithType) {
       // Show toast warning
@@ -570,7 +570,7 @@ export function IntegrationWorkspace() {
 
             {/* Render nodes + connectors */}
             <div className="relative min-w-[2000px] min-h-[2000px]">
-              {/* Connectors (n8n-like curved bezier paths) */}
+              {/* Connectors (curved bezier paths) */}
               <svg
                 className="absolute inset-0 pointer-events-none w-full h-full overflow-visible"
                 preserveAspectRatio="none"
@@ -678,7 +678,7 @@ export function IntegrationWorkspace() {
             </div>
           </WorkspaceCanvas>
 
-          {/* Right Config Panel - n8n-style wizard flow */}
+          {/* Right Config Panel - wizard flow */}
           <ConfigPanelV2
             node={selectedNode}
             isOpen={configPanelOpen}

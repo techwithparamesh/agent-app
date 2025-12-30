@@ -150,7 +150,7 @@ export const integrationCredentials = mysqlTable("integration_credentials", {
   userAppIdx: index("idx_credentials_user_app").on(table.userId, table.appId),
 }));
 
-// Integration workflows (like n8n workflows)
+// AgentForge integration workflows
 export const integrationWorkflows = mysqlTable("integration_workflows", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),

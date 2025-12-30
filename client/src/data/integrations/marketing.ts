@@ -5,7 +5,7 @@ import type { Integration } from './types';
 export const googleAnalyticsIntegration: Integration = {
   id: 'google-analytics',
   name: 'Google Analytics',
-  description: 'Use the Google Analytics node to track events, retrieve reports, and manage properties. n8n supports GA4 with comprehensive reporting capabilities.',
+  description: 'Use the Google Analytics integration to track events, retrieve reports, and manage properties. AgentForge supports GA4 with comprehensive reporting capabilities.',
   shortDescription: 'Web analytics and tracking',
   category: 'marketing',
   icon: 'google-analytics',
@@ -140,7 +140,7 @@ export const googleAnalyticsIntegration: Integration = {
 export const facebookAdsIntegration: Integration = {
   id: 'facebook-ads',
   name: 'Facebook Ads',
-  description: 'Use the Facebook Ads node to manage campaigns, ad sets, and ads. n8n supports creating, updating, and analyzing Facebook advertising.',
+  description: 'Use the Facebook Ads integration to manage campaigns, ad sets, and ads. AgentForge supports creating, updating, and analyzing Facebook advertising.',
   shortDescription: 'Facebook advertising management',
   category: 'marketing',
   icon: 'facebook',
@@ -275,7 +275,7 @@ POST /{{ad_id}}
 export const googleAdsIntegration: Integration = {
   id: 'google-ads',
   name: 'Google Ads',
-  description: 'Use the Google Ads node to manage campaigns, keywords, and ads. n8n supports search, display, and video campaign management.',
+  description: 'Use the Google Ads integration to manage campaigns, keywords, and ads. AgentForge supports search, display, and video campaign management.',
   shortDescription: 'Google advertising platform',
   category: 'marketing',
   icon: 'google',
@@ -404,7 +404,7 @@ ORDER BY metrics.cost_micros DESC`,
 export const intercomIntegration: Integration = {
   id: 'intercom',
   name: 'Intercom',
-  description: 'Use the Intercom node to manage conversations, contacts, and messages. n8n supports customer engagement and support workflows.',
+  description: 'Use the Intercom integration to manage conversations, contacts, and messages. AgentForge supports customer engagement and support workflows.',
   shortDescription: 'Customer messaging platform',
   category: 'marketing',
   icon: 'intercom',
@@ -546,7 +546,7 @@ export const intercomIntegration: Integration = {
 export const twilioIntegration: Integration = {
   id: 'twilio',
   name: 'Twilio',
-  description: 'Use the Twilio node for SMS, voice calls, and WhatsApp messaging. n8n supports programmable messaging and voice capabilities.',
+  description: 'Use the Twilio node for SMS, voice calls, and WhatsApp messaging. AgentForge supports programmable messaging and voice capabilities.',
   shortDescription: 'SMS, voice, and messaging APIs',
   category: 'marketing',
   icon: 'twilio',

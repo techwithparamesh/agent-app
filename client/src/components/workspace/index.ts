@@ -60,7 +60,7 @@ export {
 // AI Node Panel
 export { AINodePanel } from './AINodePanel';
 
-// N8n-Style Editor Components
+// Editor Components
 export {
   StickyNote,
   StickyNoteLayer,

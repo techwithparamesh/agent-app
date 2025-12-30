@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const airtableIntegration: Integration = {
   id: 'airtable',
   name: 'Airtable',
-  description: 'Use the Airtable node to work with bases, tables, and records. n8n supports CRUD operations, filtering, sorting, and linked records for flexible database workflows.',
+  description: 'Use the Airtable integration to work with bases, tables, and records. AgentForge supports CRUD operations, filtering, sorting, and linked records for flexible database workflows.',
   shortDescription: 'Spreadsheet-database hybrid',
   category: 'database',
   icon: 'airtable',
@@ -206,7 +206,7 @@ export const airtableIntegration: Integration = {
 export const firebaseIntegration: Integration = {
   id: 'firebase',
   name: 'Firebase',
-  description: 'Use the Firebase node to work with Firestore and Realtime Database. n8n supports document operations, queries, and real-time listeners.',
+  description: 'Use the Firebase integration to work with Firestore and Realtime Database. AgentForge supports document operations, queries, and real-time listeners.',
   shortDescription: 'Google\'s app development platform',
   category: 'database',
   icon: 'firebase',
@@ -395,7 +395,7 @@ export const firebaseIntegration: Integration = {
 export const mongodbIntegration: Integration = {
   id: 'mongodb',
   name: 'MongoDB',
-  description: 'Use the MongoDB node to work with collections and documents. n8n supports all CRUD operations, aggregations, and advanced queries.',
+  description: 'Use the MongoDB integration to work with collections and documents. AgentForge supports all CRUD operations, aggregations, and advanced queries.',
   shortDescription: 'NoSQL document database',
   category: 'database',
   icon: 'mongodb',
@@ -581,7 +581,7 @@ export const mongodbIntegration: Integration = {
 export const supabaseIntegration: Integration = {
   id: 'supabase',
   name: 'Supabase',
-  description: 'Use the Supabase node for PostgreSQL database operations, authentication, and real-time subscriptions. n8n supports full database CRUD and auth management.',
+  description: 'Use the Supabase node for PostgreSQL database operations, authentication, and real-time subscriptions. AgentForge supports full database CRUD and auth management.',
   shortDescription: 'Open source Firebase alternative',
   category: 'database',
   icon: 'supabase',
@@ -753,7 +753,7 @@ await supabase
 export const elasticsearchIntegration: Integration = {
   id: 'elasticsearch',
   name: 'Elasticsearch',
-  description: 'Use the Elasticsearch node to search, index, and manage documents. n8n supports full-text search, aggregations, and bulk operations for powerful search workflows.',
+  description: 'Use the Elasticsearch integration to search, index, and manage documents. AgentForge supports full-text search, aggregations, and bulk operations for powerful search workflows.',
   shortDescription: 'Search and analytics engine',
   category: 'database',
   icon: 'elasticsearch',

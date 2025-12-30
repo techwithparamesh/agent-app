@@ -5,7 +5,7 @@ import type { Integration } from './types';
 export const makeIntegration: Integration = {
   id: 'make',
   name: 'Make (Integromat)',
-  description: 'Use the Make node to trigger scenarios and exchange data with Make automation platform. n8n supports webhook triggers and actions.',
+  description: 'Use the Make integration to trigger scenarios and exchange data with Make automation platform. AgentForge supports webhook triggers and actions.',
   shortDescription: 'Visual automation platform',
   category: 'developer',
   icon: 'make',
@@ -130,7 +130,7 @@ export const makeIntegration: Integration = {
 export const n8nIntegration: Integration = {
   id: 'n8n',
   name: 'n8n',
-  description: 'Use the n8n node to trigger workflows and exchange data with n8n instances. Perfect for distributed automation architectures.',
+  description: 'Use the n8n integration to trigger workflows and exchange data with n8n instances. Perfect for distributed automation architectures.',
   shortDescription: 'Open-source workflow automation',
   category: 'developer',
   icon: 'n8n',
@@ -256,7 +256,7 @@ export const n8nIntegration: Integration = {
 export const iftttIntegration: Integration = {
   id: 'ifttt',
   name: 'IFTTT',
-  description: 'Use the IFTTT node to trigger applets and send data via Webhooks. n8n supports the IFTTT Maker/Webhooks service.',
+  description: 'Use the IFTTT integration to trigger applets and send data via Webhooks. AgentForge supports the IFTTT Maker/Webhooks service.',
   shortDescription: 'If This Then That automation',
   category: 'developer',
   icon: 'ifttt',
@@ -370,7 +370,7 @@ export const iftttIntegration: Integration = {
 export const powerAutomateIntegration: Integration = {
   id: 'power-automate',
   name: 'Power Automate',
-  description: 'Use the Power Automate node to trigger flows and exchange data with Microsoft Power Automate. Supports HTTP triggers and connectors.',
+  description: 'Use the Power Automate integration to trigger flows and exchange data with Microsoft Power Automate. Supports HTTP triggers and connectors.',
   shortDescription: 'Microsoft workflow automation',
   category: 'developer',
   icon: 'microsoft',

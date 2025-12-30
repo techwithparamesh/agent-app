@@ -1,4 +1,4 @@
-// n8n-style Integration Documentation Types
+// Integration Documentation Types
 
 export type IntegrationCategory = 
   | 'communication' 

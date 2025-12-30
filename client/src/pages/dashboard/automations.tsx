@@ -1,7 +1,7 @@
 /**
  * Automations Dashboard Page
  * 
- * A clean, n8n-inspired automations management page.
+ * A clean automations management page.
  * Lists all automations with the ability to create, edit, run, and manage them.
  */
 

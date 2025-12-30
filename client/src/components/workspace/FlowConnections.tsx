@@ -2,7 +2,7 @@
  * Bezier Curve Connections Component
  * 
  * Renders smooth, animated bezier curves between nodes
- * with hover states, selection, and n8n-style aesthetics.
+ * with hover states, selection, and polished aesthetics.
  */
 
 import React, { useMemo, useCallback, useState } from "react";
@@ -37,7 +37,7 @@ export interface FlowConnectionsProps {
 // CONSTANTS
 // ============================================
 
-// n8n-style: 240px fixed width, horizontal flow (left-to-right)
+// 240px fixed width, horizontal flow (left-to-right)
 const NODE_WIDTH = 240;
 const NODE_HEIGHT = 100; // Approximate height for calculations
 const HANDLE_OFFSET = 7;  // Handle protrusion from node edge
@@ -46,7 +46,7 @@ const STROKE_WIDTH = 2;
 const STROKE_WIDTH_HOVER = 3;
 const HIT_AREA_WIDTH = 20;
 
-// Connection colors by type (n8n-style: increased opacity for visibility)
+// Connection colors by type (increased opacity for visibility)
 const CONNECTION_COLORS = {
   default: 'hsl(var(--muted-foreground) / 0.65)',
   hover: 'hsl(var(--primary) / 0.85)',

@@ -574,11 +574,11 @@
   }
 
   /* ========================================
-   * N8N-STYLE CANVAS UTILITIES
+   * CANVAS UTILITIES
    * Infinite canvas with dotted grid background
    * ======================================== */
 
-  /* n8n-style dotted grid background - subtle 20px spacing */
+  /* Dotted grid background - subtle 20px spacing */
   .n8n-canvas-grid {
     background-image: radial-gradient(
       circle,
@@ -627,14 +627,14 @@
     /* Applied via JS - positions snap to 10px */
   }
 
-  /* n8n-style node selection */
+  /* Node selection styling */
   .n8n-node-selected {
     box-shadow: 
       0 0 0 2px hsl(var(--primary)),
       0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
-  /* n8n-style status colors for nodes */
+  /* Status colors for nodes */
   .n8n-status-success {
     border-color: hsl(142 76% 36%);
   }

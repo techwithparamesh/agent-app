@@ -1,5 +1,5 @@
 /**
- * ConfigPanelV2 - n8n-inspired Configuration Panel
+ * ConfigPanelV2 - AgentForge Configuration Panel
  * 
  * This is a complete redesign focused on:
  * 1. Clear step-by-step flow - users always know where they are
@@ -612,7 +612,7 @@ export function ConfigPanelV2({
   }, [isOpen, node?.appId]);
 
   // ============================================================================
-  // n8n-like helpers: resource/operation parsing + required checks
+  // Helpers: resource/operation parsing + required checks
   // ============================================================================
 
   const parseActionMeta = useCallback((actionId: string): { operation: string; resource: string } => {
@@ -1133,7 +1133,7 @@ export function ConfigPanelV2({
       fieldMappings,
       selectedTriggerId,
       selectedActionId,
-      // n8n-like: persist resource/operation split for app actions
+      // Persist resource/operation split for app actions
       resource: resourceToPersist,
       operation: operationToPersist,
       dynamicFields: sanitizedDynamicFields,
@@ -2181,7 +2181,7 @@ export function ConfigPanelV2({
           </div>
         </div>
 
-        {/* Resource + Operation (n8n-like) */}
+        {/* Resource + Operation */}
         {appConfig ? (
           <div className="space-y-3">
             {resources.length > 1 && (
@@ -2635,15 +2635,15 @@ export function ConfigPanelV2({
   // ============================================================================
 
   /**
-   * n8n-style Config Panel Layout:
-   * - Max width: 380px (n8n standard)
+   * Config Panel Layout:
+   * - Max width: 380px (standard)
    * - Sticky header: App icon + node name + close button
    * - Scrollable body: All form content
    * - Sticky footer: Test Node + Save buttons
    */
   return (
     <div className={cn(
-      // n8n max width: 380px
+      // Max width: 380px
       "w-[380px] h-full bg-background border-l flex flex-col",
       "animate-in slide-in-from-right duration-200"
     )}>

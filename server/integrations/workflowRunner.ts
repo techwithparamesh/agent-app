@@ -944,7 +944,7 @@ export async function runWorkflow(input: WorkflowRunInput): Promise<{ nodeExecut
         completedAt,
       });
 
-      // Stop on first error (n8n-like default behavior)
+      // Stop on first error (default behavior)
       throw error;
     }
   }

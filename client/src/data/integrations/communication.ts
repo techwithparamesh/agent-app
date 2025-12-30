@@ -3,7 +3,7 @@ import { Integration } from './types';
 export const slackIntegration: Integration = {
   id: 'slack',
   name: 'Slack',
-  description: 'Use the Slack node to send messages, manage channels, upload files, and interact with your Slack workspace. n8n has built-in support for posting messages, creating channels, managing users, and handling Slack events via webhooks.',
+  description: 'Use the Slack integration to send messages, manage channels, upload files, and interact with your Slack workspace. AgentForge has built-in support for posting messages, creating channels, managing users, and handling Slack events via webhooks.',
   shortDescription: 'Send messages and manage Slack workspaces',
   category: 'communication',
   icon: 'slack',
@@ -274,7 +274,7 @@ export const slackIntegration: Integration = {
 export const telegramIntegration: Integration = {
   id: 'telegram',
   name: 'Telegram',
-  description: 'Use the Telegram node to send messages, photos, documents, and manage Telegram bots. n8n supports all major Telegram Bot API features including inline keyboards, message editing, and group management.',
+  description: 'Use the Telegram integration to send messages, photos, documents, and manage Telegram bots. AgentForge supports all major Telegram Bot API features including inline keyboards, message editing, and group management.',
   shortDescription: 'Build Telegram bots and send messages',
   category: 'communication',
   icon: 'telegram',
@@ -487,7 +487,7 @@ export const telegramIntegration: Integration = {
 export const discordIntegration: Integration = {
   id: 'discord',
   name: 'Discord',
-  description: 'Use the Discord node to send messages, manage servers, and interact with Discord channels. n8n supports webhooks, bot messaging, channel management, and rich embeds.',
+  description: 'Use the Discord integration to send messages, manage servers, and interact with Discord channels. AgentForge supports webhooks, bot messaging, channel management, and rich embeds.',
   shortDescription: 'Send messages and manage Discord servers',
   category: 'communication',
   icon: 'discord',
