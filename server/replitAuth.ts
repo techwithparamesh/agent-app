@@ -58,7 +58,8 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: isProduction, // Only secure in production (HTTPS)
-      sameSite: isProduction ? "strict" : "lax",
+      // OAuth/OpenID redirects commonly require SameSite=Lax to preserve sessions.
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });

@@ -1,8 +1,24 @@
 import { Router } from 'express';
 import { storage } from '../storage';
 import { runWorkflow } from './workflowRunner';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+const webhookRateLimitWindowMs = Number(process.env.WORKFLOW_WEBHOOK_RATE_LIMIT_WINDOW_MS || 60 * 1000);
+const webhookRateLimitMax = Number(process.env.WORKFLOW_WEBHOOK_RATE_LIMIT_MAX || 120);
+
+// Public endpoint: rate-limit by webhookId + IP to reduce abuse and brute forcing.
+const workflowWebhookRateLimiter = rateLimit({
+  windowMs: Number.isFinite(webhookRateLimitWindowMs) ? webhookRateLimitWindowMs : 60 * 1000,
+  max: Number.isFinite(webhookRateLimitMax) ? webhookRateLimitMax : 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const webhookId = String((req as any)?.params?.webhookId || '');
+    return `${req.ip}|${webhookId}`;
+  },
+});
 
 function findTriggerNode(workflow: any) {
   const nodes = Array.isArray(workflow?.nodes) ? workflow.nodes : [];
@@ -167,7 +183,7 @@ async function executeWebhookWorkflow(workflow: any, req: any) {
 }
 
 // Public workflow webhook endpoint
-router.all('/workflow/:webhookId', async (req: any, res) => {
+router.all('/workflow/:webhookId', workflowWebhookRateLimiter, async (req: any, res) => {
   try {
     const webhookId = String(req.params.webhookId || '');
     if (!webhookId) return res.status(400).json({ message: 'Missing webhookId' });
@@ -183,7 +199,7 @@ router.all('/workflow/:webhookId', async (req: any, res) => {
     return res.status(200).json(result);
   } catch (error: any) {
     console.error('[Workflow Webhook] error:', error);
-    return res.status(500).json({ message: error?.message || 'Failed to execute webhook workflow' });
+    return res.status(500).json({ message: 'Failed to execute webhook workflow' });
   }
 });
 

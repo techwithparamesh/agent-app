@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assertSafeOutboundUrl } from '../../utils/outboundUrlSecurity';
 
 const authSchema = z.object({
   baseUrl: z.string().min(1),
@@ -50,7 +51,7 @@ export async function executeCustomApiAction(input: CustomApiExecuteInput): Prom
   const method = String(config.method || 'GET').toUpperCase();
   if (!path) throw new Error('Custom API request requires path');
 
-  const url = new URL(joinUrl(baseUrl, path));
+  const url = await assertSafeOutboundUrl(joinUrl(baseUrl, path));
 
   const queryObj = config.query;
   if (queryObj && typeof queryObj === 'object' && !Array.isArray(queryObj)) {

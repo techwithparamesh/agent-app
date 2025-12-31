@@ -15,6 +15,9 @@ import { whatsappDispatcher } from './whatsappDispatcher';
 import { decrypt } from '../utils/encryption';
 import { maskPhoneForLogs } from './logScrub';
 import { getIntentsForCapabilities, getToolsForCapabilities } from '@shared/whatsappCategoryMatrix';
+import { db } from '../db';
+import { whatsappMessages } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import type {
   NormalizedMessage,
   AIDecision,
@@ -868,8 +871,20 @@ export class AgentRuntime {
     // Handle status updates separately
     if (eventGateway.hasStatusUpdates(parsed)) {
       const statuses = eventGateway.extractStatusUpdates(parsed);
-      // TODO: Update message statuses in database
       console.log(`[AgentRuntime] Received ${statuses.length} status updates`);
+
+      // Persist delivery/read/failed updates for outbound messages.
+      // We intentionally only update the status column to avoid clobbering metadata.
+      await Promise.allSettled(
+        statuses
+          .filter((s) => typeof s.messageId === 'string' && s.messageId.length > 0)
+          .map(async (s) => {
+            await db
+              .update(whatsappMessages)
+              .set({ status: s.status })
+              .where(eq(whatsappMessages.whatsappMessageId, s.messageId));
+          })
+      );
     }
 
     // Extract and process messages

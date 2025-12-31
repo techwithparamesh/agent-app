@@ -17,6 +17,12 @@ const schema = z.object({
 export async function executeCodeAction(input: CodeExecuteInput): Promise<any> {
   const { actionId, config } = input;
 
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowInProd = String(process.env.ALLOW_WORKFLOW_CODE_EXECUTOR || '').toLowerCase() === 'true';
+  if (isProduction && !allowInProd) {
+    throw new Error('Workflow Code executor is disabled in production. Set ALLOW_WORKFLOW_CODE_EXECUTOR=true to enable.');
+  }
+
   if (actionId !== 'execute') {
     return { status: 'skipped', reason: `Code action not implemented: ${actionId}` };
   }

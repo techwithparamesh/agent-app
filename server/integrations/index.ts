@@ -6,6 +6,7 @@
 import { db } from '../db';
 import { eq, and } from 'drizzle-orm';
 import { integrations, integrationLogs } from '@shared/schema';
+import { assertSafeOutboundUrl } from '../utils/outboundUrlSecurity';
 
 // Integration Types
 export type IntegrationType = 'google_sheets' | 'webhook' | 'zapier' | 'make' | 'email' | 'whatsapp_template' | 'custom_api';
@@ -152,7 +153,8 @@ export class IntegrationService {
     // Use webhook approach - Google Apps Script or similar
     // This is the most reliable cross-platform approach
     if (config.webhookUrl) {
-      const response = await fetch(config.webhookUrl, {
+      const safeWebhookUrl = await assertSafeOutboundUrl(String(config.webhookUrl));
+      const response = await fetch(safeWebhookUrl.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -221,6 +223,8 @@ export class IntegrationService {
       throw new Error('Webhook URL is required');
     }
 
+    const safeWebhookUrl = await assertSafeOutboundUrl(config.webhookUrl);
+
     // Map fields
     const mappedData = this.mapFields(payload.data, config.fieldMappings || []);
     
@@ -232,7 +236,7 @@ export class IntegrationService {
       data: mappedData,
     };
 
-    const response = await fetch(config.webhookUrl, {
+    const response = await fetch(safeWebhookUrl.toString(), {
       method: config.webhookMethod || 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -303,7 +307,8 @@ export class IntegrationService {
 
     // Fallback to webhook-based email (e.g., SendGrid, Mailgun webhook)
     if (config.emailWebhookUrl) {
-      const response = await fetch(config.emailWebhookUrl, {
+      const safeEmailWebhookUrl = await assertSafeOutboundUrl(config.emailWebhookUrl);
+      const response = await fetch(safeEmailWebhookUrl.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -333,6 +338,8 @@ export class IntegrationService {
       throw new Error('API URL is required');
     }
 
+    const safeApiUrl = await assertSafeOutboundUrl(config.apiUrl);
+
     const mappedData = this.mapFields(payload.data, config.fieldMappings || []);
 
     const headers: Record<string, string> = {
@@ -344,7 +351,7 @@ export class IntegrationService {
       headers['Authorization'] = `Bearer ${config.apiKey}`;
     }
 
-    const response = await fetch(config.apiUrl, {
+    const response = await fetch(safeApiUrl.toString(), {
       method: 'POST',
       headers,
       body: JSON.stringify({

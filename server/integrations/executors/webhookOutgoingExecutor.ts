@@ -1,3 +1,5 @@
+import { assertSafeOutboundUrl } from '../../utils/outboundUrlSecurity';
+
 export type WebhookOutgoingExecuteInput = {
   actionId: string;
   config: Record<string, any>;
@@ -33,6 +35,8 @@ export async function executeWebhookOutgoingAction(input: WebhookOutgoingExecute
   const method = String(config.method || 'POST').toUpperCase();
   if (!url) throw new Error('Outgoing Webhook send requires url');
 
+  const safeUrl = await assertSafeOutboundUrl(url);
+
   const headers = parseHeaders(config.headers);
 
   const hasBody = !['GET', 'HEAD'].includes(method);
@@ -44,7 +48,7 @@ export async function executeWebhookOutgoingAction(input: WebhookOutgoingExecute
     body = typeof bodyValue === 'string' ? bodyValue : JSON.stringify(bodyValue);
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(safeUrl.toString(), {
     method,
     headers,
     body,

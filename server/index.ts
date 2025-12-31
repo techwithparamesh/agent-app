@@ -13,11 +13,28 @@ if (process.env.NODE_ENV === "production") {
   const requiredEnvVars = [
     'DATABASE_URL',
     'SESSION_SECRET',
+    // Required to decrypt integration credentials and other encrypted secrets across restarts.
+    'ENCRYPTION_KEY',
   ];
   
   const missingVars = requiredEnvVars.filter(v => !process.env[v]);
   if (missingVars.length > 0) {
     console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+    process.exit(1);
+  }
+
+  // Validate ENCRYPTION_KEY format early to prevent runtime crypto errors.
+  // We expect 32 bytes represented as 64 hex chars.
+  const encryptionKey = String(process.env.ENCRYPTION_KEY || '');
+  const isValidEncryptionKey = /^[0-9a-fA-F]{64}$/.test(encryptionKey);
+  if (!isValidEncryptionKey) {
+    console.error('❌ ENCRYPTION_KEY must be 64 hex characters (32 bytes)');
+    process.exit(1);
+  }
+
+  // If Stripe is enabled, require webhook secret so subscriptions can actually update.
+  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('❌ STRIPE_WEBHOOK_SECRET is required in production when STRIPE_SECRET_KEY is set');
     process.exit(1);
   }
   

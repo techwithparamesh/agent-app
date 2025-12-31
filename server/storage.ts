@@ -934,7 +934,9 @@ export class DatabaseStorage implements IStorage {
 
   async createWorkflow(userId: string, data: Omit<InsertIntegrationWorkflow, 'userId'>): Promise<IntegrationWorkflow> {
     const id = crypto.randomUUID();
-    const webhookId = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+    // Public webhook IDs act as shared secrets; keep them unguessable.
+    // Use full UUID hex (32 chars) rather than truncating.
+    const webhookId = crypto.randomUUID().replace(/-/g, '');
     await db.insert(integrationWorkflows).values({ 
       ...data, 
       id, 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assertSafeOutboundUrl } from '../../utils/outboundUrlSecurity';
 
 const restCredentialSchema = z.object({
   apiKey: z.string().min(1).optional(),
@@ -84,7 +85,7 @@ export async function executeRestApiAction(input: RestApiExecuteInput): Promise<
 
     if (!urlRaw) throw new Error('REST API http_request requires url');
 
-    const url = new URL(urlRaw);
+    const url = await assertSafeOutboundUrl(urlRaw);
     if (queryParams) {
       for (const [k, v] of Object.entries(queryParams)) {
         if (v === undefined || v === null) continue;

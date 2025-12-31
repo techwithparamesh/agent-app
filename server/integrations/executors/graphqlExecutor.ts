@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assertSafeOutboundUrl } from '../../utils/outboundUrlSecurity';
 
 const graphqlCredentialSchema = z.object({
   endpoint: z.string().min(1),
@@ -65,11 +66,13 @@ export async function executeGraphqlAction(input: GraphqlExecuteInput): Promise<
     return { status: 'skipped', message: `GraphQL action not implemented: ${actionId}` };
   }
 
+  const safeEndpoint = await assertSafeOutboundUrl(cred.endpoint);
+
   const payload: any = { query };
   if (variables !== undefined) payload.variables = variables;
   if (operationName) payload.operationName = operationName;
 
-  const data = await gqlJson(cred.endpoint, authHeaders(cred), payload);
+  const data = await gqlJson(safeEndpoint.toString(), authHeaders(cred), payload);
 
   if (data && typeof data === 'object' && Array.isArray((data as any).errors) && (data as any).errors.length) {
     throw new Error(`GraphQL errors: ${JSON.stringify((data as any).errors)}`);

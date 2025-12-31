@@ -255,7 +255,7 @@ export async function registerRoutes(
   app.use("/api/integrations", isAuthenticated, integrationRoutes);
   
   // Mount credentials & workflow routes
-  app.use("/api/integrations", credentialsRoutes);
+  app.use("/api/integrations", isAuthenticated, credentialsRoutes);
 
   // Start polling triggers (Google Drive/Calendar)
   startIntegrationTriggerEngine();

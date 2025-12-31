@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assertSafeOutboundUrl } from '../../utils/outboundUrlSecurity';
 
 const webhookCredentialSchema = z.object({
   headers: z.record(z.any()).optional(),
@@ -58,6 +59,8 @@ export async function executeWebhookAction(input: WebhookExecuteInput): Promise<
 
     if (!url) throw new Error('Webhook send_webhook requires url');
 
+    const safeUrl = await assertSafeOutboundUrl(url);
+
     const credHeaders = toHeaderRecord(credential?.headers);
     const mergedHeaders: Record<string, string> = { ...credHeaders, ...headers };
 
@@ -76,7 +79,7 @@ export async function executeWebhookAction(input: WebhookExecuteInput): Promise<
 
     for (let i = 0; i < attemptCount; i++) {
       try {
-        const res = await fetchWithTimeout(url, init, Number.isFinite(timeout) && timeout > 0 ? Math.trunc(timeout) : 30000);
+        const res = await fetchWithTimeout(safeUrl.toString(), init, Number.isFinite(timeout) && timeout > 0 ? Math.trunc(timeout) : 30000);
         const { parsed, text } = await parseBody(res);
 
         const headersOut: Record<string, string> = {};
