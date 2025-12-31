@@ -45,6 +45,25 @@ async function shopifyFetchJson(domain: string, accessToken: string, method: 'GE
 
 export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<any> {
   const { actionId, config, credential } = input;
+
+  const pick = (obj: Record<string, any>, ...keys: string[]) => {
+    for (const k of keys) {
+      if (obj[k] !== undefined) return obj[k];
+    }
+    return undefined;
+  };
+
+  const parseJsonMaybe = (value: any): any => {
+    if (value == null) return undefined;
+    if (typeof value === 'object') return value;
+    if (typeof value !== 'string') return undefined;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return undefined;
+    }
+  };
+
   const { shopDomain, accessToken } = shopifyAuthSchema.parse({
     shopDomain: credential.shopDomain,
     accessToken: credential.accessToken,
@@ -62,8 +81,9 @@ export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<
     // lineItems is JSON array like [{"variant_id": 123, "quantity": 1}]
     let lineItems: any[] = [];
     try {
-      if (Array.isArray(config.lineItems)) lineItems = config.lineItems;
-      else if (typeof config.lineItems === 'string') lineItems = JSON.parse(config.lineItems);
+      const raw = pick(config, 'lineItems', 'line_items');
+      if (Array.isArray(raw)) lineItems = raw;
+      else if (typeof raw === 'string') lineItems = JSON.parse(raw);
     } catch {
       lineItems = [];
     }
@@ -75,19 +95,35 @@ export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<
       line_items: lineItems,
     };
 
-    if (config.customerId) order.customer = { id: Number(config.customerId) || config.customerId };
-    if (config.email) order.email = String(config.email);
-    if (config.financialStatus) order.financial_status = String(config.financialStatus);
-    if (config.shippingAddress) {
+    const customerId = pick(config, 'customerId', 'customer_id');
+    if (customerId) order.customer = { id: Number(customerId) || customerId };
+
+    const customerRaw = pick(config, 'customer');
+    const customerObj = parseJsonMaybe(customerRaw);
+    if (!order.customer && customerObj && typeof customerObj === 'object') {
+      if (customerObj.id != null) order.customer = { id: Number(customerObj.id) || customerObj.id };
+      if (!order.email && typeof customerObj.email === 'string') order.email = customerObj.email;
+    }
+
+    const email = pick(config, 'email');
+    if (email) order.email = String(email);
+
+    const financialStatus = pick(config, 'financialStatus', 'financial_status');
+    if (financialStatus) order.financial_status = String(financialStatus);
+
+    const shippingAddress = pick(config, 'shippingAddress', 'shipping_address');
+    if (shippingAddress) {
       try {
-        order.shipping_address = typeof config.shippingAddress === 'object'
-          ? config.shippingAddress
-          : JSON.parse(String(config.shippingAddress));
+        order.shipping_address = typeof shippingAddress === 'object'
+          ? shippingAddress
+          : JSON.parse(String(shippingAddress));
       } catch {
         // ignore
       }
     }
-    if (config.tags) order.tags = String(config.tags);
+
+    const tags = pick(config, 'tags');
+    if (tags) order.tags = String(tags);
 
     const data = await shopifyFetchJson(shopDomain, accessToken, 'POST', '/orders.json', { order });
     return { ok: true, order: data?.order, raw: data };
@@ -112,10 +148,10 @@ export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<
 
     const product: any = {
       title,
-      ...(config.bodyHtml ? { body_html: String(config.bodyHtml) } : {}),
-      ...(config.vendor ? { vendor: String(config.vendor) } : {}),
-      ...(config.productType ? { product_type: String(config.productType) } : {}),
-      ...(config.tags ? { tags: String(config.tags) } : {}),
+      ...(pick(config, 'bodyHtml', 'body_html') ? { body_html: String(pick(config, 'bodyHtml', 'body_html')) } : {}),
+      ...(pick(config, 'vendor') ? { vendor: String(pick(config, 'vendor')) } : {}),
+      ...(pick(config, 'productType', 'product_type') ? { product_type: String(pick(config, 'productType', 'product_type')) } : {}),
+      ...(pick(config, 'tags') ? { tags: String(pick(config, 'tags')) } : {}),
     };
 
     if (config.variants) {
@@ -144,7 +180,8 @@ export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<
 
     const product: any = { id: Number(productId) || productId };
     if (config.title) product.title = String(config.title);
-    if (config.bodyHtml) product.body_html = String(config.bodyHtml);
+    const bodyHtml = pick(config, 'bodyHtml', 'body_html');
+    if (bodyHtml) product.body_html = String(bodyHtml);
     if (config.tags) product.tags = String(config.tags);
 
     const data = await shopifyFetchJson(shopDomain, accessToken, 'PUT', `/products/${encodeURIComponent(productId)}.json`, { product });
@@ -170,17 +207,19 @@ export async function executeShopifyAction(input: ShopifyExecuteInput): Promise<
   }
 
   if (actionId === 'create_customer') {
-    const email = String(config.email || '').trim();
+    const email = String(pick(config, 'email') || '').trim();
     if (!email) throw new Error('Shopify create_customer requires email');
 
     const customer: any = {
       email,
-      ...(config.firstName ? { first_name: String(config.firstName) } : {}),
-      ...(config.lastName ? { last_name: String(config.lastName) } : {}),
-      ...(config.phone ? { phone: String(config.phone) } : {}),
-      ...(config.acceptsMarketing !== undefined ? { accepts_marketing: Boolean(config.acceptsMarketing) } : {}),
-      ...(config.tags ? { tags: String(config.tags) } : {}),
-      ...(config.note ? { note: String(config.note) } : {}),
+      ...(pick(config, 'firstName', 'first_name') ? { first_name: String(pick(config, 'firstName', 'first_name')) } : {}),
+      ...(pick(config, 'lastName', 'last_name') ? { last_name: String(pick(config, 'lastName', 'last_name')) } : {}),
+      ...(pick(config, 'phone') ? { phone: String(pick(config, 'phone')) } : {}),
+      ...(pick(config, 'acceptsMarketing', 'accepts_marketing') !== undefined
+        ? { accepts_marketing: Boolean(pick(config, 'acceptsMarketing', 'accepts_marketing')) }
+        : {}),
+      ...(pick(config, 'tags') ? { tags: String(pick(config, 'tags')) } : {}),
+      ...(pick(config, 'note') ? { note: String(pick(config, 'note')) } : {}),
     };
 
     const data = await shopifyFetchJson(shopDomain, accessToken, 'POST', '/customers.json', { customer });

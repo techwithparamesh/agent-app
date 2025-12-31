@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
+import { isTemplateCategory, templateCategories } from "@/data/templateCategories";
 import {
   LayoutTemplate,
   Search,
@@ -797,26 +798,7 @@ Help customers with vehicle service bookings and repair queries.
   },
 ];
 
-const categories = [
-  { value: "all", label: "All Categories" },
-  { value: "Appointments", label: "Appointment Booking" },
-  { value: "Sales", label: "Sales & Lead Gen" },
-  { value: "Billing", label: "Billing & Invoicing" },
-  { value: "Orders", label: "Order Management" },
-  { value: "Retail", label: "Retail & E-Commerce" },
-  { value: "Support", label: "Customer Support" },
-  { value: "Education", label: "Education & Training" },
-  { value: "Real Estate", label: "Real Estate" },
-  { value: "Healthcare", label: "Healthcare" },
-  { value: "Hospitality", label: "Hospitality" },
-  { value: "Automotive", label: "Automotive" },
-  { value: "Business", label: "Business & B2B" },
-  { value: "Human Resources", label: "Human Resources" },
-  { value: "WhatsApp", label: "WhatsApp" },
-  { value: "Finance", label: "Finance & Banking" },
-  { value: "Legal", label: "Legal Services" },
-  { value: "Other", label: "Other" },
-];
+const categories = [{ value: "all", label: "All Categories" }, ...templateCategories];
 
 type SavedCustomTemplate = {
   id?: string;
@@ -833,6 +815,70 @@ type SavedCustomTemplate = {
 
 const WHATSAPP_CATEGORY = "WhatsApp";
 
+function normalizeCategoryParam(categoryParam: string | null): string {
+  if (!categoryParam) return "all";
+  if (categoryParam.toLowerCase() === "all") return "all";
+
+  const match = templateCategories.find(
+    (c) => c.value.toLowerCase() === categoryParam.toLowerCase()
+  );
+  return match?.value ?? "all";
+}
+
+function getDefaultToneForTemplate(template: Template): string | undefined {
+  const category = template.category;
+  if (category === "Support" || category === "Healthcare") return "empathetic";
+  if (category === "Education") return "enthusiastic";
+  if (category === "Sales" || category === "Retail") return "friendly";
+  if (category === "Hospitality") return "friendly";
+  if (category === "Business" || category === "Real Estate" || category === "Human Resources") return "professional";
+  if (category === "Billing" || category === "Orders" || category === "Automotive") return "professional";
+  return "friendly";
+}
+
+function getDefaultPurposeForTemplate(template: Template): string | undefined {
+  const category = template.category;
+  const lowerName = template.name.toLowerCase();
+  const lowerTags = template.tags.map((t) => t.toLowerCase());
+
+  if (category === "Education") return "education";
+  if (category === "Human Resources") return "hr";
+  if (category === "Appointments" || lowerName.includes("appointment") || lowerName.includes("reservation")) return "booking";
+  if (category === "Healthcare") return "booking";
+  if (category === "Hospitality") return "booking";
+
+  if (category === "Sales" || lowerTags.includes("sales") || lowerTags.includes("leads") || lowerTags.includes("lead qualification") || lowerTags.includes("demos") || lowerTags.includes("demo")) {
+    return "lead_generation";
+  }
+
+  if (category === "Retail") return "sales";
+  if (category === "Real Estate") return "lead_generation";
+  if (category === "Business") return "lead_generation";
+  if (category === "Support" || category === "Orders" || category === "Billing") return "support";
+
+  // Automotive varies (sales vs service); default to sales.
+  if (category === "Automotive") return "sales";
+
+  return "informational";
+}
+
+function getDefaultWelcomeMessageForTemplate(template: Template): string | undefined {
+  const category = template.category;
+  if (category === "Appointments") return "Hi! I can help you book, reschedule, or cancel an appointment. What would you like to do?";
+  if (category === "Billing") return "Hello! I can help with invoices, payments, and billing questions. How can I assist?";
+  if (category === "Orders") return "Hi! I can help you track an order, handle returns, or answer delivery questions. What do you need?";
+  if (category === "Support") return "Hello! I’m here to help. Tell me what you’re trying to do and what’s going wrong.";
+  if (category === "Healthcare") return "Hello! I can help you with appointments and general service questions. How can I assist today?";
+  if (category === "Hospitality") return "Welcome! I can help with reservations, menu questions, and general inquiries. How can I help?";
+  if (category === "Automotive") return "Hi! I can help you find the right vehicle or book a service. What are you looking for today?";
+  if (category === "Education") return "Hi! What would you like to learn about today?";
+  if (category === "Real Estate") return "Hello! Tell me what kind of property you’re looking for, and I’ll help you narrow it down.";
+  if (category === "Human Resources") return "Hello! I can help with job openings, applications, and HR questions. How can I assist?";
+  if (category === "Sales" || category === "Business") return "Hi! I can answer questions and help you get the next step set up. What are you interested in?";
+  if (category === "Retail") return "Hi! What are you shopping for today?";
+  return "Hi! How can I help you today?";
+}
+
 function safeReadCustomTemplates(): Template[] {
   if (typeof window === "undefined") return [];
   try {
@@ -846,7 +892,8 @@ function safeReadCustomTemplates(): Template[] {
         const id = typeof item.id === "string" ? item.id : `custom_${Date.now()}`;
         const name = typeof item.name === "string" ? item.name : "";
         const description = typeof item.description === "string" ? item.description : "";
-        const category = typeof item.category === "string" ? item.category : "Other";
+        const categoryRaw = typeof item.category === "string" ? item.category : "Other";
+        const category = isTemplateCategory(categoryRaw) ? categoryRaw : "Other";
         const systemPrompt = typeof item.systemPrompt === "string" ? item.systemPrompt : "";
         const suggestedQuestions = Array.isArray(item.suggestedQuestions)
           ? item.suggestedQuestions.filter((q): q is string => typeof q === "string")
@@ -902,13 +949,7 @@ export default function TemplatesPage() {
   // Read category from URL query parameter and react to URL changes
   useEffect(() => {
     const params = new URLSearchParams(searchString);
-    const categoryParam = params.get("category");
-    if (categoryParam) {
-      setSelectedCategory(categoryParam);
-    } else {
-      // Reset to "all" when no category param (user clicked on Templates main link)
-      setSelectedCategory("all");
-    }
+    setSelectedCategory(normalizeCategoryParam(params.get("category")));
   }, [searchString, location]);
 
   // Update URL when category changes via dropdown
@@ -922,19 +963,27 @@ export default function TemplatesPage() {
   };
 
   const filteredTemplates = allTemplates.filter((template) => {
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      template.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      template.name.toLowerCase().includes(query) ||
+      template.description.toLowerCase().includes(query) ||
+      template.category.toLowerCase().includes(query) ||
+      template.tags.some((tag) => tag.toLowerCase().includes(query));
+    const templateCategory = template.category.toLowerCase();
+    const templateTags = template.tags.map((t) => t.toLowerCase());
     const matchesCategory =
       selectedCategory === "all" ||
       (selectedCategory === WHATSAPP_CATEGORY
-        ? template.category === WHATSAPP_CATEGORY || template.tags.includes(WHATSAPP_CATEGORY)
-        : template.category === selectedCategory);
+        ? templateCategory === WHATSAPP_CATEGORY.toLowerCase() || templateTags.includes(WHATSAPP_CATEGORY.toLowerCase())
+        : templateCategory === selectedCategory.toLowerCase());
     return matchesSearch && matchesCategory;
   });
 
   const handleUseTemplate = (template: Template) => {
+    const toneOfVoice = template.toneOfVoice ?? getDefaultToneForTemplate(template);
+    const purpose = template.purpose ?? getDefaultPurposeForTemplate(template);
+    const welcomeMessage = template.welcomeMessage ?? getDefaultWelcomeMessageForTemplate(template);
+
     // Store template in sessionStorage for the create agent page to pick up
     sessionStorage.setItem("agentTemplate", JSON.stringify({
       name: template.name,
@@ -942,9 +991,9 @@ export default function TemplatesPage() {
       systemPrompt: template.systemPrompt,
       suggestedQuestions: template.suggestedQuestions,
       category: template.category,
-      toneOfVoice: template.toneOfVoice,
-      purpose: template.purpose,
-      welcomeMessage: template.welcomeMessage,
+      toneOfVoice,
+      purpose,
+      welcomeMessage,
     }));
     
     toast({

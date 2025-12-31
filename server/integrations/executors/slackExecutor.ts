@@ -61,8 +61,10 @@ export async function executeSlackAction(input: SlackExecuteInput): Promise<any>
     };
 
     if (config.username) body.username = String(config.username);
-    if (config.iconEmoji) body.icon_emoji = String(config.iconEmoji);
-    if (config.threadTs) body.thread_ts = String(config.threadTs);
+    const iconEmoji = config.iconEmoji ?? config.icon_emoji;
+    if (iconEmoji) body.icon_emoji = String(iconEmoji);
+    const threadTs = config.threadTs ?? config.thread_ts;
+    if (threadTs) body.thread_ts = String(threadTs);
 
     const data = await slackPost(botToken, 'chat.postMessage', body);
     return { ok: true, channel: data.channel, ts: data.ts, message: data.message };
@@ -123,7 +125,7 @@ export async function executeSlackAction(input: SlackExecuteInput): Promise<any>
     const channels = Array.isArray(config.channels)
       ? config.channels.map(String).filter(Boolean).join(',')
       : String(config.channels || '').trim();
-    const fileUrl = String(config.fileUrl || '').trim();
+    const fileUrl = String((config.fileUrl ?? config.file_url) || '').trim();
     if (!channels) throw new Error('Slack upload_file requires channels');
     if (!fileUrl) throw new Error('Slack upload_file requires fileUrl');
 
@@ -139,7 +141,8 @@ export async function executeSlackAction(input: SlackExecuteInput): Promise<any>
 
     const filename = String(config.filename || '').trim() || new URL(fileUrl).pathname.split('/').filter(Boolean).pop() || 'file';
     const title = config.title != null ? String(config.title) : undefined;
-    const initialComment = config.initialComment != null ? String(config.initialComment) : undefined;
+    const initialCommentRaw = config.initialComment ?? config.initial_comment;
+    const initialComment = initialCommentRaw != null ? String(initialCommentRaw) : undefined;
 
     const form = new FormData();
     form.append('channels', channels);

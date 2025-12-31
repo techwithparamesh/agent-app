@@ -16,6 +16,13 @@ import type {
 } from './types';
 
 export class ResponseComposer {
+  private encodeSlotServiceType(serviceType?: string): string {
+    if (!serviceType) return 'na';
+    // Use base64url so it survives WhatsApp interactive ID constraints.
+    // Note: We may later decode this in the runtime when user selects a slot.
+    return Buffer.from(serviceType, 'utf8').toString('base64url');
+  }
+
   /**
    * Compose a text response
    */
@@ -153,7 +160,7 @@ export class ResponseComposer {
         to,
         `Available times for ${date}:`,
         slots.map((slot) => ({
-          id: `slot_${slot.date}_${slot.time}`,
+          id: `slot_${slot.date}_${slot.time}_${this.encodeSlotServiceType(slot.serviceType)}`,
           title: slot.time,
         })),
         '📅 Select a Time',
@@ -169,7 +176,7 @@ export class ResponseComposer {
       [{
         title: 'Available Slots',
         rows: slots.slice(0, 10).map((slot) => ({
-          id: `slot_${slot.date}_${slot.time}`,
+          id: `slot_${slot.date}_${slot.time}_${this.encodeSlotServiceType(slot.serviceType)}`,
           title: slot.time,
           description: slot.serviceType || 'General appointment',
         })),
@@ -319,7 +326,7 @@ export class ResponseComposer {
           to,
           toolResult.message,
           options.map((opt) => ({
-            id: `option_${opt.date}_${opt.time}`,
+            id: `slot_${opt.date}_${opt.time}_${this.encodeSlotServiceType(opt.serviceType)}`,
             title: opt.time,
           }))
         );
@@ -332,7 +339,7 @@ export class ResponseComposer {
         [{
           title: 'Available Options',
           rows: options.slice(0, 10).map((opt) => ({
-            id: `option_${opt.date}_${opt.time}`,
+            id: `slot_${opt.date}_${opt.time}_${this.encodeSlotServiceType(opt.serviceType)}`,
             title: opt.time,
             description: `${opt.date}`,
           })),

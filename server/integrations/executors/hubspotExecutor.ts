@@ -74,7 +74,16 @@ export async function executeHubspotAction(input: HubspotExecuteInput): Promise<
       ...(config.phone ? { phone: String(config.phone) } : {}),
       ...(config.company ? { company: String(config.company) } : {}),
       ...(config.jobtitle ? { jobtitle: String(config.jobtitle) } : {}),
+      ...(config.address ? { address: String(config.address) } : {}),
+      ...(config.city ? { city: String(config.city) } : {}),
+      ...(config.state ? { state: String(config.state) } : {}),
+      ...(config.zip ? { zip: String(config.zip) } : {}),
+      ...(config.country ? { country: String(config.country) } : {}),
       ...(config.lifecyclestage ? { lifecyclestage: String(config.lifecyclestage) } : {}),
+      ...(config.hs_lead_status ? { hs_lead_status: String(config.hs_lead_status) } : {}),
+      ...(config.hubspot_owner_id || config.hubspotOwnerId
+        ? { hubspot_owner_id: String(config.hubspot_owner_id || config.hubspotOwnerId) }
+        : {}),
       ...(customProperties && typeof customProperties === 'object' ? customProperties : {}),
     });
 
@@ -147,6 +156,12 @@ export async function executeHubspotAction(input: HubspotExecuteInput): Promise<
       pipeline,
       dealstage,
       ...(config.closedate ? { closedate: String(config.closedate) } : {}),
+      ...(config.dealtype ? { dealtype: String(config.dealtype) } : {}),
+      ...(config.description ? { description: String(config.description) } : {}),
+      ...(config.hs_priority ? { hs_priority: String(config.hs_priority) } : {}),
+      ...(config.hubspot_owner_id || config.hubspotOwnerId
+        ? { hubspot_owner_id: String(config.hubspot_owner_id || config.hubspotOwnerId) }
+        : {}),
     });
 
     const data = await hsRequestJson(accessToken, '/crm/v3/objects/deals', 'POST', { properties });
@@ -177,7 +192,18 @@ export async function executeHubspotAction(input: HubspotExecuteInput): Promise<
       ...(config.industry ? { industry: String(config.industry) } : {}),
       ...(config.phone ? { phone: String(config.phone) } : {}),
       ...(config.city ? { city: String(config.city) } : {}),
+      ...(config.state ? { state: String(config.state) } : {}),
       ...(config.country ? { country: String(config.country) } : {}),
+      ...(config.numberofemployees != null && String(config.numberofemployees).length
+        ? { numberofemployees: String(config.numberofemployees) }
+        : {}),
+      ...(config.annualrevenue != null && String(config.annualrevenue).length
+        ? { annualrevenue: String(config.annualrevenue) }
+        : {}),
+      ...(config.description ? { description: String(config.description) } : {}),
+      ...(config.hubspot_owner_id || config.hubspotOwnerId
+        ? { hubspot_owner_id: String(config.hubspot_owner_id || config.hubspotOwnerId) }
+        : {}),
     });
 
     const data = await hsRequestJson(accessToken, '/crm/v3/objects/companies', 'POST', { properties });

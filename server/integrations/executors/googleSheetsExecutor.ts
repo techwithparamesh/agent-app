@@ -64,15 +64,15 @@ export async function executeGoogleSheetsAction(input: GoogleSheetsExecuteInput)
   const { accessToken } = googleSheetsAuthSchema.parse({ accessToken: credential.accessToken });
 
   if (actionId === 'append_row') {
-    const spreadsheetId = String(config.spreadsheetId || '').trim();
-    const sheetName = String(config.sheetName || '').trim();
+    const spreadsheetId = String((config.spreadsheetId ?? config.spreadsheet_id) || '').trim();
+    const sheetName = String((config.sheetName ?? config.sheet_name) || '').trim();
     if (!spreadsheetId) throw new Error('Google Sheets append_row requires spreadsheetId');
     if (!sheetName) throw new Error('Google Sheets append_row requires sheetName');
 
     const valuesRaw = parseJsonMaybe(config.values);
     if (!Array.isArray(valuesRaw)) throw new Error('Google Sheets append_row requires values (json array)');
 
-    const insertDataOption = String(config.insertDataOption || 'INSERT_ROWS');
+    const insertDataOption = String((config.insertDataOption ?? config.insert_data_option) || 'INSERT_ROWS');
 
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=${encodeURIComponent(insertDataOption)}`;
     const data = await gsRequestJson(accessToken, url, 'POST', { values: [valuesRaw] });
@@ -80,8 +80,8 @@ export async function executeGoogleSheetsAction(input: GoogleSheetsExecuteInput)
   }
 
   if (actionId === 'update_row') {
-    const spreadsheetId = String(config.spreadsheetId || '').trim();
-    const sheetName = String(config.sheetName || '').trim();
+    const spreadsheetId = String((config.spreadsheetId ?? config.spreadsheet_id) || '').trim();
+    const sheetName = String((config.sheetName ?? config.sheet_name) || '').trim();
     const range = String(config.range || '').trim();
     if (!spreadsheetId) throw new Error('Google Sheets update_row requires spreadsheetId');
     if (!sheetName) throw new Error('Google Sheets update_row requires sheetName');
@@ -97,8 +97,8 @@ export async function executeGoogleSheetsAction(input: GoogleSheetsExecuteInput)
   }
 
   if (actionId === 'get_rows') {
-    const spreadsheetId = String(config.spreadsheetId || '').trim();
-    const sheetName = String(config.sheetName || '').trim();
+    const spreadsheetId = String((config.spreadsheetId ?? config.spreadsheet_id) || '').trim();
+    const sheetName = String((config.sheetName ?? config.sheet_name) || '').trim();
     const range = String(config.range || '').trim();
     if (!spreadsheetId) throw new Error('Google Sheets get_rows requires spreadsheetId');
     if (!sheetName) throw new Error('Google Sheets get_rows requires sheetName');
@@ -110,10 +110,10 @@ export async function executeGoogleSheetsAction(input: GoogleSheetsExecuteInput)
   }
 
   if (actionId === 'find_row') {
-    const spreadsheetId = String(config.spreadsheetId || '').trim();
-    const sheetName = String(config.sheetName || '').trim();
-    const lookupColumn = String(config.lookupColumn || '').trim();
-    const lookupValue = String(config.lookupValue || '').trim();
+    const spreadsheetId = String((config.spreadsheetId ?? config.spreadsheet_id) || '').trim();
+    const sheetName = String((config.sheetName ?? config.sheet_name) || '').trim();
+    const lookupColumn = String((config.lookupColumn ?? config.lookup_column) || '').trim();
+    const lookupValue = String((config.lookupValue ?? config.lookup_value) || '').trim();
     if (!spreadsheetId) throw new Error('Google Sheets find_row requires spreadsheetId');
     if (!sheetName) throw new Error('Google Sheets find_row requires sheetName');
     if (!lookupColumn) throw new Error('Google Sheets find_row requires lookupColumn');
@@ -136,9 +136,9 @@ export async function executeGoogleSheetsAction(input: GoogleSheetsExecuteInput)
   }
 
   if (actionId === 'delete_row') {
-    const spreadsheetId = String(config.spreadsheetId || '').trim();
-    const sheetName = String(config.sheetName || '').trim();
-    const rowIndex = Number(config.rowIndex);
+    const spreadsheetId = String((config.spreadsheetId ?? config.spreadsheet_id) || '').trim();
+    const sheetName = String((config.sheetName ?? config.sheet_name) || '').trim();
+    const rowIndex = Number(config.rowIndex ?? config.row_index);
     if (!spreadsheetId) throw new Error('Google Sheets delete_row requires spreadsheetId');
     if (!sheetName) throw new Error('Google Sheets delete_row requires sheetName');
     if (!Number.isFinite(rowIndex) || rowIndex <= 0) throw new Error('Google Sheets delete_row requires rowIndex (1-indexed)');
@@ -165,7 +165,7 @@ export async function executeGoogleSheetsAction(input: GoogleSheetsExecuteInput)
   }
 
   if (actionId === 'clear_range') {
-    const spreadsheetId = String(config.spreadsheetId || '').trim();
+    const spreadsheetId = String((config.spreadsheetId ?? config.spreadsheet_id) || '').trim();
     const range = String(config.range || '').trim();
     if (!spreadsheetId) throw new Error('Google Sheets clear_range requires spreadsheetId');
     if (!range) throw new Error('Google Sheets clear_range requires range');

@@ -114,6 +114,7 @@ import instagramOptionsRouter from './instagram';
 import youtubeOptionsRouter from './youtube';
 import tiktokOptionsRouter from './tiktok';
 import pinterestOptionsRouter from './pinterest';
+import { createConfigAliasProxy } from './configAliasing';
 
 export const integrationRoutes = Router();
 
@@ -123,7 +124,10 @@ integrationRoutes.use('/google-sheets', googleSheetsRouter);
 // Resolve auth fields from a stored credentialId
 integrationRoutes.use('/options', async (req, res, next) => {
   try {
-    const body = (req as any).body;
+    const rawBody = (req as any).body;
+    const body = createConfigAliasProxy(rawBody && typeof rawBody === 'object' ? rawBody : {});
+    (req as any).body = body;
+
     const credentialId = body?.credentialId;
     if (!credentialId || typeof credentialId !== 'string') return next();
 

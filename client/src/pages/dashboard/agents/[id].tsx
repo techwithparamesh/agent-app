@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -83,6 +84,39 @@ export default function AgentDetails() {
     verifyToken: "",
   });
 
+  type DayHours = { enabled: boolean; start: string; end: string };
+  type WeeklyHours = Record<number, DayHours>;
+  type DoctorForm = {
+    name: string;
+    slotDurationMins: number;
+    workingHours: WeeklyHours;
+  };
+  type AppointmentSettingsForm = {
+    maxDaysAhead: number;
+    bufferMins: number;
+    defaultSlotDurationMins: number;
+    holidays: string[];
+    doctors: DoctorForm[];
+  };
+
+  const defaultWeeklyHours: WeeklyHours = {
+    0: { enabled: false, start: "09:00", end: "17:00" },
+    1: { enabled: true, start: "09:00", end: "17:00" },
+    2: { enabled: true, start: "09:00", end: "17:00" },
+    3: { enabled: true, start: "09:00", end: "17:00" },
+    4: { enabled: true, start: "09:00", end: "17:00" },
+    5: { enabled: true, start: "09:00", end: "17:00" },
+    6: { enabled: true, start: "09:00", end: "17:00" },
+  };
+
+  const [appointmentSettings, setAppointmentSettings] = useState<AppointmentSettingsForm>({
+    maxDaysAhead: 2,
+    bufferMins: 5,
+    defaultSlotDurationMins: 30,
+    holidays: [],
+    doctors: [],
+  });
+  const [newHoliday, setNewHoliday] = useState<string>("");
   const { data: agent, isLoading: agentLoading } = useQuery<Agent>({
     queryKey: ["/api/agents", agentId],
     enabled: !!agentId,
@@ -94,6 +128,79 @@ export default function AgentDetails() {
   });
 
   const isWhatsAppAgent = (agent as any)?.agentType === "whatsapp";
+
+  useEffect(() => {
+    if (!agent || !isWhatsAppAgent) return;
+    const raw = ((agent as any).businessInfo?.appointmentSettings ?? {}) as any;
+    const doctorsRaw = Array.isArray(raw.doctors) ? raw.doctors : [];
+
+    const normalizeWeeklyHours = (input: any): WeeklyHours => {
+      const out: WeeklyHours = { ...defaultWeeklyHours };
+      if (!input || typeof input !== "object") return out;
+      for (let i = 0; i <= 6; i++) {
+        const day = input[i] ?? input[String(i)];
+        if (!day || typeof day !== "object") continue;
+        out[i] = {
+          enabled: typeof day.enabled === "boolean" ? day.enabled : out[i].enabled,
+          start: typeof day.start === "string" ? day.start : out[i].start,
+          end: typeof day.end === "string" ? day.end : out[i].end,
+        };
+      }
+      return out;
+    };
+
+    setAppointmentSettings({
+      maxDaysAhead: typeof raw.maxDaysAhead === "number" ? raw.maxDaysAhead : 2,
+      bufferMins: typeof raw.bufferMins === "number" ? raw.bufferMins : 5,
+      defaultSlotDurationMins: typeof raw.defaultSlotDurationMins === "number" ? raw.defaultSlotDurationMins : 30,
+      holidays: Array.isArray(raw.holidays) ? raw.holidays.filter((d: any) => typeof d === "string") : [],
+      doctors: doctorsRaw
+        .map((d: any) => {
+          const name = typeof d?.name === "string" ? d.name : "";
+          if (!name) return null;
+          return {
+            name,
+            slotDurationMins:
+              typeof d.slotDurationMins === "number"
+                ? d.slotDurationMins
+                : typeof raw.defaultSlotDurationMins === "number"
+                  ? raw.defaultSlotDurationMins
+                  : 30,
+            workingHours: normalizeWeeklyHours(d.workingHours),
+          } satisfies DoctorForm;
+        })
+        .filter(Boolean) as DoctorForm[],
+    });
+  }, [agent, isWhatsAppAgent]);
+
+  const updateAppointmentSettingsMutation = useMutation({
+    mutationFn: async () => {
+      if (!agentId) throw new Error("Missing agent id");
+      const existingBusinessInfo = ((agent as any)?.businessInfo ?? {}) as any;
+      const payload = {
+        businessInfo: {
+          ...existingBusinessInfo,
+          appointmentSettings,
+        },
+      };
+      const res = await apiRequest("PATCH", `/api/agents/${agentId}`, payload);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId] });
+      toast({
+        title: "Appointment settings saved",
+        description: "Your booking rules and doctor schedules have been updated.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Failed to save",
+        description: err?.message || "Could not save appointment settings.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch WhatsApp config for WhatsApp agents
   const { data: whatsappConfig, isLoading: whatsappConfigLoading, refetch: refetchWhatsappConfig } = useQuery<WhatsAppConfig | null>({
@@ -680,6 +787,321 @@ export default function AgentDetails() {
                           <>
                             <Check className="mr-2 h-4 w-4" />
                             Save Configuration
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Appointment Booking */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      Appointment Booking
+                    </CardTitle>
+                    <CardDescription>
+                      Configure doctor availability so your WhatsApp agent can check slots and book appointments (no website needed).
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="maxDaysAhead">Max days in advance</Label>
+                        <Input
+                          id="maxDaysAhead"
+                          type="number"
+                          min={1}
+                          max={14}
+                          value={appointmentSettings.maxDaysAhead}
+                          onChange={(e) =>
+                            setAppointmentSettings((prev) => ({
+                              ...prev,
+                              maxDaysAhead: Math.max(1, Math.min(14, parseInt(e.target.value || "2", 10))),
+                            }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">Default: 2 days</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="defaultSlotDuration">Slot duration (minutes)</Label>
+                        <select
+                          id="defaultSlotDuration"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={appointmentSettings.defaultSlotDurationMins}
+                          onChange={(e) =>
+                            setAppointmentSettings((prev) => ({
+                              ...prev,
+                              defaultSlotDurationMins: parseInt(e.target.value, 10),
+                            }))
+                          }
+                        >
+                          {[10, 15, 20, 30, 45, 60].map((v) => (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground">Doctors can override this.</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Buffer time</Label>
+                        <Input value={`${appointmentSettings.bufferMins} mins`} disabled />
+                        <p className="text-xs text-muted-foreground">Fixed to 5 mins for now</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Holidays (no bookings)</p>
+                          <p className="text-xs text-muted-foreground">Add dates in YYYY-MM-DD</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col md:flex-row gap-2">
+                        <Input
+                          type="date"
+                          value={newHoliday}
+                          onChange={(e) => setNewHoliday(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            const value = newHoliday;
+                            if (!value) return;
+                            setAppointmentSettings((prev) => ({
+                              ...prev,
+                              holidays: prev.holidays.includes(value) ? prev.holidays : [...prev.holidays, value].sort(),
+                            }));
+                            setNewHoliday("");
+                          }}
+                        >
+                          Add Holiday
+                        </Button>
+                      </div>
+
+                      {appointmentSettings.holidays.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {appointmentSettings.holidays.map((d) => (
+                            <Badge
+                              key={d}
+                              variant="secondary"
+                              className="cursor-pointer"
+                              onClick={() =>
+                                setAppointmentSettings((prev) => ({
+                                  ...prev,
+                                  holidays: prev.holidays.filter((x) => x !== d),
+                                }))
+                              }
+                              title="Click to remove"
+                            >
+                              {d}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Doctors</p>
+                          <p className="text-xs text-muted-foreground">Each doctor can have separate working hours.</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setAppointmentSettings((prev) => ({
+                              ...prev,
+                              doctors: [
+                                ...prev.doctors,
+                                {
+                                  name: "",
+                                  slotDurationMins: prev.defaultSlotDurationMins,
+                                  workingHours: { ...defaultWeeklyHours },
+                                },
+                              ],
+                            }));
+                          }}
+                        >
+                          Add Doctor
+                        </Button>
+                      </div>
+
+                      {appointmentSettings.doctors.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No doctors added yet.</p>
+                      ) : (
+                        <div className="space-y-6">
+                          {appointmentSettings.doctors.map((doc, docIdx) => {
+                            const days = [
+                              { idx: 1, label: "Mon" },
+                              { idx: 2, label: "Tue" },
+                              { idx: 3, label: "Wed" },
+                              { idx: 4, label: "Thu" },
+                              { idx: 5, label: "Fri" },
+                              { idx: 6, label: "Sat" },
+                              { idx: 0, label: "Sun" },
+                            ];
+
+                            return (
+                              <div key={docIdx} className="p-4 rounded-lg border border-border space-y-4">
+                                <div className="flex flex-col md:flex-row gap-3 md:items-end">
+                                  <div className="flex-1 space-y-2">
+                                    <Label>Doctor name</Label>
+                                    <Input
+                                      placeholder="e.g., Dr. Sharma"
+                                      value={doc.name}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setAppointmentSettings((prev) => ({
+                                          ...prev,
+                                          doctors: prev.doctors.map((d, i) =>
+                                            i === docIdx ? { ...d, name: value } : d
+                                          ),
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Slot duration</Label>
+                                    <select
+                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                      value={doc.slotDurationMins}
+                                      onChange={(e) => {
+                                        const value = parseInt(e.target.value, 10);
+                                        setAppointmentSettings((prev) => ({
+                                          ...prev,
+                                          doctors: prev.doctors.map((d, i) =>
+                                            i === docIdx ? { ...d, slotDurationMins: value } : d
+                                          ),
+                                        }));
+                                      }}
+                                    >
+                                      {[10, 15, 20, 30, 45, 60].map((v) => (
+                                        <option key={v} value={v}>
+                                          {v} mins
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      setAppointmentSettings((prev) => ({
+                                        ...prev,
+                                        doctors: prev.doctors.filter((_, i) => i !== docIdx),
+                                      }))
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <p className="text-sm font-medium">Working hours</p>
+                                  <div className="space-y-3">
+                                    {days.map((day) => {
+                                      const v = doc.workingHours[day.idx];
+                                      return (
+                                        <div key={day.idx} className="grid grid-cols-1 md:grid-cols-4 gap-2 md:items-center">
+                                          <div className="text-sm text-muted-foreground">{day.label}</div>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={v.enabled}
+                                              onCheckedChange={(checked) => {
+                                                setAppointmentSettings((prev) => ({
+                                                  ...prev,
+                                                  doctors: prev.doctors.map((d, i) => {
+                                                    if (i !== docIdx) return d;
+                                                    return {
+                                                      ...d,
+                                                      workingHours: {
+                                                        ...d.workingHours,
+                                                        [day.idx]: { ...d.workingHours[day.idx], enabled: checked },
+                                                      },
+                                                    };
+                                                  }),
+                                                }));
+                                              }}
+                                            />
+                                            <span className="text-xs text-muted-foreground">Open</span>
+                                          </div>
+                                          <Input
+                                            type="time"
+                                            value={v.start}
+                                            disabled={!v.enabled}
+                                            onChange={(e) => {
+                                              const start = e.target.value;
+                                              setAppointmentSettings((prev) => ({
+                                                ...prev,
+                                                doctors: prev.doctors.map((d, i) => {
+                                                  if (i !== docIdx) return d;
+                                                  return {
+                                                    ...d,
+                                                    workingHours: {
+                                                      ...d.workingHours,
+                                                      [day.idx]: { ...d.workingHours[day.idx], start },
+                                                    },
+                                                  };
+                                                }),
+                                              }));
+                                            }}
+                                          />
+                                          <Input
+                                            type="time"
+                                            value={v.end}
+                                            disabled={!v.enabled}
+                                            onChange={(e) => {
+                                              const end = e.target.value;
+                                              setAppointmentSettings((prev) => ({
+                                                ...prev,
+                                                doctors: prev.doctors.map((d, i) => {
+                                                  if (i !== docIdx) return d;
+                                                  return {
+                                                    ...d,
+                                                    workingHours: {
+                                                      ...d.workingHours,
+                                                      [day.idx]: { ...d.workingHours[day.idx], end },
+                                                    },
+                                                  };
+                                                }),
+                                              }));
+                                            }}
+                                          />
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <Button
+                        type="button"
+                        onClick={() => updateAppointmentSettingsMutation.mutate()}
+                        disabled={updateAppointmentSettingsMutation.isPending}
+                      >
+                        {updateAppointmentSettingsMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Save Appointment Settings
                           </>
                         )}
                       </Button>

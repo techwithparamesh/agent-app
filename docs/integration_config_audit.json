@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-12-28T14:36:22.942Z",
+  "generatedAt": "2025-12-31T08:04:29.427Z",
   "findings": [
     {
       "appId": "whatsapp",
@@ -395,14 +395,87 @@
       "appId": "shopify",
       "appName": "Shopify",
       "executorFile": "server/integrations/executors/shopifyExecutor.ts",
+      "actionId": "create_order",
+      "actionName": "Create Order",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "customerId",
+        "email",
+        "financialStatus",
+        "lineItems",
+        "shippingAddress",
+        "tags"
+      ],
+      "backendKeys": [],
+      "uiKeys": [
+        "customerId",
+        "email",
+        "financialStatus",
+        "lineItems",
+        "shippingAddress",
+        "tags"
+      ]
+    },
+    {
+      "appId": "shopify",
+      "appName": "Shopify",
+      "executorFile": "server/integrations/executors/shopifyExecutor.ts",
+      "actionId": "create_product",
+      "actionName": "Create Product",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "bodyHtml",
+        "productType",
+        "tags",
+        "vendor"
+      ],
+      "backendKeys": [
+        "images",
+        "title",
+        "variants"
+      ],
+      "uiKeys": [
+        "bodyHtml",
+        "images",
+        "productType",
+        "tags",
+        "title",
+        "variants",
+        "vendor"
+      ]
+    },
+    {
+      "appId": "shopify",
+      "appName": "Shopify",
+      "executorFile": "server/integrations/executors/shopifyExecutor.ts",
+      "actionId": "update_product",
+      "actionName": "Update Product",
+      "missingInUi": [],
+      "unusedInBackend": [
+        "bodyHtml"
+      ],
+      "backendKeys": [
+        "productId",
+        "tags",
+        "title"
+      ],
+      "uiKeys": [
+        "bodyHtml",
+        "productId",
+        "tags",
+        "title"
+      ]
+    },
+    {
+      "appId": "shopify",
+      "appName": "Shopify",
+      "executorFile": "server/integrations/executors/shopifyExecutor.ts",
       "actionId": "create_customer",
       "actionName": "Create Customer",
       "missingInUi": [],
       "unusedInBackend": [
-        "addresses"
-      ],
-      "backendKeys": [
         "acceptsMarketing",
+        "addresses",
         "email",
         "firstName",
         "lastName",
@@ -410,6 +483,7 @@
         "phone",
         "tags"
       ],
+      "backendKeys": [],
       "uiKeys": [
         "acceptsMarketing",
         "addresses",

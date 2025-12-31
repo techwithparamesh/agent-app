@@ -106,6 +106,7 @@ import { executeInstagramAction } from './executors/instagramExecutor';
 import { executeYouTubeAction } from './executors/youtubeExecutor';
 import { executeTikTokAction } from './executors/tiktokExecutor';
 import { executePinterestAction } from './executors/pinterestExecutor';
+import { createConfigAliasProxy } from './configAliasing';
 
 export type WorkflowRunInput = {
   userId: string;
@@ -302,7 +303,7 @@ async function executeNode(node: any, userId: string, context: any): Promise<any
   }
 
   const rawConfig = (node?.config && typeof node.config === 'object') ? node.config : {};
-  const config = interpolate(rawConfig, context);
+  const config = createConfigAliasProxy(interpolate(rawConfig, context));
 
   const credentialId = getCredentialId(node);
   const credential = credentialId ? await resolveCredential(userId, credentialId) : null;

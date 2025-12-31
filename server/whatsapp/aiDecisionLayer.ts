@@ -59,7 +59,12 @@ RESPOND WITH VALID JSON ONLY (no markdown, no code blocks):
     "email": "<string or null>",
     "serviceType": "<string or null>",
     "appointmentId": "<string or null>",
-    "orderId": "<string or null>"
+    "orderId": "<string or null>",
+    "items": "<string or null>",
+    "issue": "<string or null>",
+    "rating": "<number 1-5 or null>",
+    "comments": "<string or null>",
+    "address": "<string or null>"
   },
   "confidence": <0.0-1.0>,
   "requiresAction": <true/false>,
@@ -211,6 +216,11 @@ RESPOND WITH THE MESSAGE TEXT ONLY (no JSON, no quotes, just the message):`;
       time: 'What time would you prefer?',
       serviceType: 'What service are you interested in?',
       address: 'What\'s your address?',
+      items: 'What would you like to order? Please list items and quantities.',
+      orderId: 'What\'s your order ID (if you have one)?',
+      issue: 'Please describe the issue / question you need help with.',
+      rating: 'How would you rate your experience from 1 to 5?',
+      comments: 'Any comments or feedback you\'d like to share?',
     };
 
     return prompts[missingField] || `Could you please provide your ${missingField}?`;
@@ -282,9 +292,16 @@ RESPOND WITH THE MESSAGE TEXT ONLY (no JSON, no quotes, just the message):`;
     }
 
     // Copy other entities as-is
-    for (const key of ['name', 'phone', 'email', 'serviceType', 'appointmentId', 'orderId']) {
+    for (const key of ['name', 'phone', 'email', 'serviceType', 'appointmentId', 'orderId', 'items', 'issue', 'comments', 'address']) {
       if (entities[key]) {
         normalized[key] = entities[key];
+      }
+    }
+
+    if (entities.rating != null) {
+      const ratingNum = Number(entities.rating);
+      if (Number.isFinite(ratingNum)) {
+        normalized.rating = ratingNum;
       }
     }
 

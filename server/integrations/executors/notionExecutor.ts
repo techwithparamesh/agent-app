@@ -145,11 +145,15 @@ export async function executeNotionAction(input: NotionExecuteInput): Promise<an
 
     const filter = parseJsonMaybe(config.filter);
     const sorts = parseJsonMaybe(config.sorts);
-    const pageSize = config.pageSize != null ? Number(config.pageSize) : undefined;
+    const startCursorRaw = config.startCursor ?? config.start_cursor;
+    const startCursor = startCursorRaw != null ? String(startCursorRaw).trim() : '';
+    const pageSizeRaw = config.pageSize ?? config.page_size;
+    const pageSize = pageSizeRaw != null ? Number(pageSizeRaw) : undefined;
 
     const body: any = {
       ...(filter ? { filter } : {}),
       ...(sorts ? { sorts } : {}),
+      ...(startCursor ? { start_cursor: startCursor } : {}),
       ...(Number.isFinite(pageSize) ? { page_size: Math.trunc(pageSize as number) } : {}),
     };
 

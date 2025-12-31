@@ -71,13 +71,7 @@ export const agents = mysqlTable("agents", {
   agentType: varchar("agent_type", { length: 50 }).default("website"), // website, whatsapp
   businessCategory: varchar("business_category", { length: 100 }),
   capabilities: json("capabilities").$type<string[]>(),
-  businessInfo: json("business_info").$type<{
-    name?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    workingHours?: string;
-  }>(),
+  businessInfo: json("business_info").$type<Record<string, any> | null>(),
   language: varchar("language", { length: 10 }).default("en"),
   // Widget Customization fields
   widgetConfig: json("widget_config").$type<{
@@ -1119,7 +1113,18 @@ export const insertAgentSchema = createInsertSchema(agents)
         description: z.string().optional().nullable(),
         category: z.string().optional().nullable(),
       })
-      .catchall(z.union([z.string(), z.null()]).optional())
+      .catchall(
+        z
+          .union([
+            z.string(),
+            z.number(),
+            z.boolean(),
+            z.null(),
+            z.array(z.any()),
+            z.record(z.any()),
+          ])
+          .optional()
+      )
       .optional()
       .nullable(),
   });

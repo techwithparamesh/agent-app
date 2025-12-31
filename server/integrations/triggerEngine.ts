@@ -2,6 +2,7 @@ import { storage } from '../storage';
 import { decryptCredentialData } from './crypto';
 import { runWorkflow } from './workflowRunner';
 import CronExpressionParser from 'cron-parser';
+import { createConfigAliasProxy } from './configAliasing';
 
 type PollState = {
   lastRunAt?: string;
@@ -46,14 +47,17 @@ function getCredentialId(triggerNode: any): string | null {
 }
 
 function pollIntervalMinutes(triggerNode: any): number {
-  const v = triggerNode?.config?.pollInterval;
+  const cfgRaw = triggerNode?.config && typeof triggerNode.config === 'object' ? triggerNode.config : {};
+  const cfg = createConfigAliasProxy(cfgRaw);
+  const v = (cfg as any)?.pollInterval;
   const n = typeof v === 'string' ? parseInt(v, 10) : typeof v === 'number' ? v : 5;
   if (!Number.isFinite(n) || n <= 0) return 5;
   return Math.max(1, Math.min(60 * 24, n));
 }
 
 function getPollState(workflow: any): PollState {
-  const cfg = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  const cfgRaw = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  const cfg = createConfigAliasProxy(cfgRaw);
   const ps = (cfg as any)._pollState;
   if (!ps || typeof ps !== 'object') return {};
   return ps as PollState;
@@ -65,7 +69,8 @@ function setPollState(workflow: any, newState: PollState) {
 }
 
 function getScheduleState(workflow: any): ScheduleState {
-  const cfg = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  const cfgRaw = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  const cfg = createConfigAliasProxy(cfgRaw);
   const ss = (cfg as any)._scheduleState;
   if (!ss || typeof ss !== 'object') return {};
   return ss as ScheduleState;
@@ -77,17 +82,23 @@ function setScheduleState(workflow: any, newState: ScheduleState) {
 }
 
 function getScheduleExpression(triggerNode: any, workflow: any): string {
-  const fromNode = triggerNode?.config?.cronExpression;
+  const nodeCfgRaw = triggerNode?.config && typeof triggerNode.config === 'object' ? triggerNode.config : {};
+  const nodeCfg = createConfigAliasProxy(nodeCfgRaw);
+  const fromNode = (nodeCfg as any)?.cronExpression;
   if (typeof fromNode === 'string' && fromNode.trim()) return fromNode.trim();
   const fromWorkflow = workflow?.cronExpression;
   if (typeof fromWorkflow === 'string' && fromWorkflow.trim()) return fromWorkflow.trim();
-  const fromCfg = workflow?.triggerConfig?.cronExpression;
+  const cfgRaw = workflow?.triggerConfig && typeof workflow.triggerConfig === 'object' ? workflow.triggerConfig : {};
+  const cfg = createConfigAliasProxy(cfgRaw);
+  const fromCfg = (cfg as any)?.cronExpression;
   if (typeof fromCfg === 'string' && fromCfg.trim()) return fromCfg.trim();
   return '';
 }
 
 function getScheduleTimezone(triggerNode: any, workflow: any): string {
-  const fromNode = triggerNode?.config?.timezone;
+  const nodeCfgRaw = triggerNode?.config && typeof triggerNode.config === 'object' ? triggerNode.config : {};
+  const nodeCfg = createConfigAliasProxy(nodeCfgRaw);
+  const fromNode = (nodeCfg as any)?.timezone;
   if (typeof fromNode === 'string' && fromNode.trim()) return fromNode.trim();
   const fromWorkflow = workflow?.timezone;
   if (typeof fromWorkflow === 'string' && fromWorkflow.trim()) return fromWorkflow.trim();
@@ -520,9 +531,11 @@ export function startIntegrationTriggerEngine() {
 
             let polled;
             if (appId === 'google_drive') {
-              polled = await pollGoogleDrive(triggerId, triggerNode.config || {}, credential, state);
+              const triggerConfig = createConfigAliasProxy(triggerNode.config || {});
+              polled = await pollGoogleDrive(triggerId, triggerConfig, credential, state);
             } else {
-              polled = await pollGoogleCalendar(triggerId, triggerNode.config || {}, credential, state);
+              const triggerConfig = createConfigAliasProxy(triggerNode.config || {});
+              polled = await pollGoogleCalendar(triggerId, triggerConfig, credential, state);
             }
 
             let nextState: PollState = polled.nextState || {};

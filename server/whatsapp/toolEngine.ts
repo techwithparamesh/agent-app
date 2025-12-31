@@ -30,6 +30,23 @@ import type {
   AvailableSlot,
 } from './types';
 
+type DayHours = { enabled: boolean; start: string; end: string };
+type WeeklyHours = Record<number, DayHours>;
+type DoctorSettings = {
+  name: string;
+  slotDurationMins?: number;
+  workingHours?: WeeklyHours;
+  holidays: string[];
+};
+type AppointmentSettings = {
+  maxDaysAhead: number;
+  bufferMins: number;
+  defaultSlotDurationMins: number;
+  workingHours: WeeklyHours;
+  holidays: string[];
+  doctors: DoctorSettings[];
+};
+
 export class ToolExecutionEngine {
   private tools: Map<ToolName, (input: any) => Promise<ToolResult>> = new Map();
 
@@ -90,8 +107,97 @@ export class ToolExecutionEngine {
       };
     }
 
+    const config = await this.getAppointmentSettings(agentId);
+    const normalizedDate = this.normalizeDateOnly(date);
+
+    if (!this.isWithinMaxDaysAhead(normalizedDate, config.maxDaysAhead)) {
+      const today = this.normalizeDateOnly(new Date().toISOString().split('T')[0]);
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + config.maxDaysAhead);
+      const maxDateStr = maxDate.toISOString().split('T')[0];
+      return {
+        success: false,
+        error: 'Date outside booking window',
+        message: `Appointments can be booked up to ${config.maxDaysAhead} day(s) in advance. Please choose a date on or before ${maxDateStr}.`,
+      };
+    }
+
+    // If appointmentSettings doctors exist, generate slots from config (multi-doctor)
+    if (config.doctors.length > 0) {
+      const targetDate = new Date(normalizedDate);
+      const dayOfWeek = targetDate.getDay();
+
+      const doctorsToCheck = serviceType
+        ? config.doctors.filter((d) => d.name.toLowerCase() === serviceType.toLowerCase())
+        : config.doctors;
+
+      if (serviceType && doctorsToCheck.length === 0) {
+        return {
+          success: false,
+          error: 'Unknown doctor',
+          message: 'Please choose a valid doctor to check availability.',
+        };
+      }
+
+      const booked = await this.getBookedAppointmentsDetailed(agentId, normalizedDate);
+
+      const generatedSlots: AvailableSlot[] = [];
+      for (const doctor of doctorsToCheck) {
+        if (this.isHoliday(normalizedDate, config.holidays) || this.isHoliday(normalizedDate, doctor.holidays)) {
+          continue;
+        }
+
+        const hours = doctor.workingHours ?? config.workingHours;
+        const dayHours = hours[dayOfWeek];
+        if (!dayHours?.enabled) continue;
+
+        const duration = this.clampInt(doctor.slotDurationMins ?? config.defaultSlotDurationMins, 5, 240);
+        const step = duration + config.bufferMins;
+        const times = this.generateTimeSlots(dayHours.start, dayHours.end, step);
+
+        for (const startTime of times) {
+          const endTime = this.addMinutes(startTime, duration);
+          const slotStartMin = this.timeToMinutes(startTime);
+          const slotEndMin = this.timeToMinutes(endTime);
+
+          const conflicts = booked.some((b) => {
+            const sameDoctor = (b.serviceType || '').toLowerCase() === doctor.name.toLowerCase();
+            if (!sameDoctor) return false;
+            const apptStart = this.timeToMinutes(b.time);
+            const apptEnd = this.timeToMinutes(b.endTime);
+            // Overlap check
+            return slotStartMin < apptEnd && apptStart < slotEndMin;
+          });
+
+          if (!conflicts) {
+            generatedSlots.push({
+              date: normalizedDate,
+              time: startTime,
+              endTime,
+              serviceType: doctor.name,
+              available: true,
+            });
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: generatedSlots.length > 0
+          ? `Found ${generatedSlots.length} available slot(s) for ${normalizedDate}`
+          : 'No available slots for the requested date',
+        data: {
+          requestedDate: normalizedDate,
+          availableSlots: generatedSlots,
+          nextAvailableDates: generatedSlots.length === 0
+            ? await this.findNextAvailableDates(agentId, normalizedDate, 3)
+            : undefined,
+        },
+      };
+    }
+
     // Parse date
-    const targetDate = new Date(date);
+    const targetDate = new Date(normalizedDate);
     const dayOfWeek = targetDate.getDay();
 
     // Get availability slots for this day
@@ -102,20 +208,17 @@ export class ToolExecutionEngine {
         and(
           eq(availabilitySlots.agentId, agentId),
           eq(availabilitySlots.isAvailable, true),
-          or(
-            eq(availabilitySlots.dayOfWeek, dayOfWeek),
-            eq(availabilitySlots.specificDate, new Date(date))
-          ),
+          or(eq(availabilitySlots.dayOfWeek, dayOfWeek), eq(availabilitySlots.specificDate, new Date(normalizedDate))),
           serviceType ? eq(availabilitySlots.serviceType, serviceType) : sql`1=1`
         )
       );
 
     if (slots.length === 0) {
       // No slots configured, return default business hours
-      const defaultSlots = this.getDefaultSlots(date);
+      const defaultSlots = this.getDefaultSlots(normalizedDate);
       
       // Check which are already booked
-      const bookedAppointments = await this.getBookedSlots(agentId, date);
+      const bookedAppointments = await this.getBookedAppointmentsDetailed(agentId, normalizedDate);
       const availableSlots = defaultSlots.filter(
         (slot) => !bookedAppointments.some((b) => b.time === slot.time)
       );
@@ -126,10 +229,10 @@ export class ToolExecutionEngine {
           ? `Found ${availableSlots.length} available slots for ${date}`
           : `No available slots for ${date}`,
         data: {
-          requestedDate: date,
+          requestedDate: normalizedDate,
           availableSlots,
           nextAvailableDates: availableSlots.length === 0 
-            ? await this.findNextAvailableDates(agentId, date, 3)
+            ? await this.findNextAvailableDates(agentId, normalizedDate, 3)
             : undefined,
         },
       };
@@ -147,7 +250,7 @@ export class ToolExecutionEngine {
       
       for (const time of slotTimes) {
         generatedSlots.push({
-          date,
+          date: normalizedDate,
           time,
           endTime: this.addMinutes(time, slot.slotDuration || 30),
           serviceType: slot.serviceType || undefined,
@@ -157,7 +260,7 @@ export class ToolExecutionEngine {
     }
 
     // Filter out already booked slots
-    const bookedAppointments = await this.getBookedSlots(agentId, date, serviceType);
+    const bookedAppointments = await this.getBookedAppointmentsDetailed(agentId, normalizedDate);
     const availableSlots = generatedSlots.filter(
       (slot) => !bookedAppointments.some(
         (b) => b.time === slot.time && (!serviceType || b.serviceType === serviceType)
@@ -170,10 +273,10 @@ export class ToolExecutionEngine {
         ? `Found ${availableSlots.length} available slots`
         : 'No available slots for the requested date',
       data: {
-        requestedDate: date,
+        requestedDate: normalizedDate,
         availableSlots,
         nextAvailableDates: availableSlots.length === 0
-          ? await this.findNextAvailableDates(agentId, date, 3)
+          ? await this.findNextAvailableDates(agentId, normalizedDate, 3)
           : undefined,
       },
     };
@@ -211,42 +314,49 @@ export class ToolExecutionEngine {
       };
     }
 
-    // Normalize phone number
     const normalizedPhone = this.normalizePhone(customerPhone);
+    const config = await this.getAppointmentSettings(agentId);
+    const normalizedDate = this.normalizeDateOnly(date);
+
+    if (!this.isWithinMaxDaysAhead(normalizedDate, config.maxDaysAhead)) {
+      const today = this.normalizeDateOnly(new Date().toISOString().split('T')[0]);
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + config.maxDaysAhead);
+      const maxDateStr = maxDate.toISOString().split('T')[0];
+      return {
+        success: false,
+        error: 'Date outside booking window',
+        message: `Appointments can be booked up to ${config.maxDaysAhead} day(s) in advance. Please choose a date on or before ${maxDateStr}.`,
+      };
+    }
+
+    const duration = this.getDurationForServiceType(config, serviceType);
+    const endTime = this.addMinutes(time, duration);
 
     // Check if slot is still available (concurrency check)
-    const existingBooking = await db
-      .select()
-      .from(appointments)
-      .where(
-        and(
-          eq(appointments.agentId, agentId),
-          eq(appointments.appointmentDate, new Date(date)),
-          eq(appointments.appointmentTime, time),
-          not(eq(appointments.status, 'cancelled'))
-        )
-      )
-      .limit(1);
+    const conflicts = await this.hasBookingConflict({
+      agentId,
+      date: normalizedDate,
+      startTime: time,
+      endTime,
+      serviceType,
+    });
 
-    if (existingBooking.length > 0) {
-      // Slot is taken, find alternatives
+    if (conflicts) {
       const availability = await this.checkAvailability({
         agentId,
         conversationId,
-        date,
+        date: normalizedDate,
         serviceType,
       });
 
       return {
         success: false,
         error: 'Slot already booked',
-        message: `Sorry, the ${time} slot on ${date} has just been booked. Would you like to choose another time?`,
+        message: `Sorry, the ${time} slot on ${normalizedDate} has just been booked. Would you like to choose another time?`,
         options: availability.data?.availableSlots?.slice(0, 5),
       };
     }
-
-    // Calculate end time
-    const endTime = this.addMinutes(time, 30); // Default 30 min appointments
 
     // Create the appointment (atomic insert with unique constraint)
     const appointmentId = crypto.randomUUID();
@@ -259,7 +369,7 @@ export class ToolExecutionEngine {
         customerName,
         customerPhone: normalizedPhone,
         customerEmail,
-        appointmentDate: new Date(date),
+        appointmentDate: new Date(normalizedDate),
         appointmentTime: time,
         endTime,
         serviceType,
@@ -276,7 +386,7 @@ export class ToolExecutionEngine {
         const availability = await this.checkAvailability({
           agentId,
           conversationId,
-          date,
+          date: normalizedDate,
           serviceType,
         });
 
@@ -307,7 +417,7 @@ export class ToolExecutionEngine {
       customerName,
       customerPhone: normalizedPhone,
       customerEmail,
-      date,
+      date: normalizedDate,
       time,
       endTime,
       serviceType,
@@ -320,11 +430,11 @@ export class ToolExecutionEngine {
       data: {
         appointmentId,
         customerName,
-        date,
+        date: normalizedDate,
         time,
         serviceType,
         status: 'confirmed',
-        confirmationMessage: `Your appointment has been confirmed for ${date} at ${time}. We'll send you a reminder before your appointment.`,
+        confirmationMessage: `Your appointment has been confirmed for ${normalizedDate} at ${time}. We'll send you a reminder before your appointment.`,
       },
     };
   }
@@ -413,6 +523,21 @@ export class ToolExecutionEngine {
   ): Promise<ToolResult> {
     const { agentId, appointmentId, customerPhone, newDate, newTime } = input;
 
+    const config = await this.getAppointmentSettings(agentId);
+    const normalizedNewDate = this.normalizeDateOnly(newDate);
+
+    if (!this.isWithinMaxDaysAhead(normalizedNewDate, config.maxDaysAhead)) {
+      const today = this.normalizeDateOnly(new Date().toISOString().split('T')[0]);
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + config.maxDaysAhead);
+      const maxDateStr = maxDate.toISOString().split('T')[0];
+      return {
+        success: false,
+        error: 'Date outside booking window',
+        message: `Appointments can be booked up to ${config.maxDaysAhead} day(s) in advance. Please choose a date on or before ${maxDateStr}.`,
+      };
+    }
+
     // Find existing appointment
     let appointment;
     
@@ -449,26 +574,22 @@ export class ToolExecutionEngine {
       };
     }
 
-    // Check new slot availability
-    const existingBooking = await db
-      .select()
-      .from(appointments)
-      .where(
-        and(
-          eq(appointments.agentId, agentId),
-          eq(appointments.appointmentDate, new Date(newDate)),
-          eq(appointments.appointmentTime, newTime),
-          not(eq(appointments.status, 'cancelled')),
-          not(eq(appointments.id, appointment.id))
-        )
-      )
-      .limit(1);
+    const duration = this.getDurationForServiceType(config, appointment.serviceType || undefined);
+    const newEndTime = this.addMinutes(newTime, duration);
+    const hasConflict = await this.hasBookingConflict({
+      agentId,
+      date: normalizedNewDate,
+      startTime: newTime,
+      endTime: newEndTime,
+      serviceType: appointment.serviceType || undefined,
+      excludeAppointmentId: appointment.id,
+    });
 
-    if (existingBooking.length > 0) {
+    if (hasConflict) {
       return {
         success: false,
         error: 'New slot not available',
-        message: `The ${newTime} slot on ${newDate} is not available. Would you like to check other times?`,
+        message: `The ${newTime} slot on ${normalizedNewDate} is not available. Would you like to check other times?`,
       };
     }
 
@@ -476,8 +597,9 @@ export class ToolExecutionEngine {
     await db
       .update(appointments)
       .set({
-        appointmentDate: new Date(newDate),
+        appointmentDate: new Date(normalizedNewDate),
         appointmentTime: newTime,
+        endTime: newEndTime,
         metadata: {
           ...(appointment.metadata as any || {}),
           rescheduledAt: new Date().toISOString(),
@@ -489,10 +611,10 @@ export class ToolExecutionEngine {
 
     return {
       success: true,
-      message: `Your appointment has been rescheduled to ${newDate} at ${newTime}.`,
+      message: `Your appointment has been rescheduled to ${normalizedNewDate} at ${newTime}.`,
       data: {
         appointmentId: appointment.id,
-        newDate,
+        newDate: normalizedNewDate,
         newTime,
         previousDate: appointment.appointmentDate,
         previousTime: appointment.appointmentTime,
@@ -805,14 +927,14 @@ export class ToolExecutionEngine {
   /**
    * Get booked slots for a date
    */
-  private async getBookedSlots(
+  private async getBookedAppointmentsDetailed(
     agentId: string,
-    date: string,
-    serviceType?: string
-  ): Promise<Array<{ time: string; serviceType?: string }>> {
+    date: string
+  ): Promise<Array<{ time: string; endTime: string; serviceType?: string }>> {
     const booked = await db
       .select({
         time: appointments.appointmentTime,
+        endTime: appointments.endTime,
         serviceType: appointments.serviceType,
       })
       .from(appointments)
@@ -824,10 +946,59 @@ export class ToolExecutionEngine {
         )
       );
 
-    return booked.map((b) => ({
-      time: b.time!,
-      serviceType: b.serviceType || undefined,
-    }));
+    return booked
+      .filter((b) => typeof b.time === 'string')
+      .map((b) => ({
+        time: b.time as string,
+        endTime: typeof b.endTime === 'string' ? (b.endTime as string) : this.addMinutes(b.time as string, 30),
+        serviceType: b.serviceType || undefined,
+      }));
+  }
+
+  private async hasBookingConflict(params: {
+    agentId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    serviceType?: string;
+    excludeAppointmentId?: string;
+  }): Promise<boolean> {
+    const { agentId, date, startTime, endTime, serviceType, excludeAppointmentId } = params;
+    const config = await this.getAppointmentSettings(agentId);
+    const booked = await db
+      .select({
+        id: appointments.id,
+        time: appointments.appointmentTime,
+        endTime: appointments.endTime,
+        serviceType: appointments.serviceType,
+        status: appointments.status,
+      })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.agentId, agentId),
+          eq(appointments.appointmentDate, new Date(date)),
+          not(eq(appointments.status, 'cancelled')),
+          excludeAppointmentId ? not(eq(appointments.id, excludeAppointmentId)) : sql`1=1`
+        )
+      );
+
+    const slotStart = this.timeToMinutes(startTime);
+    const slotEnd = this.timeToMinutes(endTime) + config.bufferMins;
+
+    return booked.some((b) => {
+      const bStart = typeof b.time === 'string' ? this.timeToMinutes(b.time) : 0;
+      const bEndRaw = typeof b.endTime === 'string' ? b.endTime : (typeof b.time === 'string' ? this.addMinutes(b.time, 30) : '00:00');
+      const bEnd = this.timeToMinutes(bEndRaw) + config.bufferMins;
+
+      const sameService = serviceType
+        ? (b.serviceType || '').toLowerCase() === serviceType.toLowerCase()
+        : !b.serviceType;
+
+      if (!sameService) return false;
+      // Overlap
+      return slotStart < bEnd && bStart < slotEnd;
+    });
   }
 
   /**
@@ -840,8 +1011,10 @@ export class ToolExecutionEngine {
   ): Promise<string[]> {
     const availableDates: string[] = [];
     const startDate = new Date(fromDate);
+    const config = await this.getAppointmentSettings(agentId);
 
-    for (let i = 1; i <= 14 && availableDates.length < count; i++) {
+    const maxLookahead = Math.max(1, Math.min(14, config.maxDaysAhead));
+    for (let i = 1; i <= maxLookahead && availableDates.length < count; i++) {
       const checkDate = new Date(startDate);
       checkDate.setDate(checkDate.getDate() + i);
       const dateStr = checkDate.toISOString().split('T')[0];
@@ -849,7 +1022,7 @@ export class ToolExecutionEngine {
       // Skip weekends (optional, configurable)
       if (checkDate.getDay() === 0) continue;
 
-      const booked = await this.getBookedSlots(agentId, dateStr);
+      const booked = await this.getBookedAppointmentsDetailed(agentId, dateStr);
       const defaultSlots = this.getDefaultSlots(dateStr);
       
       if (booked.length < defaultSlots.length) {
@@ -928,6 +1101,108 @@ export class ToolExecutionEngine {
     return phone.replace(/[^\d+]/g, '');
   }
 
+  private normalizeDateOnly(dateStr: string): string {
+    // Accept YYYY-MM-DD, or anything Date can parse.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return new Date().toISOString().split('T')[0];
+    return d.toISOString().split('T')[0];
+  }
+
+  private isWithinMaxDaysAhead(dateStr: string, maxDaysAhead: number): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+    return diffDays >= 0 && diffDays <= maxDaysAhead;
+  }
+
+  private clampInt(value: unknown, min: number, max: number): number {
+    const n = typeof value === 'number' ? value : parseInt(String(value), 10);
+    if (!Number.isFinite(n)) return min;
+    return Math.max(min, Math.min(max, Math.floor(n)));
+  }
+
+  private isHoliday(dateStr: string, holidays: string[]): boolean {
+    return holidays.some((h) => typeof h === 'string' && h === dateStr);
+  }
+
+  private getDurationForServiceType(config: AppointmentSettings, serviceType?: string): number {
+    if (!serviceType) return this.clampInt(config.defaultSlotDurationMins, 5, 240);
+    const doctor = config.doctors.find((d) => d.name.toLowerCase() === serviceType.toLowerCase());
+    return this.clampInt(doctor?.slotDurationMins ?? config.defaultSlotDurationMins, 5, 240);
+  }
+
+  private async getAppointmentSettings(agentId: string): Promise<AppointmentSettings> {
+    const [agent] = await db
+      .select({
+        businessInfo: agents.businessInfo,
+      })
+      .from(agents)
+      .where(eq(agents.id, agentId))
+      .limit(1);
+
+    const rawInfo: any = agent?.businessInfo ?? {};
+    const rawSettings: any = rawInfo?.appointmentSettings ?? {};
+
+    const maxDaysAhead = this.clampInt(rawSettings.maxDaysAhead ?? 2, 1, 14);
+    const bufferMins = this.clampInt(rawSettings.bufferMins ?? 5, 0, 60);
+    const defaultSlotDurationMins = this.clampInt(rawSettings.defaultSlotDurationMins ?? 30, 5, 240);
+
+    const defaultWorkingHours: WeeklyHours = {
+      0: { enabled: false, start: '09:00', end: '17:00' },
+      1: { enabled: true, start: '09:00', end: '17:00' },
+      2: { enabled: true, start: '09:00', end: '17:00' },
+      3: { enabled: true, start: '09:00', end: '17:00' },
+      4: { enabled: true, start: '09:00', end: '17:00' },
+      5: { enabled: true, start: '09:00', end: '17:00' },
+      6: { enabled: true, start: '09:00', end: '17:00' },
+    };
+
+    const workingHours = this.parseWeeklyHours(rawSettings.workingHours, defaultWorkingHours);
+    const holidays = Array.isArray(rawSettings.holidays)
+      ? rawSettings.holidays.filter((d: any) => typeof d === 'string')
+      : [];
+
+    const doctors: DoctorSettings[] = Array.isArray(rawSettings.doctors)
+      ? rawSettings.doctors
+          .map((d: any) => {
+            const name = typeof d?.name === 'string' ? d.name.trim() : '';
+            if (!name) return null;
+            return {
+              name,
+              slotDurationMins: d?.slotDurationMins,
+              workingHours: this.parseWeeklyHours(d?.workingHours, workingHours),
+              holidays: Array.isArray(d?.holidays) ? d.holidays.filter((x: any) => typeof x === 'string') : [],
+            } satisfies DoctorSettings;
+          })
+          .filter(Boolean)
+      : [];
+
+    return {
+      maxDaysAhead,
+      bufferMins,
+      defaultSlotDurationMins,
+      workingHours,
+      holidays,
+      doctors,
+    };
+  }
+
+  private parseWeeklyHours(input: any, fallback: WeeklyHours): WeeklyHours {
+    const out: WeeklyHours = { ...fallback };
+    if (!input || typeof input !== 'object') return out;
+    for (let i = 0; i <= 6; i++) {
+      const raw = (input as any)[i] ?? (input as any)[String(i)];
+      if (!raw || typeof raw !== 'object') continue;
+      const enabled = typeof raw.enabled === 'boolean' ? raw.enabled : out[i].enabled;
+      const start = typeof raw.start === 'string' ? raw.start : out[i].start;
+      const end = typeof raw.end === 'string' ? raw.end : out[i].end;
+      out[i] = { enabled, start, end };
+    }
+    return out;
+  }
   /**
    * Trigger integration event (non-blocking)
    */

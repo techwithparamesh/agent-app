@@ -8,6 +8,7 @@
     "build": "npx tsx script/build.ts",
     "start": "cross-env NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "simulate:whatsapp": "npx tsx script/simulateWhatsAppCategoryFlows.ts",
     "db:push": "drizzle-kit push",
     "audit:config": "npx tsx script/auditConfigKeys.ts",
     "audit:coverage": "npx tsx script/auditAppCoverage.ts",

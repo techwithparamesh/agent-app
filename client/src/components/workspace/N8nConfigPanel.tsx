@@ -415,7 +415,13 @@ interface OperationFieldsPanelProps {
   resourceId: string;
   operationId: string;
   values: Record<string, any>;
-  onChange: (fieldName: string, value: any) => void;
+  onChange: (field: { id?: string; name: string }, value: any) => void;
+}
+
+function getFieldValue(values: Record<string, any>, field: { id?: string; name: string }) {
+  if (Object.prototype.hasOwnProperty.call(values, field.name)) return values[field.name];
+  if (field.id && Object.prototype.hasOwnProperty.call(values, field.id)) return values[field.id];
+  return undefined;
 }
 
 export function OperationFieldsPanel({
@@ -452,8 +458,8 @@ export function OperationFieldsPanel({
             <N8nFieldRenderer
               key={field.id}
               field={field}
-              value={values[field.name]}
-              onChange={(val) => onChange(field.name, val)}
+              value={getFieldValue(values, field)}
+              onChange={(val) => onChange(field, val)}
               allValues={values}
             />
           ))}
@@ -477,8 +483,8 @@ export function OperationFieldsPanel({
               <N8nFieldRenderer
                 key={field.id}
                 field={field}
-                value={values[field.name]}
-                onChange={(val) => onChange(field.name, val)}
+                value={getFieldValue(values, field)}
+                onChange={(val) => onChange(field, val)}
                 allValues={values}
               />
             ))}
@@ -538,8 +544,14 @@ export function N8nConfigPanel({
     );
   }
 
-  const handleFieldChange = (fieldName: string, value: any) => {
-    setFields(prev => ({ ...prev, [fieldName]: value }));
+  const handleFieldChange = (field: { id?: string; name: string }, value: any) => {
+    setFields((prev) => {
+      const next = { ...prev, [field.name]: value };
+      if (field.id && field.id !== field.name && Object.prototype.hasOwnProperty.call(prev, field.id)) {
+        next[field.id] = value;
+      }
+      return next;
+    });
   };
 
   return (

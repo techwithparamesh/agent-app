@@ -56,10 +56,10 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   const { accessToken } = googleAuthSchema.parse({ accessToken: credential.accessToken });
 
   if (actionId === 'upload_file') {
-    const fileName = String(config.fileName || '').trim();
-    const fileContentUrl = String(config.fileContent || '').trim();
-    const mimeType = String(config.mimeType || '').trim() || undefined;
-    const folderId = String(config.folderId || '').trim() || undefined;
+    const fileName = String((config.fileName ?? config.file_name) || '').trim();
+    const fileContentUrl = String((config.fileContent ?? config.file_content) || '').trim();
+    const mimeType = String((config.mimeType ?? config.mime_type) || '').trim() || undefined;
+    const folderId = String((config.folderId ?? config.folder_id) || '').trim() || undefined;
 
     if (!fileName) throw new Error('Google Drive upload_file requires fileName');
     if (!fileContentUrl) throw new Error('Google Drive upload_file requires fileContent (URL)');
@@ -125,8 +125,8 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   }
 
   if (actionId === 'create_folder') {
-    const folderName = String(config.folderName || '').trim();
-    const parentFolderId = String(config.parentFolderId || '').trim() || 'root';
+    const folderName = String((config.folderName ?? config.folder_name) || '').trim();
+    const parentFolderId = String((config.parentFolderId ?? config.parent_folder_id) || '').trim() || 'root';
     if (!folderName) throw new Error('Google Drive create_folder requires folderName');
 
     const data = await gJson(accessToken, 'https://www.googleapis.com/drive/v3/files?fields=id,name,parents', {
@@ -142,9 +142,9 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   }
 
   if (actionId === 'copy_file') {
-    const fileId = String(config.fileId || '').trim();
-    const newName = String(config.newName || '').trim() || undefined;
-    const folderId = String(config.folderId || '').trim() || undefined;
+    const fileId = String((config.fileId ?? config.file_id) || '').trim();
+    const newName = String((config.newName ?? config.new_name) || '').trim() || undefined;
+    const folderId = String((config.folderId ?? config.folder_id) || '').trim() || undefined;
     if (!fileId) throw new Error('Google Drive copy_file requires fileId');
 
     const body: any = {};
@@ -164,8 +164,8 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   }
 
   if (actionId === 'move_file') {
-    const fileId = String(config.fileId || '').trim();
-    const newFolderId = String(config.newFolderId || '').trim();
+    const fileId = String((config.fileId ?? config.file_id) || '').trim();
+    const newFolderId = String((config.newFolderId ?? config.new_folder_id) || '').trim();
     if (!fileId) throw new Error('Google Drive move_file requires fileId');
     if (!newFolderId) throw new Error('Google Drive move_file requires newFolderId');
 
@@ -187,7 +187,7 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   }
 
   if (actionId === 'delete_file') {
-    const fileId = String(config.fileId || '').trim();
+    const fileId = String((config.fileId ?? config.file_id) || '').trim();
     const permanent = Boolean(config.permanent);
     if (!fileId) throw new Error('Google Drive delete_file requires fileId');
 
@@ -209,10 +209,11 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   }
 
   if (actionId === 'share_file') {
-    const fileId = String(config.fileId || '').trim();
+    const fileId = String((config.fileId ?? config.file_id) || '').trim();
     const email = String(config.email || '').trim();
     const role = String(config.role || '').trim();
-    const sendNotification = config.sendNotification !== undefined ? Boolean(config.sendNotification) : true;
+    const sendNotificationRaw = config.sendNotification ?? config.send_notification;
+    const sendNotification = sendNotificationRaw !== undefined ? Boolean(sendNotificationRaw) : true;
 
     if (!fileId) throw new Error('Google Drive share_file requires fileId');
     if (!email) throw new Error('Google Drive share_file requires email');
@@ -230,7 +231,7 @@ export async function executeGoogleDriveAction(input: GoogleDriveExecuteInput): 
   }
 
   if (actionId === 'get_file') {
-    const fileId = String(config.fileId || '').trim();
+    const fileId = String((config.fileId ?? config.file_id) || '').trim();
     if (!fileId) throw new Error('Google Drive get_file requires fileId');
 
     const data = await gJson(

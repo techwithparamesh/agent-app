@@ -14,6 +14,7 @@ import { responseComposer } from './responseComposer';
 import { whatsappDispatcher } from './whatsappDispatcher';
 import { decrypt } from '../utils/encryption';
 import { maskPhoneForLogs } from './logScrub';
+import { getIntentsForCapabilities, getToolsForCapabilities } from '@shared/whatsappCategoryMatrix';
 import type {
   NormalizedMessage,
   AIDecision,
@@ -49,6 +50,9 @@ export class AgentRuntime {
     provide_info: 'lead_capture',
     ask_question: 'inquiry',
     feedback: 'feedback',
+    make_order: 'order',
+    track_order: 'support',
+    billing_inquiry: 'support',
   };
 
   // Required fields for each flow
@@ -57,9 +61,54 @@ export class AgentRuntime {
     lead_capture: ['name', 'phone'],
     inquiry: [],
     order: ['name', 'phone', 'items'],
-    support: [],
+    support: ['issue'],
     feedback: ['rating', 'comments'],
   };
+
+  private getAllowedTools(agentCapabilities: string[]): Set<ToolName> {
+    const tools = new Set<ToolName>();
+    for (const t of getToolsForCapabilities(agentCapabilities)) {
+      tools.add(t as ToolName);
+    }
+
+    // Always allow knowledge lookup and business info.
+    tools.add('search_knowledge');
+    tools.add('get_business_info');
+
+    return tools;
+  }
+
+  private getAllowedIntents(agentCapabilities: string[]): Set<Intent> {
+    const intents = new Set<Intent>();
+    for (const i of getIntentsForCapabilities(agentCapabilities)) {
+      intents.add(i as Intent);
+    }
+    // Always allow conversational intents.
+    intents.add('greeting');
+    intents.add('goodbye');
+    intents.add('ask_question');
+    intents.add('provide_info');
+    intents.add('human_handoff');
+    intents.add('unknown');
+    return intents;
+  }
+
+  private async startLeadCaptureWithFields(
+    conversationId: string,
+    missingFields: string[],
+    context: RuntimeContext,
+    resolvedAgent: ResolvedAgent
+  ): Promise<any> {
+    const { agent, user, conversation } = context;
+
+    await stateManager.startFlow(conversationId, 'lead_capture', missingFields);
+    const prompt = await aiDecisionLayer.generateCollectionPrompt(
+      missingFields[0],
+      conversation.context,
+      agent
+    );
+    return responseComposer.composeTextResponse(user.phone, prompt);
+  }
 
   /**
    * Process a single incoming message
@@ -221,13 +270,29 @@ export class AgentRuntime {
     const { message, conversation, agent, user } = context;
     const { intent, entities, requiresAction, suggestedTool } = aiDecision;
 
+    const agentCapabilities = (agent.capabilities as string[]) || [];
+    const allowedTools = this.getAllowedTools(agentCapabilities);
+    const allowedIntents = this.getAllowedIntents(agentCapabilities);
+
+    // Treat WhatsApp sender phone/name as known defaults to avoid re-asking.
+    const effectiveEntities: Record<string, any> = {
+      ...entities,
+      phone: entities.phone ?? conversation.context.collectedData?.phone ?? user.phone,
+      name: entities.name ?? conversation.context.collectedData?.name ?? user.name,
+    };
+
+    // If the intent is not supported by enabled capabilities, downgrade to inquiry.
+    // (Example: a restaurant without appointment tools should not attempt booking tools.)
+    const intentIsAllowed = allowedIntents.has(intent);
+    const safeIntent: Intent = intentIsAllowed ? intent : 'ask_question';
+
     // Handle greeting
-    if (intent === 'greeting') {
+    if (safeIntent === 'greeting') {
       return responseComposer.composeWelcomeMessage(user.phone, agent);
     }
 
     // Handle goodbye
-    if (intent === 'goodbye') {
+    if (safeIntent === 'goodbye') {
       await stateManager.completeFlow(conversation.id);
       const response = await aiDecisionLayer.generateResponse(
         conversation.context,
@@ -237,7 +302,7 @@ export class AgentRuntime {
     }
 
     // Handle human handoff request
-    if (intent === 'human_handoff') {
+    if (safeIntent === 'human_handoff') {
       const result = await toolEngine.execute('human_handoff', {
         agentId: agent.id,
         conversationId: conversation.id,
@@ -254,13 +319,18 @@ export class AgentRuntime {
     }
 
     // Check if intent requires a flow
-    const flowType = this.intentFlowMap[intent];
+    const flowType = this.intentFlowMap[safeIntent];
     if (flowType) {
-      const requiredFields = this.flowRequiredFields[flowType];
+      const requiredFields =
+        flowType === 'support'
+          ? safeIntent === 'track_order'
+            ? ['orderId']
+            : ['issue']
+          : this.flowRequiredFields[flowType];
       const missingFields = await aiDecisionLayer.determineMissingFields(
         conversation.context,
         requiredFields,
-        entities
+        effectiveEntities
       );
 
       if (missingFields.length > 0) {
@@ -272,22 +342,93 @@ export class AgentRuntime {
           conversation.context,
           agent
         );
-        
+
         return responseComposer.composeTextResponse(user.phone, prompt);
+      }
+    }
+
+    // Capability-aware fallbacks for "booking-like" intents when appointment tools are not enabled.
+    // If the AI detects booking intent but booking tools are not allowed, collect details and capture as a lead.
+    if (
+      safeIntent === 'book_appointment' ||
+      safeIntent === 'check_availability' ||
+      safeIntent === 'cancel_appointment' ||
+      safeIntent === 'reschedule_appointment' ||
+      safeIntent === 'check_status'
+    ) {
+      const mappedTool = this.intentToolMap[safeIntent];
+      if (!mappedTool || !allowedTools.has(mappedTool)) {
+        const bookingLikeFields = ['name', 'date', 'time', 'serviceType'];
+        const missing = await aiDecisionLayer.determineMissingFields(
+          conversation.context,
+          bookingLikeFields,
+          effectiveEntities
+        );
+
+        if (missing.length > 0) {
+          return this.startLeadCaptureWithFields(conversation.id, missing, context, resolvedAgent);
+        }
+
+        // No missing fields; capture as lead instead of executing disallowed tools.
+        const notes = `Request: ${safeIntent}\n` + JSON.stringify(
+          {
+            date: effectiveEntities.date,
+            time: effectiveEntities.time,
+            serviceType: effectiveEntities.serviceType,
+          },
+          null,
+          2
+        );
+
+        const result = await toolEngine.execute('capture_lead', {
+          agentId: agent.id,
+          conversationId: conversation.id,
+          name: effectiveEntities.name,
+          phone: effectiveEntities.phone,
+          interest: 'Booking request',
+          notes,
+          customFields: {
+            intent: safeIntent,
+            ...(conversation.context.collectedData || {}),
+            ...effectiveEntities,
+          },
+        });
+
+        const response = await aiDecisionLayer.generateResponse(conversation.context, agent, result);
+        return responseComposer.composeTextResponse(user.phone, response);
       }
     }
 
     // Execute tool if required
     if (requiresAction || suggestedTool) {
-      const toolName = suggestedTool || this.intentToolMap[intent];
+      const toolName = suggestedTool || this.intentToolMap[safeIntent];
       
       if (toolName) {
-        return this.executeTool(context, resolvedAgent, toolName, entities);
+        if (!allowedTools.has(toolName)) {
+          // Tool not allowed for this agent; capture as lead with context.
+          const result = await toolEngine.execute('capture_lead', {
+            agentId: agent.id,
+            conversationId: conversation.id,
+            name: effectiveEntities.name,
+            phone: effectiveEntities.phone,
+            interest: `Request: ${safeIntent}`,
+            notes: message.content,
+            customFields: {
+              suggestedTool: toolName,
+              ...(conversation.context.collectedData || {}),
+              ...effectiveEntities,
+            },
+          });
+          const response = await aiDecisionLayer.generateResponse(conversation.context, agent, result);
+          return responseComposer.composeTextResponse(user.phone, response);
+        }
+
+        return this.executeTool(context, resolvedAgent, toolName, effectiveEntities);
       }
     }
 
     // Handle general questions using knowledge base
-    if (intent === 'ask_question' && conversation.context.knowledgeContext) {
+    if (safeIntent === 'ask_question' && conversation.context.knowledgeContext) {
       const response = await aiDecisionLayer.generateResponse(
         conversation.context,
         agent,
@@ -316,6 +457,13 @@ export class AgentRuntime {
   ): Promise<any> {
     const { conversation, agent, user } = context;
 
+    // Defense in depth: enforce capability gating at the execution boundary.
+    // Most call sites already check allowedTools, but this prevents accidental bypass.
+    const alwaysAllowedTools = new Set<ToolName>(['capture_lead', 'human_handoff', 'search_knowledge', 'get_business_info']);
+    const agentCapabilities = (agent.capabilities as string[]) || [];
+    const allowedTools = this.getAllowedTools(agentCapabilities);
+    const toolIsAllowed = alwaysAllowedTools.has(toolName) || allowedTools.has(toolName);
+
     // Build tool input
     const toolInput = {
       agentId: agent.id,
@@ -326,13 +474,22 @@ export class AgentRuntime {
       customerName: user.name || entities.name,
     };
 
-    // Execute tool
-    const toolResult = await toolEngine.execute(toolName, toolInput);
+    // Execute tool (or safely fall back)
+    const toolResult = toolIsAllowed
+      ? await toolEngine.execute(toolName, toolInput)
+      : await toolEngine.execute('capture_lead', {
+          ...toolInput,
+          interest: `Request: ${toolName}`,
+          notes: 'Tool requested but not enabled for this agent; captured as lead instead.',
+          customFields: {
+            attemptedTool: toolName,
+          },
+        });
 
     // Update context with tool result
     await stateManager.updateState(conversation.id, 'idle', {
       context: {
-        lastToolUsed: toolName,
+        lastToolUsed: toolIsAllowed ? toolName : 'capture_lead',
         lastToolResult: toolResult,
       },
     });
@@ -377,15 +534,30 @@ export class AgentRuntime {
     const { message, conversation, agent, user } = context;
     const reply = message.interactiveReply!;
 
+    const agentCapabilities = (agent.capabilities as string[]) || [];
+    const allowedTools = this.getAllowedTools(agentCapabilities);
+
     // Parse reply ID
-    if (reply.id.startsWith('slot_')) {
-      // Time slot selection
-      const [, date, time] = reply.id.split('_');
+    if (reply.id.startsWith('slot_') || reply.id.startsWith('option_')) {
+      // Time slot selection (slot_...) or legacy option_... selections.
+      const parts = reply.id.split('_');
+      const date = parts[1];
+      const time = parts[2];
+      const serviceTypeToken = reply.id.startsWith('slot_') ? parts.slice(3).join('_') : '';
+
+      let serviceType: string | undefined;
+      if (serviceTypeToken && serviceTypeToken !== 'na') {
+        try {
+          serviceType = Buffer.from(serviceTypeToken, 'base64url').toString('utf8');
+        } catch {
+          // ignore
+        }
+      }
       
-      await stateManager.updateCollectedData(conversation.id, { date, time });
+      await stateManager.updateCollectedData(conversation.id, { date, time, ...(serviceType ? { serviceType } : {}) });
       
       // Check if we have all required fields for booking
-      const collected: Record<string, any> = { ...conversation.context.collectedData, date, time };
+      const collected: Record<string, any> = { ...conversation.context.collectedData, date, time, ...(serviceType ? { serviceType } : {}) };
       const missing = ['name', 'phone'].filter(f => !collected[f]);
 
       if (missing.length > 0) {
@@ -400,6 +572,21 @@ export class AgentRuntime {
       }
 
       // All fields present, book appointment
+      if (!allowedTools.has('book_appointment')) {
+        const result = await toolEngine.execute('capture_lead', {
+          agentId: agent.id,
+          conversationId: conversation.id,
+          name: collected.name || user.name,
+          phone: collected.phone || user.phone,
+          interest: 'Booking request',
+          notes: `Slot selected: ${date} ${time}${serviceType ? ` (${serviceType})` : ''}`,
+          customFields: collected,
+        });
+
+        const response = await aiDecisionLayer.generateResponse(conversation.context, agent, result);
+        return responseComposer.composeTextResponse(user.phone, response);
+      }
+
       return this.executeTool(context, resolvedAgent, 'book_appointment', collected);
     }
 
@@ -409,11 +596,29 @@ export class AgentRuntime {
       if (action === 'yes') {
         // Execute pending action
         const pendingTool = conversation.context.lastToolUsed;
-        if (pendingTool === 'book_appointment') {
+        if (pendingTool) {
+          if (!allowedTools.has(pendingTool)) {
+            const result = await toolEngine.execute('capture_lead', {
+              agentId: agent.id,
+              conversationId: conversation.id,
+              name: conversation.context.collectedData?.name || user.name,
+              phone: conversation.context.collectedData?.phone || user.phone,
+              interest: `Request: ${pendingTool}`,
+              notes: 'User confirmed action, but tool is not enabled for this agent.',
+              customFields: {
+                pendingTool,
+                ...(conversation.context.collectedData || {}),
+              },
+            });
+
+            const response = await aiDecisionLayer.generateResponse(conversation.context, agent, result);
+            return responseComposer.composeTextResponse(user.phone, response);
+          }
+
           return this.executeTool(
-            context, 
-            resolvedAgent, 
-            'book_appointment',
+            context,
+            resolvedAgent,
+            pendingTool,
             conversation.context.collectedData
           );
         }
@@ -521,6 +726,12 @@ export class AgentRuntime {
 
     // Determine action based on flow type
     if (flowType === 'appointment_booking') {
+      await stateManager.updateState(conversation.id, 'confirming', {
+        context: {
+          lastToolUsed: 'book_appointment',
+        },
+      });
+
       // Show confirmation before booking
       return responseComposer.composeConfirmationResponse(
         user.phone,
@@ -536,11 +747,35 @@ export class AgentRuntime {
     }
 
     if (flowType === 'lead_capture') {
-      // Capture lead
+      // Capture lead, preserving extra collected fields in notes/customFields
+      const {
+        name,
+        phone,
+        email,
+        interest,
+        notes,
+        ...rest
+      } = (collectedData || {}) as Record<string, any>;
+
+      const mergedNotesParts: string[] = [];
+      if (notes) mergedNotesParts.push(String(notes));
+
+      // If we collected any extra fields (date/time/items/orderId/etc), persist them.
+      if (Object.keys(rest).length > 0) {
+        mergedNotesParts.push(`Details: ${JSON.stringify(rest)}`);
+      }
+
+      const finalNotes = mergedNotesParts.filter(Boolean).join('\n');
+
       const result = await toolEngine.execute('capture_lead', {
         agentId: agent.id,
         conversationId: conversation.id,
-        ...collectedData,
+        name,
+        phone: phone || user.phone,
+        email,
+        interest,
+        notes: finalNotes || undefined,
+        customFields: Object.keys(rest).length > 0 ? rest : undefined,
       });
 
       await stateManager.completeFlow(conversation.id);
@@ -550,6 +785,50 @@ export class AgentRuntime {
         agent,
         result
       );
+      return responseComposer.composeTextResponse(user.phone, response);
+    }
+
+    if (flowType === 'order') {
+      // Treat orders as structured lead capture
+      const result = await toolEngine.execute('capture_lead', {
+        agentId: agent.id,
+        conversationId: conversation.id,
+        name: collectedData.name,
+        phone: collectedData.phone || user.phone,
+        email: collectedData.email,
+        interest: 'Order request',
+        notes: collectedData.items ? `Items: ${collectedData.items}` : undefined,
+        customFields: {
+          ...collectedData,
+          flowType: 'order',
+        },
+      });
+
+      await stateManager.completeFlow(conversation.id);
+
+      const response = await aiDecisionLayer.generateResponse(conversation.context, agent, result);
+      return responseComposer.composeTextResponse(user.phone, response);
+    }
+
+    if (flowType === 'support') {
+      // Capture support/billing/tracking as lead; user can explicitly ask for human handoff.
+      const result = await toolEngine.execute('capture_lead', {
+        agentId: agent.id,
+        conversationId: conversation.id,
+        name: collectedData.name,
+        phone: collectedData.phone || user.phone,
+        email: collectedData.email,
+        interest: 'Support request',
+        notes: collectedData.issue || undefined,
+        customFields: {
+          ...collectedData,
+          flowType: 'support',
+        },
+      });
+
+      await stateManager.completeFlow(conversation.id);
+
+      const response = await aiDecisionLayer.generateResponse(conversation.context, agent, result);
       return responseComposer.composeTextResponse(user.phone, response);
     }
 

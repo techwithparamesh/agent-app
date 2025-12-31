@@ -304,9 +304,6 @@ export const googleCalendarSchema: N8nAppSchema = {
             },
           ],
         },
-            },
-          ],
-        },
         {
           id: 'update_event',
           name: 'Update Event',

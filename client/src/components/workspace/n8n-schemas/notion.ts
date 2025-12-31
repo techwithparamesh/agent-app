@@ -97,14 +97,14 @@ export const notionSchema: N8nAppSchema = {
             },
             {
               id: 'start_cursor',
-              name: 'start_cursor',
+              name: 'startCursor',
               displayName: 'Start Cursor',
               type: 'string',
               required: false,
             },
             {
               id: 'page_size',
-              name: 'page_size',
+              name: 'pageSize',
               displayName: 'Page Size',
               type: 'number',
               required: false,
@@ -418,14 +418,14 @@ export const notionSchema: N8nAppSchema = {
           optionalFields: [
             {
               id: 'start_cursor',
-              name: 'start_cursor',
+              name: 'startCursor',
               displayName: 'Start Cursor',
               type: 'string',
               required: false,
             },
             {
               id: 'page_size',
-              name: 'page_size',
+              name: 'pageSize',
               displayName: 'Page Size',
               type: 'number',
               required: false,
@@ -585,14 +585,14 @@ export const notionSchema: N8nAppSchema = {
           optionalFields: [
             {
               id: 'start_cursor',
-              name: 'start_cursor',
+              name: 'startCursor',
               displayName: 'Start Cursor',
               type: 'string',
               required: false,
             },
             {
               id: 'page_size',
-              name: 'page_size',
+              name: 'pageSize',
               displayName: 'Page Size',
               type: 'number',
               required: false,
@@ -662,14 +662,14 @@ export const notionSchema: N8nAppSchema = {
             },
             {
               id: 'start_cursor',
-              name: 'start_cursor',
+              name: 'startCursor',
               displayName: 'Start Cursor',
               type: 'string',
               required: false,
             },
             {
               id: 'page_size',
-              name: 'page_size',
+              name: 'pageSize',
               displayName: 'Page Size',
               type: 'number',
               required: false,
@@ -743,14 +743,14 @@ export const notionSchema: N8nAppSchema = {
           optionalFields: [
             {
               id: 'start_cursor',
-              name: 'start_cursor',
+              name: 'startCursor',
               displayName: 'Start Cursor',
               type: 'string',
               required: false,
             },
             {
               id: 'page_size',
-              name: 'page_size',
+              name: 'pageSize',
               displayName: 'Page Size',
               type: 'number',
               required: false,

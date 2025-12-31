@@ -73,6 +73,7 @@ import {
 import { Link } from "wouter";
 
 import { whatsappBusinessCategories as businessCategories } from "@/data/whatsappBusinessCatalog";
+import { getToolsForCapabilities } from "@shared/whatsappCategoryMatrix";
 
 // Business categories are imported from a shared catalog module.
 
@@ -203,6 +204,8 @@ export default function WhatsAppAgentPage() {
       .map((capId) => category?.capabilities.find((c) => c.id === capId)?.label)
       .filter(Boolean);
 
+    const tools = getToolsForCapabilities(data.capabilities);
+
     // Build custom fields section
     let customFieldsSection = "";
     if (category?.customFields && data.customFields) {
@@ -229,6 +232,12 @@ ${customFieldsSection}
 ## Your Capabilities
 You can help customers with:
 ${capabilityLabels.map((label) => `- ${label}`).join("\n")}
+
+${tools.length > 0 ? `
+## Available Tools
+When you need to perform an action or retrieve up-to-date information, use tools instead of guessing:
+${tools.map((t) => `- ${t}`).join("\n")}
+` : ""}
 
 ## Guidelines
 1. Be friendly, professional, and conversational - remember this is WhatsApp, not email

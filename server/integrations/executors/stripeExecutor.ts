@@ -10,6 +10,19 @@ export type StripeExecuteInput = {
   credential: Record<string, any>;
 };
 
+function parseJsonMaybe(value: any) {
+  if (value == null) return undefined;
+  if (typeof value === 'object') return value;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 function formEncode(obj: Record<string, any>) {
   const form = new URLSearchParams();
 
@@ -73,11 +86,20 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
     const email = String(config.email || '').trim();
     if (!email) throw new Error('Stripe create_customer requires email');
 
+    const address = parseJsonMaybe(config.address);
+    const shipping = parseJsonMaybe(config.shipping);
+    const invoiceSettings = parseJsonMaybe(config.invoice_settings ?? config.invoiceSettings);
+    const paymentMethod = String((config.payment_method ?? config.paymentMethod) || '').trim();
+
     const body: any = {
       email,
       ...(config.name ? { name: String(config.name) } : {}),
       ...(config.phone ? { phone: String(config.phone) } : {}),
       ...(config.description ? { description: String(config.description) } : {}),
+      ...(address && typeof address === 'object' ? { address } : {}),
+      ...(shipping && typeof shipping === 'object' ? { shipping } : {}),
+      ...(invoiceSettings && typeof invoiceSettings === 'object' ? { invoice_settings: invoiceSettings } : {}),
+      ...(paymentMethod ? { payment_method: paymentMethod } : {}),
     };
 
     if (config.metadata) {
@@ -101,15 +123,16 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
     const body: any = {
       amount: Math.trunc(amount),
       currency,
-      ...(config.customerId ? { customer: String(config.customerId) } : {}),
+      ...(config.customerId || config.customer_id ? { customer: String(config.customerId || config.customer_id) } : {}),
       ...(config.description ? { description: String(config.description) } : {}),
     };
 
-    if (config.paymentMethodTypes) {
+    const paymentMethodTypesRaw = config.paymentMethodTypes ?? config.payment_method_types;
+    if (paymentMethodTypesRaw) {
       try {
-        const arr = Array.isArray(config.paymentMethodTypes)
-          ? config.paymentMethodTypes
-          : JSON.parse(String(config.paymentMethodTypes));
+        const arr = Array.isArray(paymentMethodTypesRaw)
+          ? paymentMethodTypesRaw
+          : JSON.parse(String(paymentMethodTypesRaw));
         if (Array.isArray(arr)) body.payment_method_types = arr.map(String);
       } catch {
         // ignore
@@ -129,15 +152,17 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
   }
 
   if (actionId === 'create_subscription') {
-    const customerId = String(config.customerId || '').trim();
-    const priceId = String(config.priceId || '').trim();
+    const customerId = String((config.customerId ?? config.customer_id) || '').trim();
+    const priceId = String((config.priceId ?? config.price_id) || '').trim();
     if (!customerId) throw new Error('Stripe create_subscription requires customerId');
     if (!priceId) throw new Error('Stripe create_subscription requires priceId');
 
     const body: any = {
       customer: customerId,
       items: [{ price: priceId }],
-      ...(config.trialPeriodDays != null ? { trial_period_days: Number(config.trialPeriodDays) } : {}),
+      ...(config.trialPeriodDays != null || config.trial_period_days != null
+        ? { trial_period_days: Number(config.trialPeriodDays ?? config.trial_period_days) }
+        : {}),
     };
 
     if (config.metadata) {
@@ -153,10 +178,11 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
   }
 
   if (actionId === 'cancel_subscription') {
-    const subscriptionId = String(config.subscriptionId || '').trim();
+    const subscriptionId = String((config.subscriptionId ?? config.subscription_id) || '').trim();
     if (!subscriptionId) throw new Error('Stripe cancel_subscription requires subscriptionId');
 
-    const cancelAtPeriodEnd = config.cancelAtPeriodEnd !== undefined ? Boolean(config.cancelAtPeriodEnd) : true;
+    const cancelAtPeriodEndRaw = config.cancelAtPeriodEnd ?? config.cancel_at_period_end;
+    const cancelAtPeriodEnd = cancelAtPeriodEndRaw !== undefined ? Boolean(cancelAtPeriodEndRaw) : true;
 
     const data = await stripeRequest(`/subscriptions/${encodeURIComponent(subscriptionId)}`, secretKey, 'POST', {
       cancel_at_period_end: cancelAtPeriodEnd,
@@ -166,12 +192,14 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
   }
 
   if (actionId === 'create_invoice') {
-    const customerId = String(config.customerId || '').trim();
+    const customerId = String((config.customerId ?? config.customer_id) || '').trim();
     if (!customerId) throw new Error('Stripe create_invoice requires customerId');
 
     const body: any = {
       customer: customerId,
-      ...(config.autoAdvance !== undefined ? { auto_advance: Boolean(config.autoAdvance) } : {}),
+      ...(config.autoAdvance !== undefined || config.auto_advance !== undefined
+        ? { auto_advance: Boolean(config.autoAdvance ?? config.auto_advance) }
+        : {}),
       ...(config.description ? { description: String(config.description) } : {}),
     };
 
@@ -180,7 +208,7 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
   }
 
   if (actionId === 'get_customer') {
-    const customerId = String(config.customerId || '').trim();
+    const customerId = String((config.customerId ?? config.customer_id) || '').trim();
     if (!customerId) throw new Error('Stripe get_customer requires customerId');
 
     const data = await stripeRequest(`/customers/${encodeURIComponent(customerId)}`, secretKey, 'GET');
@@ -188,7 +216,7 @@ export async function executeStripeAction(input: StripeExecuteInput): Promise<an
   }
 
   if (actionId === 'refund_payment') {
-    const paymentIntentId = String(config.paymentIntentId || '').trim();
+    const paymentIntentId = String((config.paymentIntentId ?? config.payment_intent_id) || '').trim();
     if (!paymentIntentId) throw new Error('Stripe refund_payment requires paymentIntentId');
 
     const body: any = {

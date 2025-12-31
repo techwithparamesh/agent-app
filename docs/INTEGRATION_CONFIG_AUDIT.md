@@ -2,7 +2,7 @@
 
 Compares frontend action field keys (AppConfigurations) vs backend executor config usage.
 
-Generated at: 2025-12-28T14:36:22.943Z
+Generated at: 2025-12-31T08:04:29.429Z
 
 ## Summary (most missing UI keys)
 
@@ -25,6 +25,9 @@ Generated at: 2025-12-28T14:36:22.943Z
 | airtable | get_record | 0 | server/integrations/executors/airtableExecutor.ts |
 | airtable | list_records | 0 | server/integrations/executors/airtableExecutor.ts |
 | airtable | delete_record | 0 | server/integrations/executors/airtableExecutor.ts |
+| shopify | create_order | 0 | server/integrations/executors/shopifyExecutor.ts |
+| shopify | create_product | 0 | server/integrations/executors/shopifyExecutor.ts |
+| shopify | update_product | 0 | server/integrations/executors/shopifyExecutor.ts |
 | shopify | create_customer | 0 | server/integrations/executors/shopifyExecutor.ts |
 | trello | create_card | 0 | server/integrations/executors/trelloExecutor.ts |
 | trello | update_card | 0 | server/integrations/executors/trelloExecutor.ts |
@@ -235,7 +238,19 @@ Executor: server/integrations/executors/shopifyExecutor.ts
 
 ### Create Customer (create_customer)
 
-- Present in UI but not referenced in executor: addresses
+- Present in UI but not referenced in executor: acceptsMarketing, addresses, email, firstName, lastName, note, phone, tags
+
+### Create Order (create_order)
+
+- Present in UI but not referenced in executor: customerId, email, financialStatus, lineItems, shippingAddress, tags
+
+### Create Product (create_product)
+
+- Present in UI but not referenced in executor: bodyHtml, productType, tags, vendor
+
+### Update Product (update_product)
+
+- Present in UI but not referenced in executor: bodyHtml
 
 ## Telegram (telegram)
 

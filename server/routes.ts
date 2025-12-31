@@ -134,7 +134,18 @@ const updateAgentSchema = z.object({
       description: z.string().optional().nullable(),
       category: z.string().optional().nullable(),
     })
-    .catchall(z.union([z.string(), z.null()]).optional())
+    .catchall(
+      z
+        .union([
+          z.string(),
+          z.number(),
+          z.boolean(),
+          z.null(),
+          z.array(z.any()),
+          z.record(z.any()),
+        ])
+        .optional()
+    )
     .optional()
     .nullable(),
   language: z.string().max(10).optional(),
@@ -785,7 +796,9 @@ export async function registerRoutes(
         purpose: originalAgent.purpose,
         welcomeMessage: originalAgent.welcomeMessage,
         suggestedQuestions: originalAgent.suggestedQuestions,
-        agentType: originalAgent.agentType,
+        agentType: (originalAgent.agentType === "whatsapp" ? "whatsapp" : "website") as
+          | "website"
+          | "whatsapp",
         businessCategory: originalAgent.businessCategory,
         capabilities: originalAgent.capabilities,
         businessInfo: originalAgent.businessInfo,

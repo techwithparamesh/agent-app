@@ -45,6 +45,10 @@ import {
   Car,
   Home,
   Briefcase,
+  Clock,
+  Receipt,
+  TrendingUp,
+  Package,
   CheckCircle2,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -103,6 +107,13 @@ const templateIcons: Record<string, React.ElementType> = {
   "Auto Dealership Agent": Car,
   "B2B Sales Assistant": Building2,
   "HR & Recruiting Bot": Briefcase,
+  "Appointment Booking Agent": Clock,
+  "Billing & Invoice Agent": Receipt,
+  "Lead Generation Agent": TrendingUp,
+  "Order & Delivery Support": Package,
+  "Restaurant Reservation Agent": UtensilsCrossed,
+  "Clinic/Hospital Assistant": Stethoscope,
+  "Service Center Agent": Car,
 };
 
 export default function CreateAgent() {
