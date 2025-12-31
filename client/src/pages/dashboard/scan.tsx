@@ -91,20 +91,38 @@ export default function WebsiteScanner() {
     queryKey: ["/api/agents"],
     refetchOnMount: "always", // Always refetch when navigating to this page
     staleTime: 0, // Consider data stale immediately
+    // Poll every 3 seconds while scanning to catch completion/error states
+    refetchInterval: scanStatus === "scanning" ? 3000 : false,
   });
 
-  // Check if any agent has an ongoing scan (restore state if user navigates back)
+  // Check if selected agent has an ongoing or completed scan (restore state if user navigates back)
   useEffect(() => {
     if (agents && preselectedAgent) {
       const agent = agents.find(a => a.id === preselectedAgent);
-      if (agent && (agent as any).scanStatus === 'scanning') {
-        // Restore the scanning state
-        setScanStatus("scanning");
-        setScanProgress((agent as any).scanProgress || 0);
-        setScanMessage((agent as any).scanMessage || "Scan in progress...");
+      if (agent) {
+        const agentScanStatus = (agent as any).scanStatus;
+        const agentScanProgress = (agent as any).scanProgress || 0;
+        const agentScanMessage = (agent as any).scanMessage || "";
+        
+        if (agentScanStatus === 'scanning') {
+          // Restore the scanning state - scan is running in background
+          setScanStatus("scanning");
+          setScanProgress(agentScanProgress);
+          setScanMessage(agentScanMessage || "Scan in progress...");
+        } else if (agentScanStatus === 'complete' && scanStatus === 'idle') {
+          // Show that scan completed while user was away
+          setScanStatus("complete");
+          setScanProgress(100);
+          setScanMessage(agentScanMessage || "Scan complete!");
+        } else if (agentScanStatus === 'error' && scanStatus === 'idle') {
+          // Show error state if scan failed while user was away
+          setScanStatus("error");
+          setScanProgress(0);
+          setScanMessage(agentScanMessage || "Scan failed");
+        }
       }
     }
-  }, [agents, preselectedAgent]);
+  }, [agents, preselectedAgent, scanStatus]);
 
   const form = useForm<ScanFormValues>({
     resolver: zodResolver(scanFormSchema),
