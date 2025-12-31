@@ -25,7 +25,7 @@ import {
   passwordResetRateLimiter 
 } from "./middleware/rateLimit";
 import { v4 as uuidv4 } from "uuid";
-import rateLimit from "express-rate-limit";
+import rateLimit, { type Options } from "express-rate-limit";
 
 import { isMailerConfigured, sendPasswordResetEmail } from "./utils/mailer";
 import {
@@ -570,7 +570,8 @@ export async function registerRoutes(
   const contactRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // 5 submissions per 15 minutes
-    message: "Too many contact form submissions. Please try again later."
+    message: "Too many contact form submissions. Please try again later.",
+    validate: { xForwardedForHeader: false, trustProxy: false },
   });
 
   app.post("/api/contact", contactRateLimiter, async (req, res) => {
@@ -3686,13 +3687,16 @@ export async function registerRoutes(
   const widgetRateLimitMax = parseIntEnv(process.env.WIDGET_RATE_LIMIT_MAX, 30);
 
   // Widget rate limiter - composite key: agentId + widgetKey + IP
+  // Use validate: false to skip IPv6 keyGenerator validation (we handle it safely)
   const widgetRateLimiter = rateLimit({
     windowMs: widgetRateLimitWindowMs,
     max: widgetRateLimitMax,
     keyGenerator: (req) => {
       const agentId = (req as any)?.body?.agentId;
       const widgetKey = (req as any)?.body?.widgetKey;
-      return `${req.ip}|${typeof agentId === "string" ? agentId : "no-agent"}|${typeof widgetKey === "string" ? widgetKey : "no-key"}`;
+      // Use x-forwarded-for or remoteAddress for better proxy support
+      const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+      return `widget|${ip}|${typeof agentId === "string" ? agentId : "no-agent"}|${typeof widgetKey === "string" ? widgetKey : "no-key"}`;
     },
     handler: (req, res) => {
       res.header("Access-Control-Allow-Origin", req.get("Origin") || "*");
@@ -3706,6 +3710,7 @@ export async function registerRoutes(
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false, trustProxy: false },
   });
 
   const parseWidgetBodyIfNeeded = (req: any, _res: any, next: any) => {

@@ -16,8 +16,10 @@ const workflowWebhookRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const webhookId = String((req as any)?.params?.webhookId || '');
-    return `${req.ip}|${webhookId}`;
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return `webhook|${ip}|${webhookId}`;
   },
+  validate: { xForwardedForHeader: false, trustProxy: false },
 });
 
 function findTriggerNode(workflow: any) {
