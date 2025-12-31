@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Sidebar,
   SidebarContent,
@@ -89,6 +90,8 @@ const templateSubItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const previousScanningAgentRef = useRef<string | null>(null);
   
   // Persist dropdown states in localStorage so they don't reset on navigation
   const [dashboardOpen, setDashboardOpen] = useState(() => {
@@ -109,11 +112,48 @@ export function AppSidebar() {
     localStorage.setItem('sidebar-templates-open', JSON.stringify(templatesOpen));
   }, [templatesOpen]);
 
-  // Fetch agents for count
+  // Fetch agents for count and scan status
   const { data: agents } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
     staleTime: 30000,
+    // Poll more frequently if any agent is scanning
+    refetchInterval: (query) => {
+      const data = query.state.data as Agent[] | undefined;
+      const hasScanning = data?.some((a: any) => a.scanStatus === 'scanning');
+      return hasScanning ? 3000 : false;
+    },
   });
+
+  // Check if any agent has an active scan
+  const scanningAgent = useMemo(() => {
+    return agents?.find((a: any) => a.scanStatus === 'scanning') as (Agent & { scanStatus: string; scanProgress: number; scanMessage: string }) | undefined;
+  }, [agents]);
+
+  // Notify user when scan completes while on another page
+  useEffect(() => {
+    const currentScanningId = scanningAgent?.id || null;
+    const previousId = previousScanningAgentRef.current;
+    
+    // If we had a scanning agent before, but now we don't (or it changed)
+    if (previousId && !currentScanningId && !location.includes('/dashboard/scan')) {
+      // Find the agent that was scanning to check its status
+      const previousAgent = agents?.find(a => a.id === previousId) as any;
+      if (previousAgent?.scanStatus === 'complete') {
+        toast({
+          title: "Scan Complete! ✓",
+          description: `${previousAgent.name}'s website scan has finished.`,
+        });
+      } else if (previousAgent?.scanStatus === 'error') {
+        toast({
+          title: "Scan Failed",
+          description: previousAgent.scanMessage || "The scan encountered an error.",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    previousScanningAgentRef.current = currentScanningId;
+  }, [scanningAgent?.id, agents, location, toast]);
 
   // Fetch dashboard stats
   const { data: dashboardStats } = useQuery<{
@@ -304,6 +344,29 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Website Scanner with Status Indicator */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/scan"}
+                  className="gap-3"
+                >
+                  <Link href={scanningAgent ? `/dashboard/scan?agent=${scanningAgent.id}` : "/dashboard/scan"}>
+                    <div className="relative">
+                      <Scan className="h-5 w-5" />
+                      {scanningAgent && (
+                        <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse" />
+                      )}
+                    </div>
+                    <span>Website Scanner</span>
+                    {scanningAgent && (
+                      <span className="ml-auto text-xs font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                        {scanningAgent.scanProgress || 0}%
+                      </span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
