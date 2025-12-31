@@ -106,7 +106,9 @@ export const knowledgeBase = mysqlTable("knowledge_base", {
   contentType: varchar("content_type", { length: 50 }),
   metadata: json("metadata").$type<any>(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  agentIdx: index("idx_knowledge_agent").on(table.agentId),
+}));
 
 // Conversations for chatbot
 export const conversations = mysqlTable("conversations", {

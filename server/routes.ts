@@ -390,7 +390,7 @@ export async function registerRoutes(
       await storage.setPasswordResetToken(user.id, token, expires);
 
       // Send password reset email
-      const resetUrl = `${process.env.APP_URL || 'http://localhost:5000'}/reset-password?token=${token}`;
+      const resetUrl = `${APP_CONFIG.appUrl}/reset-password?token=${token}`;
 
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV ONLY] Password reset requested for: ${email}`);
@@ -642,7 +642,14 @@ export async function registerRoutes(
   app.get("/api/agents", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const agents = await storage.getAgentsByUserId(userId);
+      
+      // Pagination support (optional query params)
+      const limitRaw = parseInt(req.query.limit as string, 10);
+      const offsetRaw = parseInt(req.query.offset as string, 10);
+      const limit = Number.isFinite(limitRaw) && limitRaw > 0 && limitRaw <= 100 ? limitRaw : undefined;
+      const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : undefined;
+      
+      const agents = await storage.getAgentsByUserId(userId, { limit, offset });
 
       // Backfill widgetKey/allowedOrigins for existing website agents (one-time, on authenticated fetch).
       await Promise.all(
@@ -663,7 +670,7 @@ export async function registerRoutes(
         })
       );
 
-      const updatedAgents = await storage.getAgentsByUserId(userId);
+      const updatedAgents = await storage.getAgentsByUserId(userId, { limit, offset });
       res.json(updatedAgents);
     } catch (error) {
       console.error("Error fetching agents:", error);
@@ -750,12 +757,8 @@ export async function registerRoutes(
         c.createdAt && new Date(c.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       ).length;
 
-      // Get message count
-      let totalMessages = 0;
-      for (const conv of conversations) {
-        const messages = await storage.getMessagesByConversationId(conv.id);
-        totalMessages += messages.length;
-      }
+      // Get message count using efficient aggregation query
+      const totalMessages = await storage.getMessageCountByAgentId(agent.id);
 
       // Calculate average response time (placeholder - would need actual timestamps)
       const avgResponseTime = 2.5; // seconds (placeholder)
@@ -1116,8 +1119,9 @@ export async function registerRoutes(
     res.flushHeaders();
     
     // Helper to send SSE message with immediate flush
+    // If the client navigates away, we keep scanning but stop streaming.
     const sendProgress = (data: any) => {
-      if (res.writableEnded) return;
+      if (clientDisconnected || res.writableEnded) return;
       res.write(`data: ${JSON.stringify(data)}\n\n`);
       // Force flush to prevent buffering
       if (typeof (res as any).flush === 'function') {
@@ -1136,27 +1140,16 @@ export async function registerRoutes(
 
     let clientDisconnected = false;
     let browser: any = null;
-    const abortScan = async () => {
+    const onClientClose = () => {
+      // Client left the page / closed the connection.
+      // Do NOT cancel the scan; just stop sending SSE messages.
       clientDisconnected = true;
       try {
-        if (browser) await browser.close();
-      } catch {}
-      try {
-        if (agentId) {
-          await storage.updateAgent(agentId as string, {
-            scanStatus: 'error',
-            scanProgress: 0,
-            scanMessage: 'Scan canceled',
-          });
-        }
-      } catch {}
-      releaseGateOnce();
-      try {
-        res.end();
+        if (!res.writableEnded) res.end();
       } catch {}
     };
 
-    req.on('close', abortScan);
+    req.on('close', onClientClose);
     
     try {
       if (!agentId || !url) {
@@ -1228,7 +1221,9 @@ export async function registerRoutes(
       if (additionalUrlsParam) {
         try {
           additionalUrls = JSON.parse(additionalUrlsParam as string);
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Scan] Failed to parse additional URLs:', e instanceof Error ? e.message : e);
+        }
       }
 
       const baseDomain = parsedBaseUrl.origin;
@@ -1258,7 +1253,9 @@ export async function registerRoutes(
             if (!urlsToScan.includes(fullUrl)) {
               urlsToScan.push(fullUrl);
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn('[Scan] Invalid additional URL:', additionalUrl, e instanceof Error ? e.message : e);
+          }
         }
       }
       
@@ -1455,7 +1452,9 @@ export async function registerRoutes(
                   if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
                     return '';
                   }
-                } catch(e) {}
+                } catch(e) {
+                  // Element may not support getComputedStyle - continue processing
+                }
                 
                 // Get direct text nodes
                 for (var i = 0; i < element.childNodes.length; i++) {
@@ -1658,7 +1657,9 @@ export async function registerRoutes(
                         foundLinks.push(absoluteUrl.href);
                       }
                     }
-                  } catch (e) {}
+                  } catch (e) {
+                    // Invalid URL - skip this link
+                  }
                 }
               });
               
@@ -1704,7 +1705,9 @@ export async function registerRoutes(
               }
               if (urls.length > 0) break;
             }
-          } catch (e) {}
+          } catch (e) {
+            // Sitemap not available at this URL - try next
+          }
         }
         return urls;
       };
@@ -1827,7 +1830,9 @@ export async function registerRoutes(
                 links.push(normalizedUrl);
               }
             }
-          } catch (e) {}
+          } catch (e) {
+            // Invalid URL - skip
+          }
         }
         
         return [...new Set(links)];
@@ -2238,7 +2243,6 @@ export async function registerRoutes(
       let lastProgressUpdate = Date.now();
       
       while (urlsToScan.length > 0 && scannedPages.length < maxPages) {
-        if (clientDisconnected || res.writableEnded) break;
         const currentUrl = urlsToScan.shift()!;
 
         if (!isSameOrigin(currentUrl, baseDomain)) {
@@ -2410,13 +2414,11 @@ export async function registerRoutes(
       if (browser) {
         try {
           await browser.close();
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Scan] Failed to close browser:', e instanceof Error ? e.message : e);
+        }
       }
 
-      if (clientDisconnected || res.writableEnded) {
-        return;
-      }
-      
       sendProgress({ type: 'status', message: 'Saving content to knowledge base...', progress: 92 });
       
       // Save content to database
@@ -2773,7 +2775,9 @@ export async function registerRoutes(
                     if (absoluteUrl.origin === baseDomainArg) {
                       foundLinks.push(absoluteUrl.href);
                     }
-                  } catch (e) {}
+                  } catch (e) {
+                    // Invalid URL - skip
+                  }
                 }
               });
               // Return unique links
@@ -2951,7 +2955,9 @@ export async function registerRoutes(
             try {
               const scriptUrl = src.startsWith('http') ? src : new URL(src, baseDomain).href;
               scriptUrls.push(scriptUrl);
-            } catch (e) {}
+            } catch (e) {
+              // Invalid script URL - skip
+            }
           }
         }
         
@@ -3342,7 +3348,9 @@ export async function registerRoutes(
               if (!urlsToScan.includes(fullUrl) && !visitedUrls.has(fullUrl)) {
                 urlsToScan.push(fullUrl);
               }
-            } catch (e) {}
+            } catch (e) {
+              // Invalid route path - skip
+            }
           }
           
           // Add common routes based on website type

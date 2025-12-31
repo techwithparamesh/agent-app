@@ -67,7 +67,7 @@ export interface IStorage {
   updateUserProfile(userId: string, data: { firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User | undefined>;
 
   // Agents
-  getAgentsByUserId(userId: string): Promise<Agent[]>;
+  getAgentsByUserId(userId: string, options?: { limit?: number; offset?: number }): Promise<Agent[]>;
   getAgentById(id: string): Promise<Agent | undefined>;
   createAgent(userId: string, agent: InsertAgent): Promise<Agent>;
   updateAgent(id: string, agent: Partial<InsertAgent>): Promise<Agent | undefined>;
@@ -90,6 +90,7 @@ export interface IStorage {
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
   getMessagesByConversationId(conversationId: string): Promise<Message[]>;
+  getMessageCountByAgentId(agentId: string): Promise<number>;
 
   // Integration Credentials
   getCredentialsByUserId(userId: string): Promise<IntegrationCredential[]>;
@@ -209,12 +210,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Agents
-  async getAgentsByUserId(userId: string): Promise<Agent[]> {
-    return db
+  async getAgentsByUserId(userId: string, options?: { limit?: number; offset?: number }): Promise<Agent[]> {
+    let query = db
       .select()
       .from(agents)
       .where(eq(agents.userId, userId))
       .orderBy(desc(agents.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit) as typeof query;
+    }
+    if (options?.offset) {
+      query = query.offset(options.offset) as typeof query;
+    }
+    
+    return query;
   }
 
   async getAgentById(id: string): Promise<Agent | undefined> {
@@ -417,6 +427,16 @@ export class DatabaseStorage implements IStorage {
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
+  }
+
+  async getMessageCountByAgentId(agentId: string): Promise<number> {
+    // Efficient single-query count using JOIN instead of N+1 pattern
+    const result = await db
+      .select({ count: sql<number>`COUNT(${messages.id})` })
+      .from(messages)
+      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+      .where(eq(conversations.agentId, agentId));
+    return result[0]?.count ?? 0;
   }
 
   // Usage Tracking
