@@ -139,7 +139,7 @@ export function AppSidebar() {
   const getMetricValue = (metric: string) => {
     switch (metric) {
       case "agents":
-        return agents?.length || 0;
+        return agents?.filter((a) => a.isActive).length ?? 0;
       case "conversations":
         return dashboardStats?.totalConversations || 0;
       case "visitors":

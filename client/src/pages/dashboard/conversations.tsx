@@ -181,6 +181,7 @@ export default function ConversationsPage() {
   const filteredConversations = conversations || [];
   const totalConversations = filteredConversations.length;
   const uniqueSessions = new Set(filteredConversations.map(c => c.sessionId)).size;
+  const activeAgentsCount = agents?.filter((a) => a.isActive).length ?? 0;
 
   return (
     <DashboardLayout title="Conversations">
@@ -227,7 +228,7 @@ export default function ConversationsPage() {
                   <Bot className="h-5 w-5 text-chart-3" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{agents?.length || 0}</p>
+                  <p className="text-2xl font-bold">{activeAgentsCount}</p>
                   <p className="text-sm text-muted-foreground">Active Agents</p>
                 </div>
               </div>

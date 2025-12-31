@@ -85,6 +85,7 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversationById(id: string): Promise<Conversation | undefined>;
   getConversationsByAgentId(agentId: string): Promise<Conversation[]>;
+  getConversationsByUserId(userId: string, agentId?: string, options?: { limit?: number; offset?: number }): Promise<Conversation[]>;
 
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
@@ -344,34 +345,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get conversations by user ID (across all their agents)
-  async getConversationsByUserId(userId: string, agentId?: string): Promise<Conversation[]> {
-    // Get all agents for this user
-    const userAgents = await db
-      .select({ id: agents.id })
-      .from(agents)
-      .where(eq(agents.userId, userId));
-    
-    if (userAgents.length === 0) {
-      return [];
-    }
+  async getConversationsByUserId(
+    userId: string,
+    agentId?: string,
+    options?: { limit?: number; offset?: number }
+  ): Promise<Conversation[]> {
+    let whereClause: any = eq(agents.userId, userId);
+    if (agentId) whereClause = and(whereClause, eq(conversations.agentId, agentId));
 
-    const agentIds = userAgents.map(a => a.id);
-
-    // If a specific agentId is provided, filter by it
-    if (agentId && agentIds.includes(agentId)) {
-      return db
-        .select()
-        .from(conversations)
-        .where(eq(conversations.agentId, agentId))
-        .orderBy(desc(conversations.createdAt));
-    }
-
-    // Otherwise get all conversations for all user's agents
-    return db
-      .select()
+    let q: any = db
+      .select({
+        id: conversations.id,
+        agentId: conversations.agentId,
+        sessionId: conversations.sessionId,
+        createdAt: conversations.createdAt,
+        updatedAt: conversations.updatedAt,
+      })
       .from(conversations)
-      .where(inArray(conversations.agentId, agentIds))
+      .innerJoin(agents, eq(conversations.agentId, agents.id))
+      .where(whereClause)
       .orderBy(desc(conversations.createdAt));
+
+    if (typeof options?.limit === 'number') q = q.limit(options.limit);
+    if (typeof options?.offset === 'number') q = q.offset(options.offset);
+
+    return q;
   }
 
   // Delete a single conversation and its messages
@@ -512,62 +510,33 @@ export class DatabaseStorage implements IStorage {
     totalMessages: number;
     responseRate: number;
   }> {
-    // Get all agents for this user
-    const userAgents = await db
-      .select({ id: agents.id })
-      .from(agents)
-      .where(eq(agents.userId, userId));
-    
-    if (userAgents.length === 0) {
-      return {
-        totalConversations: 0,
-        uniqueVisitors: 0,
-        totalMessages: 0,
-        responseRate: 0,
-      };
-    }
-
-    const agentIds = userAgents.map(a => a.id);
-
-    // Get total conversations across all user's agents
+    // Aggregate using joins to avoid large IN(...) lists as a user grows.
     const conversationStats = await db
       .select({
         total: count(),
-        uniqueSessions: sql<number>`COUNT(DISTINCT session_id)`,
+        uniqueSessions: sql<number>`COUNT(DISTINCT ${conversations.sessionId})`,
       })
       .from(conversations)
-      .where(inArray(conversations.agentId, agentIds));
+      .innerJoin(agents, eq(conversations.agentId, agents.id))
+      .where(eq(agents.userId, userId));
 
-    // Get total messages
-    const allConversations = await db
-      .select({ id: conversations.id })
-      .from(conversations)
-      .where(inArray(conversations.agentId, agentIds));
-    
-    let totalMessages = 0;
-    let userMessages = 0;
-    let assistantMessages = 0;
+    const messageStats = await db
+      .select({
+        total: count(),
+        userMsgs: sql<number>`SUM(CASE WHEN ${messages.role} = 'user' THEN 1 ELSE 0 END)`,
+        assistantMsgs: sql<number>`SUM(CASE WHEN ${messages.role} = 'assistant' THEN 1 ELSE 0 END)`,
+      })
+      .from(messages)
+      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+      .innerJoin(agents, eq(conversations.agentId, agents.id))
+      .where(eq(agents.userId, userId));
 
-    if (allConversations.length > 0) {
-      const convIds = allConversations.map(c => c.id);
-      const messageStats = await db
-        .select({
-          total: count(),
-          userMsgs: sql<number>`SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END)`,
-          assistantMsgs: sql<number>`SUM(CASE WHEN role = 'assistant' THEN 1 ELSE 0 END)`,
-        })
-        .from(messages)
-        .where(inArray(messages.conversationId, convIds));
-      
-      totalMessages = Number(messageStats[0]?.total) || 0;
-      userMessages = Number(messageStats[0]?.userMsgs) || 0;
-      assistantMessages = Number(messageStats[0]?.assistantMsgs) || 0;
-    }
+    const totalMessages = Number(messageStats[0]?.total) || 0;
+    const userMessages = Number(messageStats[0]?.userMsgs) || 0;
+    const assistantMessages = Number(messageStats[0]?.assistantMsgs) || 0;
 
-    // Calculate response rate (assistant responses / user messages)
-    const responseRate = userMessages > 0 
-      ? Math.round((assistantMessages / userMessages) * 100) 
-      : 0;
+    const rawRate = userMessages > 0 ? Math.round((assistantMessages / userMessages) * 100) : 0;
+    const responseRate = Math.max(0, Math.min(100, rawRate));
 
     return {
       totalConversations: Number(conversationStats[0]?.total) || 0,

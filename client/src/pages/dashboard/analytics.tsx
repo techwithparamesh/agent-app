@@ -47,7 +47,7 @@ export default function AnalyticsPage() {
 
   // Fetch recent conversations
   const { data: recentConversations, isLoading: conversationsLoading } = useQuery<Conversation[]>({
-    queryKey: ["/api/conversations"],
+    queryKey: ["/api/conversations?limit=200"],
   });
 
   const getAgentName = (agentId: string) => {

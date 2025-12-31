@@ -2,24 +2,49 @@
 
 Compares frontend action field keys (AppConfigurations) vs backend executor config usage.
 
-Generated at: 2025-12-31T08:04:29.429Z
+Generated at: 2025-12-31T12:56:07.623Z
 
 ## Summary (most missing UI keys)
 
 | App | Action | Missing in UI | Executor |
 |---|---|---:|---|
+| google_calendar | create_event | 13 | server/integrations/executors/googleCalendarExecutor.ts |
+| hubspot | create_contact | 8 | server/integrations/executors/hubspotExecutor.ts |
+| google_calendar | update_event | 6 | server/integrations/executors/googleCalendarExecutor.ts |
+| hubspot | create_company | 6 | server/integrations/executors/hubspotExecutor.ts |
+| stripe | create_customer | 6 | server/integrations/executors/stripeExecutor.ts |
+| hubspot | create_deal | 5 | server/integrations/executors/hubspotExecutor.ts |
+| google_sheets | find_row | 4 | server/integrations/executors/googleSheetsExecutor.ts |
+| google_drive | upload_file | 4 | server/integrations/executors/googleDriveExecutor.ts |
+| google_sheets | append_row | 3 | server/integrations/executors/googleSheetsExecutor.ts |
+| google_sheets | delete_row | 3 | server/integrations/executors/googleSheetsExecutor.ts |
+| google_drive | copy_file | 3 | server/integrations/executors/googleDriveExecutor.ts |
+| notion | query_database | 3 | server/integrations/executors/notionExecutor.ts |
+| stripe | create_subscription | 3 | server/integrations/executors/stripeExecutor.ts |
+| slack | send_message | 2 | server/integrations/executors/slackExecutor.ts |
+| slack | upload_file | 2 | server/integrations/executors/slackExecutor.ts |
+| google_sheets | update_row | 2 | server/integrations/executors/googleSheetsExecutor.ts |
+| google_sheets | get_rows | 2 | server/integrations/executors/googleSheetsExecutor.ts |
+| google_drive | create_folder | 2 | server/integrations/executors/googleDriveExecutor.ts |
+| google_drive | move_file | 2 | server/integrations/executors/googleDriveExecutor.ts |
+| google_drive | share_file | 2 | server/integrations/executors/googleDriveExecutor.ts |
+| google_calendar | delete_event | 2 | server/integrations/executors/googleCalendarExecutor.ts |
+| google_calendar | get_events | 2 | server/integrations/executors/googleCalendarExecutor.ts |
+| stripe | create_payment_intent | 2 | server/integrations/executors/stripeExecutor.ts |
+| stripe | cancel_subscription | 2 | server/integrations/executors/stripeExecutor.ts |
+| stripe | create_invoice | 2 | server/integrations/executors/stripeExecutor.ts |
+| google_sheets | clear_range | 1 | server/integrations/executors/googleSheetsExecutor.ts |
+| google_drive | delete_file | 1 | server/integrations/executors/googleDriveExecutor.ts |
+| google_drive | get_file | 1 | server/integrations/executors/googleDriveExecutor.ts |
+| stripe | get_customer | 1 | server/integrations/executors/stripeExecutor.ts |
+| stripe | refund_payment | 1 | server/integrations/executors/stripeExecutor.ts |
 | whatsapp | send_message | 0 | server/integrations/executors/whatsappExecutor.ts |
 | whatsapp | send_template | 0 | server/integrations/executors/whatsappExecutor.ts |
 | whatsapp | send_media | 0 | server/integrations/executors/whatsappExecutor.ts |
 | whatsapp | send_interactive | 0 | server/integrations/executors/whatsappExecutor.ts |
 | telegram | send_document | 0 | server/integrations/executors/telegramExecutor.ts |
 | gmail | reply_email | 0 | server/integrations/executors/gmailExecutor.ts |
-| google_calendar | create_event | 0 | server/integrations/executors/googleCalendarExecutor.ts |
-| google_calendar | update_event | 0 | server/integrations/executors/googleCalendarExecutor.ts |
-| google_calendar | delete_event | 0 | server/integrations/executors/googleCalendarExecutor.ts |
-| google_calendar | get_events | 0 | server/integrations/executors/googleCalendarExecutor.ts |
 | google_calendar | quick_add | 0 | server/integrations/executors/googleCalendarExecutor.ts |
-| hubspot | create_deal | 0 | server/integrations/executors/hubspotExecutor.ts |
 | airtable | create_record | 0 | server/integrations/executors/airtableExecutor.ts |
 | airtable | update_record | 0 | server/integrations/executors/airtableExecutor.ts |
 | airtable | get_record | 0 | server/integrations/executors/airtableExecutor.ts |
@@ -33,28 +58,6 @@ Generated at: 2025-12-31T08:04:29.429Z
 | trello | update_card | 0 | server/integrations/executors/trelloExecutor.ts |
 | trello | move_card | 0 | server/integrations/executors/trelloExecutor.ts |
 | trello | add_comment | 0 | server/integrations/executors/trelloExecutor.ts |
-| trello | add_member | 0 | server/integrations/executors/trelloExecutor.ts |
-| asana | update_task | 0 | server/integrations/executors/asanaExecutor.ts |
-| asana | complete_task | 0 | server/integrations/executors/asanaExecutor.ts |
-| asana | add_comment | 0 | server/integrations/executors/asanaExecutor.ts |
-| asana | create_subtask | 0 | server/integrations/executors/asanaExecutor.ts |
-| monday | move_item | 0 | server/integrations/executors/mondayExecutor.ts |
-| clickup | create_task | 0 | server/integrations/executors/clickupExecutor.ts |
-| linear | update_issue | 0 | server/integrations/executors/linearExecutor.ts |
-| openai | transcribe_audio | 0 | server/integrations/executors/openaiExecutor.ts |
-| google_analytics | run_report | 0 | server/integrations/executors/googleAnalyticsExecutor.ts |
-| facebook_ads | get_campaigns | 0 | server/integrations/executors/facebookAdsExecutor.ts |
-| facebook_ads | update_campaign | 0 | server/integrations/executors/facebookAdsExecutor.ts |
-| google_ads | get_campaigns | 0 | server/integrations/executors/googleAdsExecutor.ts |
-| google_ads | get_report | 0 | server/integrations/executors/googleAdsExecutor.ts |
-| google_ads | update_campaign_budget | 0 | server/integrations/executors/googleAdsExecutor.ts |
-| google_ads | update_campaign_status | 0 | server/integrations/executors/googleAdsExecutor.ts |
-| linkedin | create_post | 0 | server/integrations/executors/linkedinExecutor.ts |
-| linkedin | get_profile | 0 | server/integrations/executors/linkedinExecutor.ts |
-| linkedin | get_connections | 0 | server/integrations/executors/linkedinExecutor.ts |
-| linkedin | send_message | 0 | server/integrations/executors/linkedinExecutor.ts |
-| zendesk | search_tickets | 0 | server/integrations/executors/zendeskExecutor.ts |
-| twitter | get_profile | 0 | server/integrations/executors/twitterExecutor.ts |
 
 ## Airtable (airtable)
 
@@ -162,14 +165,17 @@ Executor: server/integrations/executors/googleCalendarExecutor.ts
 
 ### Create Event (create_event)
 
+- Missing in UI fields: all_day, allDay, colorId, conference_data, conference_data_type, conferenceDataType, end_date_time, recurrence, reminders, send_updates, start_date_time, time_zone, visibility
 - Present in UI but not referenced in executor: calendarId
 
 ### Delete Event (delete_event)
 
+- Missing in UI fields: event_id, send_updates
 - Present in UI but not referenced in executor: calendarId
 
 ### Get Events (get_events)
 
+- Missing in UI fields: max_results, search_query
 - Present in UI but not referenced in executor: calendarId
 
 ### Quick Add Event (quick_add)
@@ -178,14 +184,84 @@ Executor: server/integrations/executors/googleCalendarExecutor.ts
 
 ### Update Event (update_event)
 
+- Missing in UI fields: attendees, end_date_time, event_id, location, start_date_time, time_zone
 - Present in UI but not referenced in executor: calendarId
+
+## Google Drive (google_drive)
+
+Executor: server/integrations/executors/googleDriveExecutor.ts
+
+### Copy File (copy_file)
+
+- Missing in UI fields: file_id, folder_id, new_name
+
+### Create Folder (create_folder)
+
+- Missing in UI fields: folder_name, parent_folder_id
+
+### Delete File (delete_file)
+
+- Missing in UI fields: file_id
+
+### Get File Info (get_file)
+
+- Missing in UI fields: file_id
+
+### Move File (move_file)
+
+- Missing in UI fields: file_id, new_folder_id
+
+### Share File (share_file)
+
+- Missing in UI fields: file_id, send_notification
+
+### Upload File (upload_file)
+
+- Missing in UI fields: file_content, file_name, folder_id, mime_type
+
+## Google Sheets (google_sheets)
+
+Executor: server/integrations/executors/googleSheetsExecutor.ts
+
+### Append Row (append_row)
+
+- Missing in UI fields: insert_data_option, sheet_name, spreadsheet_id
+
+### Clear Range (clear_range)
+
+- Missing in UI fields: spreadsheet_id
+
+### Delete Row (delete_row)
+
+- Missing in UI fields: row_index, sheet_name, spreadsheet_id
+
+### Find Row (find_row)
+
+- Missing in UI fields: lookup_column, lookup_value, sheet_name, spreadsheet_id
+
+### Get Rows (get_rows)
+
+- Missing in UI fields: sheet_name, spreadsheet_id
+
+### Update Row (update_row)
+
+- Missing in UI fields: sheet_name, spreadsheet_id
 
 ## HubSpot (hubspot)
 
 Executor: server/integrations/executors/hubspotExecutor.ts
 
+### Create Company (create_company)
+
+- Missing in UI fields: annualrevenue, description, hubspot_owner_id, hubspotOwnerId, numberofemployees, state
+
+### Create Contact (create_contact)
+
+- Missing in UI fields: address, city, country, hs_lead_status, hubspot_owner_id, hubspotOwnerId, state, zip
+
 ### Create Deal (create_deal)
 
+- Missing in UI fields: dealtype, description, hs_priority, hubspot_owner_id, hubspotOwnerId
 - Present in UI but not referenced in executor: associatedCompanyIds, associatedContactIds
 
 ## Linear (linear)
@@ -224,6 +300,14 @@ Executor: server/integrations/executors/mondayExecutor.ts
 
 - Present in UI but not referenced in executor: boardId
 
+## Notion (notion)
+
+Executor: server/integrations/executors/notionExecutor.ts
+
+### Query Database (query_database)
+
+- Missing in UI fields: page_size, start_cursor, startCursor
+
 ## OpenAI (openai)
 
 Executor: server/integrations/executors/openaiExecutor.ts
@@ -251,6 +335,50 @@ Executor: server/integrations/executors/shopifyExecutor.ts
 ### Update Product (update_product)
 
 - Present in UI but not referenced in executor: bodyHtml
+
+## Slack (slack)
+
+Executor: server/integrations/executors/slackExecutor.ts
+
+### Send Message (send_message)
+
+- Missing in UI fields: icon_emoji, thread_ts
+
+### Upload File (upload_file)
+
+- Missing in UI fields: file_url, initial_comment
+
+## Stripe (stripe)
+
+Executor: server/integrations/executors/stripeExecutor.ts
+
+### Cancel Subscription (cancel_subscription)
+
+- Missing in UI fields: cancel_at_period_end, subscription_id
+
+### Create Customer (create_customer)
+
+- Missing in UI fields: address, invoice_settings, invoiceSettings, payment_method, paymentMethod, shipping
+
+### Create Invoice (create_invoice)
+
+- Missing in UI fields: auto_advance, customer_id
+
+### Create Payment Intent (create_payment_intent)
+
+- Missing in UI fields: customer_id, payment_method_types
+
+### Create Subscription (create_subscription)
+
+- Missing in UI fields: customer_id, price_id, trial_period_days
+
+### Get Customer (get_customer)
+
+- Missing in UI fields: customer_id
+
+### Create Refund (refund_payment)
+
+- Missing in UI fields: payment_intent_id
 
 ## Telegram (telegram)
 

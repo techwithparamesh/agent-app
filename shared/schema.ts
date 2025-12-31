@@ -47,7 +47,9 @@ export const users = mysqlTable("users", {
   subscriptionEndsAt: timestamp("subscription_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  resetTokenIdx: index("idx_users_reset_token").on(table.resetPasswordToken),
+}));
 
 // AI Agents table
 export const agents = mysqlTable("agents", {
@@ -89,7 +91,9 @@ export const agents = mysqlTable("agents", {
   }>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  userIdx: index("idx_agents_user").on(table.userId),
+}));
 
 // Knowledge Base entries for scanned content
 export const knowledgeBase = mysqlTable("knowledge_base", {
@@ -111,7 +115,10 @@ export const conversations = mysqlTable("conversations", {
   sessionId: varchar("session_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  agentCreatedIdx: index("idx_conversations_agent_created").on(table.agentId, table.createdAt),
+  sessionIdx: index("idx_conversations_session").on(table.sessionId),
+}));
 
 // Chat messages
 export const messages = mysqlTable("messages", {
@@ -120,7 +127,9 @@ export const messages = mysqlTable("messages", {
   role: varchar("role", { length: 20 }).notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  conversationCreatedIdx: index("idx_messages_conversation_created").on(table.conversationId, table.createdAt),
+}));
 
 // ========== INTEGRATION & WORKFLOW TABLES ==========
 
@@ -333,6 +342,19 @@ export const leads = mysqlTable("leads", {
   agentIdx: index("idx_lead_agent").on(table.agentId),
   phoneIdx: index("idx_lead_phone").on(table.phone),
   statusIdx: index("idx_lead_status").on(table.status),
+}));
+
+// Public website contact form submissions (no agent context)
+export const contactSubmissions = mysqlTable("contact_submissions", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  emailIdx: index("idx_contact_submissions_email").on(table.email),
+  createdIdx: index("idx_contact_submissions_created").on(table.createdAt),
 }));
 
 // Human Handoff Queue

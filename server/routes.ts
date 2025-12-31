@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { isSameOrigin, parseHttpUrl, validateScanTargetUrl } from "./utils/scanSecurity";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertAgentSchema, insertKnowledgeBaseSchema, type KnowledgeBase, leads } from "@shared/schema";
+import { insertAgentSchema, insertKnowledgeBaseSchema, type KnowledgeBase, contactSubmissions } from "@shared/schema";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
@@ -26,6 +26,8 @@ import {
 } from "./middleware/rateLimit";
 import { v4 as uuidv4 } from "uuid";
 import rateLimit from "express-rate-limit";
+
+import { isMailerConfigured, sendPasswordResetEmail } from "./utils/mailer";
 import {
   isUuidLike,
   generateWidgetKey,
@@ -389,16 +391,23 @@ export async function registerRoutes(
 
       // Send password reset email
       const resetUrl = `${process.env.APP_URL || 'http://localhost:5000'}/reset-password?token=${token}`;
-      
-      // TODO: Implement email service (SendGrid, AWS SES, etc.)
-      // For now, log that we would send an email (without exposing token)
+
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV ONLY] Password reset requested for: ${email}`);
         console.log(`[DEV ONLY] Reset URL: ${resetUrl}`);
       }
-      
-      // In production, use email service:
-      // await emailService.sendPasswordResetEmail(email, resetUrl);
+
+      const recipientEmail = typeof user.email === 'string' ? user.email : email.toLowerCase().trim();
+
+      if (isMailerConfigured()) {
+        try {
+          await sendPasswordResetEmail({ to: recipientEmail, resetUrl });
+        } catch (mailErr) {
+          console.error('[Password Reset] Failed to send email:', mailErr);
+        }
+      } else if (process.env.NODE_ENV !== 'development') {
+        console.error('[Password Reset] Mailer not configured. Set SMTP_URL or SMTP_HOST/SMTP_PORT/SMTP_FROM (and optional SMTP_USER/SMTP_PASS).');
+      }
 
       res.json({ message: "If the email exists, a reset link has been sent" });
     } catch (error) {
@@ -579,23 +588,18 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid email address" });
       }
 
-      // Store the contact submission in leads table with type "contact"
-      const leadId = uuidv4();
-      // Note: Using a placeholder for agentId and phone since leads table requires them
-      // The contact form doesn't have an agent context
-      await db.insert(leads).values({
-        id: leadId,
-        agentId: '00000000-0000-0000-0000-000000000000', // Placeholder for website contact form
-        phone: 'contact_form', // Placeholder since phone is required
+      // Store the contact submission (no agent context)
+      const submissionId = uuidv4();
+      await db.insert(contactSubmissions).values({
+        id: submissionId,
         name,
         email,
-        status: 'new',
-        source: 'contact_form',
-        notes: `Subject: ${subject}\n\nMessage: ${message}`,
-        customFields: { subject, formType: 'contact', submittedAt: new Date().toISOString() },
+        subject,
+        message,
+        createdAt: new Date(),
       });
 
-      console.log(`Contact form submission stored: ${leadId} from ${email}`);
+      console.log(`Contact form submission stored: ${submissionId} from ${email}`);
 
       // Optional: Send notification email to admin (can be configured)
       // For now, we just store in DB
@@ -967,9 +971,34 @@ export async function registerRoutes(
   app.get("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const agentId = req.query.agentId as string | undefined;
-      const conversations = await storage.getConversationsByUserId(userId, agentId);
-      res.json(conversations);
+
+      const agentIdRaw = typeof req.query.agentId === 'string' ? req.query.agentId.trim() : '';
+      const agentId = agentIdRaw.length > 0 ? agentIdRaw : undefined;
+
+      const parseIntMaybe = (v: unknown): number | undefined => {
+        if (typeof v !== 'string') return undefined;
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) ? n : undefined;
+      };
+
+      const limit = parseIntMaybe(req.query.limit);
+      const offset = parseIntMaybe(req.query.offset);
+
+      if (limit !== undefined && (limit <= 0 || limit > 1000)) {
+        return res.status(400).json({ message: 'Invalid limit (1..1000)' });
+      }
+      if (offset !== undefined && offset < 0) {
+        return res.status(400).json({ message: 'Invalid offset (>= 0)' });
+      }
+
+      if (agentId) {
+        const agent = await storage.getAgentById(agentId);
+        if (!agent) return res.status(404).json({ message: 'Agent not found' });
+        if (agent.userId !== userId) return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const conversations = await storage.getConversationsByUserId(userId, agentId, { limit, offset });
+      return res.json(conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
       res.status(500).json({ message: "Failed to fetch conversations" });

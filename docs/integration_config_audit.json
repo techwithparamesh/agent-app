@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-12-31T08:04:29.427Z",
+  "generatedAt": "2025-12-31T12:56:07.622Z",
   "findings": [
     {
       "appId": "whatsapp",
@@ -116,6 +116,62 @@
       ]
     },
     {
+      "appId": "slack",
+      "appName": "Slack",
+      "executorFile": "server/integrations/executors/slackExecutor.ts",
+      "actionId": "send_message",
+      "actionName": "Send Message",
+      "missingInUi": [
+        "icon_emoji",
+        "thread_ts"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "channel",
+        "icon_emoji",
+        "iconEmoji",
+        "text",
+        "thread_ts",
+        "threadTs",
+        "username"
+      ],
+      "uiKeys": [
+        "channel",
+        "iconEmoji",
+        "text",
+        "threadTs",
+        "username"
+      ]
+    },
+    {
+      "appId": "slack",
+      "appName": "Slack",
+      "executorFile": "server/integrations/executors/slackExecutor.ts",
+      "actionId": "upload_file",
+      "actionName": "Upload File",
+      "missingInUi": [
+        "file_url",
+        "initial_comment"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "channels",
+        "file_url",
+        "filename",
+        "fileUrl",
+        "initial_comment",
+        "initialComment",
+        "title"
+      ],
+      "uiKeys": [
+        "channels",
+        "filename",
+        "fileUrl",
+        "initialComment",
+        "title"
+      ]
+    },
+    {
       "appId": "gmail",
       "appName": "Gmail",
       "executorFile": "server/integrations/executors/gmailExecutor.ts",
@@ -136,24 +192,370 @@
       ]
     },
     {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "actionId": "append_row",
+      "actionName": "Append Row",
+      "missingInUi": [
+        "insert_data_option",
+        "sheet_name",
+        "spreadsheet_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "insert_data_option",
+        "insertDataOption",
+        "sheet_name",
+        "sheetName",
+        "spreadsheet_id",
+        "spreadsheetId",
+        "values"
+      ],
+      "uiKeys": [
+        "insertDataOption",
+        "sheetName",
+        "spreadsheetId",
+        "values"
+      ]
+    },
+    {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "actionId": "update_row",
+      "actionName": "Update Row",
+      "missingInUi": [
+        "sheet_name",
+        "spreadsheet_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "range",
+        "sheet_name",
+        "sheetName",
+        "spreadsheet_id",
+        "spreadsheetId",
+        "values"
+      ],
+      "uiKeys": [
+        "range",
+        "sheetName",
+        "spreadsheetId",
+        "values"
+      ]
+    },
+    {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "actionId": "get_rows",
+      "actionName": "Get Rows",
+      "missingInUi": [
+        "sheet_name",
+        "spreadsheet_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "range",
+        "sheet_name",
+        "sheetName",
+        "spreadsheet_id",
+        "spreadsheetId"
+      ],
+      "uiKeys": [
+        "range",
+        "sheetName",
+        "spreadsheetId"
+      ]
+    },
+    {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "actionId": "find_row",
+      "actionName": "Find Row",
+      "missingInUi": [
+        "lookup_column",
+        "lookup_value",
+        "sheet_name",
+        "spreadsheet_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "lookup_column",
+        "lookup_value",
+        "lookupColumn",
+        "lookupValue",
+        "sheet_name",
+        "sheetName",
+        "spreadsheet_id",
+        "spreadsheetId"
+      ],
+      "uiKeys": [
+        "lookupColumn",
+        "lookupValue",
+        "sheetName",
+        "spreadsheetId"
+      ]
+    },
+    {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "actionId": "delete_row",
+      "actionName": "Delete Row",
+      "missingInUi": [
+        "row_index",
+        "sheet_name",
+        "spreadsheet_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "row_index",
+        "rowIndex",
+        "sheet_name",
+        "sheetName",
+        "spreadsheet_id",
+        "spreadsheetId"
+      ],
+      "uiKeys": [
+        "rowIndex",
+        "sheetName",
+        "spreadsheetId"
+      ]
+    },
+    {
+      "appId": "google_sheets",
+      "appName": "Google Sheets",
+      "executorFile": "server/integrations/executors/googleSheetsExecutor.ts",
+      "actionId": "clear_range",
+      "actionName": "Clear Range",
+      "missingInUi": [
+        "spreadsheet_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "range",
+        "spreadsheet_id",
+        "spreadsheetId"
+      ],
+      "uiKeys": [
+        "range",
+        "spreadsheetId"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "upload_file",
+      "actionName": "Upload File",
+      "missingInUi": [
+        "file_content",
+        "file_name",
+        "folder_id",
+        "mime_type"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "file_content",
+        "file_name",
+        "fileContent",
+        "fileName",
+        "folder_id",
+        "folderId",
+        "mime_type",
+        "mimeType"
+      ],
+      "uiKeys": [
+        "fileContent",
+        "fileName",
+        "folderId",
+        "mimeType"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "create_folder",
+      "actionName": "Create Folder",
+      "missingInUi": [
+        "folder_name",
+        "parent_folder_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "folder_name",
+        "folderName",
+        "parent_folder_id",
+        "parentFolderId"
+      ],
+      "uiKeys": [
+        "folderName",
+        "parentFolderId"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "copy_file",
+      "actionName": "Copy File",
+      "missingInUi": [
+        "file_id",
+        "folder_id",
+        "new_name"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "file_id",
+        "fileId",
+        "folder_id",
+        "folderId",
+        "new_name",
+        "newName"
+      ],
+      "uiKeys": [
+        "fileId",
+        "folderId",
+        "newName"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "move_file",
+      "actionName": "Move File",
+      "missingInUi": [
+        "file_id",
+        "new_folder_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "file_id",
+        "fileId",
+        "new_folder_id",
+        "newFolderId"
+      ],
+      "uiKeys": [
+        "fileId",
+        "newFolderId"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "delete_file",
+      "actionName": "Delete File",
+      "missingInUi": [
+        "file_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "file_id",
+        "fileId",
+        "permanent"
+      ],
+      "uiKeys": [
+        "fileId",
+        "permanent"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "share_file",
+      "actionName": "Share File",
+      "missingInUi": [
+        "file_id",
+        "send_notification"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "email",
+        "file_id",
+        "fileId",
+        "role",
+        "send_notification",
+        "sendNotification"
+      ],
+      "uiKeys": [
+        "email",
+        "fileId",
+        "role",
+        "sendNotification"
+      ]
+    },
+    {
+      "appId": "google_drive",
+      "appName": "Google Drive",
+      "executorFile": "server/integrations/executors/googleDriveExecutor.ts",
+      "actionId": "get_file",
+      "actionName": "Get File Info",
+      "missingInUi": [
+        "file_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "file_id",
+        "fileId"
+      ],
+      "uiKeys": [
+        "fileId"
+      ]
+    },
+    {
       "appId": "google_calendar",
       "appName": "Google Calendar",
       "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
       "actionId": "create_event",
       "actionName": "Create Event",
-      "missingInUi": [],
+      "missingInUi": [
+        "all_day",
+        "allDay",
+        "colorId",
+        "conference_data",
+        "conference_data_type",
+        "conferenceDataType",
+        "end_date_time",
+        "recurrence",
+        "reminders",
+        "send_updates",
+        "start_date_time",
+        "time_zone",
+        "visibility"
+      ],
       "unusedInBackend": [
         "calendarId"
       ],
       "backendKeys": [
+        "all_day",
+        "allDay",
         "attendees",
+        "colorId",
+        "conference_data",
+        "conference_data_type",
         "conferenceData",
+        "conferenceDataType",
         "description",
+        "end_date_time",
         "endDateTime",
         "location",
+        "recurrence",
+        "reminders",
+        "send_updates",
         "sendUpdates",
+        "start_date_time",
         "startDateTime",
-        "summary"
+        "summary",
+        "time_zone",
+        "timezone",
+        "visibility"
       ],
       "uiKeys": [
         "attendees",
@@ -173,16 +575,30 @@
       "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
       "actionId": "update_event",
       "actionName": "Update Event",
-      "missingInUi": [],
+      "missingInUi": [
+        "attendees",
+        "end_date_time",
+        "event_id",
+        "location",
+        "start_date_time",
+        "time_zone"
+      ],
       "unusedInBackend": [
         "calendarId"
       ],
       "backendKeys": [
+        "attendees",
         "description",
+        "end_date_time",
         "endDateTime",
+        "event_id",
         "eventId",
+        "location",
+        "start_date_time",
         "startDateTime",
-        "summary"
+        "summary",
+        "time_zone",
+        "timezone"
       ],
       "uiKeys": [
         "calendarId",
@@ -199,12 +615,17 @@
       "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
       "actionId": "delete_event",
       "actionName": "Delete Event",
-      "missingInUi": [],
+      "missingInUi": [
+        "event_id",
+        "send_updates"
+      ],
       "unusedInBackend": [
         "calendarId"
       ],
       "backendKeys": [
+        "event_id",
         "eventId",
+        "send_updates",
         "sendUpdates"
       ],
       "uiKeys": [
@@ -219,12 +640,17 @@
       "executorFile": "server/integrations/executors/googleCalendarExecutor.ts",
       "actionId": "get_events",
       "actionName": "Get Events",
-      "missingInUi": [],
+      "missingInUi": [
+        "max_results",
+        "search_query"
+      ],
       "unusedInBackend": [
         "calendarId"
       ],
       "backendKeys": [
+        "max_results",
         "maxResults",
+        "search_query",
         "searchQuery",
         "timeMax",
         "timeMin"
@@ -259,9 +685,61 @@
       "appId": "hubspot",
       "appName": "HubSpot",
       "executorFile": "server/integrations/executors/hubspotExecutor.ts",
+      "actionId": "create_contact",
+      "actionName": "Create Contact",
+      "missingInUi": [
+        "address",
+        "city",
+        "country",
+        "hs_lead_status",
+        "hubspot_owner_id",
+        "hubspotOwnerId",
+        "state",
+        "zip"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "address",
+        "city",
+        "company",
+        "country",
+        "customProperties",
+        "email",
+        "firstname",
+        "hs_lead_status",
+        "hubspot_owner_id",
+        "hubspotOwnerId",
+        "jobtitle",
+        "lastname",
+        "lifecyclestage",
+        "phone",
+        "state",
+        "zip"
+      ],
+      "uiKeys": [
+        "company",
+        "customProperties",
+        "email",
+        "firstname",
+        "jobtitle",
+        "lastname",
+        "lifecyclestage",
+        "phone"
+      ]
+    },
+    {
+      "appId": "hubspot",
+      "appName": "HubSpot",
+      "executorFile": "server/integrations/executors/hubspotExecutor.ts",
       "actionId": "create_deal",
       "actionName": "Create Deal",
-      "missingInUi": [],
+      "missingInUi": [
+        "dealtype",
+        "description",
+        "hs_priority",
+        "hubspot_owner_id",
+        "hubspotOwnerId"
+      ],
       "unusedInBackend": [
         "associatedCompanyIds",
         "associatedContactIds"
@@ -271,6 +749,11 @@
         "closedate",
         "dealname",
         "dealstage",
+        "dealtype",
+        "description",
+        "hs_priority",
+        "hubspot_owner_id",
+        "hubspotOwnerId",
         "pipeline"
       ],
       "uiKeys": [
@@ -281,6 +764,44 @@
         "dealname",
         "dealstage",
         "pipeline"
+      ]
+    },
+    {
+      "appId": "hubspot",
+      "appName": "HubSpot",
+      "executorFile": "server/integrations/executors/hubspotExecutor.ts",
+      "actionId": "create_company",
+      "actionName": "Create Company",
+      "missingInUi": [
+        "annualrevenue",
+        "description",
+        "hubspot_owner_id",
+        "hubspotOwnerId",
+        "numberofemployees",
+        "state"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "annualrevenue",
+        "city",
+        "country",
+        "description",
+        "domain",
+        "hubspot_owner_id",
+        "hubspotOwnerId",
+        "industry",
+        "name",
+        "numberofemployees",
+        "phone",
+        "state"
+      ],
+      "uiKeys": [
+        "city",
+        "country",
+        "domain",
+        "industry",
+        "name",
+        "phone"
       ]
     },
     {
@@ -389,6 +910,214 @@
         "baseId",
         "recordId",
         "tableId"
+      ]
+    },
+    {
+      "appId": "notion",
+      "appName": "Notion",
+      "executorFile": "server/integrations/executors/notionExecutor.ts",
+      "actionId": "query_database",
+      "actionName": "Query Database",
+      "missingInUi": [
+        "page_size",
+        "start_cursor",
+        "startCursor"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "databaseId",
+        "filter",
+        "page_size",
+        "pageSize",
+        "sorts",
+        "start_cursor",
+        "startCursor"
+      ],
+      "uiKeys": [
+        "databaseId",
+        "filter",
+        "pageSize",
+        "sorts"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "create_customer",
+      "actionName": "Create Customer",
+      "missingInUi": [
+        "address",
+        "invoice_settings",
+        "invoiceSettings",
+        "payment_method",
+        "paymentMethod",
+        "shipping"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "address",
+        "description",
+        "email",
+        "invoice_settings",
+        "invoiceSettings",
+        "metadata",
+        "name",
+        "payment_method",
+        "paymentMethod",
+        "phone",
+        "shipping"
+      ],
+      "uiKeys": [
+        "description",
+        "email",
+        "metadata",
+        "name",
+        "phone"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "create_payment_intent",
+      "actionName": "Create Payment Intent",
+      "missingInUi": [
+        "customer_id",
+        "payment_method_types"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "amount",
+        "currency",
+        "customer_id",
+        "customerId",
+        "description",
+        "metadata",
+        "payment_method_types",
+        "paymentMethodTypes"
+      ],
+      "uiKeys": [
+        "amount",
+        "currency",
+        "customerId",
+        "description",
+        "metadata",
+        "paymentMethodTypes"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "create_subscription",
+      "actionName": "Create Subscription",
+      "missingInUi": [
+        "customer_id",
+        "price_id",
+        "trial_period_days"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "customer_id",
+        "customerId",
+        "metadata",
+        "price_id",
+        "priceId",
+        "trial_period_days",
+        "trialPeriodDays"
+      ],
+      "uiKeys": [
+        "customerId",
+        "metadata",
+        "priceId",
+        "trialPeriodDays"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "cancel_subscription",
+      "actionName": "Cancel Subscription",
+      "missingInUi": [
+        "cancel_at_period_end",
+        "subscription_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "cancel_at_period_end",
+        "cancelAtPeriodEnd",
+        "subscription_id",
+        "subscriptionId"
+      ],
+      "uiKeys": [
+        "cancelAtPeriodEnd",
+        "subscriptionId"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "create_invoice",
+      "actionName": "Create Invoice",
+      "missingInUi": [
+        "auto_advance",
+        "customer_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "auto_advance",
+        "autoAdvance",
+        "customer_id",
+        "customerId",
+        "description"
+      ],
+      "uiKeys": [
+        "autoAdvance",
+        "customerId",
+        "description"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "get_customer",
+      "actionName": "Get Customer",
+      "missingInUi": [
+        "customer_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "customer_id",
+        "customerId"
+      ],
+      "uiKeys": [
+        "customerId"
+      ]
+    },
+    {
+      "appId": "stripe",
+      "appName": "Stripe",
+      "executorFile": "server/integrations/executors/stripeExecutor.ts",
+      "actionId": "refund_payment",
+      "actionName": "Create Refund",
+      "missingInUi": [
+        "payment_intent_id"
+      ],
+      "unusedInBackend": [],
+      "backendKeys": [
+        "amount",
+        "payment_intent_id",
+        "paymentIntentId",
+        "reason"
+      ],
+      "uiKeys": [
+        "amount",
+        "paymentIntentId",
+        "reason"
       ]
     },
     {
