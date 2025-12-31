@@ -116,11 +116,11 @@ export function AppSidebar() {
   const { data: agents } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
     staleTime: 30000,
-    // Poll more frequently if any agent is scanning
+    // Poll every 2 seconds if any agent is scanning to keep sidebar in sync
     refetchInterval: (query) => {
       const data = query.state.data as Agent[] | undefined;
       const hasScanning = data?.some((a: any) => a.scanStatus === 'scanning');
-      return hasScanning ? 3000 : false;
+      return hasScanning ? 2000 : false;
     },
   });
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import type { Agent } from "@shared/schema";
 import { Textarea } from "@/components/ui/textarea";
-import { Scan, Globe, Loader2, Check, AlertCircle, Database, RefreshCw, Plus } from "lucide-react";
+import { Scan, Globe, Loader2, Check, AlertCircle, Database, RefreshCw, Plus, ExternalLink } from "lucide-react";
 
 // Helper to normalize URL - add https:// if missing
 const normalizeUrl = (url: string): string => {
@@ -63,7 +63,7 @@ const scanFormSchema = z.object({
 type ScanFormValues = z.infer<typeof scanFormSchema>;
 
 export default function WebsiteScanner() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "processing" | "complete" | "error">("idle");
@@ -71,7 +71,9 @@ export default function WebsiteScanner() {
   const [scanMessage, setScanMessage] = useState<string>("");
   const [pagesFound, setPagesFound] = useState(0);
   const [currentUrl, setCurrentUrl] = useState<string>("");
+  const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const hasRestoredStateRef = useRef(false);
 
   // Cleanup EventSource on component unmount to prevent memory leaks
   useEffect(() => {
@@ -91,38 +93,90 @@ export default function WebsiteScanner() {
     queryKey: ["/api/agents"],
     refetchOnMount: "always", // Always refetch when navigating to this page
     staleTime: 0, // Consider data stale immediately
-    // Poll every 3 seconds while scanning to catch completion/error states
-    refetchInterval: scanStatus === "scanning" ? 3000 : false,
+    // Poll every 2 seconds while any scan is active to get live progress
+    refetchInterval: (query) => {
+      const data = query.state.data as Agent[] | undefined;
+      const hasScanning = scanStatus === "scanning" || data?.some((a: any) => a.scanStatus === 'scanning');
+      return hasScanning ? 2000 : false;
+    },
   });
 
-  // Check if selected agent has an ongoing or completed scan (restore state if user navigates back)
+  // Find any agent that has an active scan
+  const scanningAgent = useMemo(() => {
+    return agents?.find((a: any) => a.scanStatus === 'scanning') as (Agent & { 
+      scanStatus: string; 
+      scanProgress: number; 
+      scanMessage: string;
+      websiteUrl?: string;
+    }) | undefined;
+  }, [agents]);
+
+  // Restore state from any active scan when page loads
   useEffect(() => {
-    if (agents && preselectedAgent) {
-      const agent = agents.find(a => a.id === preselectedAgent);
+    if (hasRestoredStateRef.current) return;
+    if (!agents) return;
+
+    // Check for any scanning agent first
+    if (scanningAgent && scanStatus === 'idle') {
+      hasRestoredStateRef.current = true;
+      setActiveAgentId(scanningAgent.id);
+      setScanStatus("scanning");
+      setScanProgress(scanningAgent.scanProgress || 0);
+      setScanMessage(scanningAgent.scanMessage || "Scan in progress...");
+      return;
+    }
+
+    // Check preselected agent for completed/error state
+    if (preselectedAgent && scanStatus === 'idle') {
+      const agent = agents.find(a => a.id === preselectedAgent) as any;
       if (agent) {
-        const agentScanStatus = (agent as any).scanStatus;
-        const agentScanProgress = (agent as any).scanProgress || 0;
-        const agentScanMessage = (agent as any).scanMessage || "";
-        
-        if (agentScanStatus === 'scanning') {
-          // Restore the scanning state - scan is running in background
-          setScanStatus("scanning");
-          setScanProgress(agentScanProgress);
-          setScanMessage(agentScanMessage || "Scan in progress...");
-        } else if (agentScanStatus === 'complete' && scanStatus === 'idle') {
-          // Show that scan completed while user was away
+        if (agent.scanStatus === 'complete') {
+          hasRestoredStateRef.current = true;
+          setActiveAgentId(agent.id);
           setScanStatus("complete");
           setScanProgress(100);
-          setScanMessage(agentScanMessage || "Scan complete!");
-        } else if (agentScanStatus === 'error' && scanStatus === 'idle') {
-          // Show error state if scan failed while user was away
+          setScanMessage(agent.scanMessage || "Scan complete!");
+        } else if (agent.scanStatus === 'error') {
+          hasRestoredStateRef.current = true;
+          setActiveAgentId(agent.id);
           setScanStatus("error");
           setScanProgress(0);
-          setScanMessage(agentScanMessage || "Scan failed");
+          setScanMessage(agent.scanMessage || "Scan failed");
         }
       }
     }
-  }, [agents, preselectedAgent, scanStatus]);
+  }, [agents, scanningAgent, preselectedAgent, scanStatus]);
+
+  // Keep progress in sync with server while scanning
+  useEffect(() => {
+    if (scanStatus === 'scanning' && scanningAgent) {
+      setScanProgress(scanningAgent.scanProgress || 0);
+      setScanMessage(scanningAgent.scanMessage || "Scanning...");
+      setActiveAgentId(scanningAgent.id);
+    }
+    // Detect scan completion from server
+    if (scanStatus === 'scanning' && activeAgentId && !scanningAgent) {
+      const agent = agents?.find(a => a.id === activeAgentId) as any;
+      if (agent?.scanStatus === 'complete') {
+        setScanStatus("complete");
+        setScanProgress(100);
+        setScanMessage(agent.scanMessage || "Scan complete!");
+        toast({
+          title: "Scan complete!",
+          description: agent.scanMessage || "Successfully extracted content.",
+        });
+      } else if (agent?.scanStatus === 'error') {
+        setScanStatus("error");
+        setScanProgress(0);
+        setScanMessage(agent.scanMessage || "Scan failed");
+        toast({
+          title: "Scan failed",
+          description: agent.scanMessage || "Could not scan the website.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [scanningAgent, agents, scanStatus, activeAgentId, toast]);
 
   const form = useForm<ScanFormValues>({
     resolver: zodResolver(scanFormSchema),
@@ -140,6 +194,7 @@ export default function WebsiteScanner() {
       eventSourceRef.current.close();
     }
     
+    setActiveAgentId(data.agentId);
     setScanStatus("scanning");
     setScanProgress(0);
     setScanResults(null);
@@ -248,6 +303,8 @@ export default function WebsiteScanner() {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
+    hasRestoredStateRef.current = false;
+    setActiveAgentId(null);
     setScanStatus("idle");
     setScanProgress(0);
     setScanResults(null);
@@ -255,6 +312,19 @@ export default function WebsiteScanner() {
     setPagesFound(0);
     setCurrentUrl("");
     form.reset();
+    // Clear URL params
+    setLocation("/dashboard/scan");
+  };
+
+  // Get the name of the actively scanning agent
+  const getActiveAgentName = () => {
+    if (activeAgentId) {
+      return agents?.find(a => a.id === activeAgentId)?.name || "Agent";
+    }
+    if (scanningAgent) {
+      return scanningAgent.name;
+    }
+    return "Agent";
   };
 
   return (
@@ -413,43 +483,86 @@ export default function WebsiteScanner() {
             )}
 
             {(scanStatus === "scanning" || scanStatus === "processing") && (
-              <div className="py-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <div className="py-8">
+                {/* Active Scan Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Scanning in Progress</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Agent: <span className="font-medium text-foreground">{getActiveAgentName()}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-blue-500 bg-blue-500/10">
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Active
+                  </Badge>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">
-                  Scanning Website...
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  {scanMessage || "Crawling website and extracting content from pages..."}
-                </p>
-                {currentUrl && (
-                  <p className="text-xs text-muted-foreground mb-4 font-mono truncate max-w-md mx-auto bg-muted/50 px-3 py-2 rounded">
-                    {currentUrl}
+
+                {/* Progress Section */}
+                <div className="bg-muted/30 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {scanMessage || "Crawling website and extracting content from pages..."}
                   </p>
-                )}
-                <Progress value={scanProgress} className="mb-3 h-3" />
-                <div className="flex justify-between text-sm text-muted-foreground mb-4">
-                  <span className="font-medium text-primary">{scanProgress}% complete</span>
-                  {pagesFound > 0 && <span className="font-medium">{pagesFound} pages with content</span>}
+                  {currentUrl && (
+                    <p className="text-xs text-muted-foreground mb-3 font-mono truncate bg-muted/50 px-3 py-2 rounded">
+                      {currentUrl}
+                    </p>
+                  )}
+                  <Progress value={scanProgress} className="mb-2 h-3" />
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-primary">{scanProgress}% complete</span>
+                    {pagesFound > 0 && <span className="text-muted-foreground">{pagesFound} pages found</span>}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Please wait while we scan your website. This may take a few minutes.
+
+                <p className="text-xs text-muted-foreground text-center mb-6">
+                  You can navigate away - the scan will continue in the background. Check the sidebar for progress.
+                </p>
+
+                {/* Scan Another Website Option */}
+                <div className="border-t pt-6">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Want to scan a different website? You can only run one scan at a time.
+                  </p>
+                  <Button variant="outline" disabled className="w-full">
+                    <Scan className="mr-2 h-4 w-4" />
+                    Scan Another Website (Wait for current scan)
+                  </Button>
                 </div>
               </div>
             )}
 
-            {scanStatus === "complete" && scanResults && (
-              <div className="py-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-chart-2/10 flex items-center justify-center mx-auto mb-6">
-                  <Check className="h-8 w-8 text-chart-2" />
+            {scanStatus === "complete" && (
+              <div className="py-8">
+                {/* Success Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-chart-2/10 flex items-center justify-center">
+                      <Check className="h-6 w-6 text-chart-2" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Scan Complete!</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Agent: <span className="font-medium text-foreground">{getActiveAgentName()}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-green-500 bg-green-500/10">
+                    <Check className="h-3 w-3 mr-1" />
+                    Complete
+                  </Badge>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Scan Complete!</h3>
-                <p className="text-muted-foreground mb-6">
-                  Successfully crawled and extracted content from the website
+
+                <p className="text-muted-foreground mb-6 text-center">
+                  {scanMessage || "Successfully crawled and extracted content from the website"}
                 </p>
 
-                {scanResults.deletedEntries > 0 && (
+                {scanResults?.deletedEntries > 0 && (
                   <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                     <p className="text-sm text-amber-600 dark:text-amber-400">
                       <RefreshCw className="inline-block mr-2 h-4 w-4" />
@@ -458,59 +571,42 @@ export default function WebsiteScanner() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <p className="text-3xl font-bold font-display text-primary">
-                        {scanResults.pagesScanned || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Pages Scanned</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <p className="text-3xl font-bold font-display text-chart-2">
-                        {scanResults.entriesCreated || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Content Entries</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <p className="text-3xl font-bold font-display text-chart-3">
-                        {scanResults.pagesFound || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Links Discovered</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {scanResults.scannedUrls && scanResults.scannedUrls.length > 0 && (
-                  <div className="text-left mb-6 p-4 bg-muted/50 rounded-lg max-h-48 overflow-y-auto">
-                    <p className="text-sm font-medium mb-2">Scanned Pages ({scanResults.scannedUrls.length}):</p>
-                    <ul className="text-xs text-muted-foreground space-y-2">
-                      {scanResults.scannedUrls.map((page: { url: string; title: string } | string, i: number) => {
-                        const url = typeof page === 'string' ? page : page.url;
-                        const title = typeof page === 'string' ? page : page.title;
-                        return (
-                          <li key={i} className="flex flex-col">
-                            <span className="font-medium text-foreground truncate">{title}</span>
-                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary hover:underline truncate">
-                              {url}
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                {scanResults && (
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-3xl font-bold font-display text-primary">
+                          {scanResults.pagesScanned || 0}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Pages Scanned</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-3xl font-bold font-display text-chart-2">
+                          {scanResults.entriesCreated || 0}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Content Entries</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-3xl font-bold font-display text-chart-3">
+                          {scanResults.pagesFound || 0}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Links Discovered</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
 
                 <div className="flex gap-4">
                   <Button variant="outline" onClick={resetScan} className="flex-1">
+                    <Scan className="mr-2 h-4 w-4" />
                     Scan Another Website
                   </Button>
                   <Button
-                    onClick={() => window.location.href = `/dashboard/knowledge?agent=${form.getValues("agentId")}`}
+                    onClick={() => setLocation(`/dashboard/knowledge?agent=${activeAgentId || form.getValues("agentId")}`)}
                     className="flex-1"
                   >
                     <Database className="mr-2 h-4 w-4" />
@@ -521,15 +617,45 @@ export default function WebsiteScanner() {
             )}
 
             {scanStatus === "error" && (
-              <div className="py-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
-                  <AlertCircle className="h-8 w-8 text-destructive" />
+              <div className="py-8">
+                {/* Error Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <AlertCircle className="h-6 w-6 text-destructive" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Scan Failed</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Agent: <span className="font-medium text-foreground">{getActiveAgentName()}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-destructive bg-destructive/10">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Error
+                  </Badge>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Scan Failed</h3>
-                <p className="text-muted-foreground mb-6">
-                  Could not scan the website. Please check the URL and try again.
-                </p>
-                <Button onClick={resetScan}>Try Again</Button>
+
+                <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-destructive">
+                    {scanMessage || "Could not scan the website. Please check the URL and try again."}
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <Button variant="outline" onClick={resetScan} className="flex-1">
+                    Try Again
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation("/dashboard/agents")}
+                    className="flex-1"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Go to Agents
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

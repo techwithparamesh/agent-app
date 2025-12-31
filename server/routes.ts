@@ -2241,7 +2241,7 @@ export async function registerRoutes(
       
       // STEP 3: Crawl all pages with progress updates
       let scannedCount = 0;
-      let lastProgressUpdate = Date.now();
+      let lastDbProgressUpdate = Date.now();
       
       while (urlsToScan.length > 0 && scannedPages.length < maxPages) {
         const currentUrl = urlsToScan.shift()!;
@@ -2255,11 +2255,22 @@ export async function registerRoutes(
         
         scannedCount++;
         const progressPercent = Math.min(20 + Math.floor((scannedCount / Math.max(totalToScan, 1)) * 70), 90);
+        const progressMessage = `Scanning page ${scannedCount} of ${totalToScan}: ${new URL(currentUrl).pathname || '/'}`;
         
-        // Send progress update immediately for each page
+        // Update database every 2 seconds so sidebar can poll progress
+        const now = Date.now();
+        if (now - lastDbProgressUpdate >= 2000) {
+          lastDbProgressUpdate = now;
+          storage.updateAgent(agentId as string, {
+            scanProgress: progressPercent,
+            scanMessage: progressMessage,
+          }).catch(() => {}); // Fire and forget, don't block scan
+        }
+        
+        // Send progress update immediately for each page via SSE
         sendProgress({ 
           type: 'scanning', 
-          message: `Scanning page ${scannedCount} of ${totalToScan}: ${new URL(currentUrl).pathname || '/'}`,
+          message: progressMessage,
           currentUrl: currentUrl,
           scannedCount: scannedCount,
           totalPages: totalToScan,
