@@ -320,6 +320,20 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* E-Commerce Agent Path */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/dashboard/agents/ecommerce"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/agents/ecommerce">
+                    <ShoppingCart className="h-5 w-5" />
+                    <span>E-Commerce Agent</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Quick Create */}
               <SidebarMenuItem>
                 <SidebarMenuButton

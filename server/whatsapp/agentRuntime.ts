@@ -235,6 +235,71 @@ export class AgentRuntime {
     // Update context with knowledge
     conversation.context.knowledgeContext = knowledgeResult.combinedContext || undefined;
 
+    // Step 1b: E-commerce live data fetch (WhatsApp)
+    // If we detect an e-commerce intent, fetch live data and let the AI respond with that context.
+    // This mirrors the widget/dashboard behavior, but stays inside the WhatsApp runtime.
+    try {
+      const { ecommerceIntentRouter } = await import('../ecommerce');
+      const ecomIntent = ecommerceIntentRouter.detectIntent(message.content);
+
+      if (ecomIntent) {
+        const entities = ecommerceIntentRouter.extractEntities(message.content, ecomIntent);
+        const ecomResult = await ecommerceIntentRouter.route({
+          agentId: agent.id,
+          userId: agent.userId,
+          intent: ecomIntent,
+          entities,
+          conversationId: conversation.id,
+          requesterPhone: context.user.phone,
+        });
+
+        const handoffContext = ecomResult.fallbackToLeadCapture
+          ? `HANDOFF REQUIRED\n- Ask for name, email, and phone\n- Confirm the best contact method and time\n- Do NOT request payment details\n- Do NOT attempt checkout/refund automation`
+          : '';
+
+        const additionalContextParts = [
+          knowledgeResult.combinedContext ? `KNOWLEDGE BASE\n${knowledgeResult.combinedContext}` : '',
+          ecomResult?.message ? `ECOMMERCE ROUTER RESULT\n${ecomResult.message}` : '',
+          handoffContext,
+        ].filter(Boolean);
+
+        const additionalContext = additionalContextParts.join('\n\n');
+
+        // If router indicates we should fall back to lead capture, capture a lead now (safe default).
+        if (ecomResult.fallbackToLeadCapture) {
+          await toolEngine.execute('capture_lead', {
+            agentId: agent.id,
+            conversationId: conversation.id,
+            name: context.user.name,
+            phone: context.user.phone,
+            email: typeof entities.email === 'string' ? entities.email : undefined,
+            interest: `E-commerce: ${ecomIntent}`,
+            notes: message.content,
+            customFields: {
+              ecommerceIntent: ecomIntent,
+              routerMessage: ecomResult.message,
+              entities,
+            },
+          });
+        }
+
+        const aiResponse = await aiDecisionLayer.generateResponse(
+          conversation.context,
+          agent,
+          undefined,
+          additionalContext
+        );
+
+        return responseComposer.composeTextResponse(
+          context.user.phone,
+          aiResponse || ecomResult.message
+        );
+      }
+    } catch (ecomError) {
+      console.error('[AgentRuntime] E-commerce routing error:', ecomError);
+      // Continue without e-commerce live context
+    }
+
     // Step 2: AI Decision - Intent detection & entity extraction
     const aiDecision = await aiDecisionLayer.analyzeMessage(
       message,

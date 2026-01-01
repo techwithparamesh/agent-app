@@ -844,10 +844,116 @@ export const integrationLogs = mysqlTable("integration_logs", {
   createdIdx: index("idx_log_created").on(table.createdAt),
 }));
 
+// ========== E-COMMERCE CONNECTIONS ==========
+
+// E-Commerce Store Connections - Links agents to stores (Shopify, WooCommerce, Generic REST)
+export const ecommerceConnections = mysqlTable("ecommerce_connections", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  agentId: varchar("agent_id", { length: 36 }).notNull().references(() => agents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Store Type & Details
+  platform: varchar("platform", { length: 50 }).notNull(), // 'shopify', 'woocommerce', 'generic_rest'
+  storeName: varchar("store_name", { length: 255 }),
+  storeUrl: varchar("store_url", { length: 500 }).notNull(),
+  
+  // Encrypted Credentials (uses existing encryption.ts)
+  encryptedCredentials: text("encrypted_credentials").notNull(),
+  
+  // Platform-specific config
+  config: json("config").$type<{
+    apiVersion?: string;
+    customEndpoints?: Record<string, string>;
+    headerAuth?: boolean;
+    productEndpoint?: string;
+    orderEndpoint?: string;
+    capabilities?: string[];
+  }>(),
+  
+  // Feature Flags
+  supportsProducts: boolean("supports_products").default(true),
+  supportsInventory: boolean("supports_inventory").default(true),
+  supportsOrders: boolean("supports_orders").default(true),
+  supportsCustomers: boolean("supports_customers").default(false),
+  
+  // Rate Limiting
+  rateLimitPerMinute: int("rate_limit_per_minute").default(60),
+  
+  // Status & Health
+  isActive: boolean("is_active").default(true),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastError: text("last_error"),
+  errorCount: int("error_count").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  agentIdx: index("idx_ecom_agent").on(table.agentId),
+  userIdx: index("idx_ecom_user").on(table.userId),
+  platformIdx: index("idx_ecom_platform").on(table.platform),
+}));
+
+// Product Cache - Reduces API calls by caching product data
+export const productCache = mysqlTable("product_cache", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  connectionId: varchar("connection_id", { length: 36 }).notNull().references(() => ecommerceConnections.id, { onDelete: "cascade" }),
+  
+  // Product Data
+  externalProductId: varchar("external_product_id", { length: 100 }).notNull(),
+  sku: varchar("sku", { length: 100 }),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  price: varchar("price", { length: 20 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  inventoryQuantity: int("inventory_quantity"),
+  isInStock: boolean("is_in_stock").default(true),
+  
+  // Categorization
+  productType: varchar("product_type", { length: 100 }),
+  tags: text("tags"),
+  vendor: varchar("vendor", { length: 255 }),
+  imageUrl: varchar("image_url", { length: 1000 }),
+  
+  // Cache Control
+  cachedAt: timestamp("cached_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => ({
+  connectionIdx: index("idx_cache_connection").on(table.connectionId),
+  externalIdIdx: index("idx_cache_external_id").on(table.connectionId, table.externalProductId),
+  skuIdx: index("idx_cache_sku").on(table.sku),
+}));
+
+// Order Lookup Audit Log
+export const orderLookupLogs = mysqlTable("order_lookup_logs", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  connectionId: varchar("connection_id", { length: 36 }).references(() => ecommerceConnections.id, { onDelete: "set null" }),
+  agentId: varchar("agent_id", { length: 36 }).notNull().references(() => agents.id, { onDelete: "cascade" }),
+  
+  // Request Details
+  lookupType: varchar("lookup_type", { length: 50 }).notNull(), // 'order_by_id', 'order_by_email', 'order_by_phone'
+  lookupValueHash: varchar("lookup_value_hash", { length: 64 }), // SHA-256 hash of lookup value (for PII)
+  
+  // Context
+  conversationId: varchar("conversation_id", { length: 36 }),
+  requesterPhone: varchar("requester_phone", { length: 20 }),
+  
+  // Result
+  found: boolean("found").default(false),
+  orderStatus: varchar("order_status", { length: 50 }),
+  errorMessage: text("error_message"),
+  responseTimeMs: int("response_time_ms"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  agentIdx: index("idx_lookup_agent").on(table.agentId),
+  createdIdx: index("idx_lookup_created").on(table.createdAt),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   agents: many(agents),
   whatsappBusinessAccounts: many(whatsappBusinessAccounts),
+  ecommerceConnections: many(ecommerceConnections),
   phoneNumbers: many(phoneNumbers),
   usageRecords: many(usageRecords),
   billingEvents: many(messageBillingEvents),
@@ -1358,3 +1464,30 @@ export type IntegrationWorkflow = typeof integrationWorkflows.$inferSelect;
 
 export type InsertWorkflowExecution = z.infer<typeof insertWorkflowExecutionSchema>;
 export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
+
+// E-Commerce Insert Schemas
+export const insertEcommerceConnectionSchema = createInsertSchema(ecommerceConnections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProductCacheSchema = createInsertSchema(productCache).omit({
+  id: true,
+  cachedAt: true,
+});
+
+export const insertOrderLookupLogSchema = createInsertSchema(orderLookupLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+// E-Commerce Types
+export type InsertEcommerceConnection = z.infer<typeof insertEcommerceConnectionSchema>;
+export type EcommerceConnection = typeof ecommerceConnections.$inferSelect;
+
+export type InsertProductCache = z.infer<typeof insertProductCacheSchema>;
+export type ProductCache = typeof productCache.$inferSelect;
+
+export type InsertOrderLookupLog = z.infer<typeof insertOrderLookupLogSchema>;
+export type OrderLookupLog = typeof orderLookupLogs.$inferSelect;

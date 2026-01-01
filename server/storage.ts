@@ -19,6 +19,9 @@ import {
   integrationCredentials,
   integrationWorkflows,
   workflowExecutions,
+  ecommerceConnections,
+  productCache,
+  orderLookupLogs,
   type User,
   type UpsertUser,
   type Agent,
@@ -53,6 +56,12 @@ import {
   type InsertIntegrationWorkflow,
   type WorkflowExecution,
   type InsertWorkflowExecution,
+  type EcommerceConnection,
+  type InsertEcommerceConnection,
+  type ProductCache,
+  type InsertProductCache,
+  type OrderLookupLog,
+  type InsertOrderLookupLog,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -114,6 +123,24 @@ export interface IStorage {
   getExecutionById(id: string): Promise<WorkflowExecution | undefined>;
   createExecution(execution: InsertWorkflowExecution): Promise<WorkflowExecution>;
   updateExecution(id: string, data: Partial<InsertWorkflowExecution>): Promise<WorkflowExecution | undefined>;
+
+  // E-Commerce Connections
+  getEcommerceConnectionsByUserId(userId: string): Promise<EcommerceConnection[]>;
+  getEcommerceConnectionById(id: string): Promise<EcommerceConnection | undefined>;
+  getEcommerceConnectionByAgentId(agentId: string): Promise<EcommerceConnection | undefined>;
+  getAnyEcommerceConnectionByAgentId(agentId: string): Promise<EcommerceConnection | undefined>;
+  createEcommerceConnection(data: InsertEcommerceConnection): Promise<EcommerceConnection>;
+  updateEcommerceConnection(id: string, data: Partial<InsertEcommerceConnection>): Promise<EcommerceConnection | undefined>;
+  deleteEcommerceConnection(id: string): Promise<void>;
+
+  // Product Cache
+  getCachedProductByExternalId(connectionId: string, externalProductId: string): Promise<ProductCache | undefined>;
+  getCachedProductBySku(connectionId: string, sku: string): Promise<ProductCache | undefined>;
+  upsertProductCacheByExternalId(data: Omit<InsertProductCache, "id">): Promise<ProductCache>;
+  
+  // Order Lookup Logs
+  createOrderLookupLog(data: InsertOrderLookupLog): Promise<OrderLookupLog>;
+  getOrderLookupLogsByAgentId(agentId: string, limit?: number): Promise<OrderLookupLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1009,6 +1036,149 @@ export class DatabaseStorage implements IStorage {
       .set(data)
       .where(eq(workflowExecutions.id, id));
     return this.getExecutionById(id);
+  }
+
+  // ========== E-COMMERCE CONNECTIONS ==========
+  async getEcommerceConnectionsByUserId(userId: string): Promise<EcommerceConnection[]> {
+    return db
+      .select()
+      .from(ecommerceConnections)
+      .where(eq(ecommerceConnections.userId, userId))
+      .orderBy(desc(ecommerceConnections.createdAt));
+  }
+
+  async getEcommerceConnectionById(id: string): Promise<EcommerceConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(ecommerceConnections)
+      .where(eq(ecommerceConnections.id, id));
+    return connection;
+  }
+
+  async getEcommerceConnectionByAgentId(agentId: string): Promise<EcommerceConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(ecommerceConnections)
+      .where(and(
+        eq(ecommerceConnections.agentId, agentId),
+        eq(ecommerceConnections.isActive, true)
+      ));
+    return connection;
+  }
+
+  async getAnyEcommerceConnectionByAgentId(agentId: string): Promise<EcommerceConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(ecommerceConnections)
+      .where(eq(ecommerceConnections.agentId, agentId))
+      .orderBy(desc(ecommerceConnections.createdAt))
+      .limit(1);
+    return connection;
+  }
+
+  async createEcommerceConnection(data: InsertEcommerceConnection): Promise<EcommerceConnection> {
+    const id = crypto.randomUUID();
+    await db.insert(ecommerceConnections).values({ ...data, id });
+    return this.getEcommerceConnectionById(id) as Promise<EcommerceConnection>;
+  }
+
+  async updateEcommerceConnection(id: string, data: Partial<InsertEcommerceConnection>): Promise<EcommerceConnection | undefined> {
+    await db
+      .update(ecommerceConnections)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(ecommerceConnections.id, id));
+    return this.getEcommerceConnectionById(id);
+  }
+
+  async deleteEcommerceConnection(id: string): Promise<void> {
+    await db.delete(ecommerceConnections).where(eq(ecommerceConnections.id, id));
+  }
+
+  // ========== PRODUCT CACHE ==========
+  async getCachedProductByExternalId(connectionId: string, externalProductId: string): Promise<ProductCache | undefined> {
+    const now = new Date();
+    const [row] = await db
+      .select()
+      .from(productCache)
+      .where(
+        and(
+          eq(productCache.connectionId, connectionId),
+          eq(productCache.externalProductId, externalProductId),
+          // expiresAt NULL means "no expiry" (defensive)
+          sql`(${productCache.expiresAt} IS NULL OR ${productCache.expiresAt} > ${now})`
+        )
+      )
+      .orderBy(desc(productCache.cachedAt))
+      .limit(1);
+    return row;
+  }
+
+  async getCachedProductBySku(connectionId: string, sku: string): Promise<ProductCache | undefined> {
+    const now = new Date();
+    const [row] = await db
+      .select()
+      .from(productCache)
+      .where(
+        and(
+          eq(productCache.connectionId, connectionId),
+          eq(productCache.sku, sku),
+          sql`(${productCache.expiresAt} IS NULL OR ${productCache.expiresAt} > ${now})`
+        )
+      )
+      .orderBy(desc(productCache.cachedAt))
+      .limit(1);
+    return row;
+  }
+
+  async upsertProductCacheByExternalId(data: Omit<InsertProductCache, "id">): Promise<ProductCache> {
+    const [existing] = await db
+      .select()
+      .from(productCache)
+      .where(
+        and(
+          eq(productCache.connectionId, data.connectionId),
+          eq(productCache.externalProductId, data.externalProductId)
+        )
+      )
+      .orderBy(desc(productCache.cachedAt))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(productCache)
+        .set({
+          ...data,
+          cachedAt: new Date(),
+        })
+        .where(eq(productCache.id, existing.id));
+      const [updated] = await db.select().from(productCache).where(eq(productCache.id, existing.id));
+      return updated as ProductCache;
+    }
+
+    const id = crypto.randomUUID();
+    await db.insert(productCache).values({ ...data, id, cachedAt: new Date() } as any);
+    const [inserted] = await db.select().from(productCache).where(eq(productCache.id, id));
+    return inserted as ProductCache;
+  }
+
+  // ========== ORDER LOOKUP LOGS ==========
+  async createOrderLookupLog(data: InsertOrderLookupLog): Promise<OrderLookupLog> {
+    const id = crypto.randomUUID();
+    await db.insert(orderLookupLogs).values({ ...data, id });
+    const [log] = await db
+      .select()
+      .from(orderLookupLogs)
+      .where(eq(orderLookupLogs.id, id));
+    return log;
+  }
+
+  async getOrderLookupLogsByAgentId(agentId: string, limit: number = 100): Promise<OrderLookupLog[]> {
+    return db
+      .select()
+      .from(orderLookupLogs)
+      .where(eq(orderLookupLogs.agentId, agentId))
+      .orderBy(desc(orderLookupLogs.createdAt))
+      .limit(limit);
   }
 }
 

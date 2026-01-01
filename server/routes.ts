@@ -25,7 +25,9 @@ import {
   passwordResetRateLimiter 
 } from "./middleware/rateLimit";
 import { v4 as uuidv4 } from "uuid";
-import rateLimit, { type Options } from "express-rate-limit";
+import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
+import net from "net";
+import { assertSafeOutboundUrlCached } from "./utils/outboundUrlSecurity";
 
 import { isMailerConfigured, sendPasswordResetEmail } from "./utils/mailer";
 import {
@@ -39,6 +41,69 @@ import {
   parseIntEnv,
 } from "./utils/widgetSecurity";
 import { APP_CONFIG } from "./config";
+
+async function validateEcommerceStoreUrl(rawUrl: unknown): Promise<{ ok: true; url: URL } | { ok: false; message: string }> {
+  if (typeof rawUrl !== 'string' || rawUrl.trim().length === 0) {
+    return { ok: false, message: 'Invalid store URL' };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = await assertSafeOutboundUrlCached(rawUrl, { ttlMs: 60_000 });
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'Invalid store URL' };
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const blockedHosts = ['metadata.google.internal'];
+  if (blockedHosts.some((h) => hostname === h || hostname.endsWith('.' + h))) {
+    return { ok: false, message: 'Invalid store URL' };
+  }
+
+  // Defense-in-depth: explicit IP checks (in addition to validateScanTargetUrl).
+  const ipVersion = net.isIP(hostname);
+  if (ipVersion === 4) {
+    const octets = hostname.split('.').map((n) => Number.parseInt(n, 10));
+    if (octets.length !== 4 || octets.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) {
+      return { ok: false, message: 'Invalid store URL' };
+    }
+    const [a, b] = octets;
+    const isLoopback = a === 127;
+    const isAny = a === 0;
+    const isLinkLocal = a === 169 && b === 254;
+    const isPrivate10 = a === 10;
+    const isPrivate172 = a === 172 && b >= 16 && b <= 31;
+    const isPrivate192 = a === 192 && b === 168;
+    if (isLoopback || isAny || isLinkLocal || isPrivate10 || isPrivate172 || isPrivate192) {
+      return { ok: false, message: 'Invalid store URL' };
+    }
+  } else if (ipVersion === 6) {
+    const normalized = hostname.toLowerCase();
+    if (normalized === '::1' || normalized.startsWith('fe80:') || normalized.startsWith('fc') || normalized.startsWith('fd')) {
+      return { ok: false, message: 'Invalid store URL' };
+    }
+  }
+
+  return { ok: true, url: parsed };
+}
+
+function getEcommerceCredentialError(platform: unknown, credentials: any): string | null {
+  if (platform === 'shopify') {
+    if (!credentials || typeof credentials.accessToken !== 'string' || credentials.accessToken.trim().length === 0) {
+      return 'Shopify accessToken is required';
+    }
+    return null;
+  }
+  if (platform === 'woocommerce') {
+    const hasKey = credentials && typeof credentials.consumerKey === 'string' && credentials.consumerKey.trim().length > 0;
+    const hasSecret = credentials && typeof credentials.consumerSecret === 'string' && credentials.consumerSecret.trim().length > 0;
+    if (!hasKey || !hasSecret) {
+      return 'WooCommerce consumerKey and consumerSecret are required';
+    }
+    return null;
+  }
+  return 'Unsupported platform';
+}
 
 type ScanUserGateState = {
   active: boolean;
@@ -967,6 +1032,460 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting agent:", error);
       res.status(500).json({ message: "Failed to delete agent" });
+    }
+  });
+
+  // ========== E-COMMERCE CONNECTIONS ==========
+  
+  // Get all e-commerce connections for user
+  app.get("/api/ecommerce/connections", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connections = await storage.getEcommerceConnectionsByUserId(userId);
+      
+      // Don't return encrypted credentials to frontend
+      const safeConnections = connections.map(conn => ({
+        ...conn,
+        encryptedCredentials: undefined,
+        hasCredentials: !!conn.encryptedCredentials,
+      }));
+      
+      res.json(safeConnections);
+    } catch (error) {
+      console.error("Error fetching e-commerce connections:", error);
+      res.status(500).json({ message: "Failed to fetch e-commerce connections" });
+    }
+  });
+
+  // Get single e-commerce connection
+  app.get("/api/ecommerce/connections/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connection = await storage.getEcommerceConnectionById(req.params.id);
+      
+      if (!connection) {
+        return res.status(404).json({ message: "Connection not found" });
+      }
+      if (connection.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Don't return encrypted credentials
+      res.json({
+        ...connection,
+        encryptedCredentials: undefined,
+        hasCredentials: !!connection.encryptedCredentials,
+      });
+    } catch (error) {
+      console.error("Error fetching e-commerce connection:", error);
+      res.status(500).json({ message: "Failed to fetch e-commerce connection" });
+    }
+  });
+
+  // Get e-commerce connection by agent ID
+  app.get("/api/agents/:agentId/ecommerce", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const agent = await storage.getAgentById(req.params.agentId);
+      
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      if (agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const connection = await storage.getAnyEcommerceConnectionByAgentId(req.params.agentId);
+      
+      if (!connection) {
+        return res.json(null);
+      }
+      
+      res.json({
+        ...connection,
+        encryptedCredentials: undefined,
+        hasCredentials: !!connection.encryptedCredentials,
+      });
+    } catch (error) {
+      console.error("Error fetching agent e-commerce connection:", error);
+      res.status(500).json({ message: "Failed to fetch e-commerce connection" });
+    }
+  });
+
+  // Create e-commerce connection
+  app.post("/api/ecommerce/connections", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { agentId, platform, storeName, storeUrl, credentials, supportsProducts, supportsInventory, supportsOrders, capabilities, isActive, rateLimitPerMinute } = req.body;
+      
+      // Validate required fields
+      if (!agentId || !platform || !storeUrl) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (platform !== 'shopify' && platform !== 'woocommerce') {
+        return res.status(400).json({ message: `Unsupported platform: ${platform}` });
+      }
+
+      if (!Array.isArray(capabilities) || capabilities.length === 0 || capabilities.some((c) => typeof c !== 'string')) {
+        return res.status(400).json({ message: "Select at least one capability" });
+      }
+
+      const credentialError = getEcommerceCredentialError(platform, credentials);
+      if (credentialError) {
+        return res.status(400).json({ message: credentialError });
+      }
+      
+      // Verify user owns the agent
+      const agent = await storage.getAgentById(agentId);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      if (agent.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Check if agent already has an e-commerce connection (active or inactive)
+      const existingConnection = await storage.getAnyEcommerceConnectionByAgentId(agentId);
+      if (existingConnection) {
+        return res.status(400).json({ message: "Agent already has an e-commerce connection. Delete it first or update it." });
+      }
+      
+      // Validate URL (SSRF protection)
+      const urlValidation = await validateEcommerceStoreUrl(storeUrl);
+      if (!urlValidation.ok) {
+        return res.status(400).json({ message: urlValidation.message });
+      }
+
+      let rateLimitValue: number | undefined;
+      if (rateLimitPerMinute !== undefined) {
+        const n = Number(rateLimitPerMinute);
+        if (!Number.isFinite(n) || n < 1 || n > 600) {
+          return res.status(400).json({ message: "rateLimitPerMinute must be between 1 and 600" });
+        }
+        rateLimitValue = Math.floor(n);
+      }
+      
+      // Encrypt credentials
+      const { encrypt } = await import('./utils/encryption');
+      const encryptedCredentials = encrypt(JSON.stringify(credentials || {}));
+      
+      // Create the connection
+      const connection = await storage.createEcommerceConnection({
+        agentId,
+        userId,
+        platform,
+        storeName: storeName || `${platform} Store`,
+        storeUrl,
+        encryptedCredentials,
+        supportsProducts: supportsProducts ?? true,
+        supportsInventory: supportsInventory ?? true,
+        supportsOrders: supportsOrders ?? true,
+        isActive: isActive ?? true,
+        rateLimitPerMinute: rateLimitValue ?? 60,
+        config: { capabilities: capabilities || [] },
+      });
+      
+      // Update agent capabilities if needed
+      const agentCapabilities = (agent.capabilities as string[]) || [];
+      const enableOrders = (supportsOrders ?? true) && capabilities.includes('order_tracking');
+      const newCapabilities = [...new Set([
+        ...agentCapabilities,
+        'ecommerce',
+        ...(enableOrders ? ['orders'] : []),
+      ])];
+      if (newCapabilities.length !== agentCapabilities.length) {
+        await storage.updateAgent(agentId, { capabilities: newCapabilities } as any);
+      }
+      
+      res.status(201).json({
+        ...connection,
+        encryptedCredentials: undefined,
+        hasCredentials: true,
+      });
+    } catch (error) {
+      console.error("Error creating e-commerce connection:", error);
+      res.status(500).json({ message: "Failed to create e-commerce connection" });
+    }
+  });
+
+  // Update e-commerce connection
+  app.put("/api/ecommerce/connections/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connection = await storage.getEcommerceConnectionById(req.params.id);
+      
+      if (!connection) {
+        return res.status(404).json({ message: "Connection not found" });
+      }
+      if (connection.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const { storeName, storeUrl, credentials, supportsProducts, supportsInventory, supportsOrders, isActive, config, rateLimitPerMinute } = req.body;
+      
+      const updateData: any = {};
+      if (storeName !== undefined) updateData.storeName = storeName;
+      if (storeUrl !== undefined) {
+        const urlValidation = await validateEcommerceStoreUrl(storeUrl);
+        if (!urlValidation.ok) {
+          return res.status(400).json({ message: urlValidation.message });
+        }
+        updateData.storeUrl = storeUrl;
+      }
+      if (supportsProducts !== undefined) updateData.supportsProducts = supportsProducts;
+      if (supportsInventory !== undefined) updateData.supportsInventory = supportsInventory;
+      if (supportsOrders !== undefined) updateData.supportsOrders = supportsOrders;
+      if (isActive !== undefined) updateData.isActive = isActive;
+
+      if (rateLimitPerMinute !== undefined) {
+        const n = Number(rateLimitPerMinute);
+        if (!Number.isFinite(n) || n < 1 || n > 600) {
+          return res.status(400).json({ message: "rateLimitPerMinute must be between 1 and 600" });
+        }
+        updateData.rateLimitPerMinute = Math.floor(n);
+      }
+      if (config !== undefined) {
+        if (config !== null && typeof config !== 'object') {
+          return res.status(400).json({ message: 'Invalid config' });
+        }
+        if (config && Object.prototype.hasOwnProperty.call(config, 'capabilities')) {
+          const caps = (config as any).capabilities;
+          if (!Array.isArray(caps) || caps.length === 0 || caps.some((c: any) => typeof c !== 'string')) {
+            return res.status(400).json({ message: 'Select at least one capability' });
+          }
+        }
+        updateData.config = config;
+      }
+      
+      // Update credentials if provided
+      if (credentials) {
+        const credentialError = getEcommerceCredentialError(connection.platform, credentials);
+        if (credentialError) {
+          return res.status(400).json({ message: credentialError });
+        }
+        const { encrypt } = await import('./utils/encryption');
+        updateData.encryptedCredentials = encrypt(JSON.stringify(credentials));
+      }
+
+      // If supportsOrders is being disabled (or order_tracking removed), ensure agent 'orders' capability is removed.
+      // Also add it if being enabled.
+      if (supportsOrders !== undefined || (config && Object.prototype.hasOwnProperty.call(config, 'capabilities'))) {
+        const agent = await storage.getAgentById(connection.agentId);
+        if (agent) {
+          const existingCaps = (agent.capabilities as string[]) || [];
+          const nextConnectionCaps = Array.isArray((config as any)?.capabilities)
+            ? (config as any).capabilities
+            : (connection.config as any)?.capabilities;
+          const enableOrders = (supportsOrders ?? connection.supportsOrders ?? true) && Array.isArray(nextConnectionCaps)
+            ? nextConnectionCaps.includes('order_tracking')
+            : (supportsOrders ?? connection.supportsOrders ?? true);
+
+          const nextAgentCaps = enableOrders
+            ? Array.from(new Set([...existingCaps, 'ecommerce', 'orders']))
+            : Array.from(new Set(existingCaps.filter((c) => c !== 'orders').concat(['ecommerce'])));
+
+          if (JSON.stringify(nextAgentCaps) !== JSON.stringify(existingCaps)) {
+            await storage.updateAgent(connection.agentId, { capabilities: nextAgentCaps } as any);
+          }
+        }
+      }
+      
+      const updated = await storage.updateEcommerceConnection(req.params.id, updateData);
+      
+      res.json({
+        ...updated,
+        encryptedCredentials: undefined,
+        hasCredentials: true,
+      });
+    } catch (error) {
+      console.error("Error updating e-commerce connection:", error);
+      res.status(500).json({ message: "Failed to update e-commerce connection" });
+    }
+  });
+
+  // Delete e-commerce connection
+  app.delete("/api/ecommerce/connections/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connection = await storage.getEcommerceConnectionById(req.params.id);
+      
+      if (!connection) {
+        return res.status(404).json({ message: "Connection not found" });
+      }
+      if (connection.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      await storage.deleteEcommerceConnection(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting e-commerce connection:", error);
+      res.status(500).json({ message: "Failed to delete e-commerce connection" });
+    }
+  });
+
+  // Test e-commerce connection
+  app.post("/api/ecommerce/test-connection", isAuthenticated, async (req: any, res) => {
+    try {
+      const { platform, storeUrl, credentials } = req.body;
+      
+      if (!platform || !storeUrl) {
+        return res.status(400).json({ success: false, error: "Missing platform or store URL" });
+      }
+
+      if (platform !== 'shopify' && platform !== 'woocommerce') {
+        return res.status(400).json({ success: false, error: `Unsupported platform: ${platform}` });
+      }
+
+      const urlValidation = await validateEcommerceStoreUrl(storeUrl);
+      if (!urlValidation.ok) {
+        return res.status(400).json({ success: false, error: urlValidation.message });
+      }
+
+      const credentialError = getEcommerceCredentialError(platform, credentials);
+      if (credentialError) {
+        return res.status(400).json({ success: false, error: credentialError });
+      }
+      
+      // Test connection based on platform
+      let success = false;
+      let storeName = '';
+      let error = '';
+      
+      try {
+        if (platform === 'shopify') {
+          // Test Shopify connection
+          const { accessToken } = credentials || {};
+          if (!accessToken) {
+            return res.json({ success: false, error: "Access token is required" });
+          }
+
+          const domain = new URL(storeUrl).hostname;
+          const shopifyRes = await fetch(`https://${domain}/admin/api/2024-01/shop.json`, {
+            headers: {
+              'X-Shopify-Access-Token': accessToken,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (shopifyRes.ok) {
+            const data = await shopifyRes.json();
+            success = true;
+            storeName = data.shop?.name || domain;
+          } else {
+            error = `Shopify API returned ${shopifyRes.status}: ${shopifyRes.statusText}`;
+          }
+        } else if (platform === 'woocommerce') {
+          // Test WooCommerce connection
+          const { consumerKey, consumerSecret } = credentials || {};
+          if (!consumerKey || !consumerSecret) {
+            return res.json({ success: false, error: "Consumer key and secret are required" });
+          }
+          
+          const siteUrl = storeUrl.replace(/\/$/, '');
+          const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
+          
+          const wooRes = await fetch(`${siteUrl}/wp-json/wc/v3/system_status`, {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (wooRes.ok) {
+            const data = await wooRes.json();
+            success = true;
+            storeName = data.settings?.store_name || siteUrl;
+          } else {
+            error = `WooCommerce API returned ${wooRes.status}: ${wooRes.statusText}`;
+          }
+        } else {
+          return res.json({ success: false, error: `Unsupported platform: ${platform}` });
+        }
+      } catch (fetchError: any) {
+        error = fetchError.message || 'Connection failed';
+      }
+      
+      res.json({ success, storeName, error });
+    } catch (error) {
+      console.error("Error testing e-commerce connection:", error);
+      res.status(500).json({ success: false, error: "Failed to test connection" });
+    }
+  });
+
+  // Test an existing stored connection using encrypted credentials (no credential re-entry required)
+  app.post("/api/ecommerce/connections/:id/test", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connection = await storage.getEcommerceConnectionById(req.params.id);
+
+      if (!connection) {
+        return res.status(404).json({ success: false, error: "Connection not found" });
+      }
+      if (connection.userId !== userId) {
+        return res.status(403).json({ success: false, error: "Forbidden" });
+      }
+
+      const urlValidation = await validateEcommerceStoreUrl(connection.storeUrl);
+      if (!urlValidation.ok) {
+        return res.status(400).json({ success: false, error: urlValidation.message });
+      }
+
+      const { decrypt } = await import('./utils/encryption');
+      let credentials: any = {};
+      try {
+        credentials = JSON.parse(decrypt(connection.encryptedCredentials));
+      } catch {
+        return res.status(400).json({ success: false, error: "Stored credentials are invalid" });
+      }
+
+      const platform = connection.platform;
+      const credentialError = getEcommerceCredentialError(platform, credentials);
+      if (credentialError) {
+        return res.status(400).json({ success: false, error: credentialError });
+      }
+
+      try {
+        if (platform === 'shopify') {
+          const domain = new URL(connection.storeUrl).hostname;
+          const shopifyRes = await fetch(`https://${domain}/admin/api/2024-01/shop.json`, {
+            headers: {
+              'X-Shopify-Access-Token': credentials.accessToken,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!shopifyRes.ok) {
+            return res.json({ success: false, error: `Shopify API returned ${shopifyRes.status}: ${shopifyRes.statusText}` });
+          }
+          const data = await shopifyRes.json();
+          return res.json({ success: true, storeName: data.shop?.name || domain, error: '' });
+        }
+
+        if (platform === 'woocommerce') {
+          const siteUrl = connection.storeUrl.replace(/\/$/, '');
+          const auth = Buffer.from(`${credentials.consumerKey}:${credentials.consumerSecret}`).toString('base64');
+          const wooRes = await fetch(`${siteUrl}/wp-json/wc/v3/system_status`, {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!wooRes.ok) {
+            return res.json({ success: false, error: `WooCommerce API returned ${wooRes.status}: ${wooRes.statusText}` });
+          }
+          const data = await wooRes.json();
+          return res.json({ success: true, storeName: data.settings?.store_name || siteUrl, error: '' });
+        }
+
+        return res.status(400).json({ success: false, error: `Unsupported platform: ${platform}` });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Connection failed';
+        return res.json({ success: false, error: msg });
+      }
+    } catch (error) {
+      console.error("Error testing stored e-commerce connection:", error);
+      res.status(500).json({ success: false, error: "Failed to test connection" });
     }
   });
 
@@ -3705,8 +4224,7 @@ export async function registerRoutes(
     keyGenerator: (req) => {
       const agentId = (req as any)?.body?.agentId;
       const widgetKey = (req as any)?.body?.widgetKey;
-      // Use x-forwarded-for or remoteAddress for better proxy support
-      const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+      const ip = ipKeyGenerator(req.ip || req.socket?.remoteAddress || '');
       return `widget|${ip}|${typeof agentId === "string" ? agentId : "no-agent"}|${typeof widgetKey === "string" ? widgetKey : "no-key"}`;
     },
     handler: (req, res) => {
@@ -3895,6 +4413,49 @@ export async function registerRoutes(
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
 
+      // Check for e-commerce intent and get live data
+      let ecommerceContext = '';
+      let ecommerceHandoffContext = '';
+      const ecommerceConnection = await storage.getEcommerceConnectionByAgentId(agentId);
+      if (ecommerceConnection?.isActive) {
+        try {
+          const { ecommerceIntentRouter } = await import('./ecommerce');
+          const intent = ecommerceIntentRouter.detectIntent(messageText);
+          
+          if (intent) {
+            const entities = ecommerceIntentRouter.extractEntities(messageText, intent);
+            const result = await ecommerceIntentRouter.route({
+              agentId,
+              userId: agent.userId,
+              intent,
+              entities,
+              conversationId: conversation.id,
+            });
+            
+            if (result?.message) {
+              // Always provide the router's recommended response (even for refunds / no-data).
+              ecommerceContext = `\n\n[ECOMMERCE ROUTER RESULT]\n${result.message}`;
+
+              // If live data exists, tag it accordingly as well.
+              if (result.data?.products) {
+                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
+              } else if (result.data?.order) {
+                ecommerceContext += `\n\n[LIVE ORDER DATA]\n${result.message}`;
+              } else if (result.data?.product) {
+                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
+              }
+            }
+
+            if (result?.fallbackToLeadCapture) {
+              ecommerceHandoffContext = `\n\n[HANDOFF REQUIRED]\n- Ask for name, email, and phone\n- Confirm the best contact method and time\n- Do NOT request payment details\n- Do NOT attempt checkout/refund automation`;
+            }
+          }
+        } catch (ecomError) {
+          console.error('[Widget] E-commerce error:', ecomError);
+          // Continue without e-commerce data
+        }
+      }
+
       // Use custom systemPrompt if available, otherwise generate one
       const basePrompt = agent.systemPrompt || `You are ${agent.name}, a helpful AI assistant.
 ${agent.description ? `About: ${agent.description}` : ""}
@@ -3925,7 +4486,7 @@ Remember: SHORT, CLEAR, BULLET POINTS when listing things.`;
 
       const systemPrompt = `${basePrompt}
 
-${knowledgeContext ? `Here is relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}`;
+    ${knowledgeContext ? `Here is relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}${ecommerceContext ? `\n\n${ecommerceContext}` : ""}${ecommerceHandoffContext ? `\n\n${ecommerceHandoffContext}` : ""}`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
@@ -4074,6 +4635,43 @@ ${knowledgeContext ? `Here is relevant information from the knowledge base that 
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
 
+      // Check for e-commerce intent and get live data (dashboard chat)
+      let ecommerceContext = '';
+      let ecommerceHandoffContext = '';
+      const ecommerceConnection = await storage.getEcommerceConnectionByAgentId(agentId);
+      if (ecommerceConnection?.isActive) {
+        try {
+          const { ecommerceIntentRouter } = await import('./ecommerce');
+          const intent = ecommerceIntentRouter.detectIntent(messageText);
+          if (intent) {
+            const entities = ecommerceIntentRouter.extractEntities(messageText, intent);
+            const result = await ecommerceIntentRouter.route({
+              agentId,
+              userId,
+              intent,
+              entities,
+              conversationId: conversation.id,
+            });
+
+            if (result?.message) {
+              ecommerceContext = `\n\n[ECOMMERCE ROUTER RESULT]\n${result.message}`;
+              if (result.data?.products) {
+                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
+              } else if (result.data?.order) {
+                ecommerceContext += `\n\n[LIVE ORDER DATA]\n${result.message}`;
+              } else if (result.data?.product) {
+                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
+              }
+            }
+            if (result?.fallbackToLeadCapture) {
+              ecommerceHandoffContext = `\n\n[HANDOFF REQUIRED]\n- Ask for name, email, and phone\n- Confirm the best contact method and time\n- Do NOT request payment details\n- Do NOT attempt checkout/refund automation`;
+            }
+          }
+        } catch (ecomError) {
+          console.error('[Dashboard Chat] E-commerce error:', ecomError);
+        }
+      }
+
       // Use custom systemPrompt if available, otherwise generate one
       const basePrompt = agent.systemPrompt || `You are ${agent.name}, an AI assistant.
 ${agent.description ? `Description: ${agent.description}` : ""}
@@ -4089,7 +4687,7 @@ IMPORTANT INSTRUCTIONS:
 
       const systemPrompt = `${basePrompt}
 
-${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}`;
+    ${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}${ecommerceContext ? `\n\n${ecommerceContext}` : ""}${ecommerceHandoffContext ? `\n\n${ecommerceHandoffContext}` : ""}`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {

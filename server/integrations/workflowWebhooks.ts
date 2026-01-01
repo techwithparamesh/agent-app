@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage';
 import { runWorkflow } from './workflowRunner';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ const workflowWebhookRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const webhookId = String((req as any)?.params?.webhookId || '');
-    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    const ip = ipKeyGenerator(req.ip || req.socket?.remoteAddress || '');
     return `webhook|${ip}|${webhookId}`;
   },
   validate: { xForwardedForHeader: false, trustProxy: false },

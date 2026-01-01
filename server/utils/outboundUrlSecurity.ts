@@ -73,3 +73,58 @@ export async function assertSafeOutboundUrl(rawUrl: string): Promise<URL> {
 
   return url;
 }
+
+type CachedVerdict = {
+  expiresAtMs: number;
+  ok: boolean;
+  message?: string;
+};
+
+const outboundUrlVerdictCache = new Map<string, CachedVerdict>();
+
+/**
+ * Same as assertSafeOutboundUrl, but caches DNS validation verdicts briefly
+ * to avoid repeated lookups in chat/runtime paths.
+ */
+export async function assertSafeOutboundUrlCached(rawUrl: string, options?: { ttlMs?: number }): Promise<URL> {
+  const ttlMs = options?.ttlMs ?? 60_000;
+  const allowPrivate = isTrue(process.env.OUTBOUND_URL_ALLOW_PRIVATE);
+  const url = parseHttpUrlStrict(rawUrl);
+
+  if (allowPrivate) {
+    const host = url.hostname.trim();
+    if (!host) throw new Error("Invalid URL host");
+    return url;
+  }
+
+  const key = `${url.protocol}//${url.hostname.toLowerCase()}`;
+  const cached = outboundUrlVerdictCache.get(key);
+  const now = Date.now();
+  if (cached && cached.expiresAtMs > now) {
+    if (!cached.ok) throw new Error(cached.message || "URL is not allowed");
+    return url;
+  }
+
+  try {
+    const verdict = await validateScanTargetUrl(url);
+    outboundUrlVerdictCache.set(key, {
+      expiresAtMs: now + ttlMs,
+      ok: verdict.ok,
+      message: verdict.ok ? undefined : verdict.message,
+    });
+
+    if (!verdict.ok) {
+      throw new Error(verdict.message || "URL is not allowed");
+    }
+
+    if (net.isIP(url.hostname) && !allowPrivate) {
+      throw new Error("IP URLs are not allowed");
+    }
+
+    return url;
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "URL is not allowed";
+    outboundUrlVerdictCache.set(key, { expiresAtMs: now + ttlMs, ok: false, message });
+    throw e;
+  }
+}

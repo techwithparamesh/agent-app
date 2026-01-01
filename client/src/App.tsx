@@ -40,6 +40,7 @@ const AgentDetails = lazy(() => import("@/pages/dashboard/agents/[id]"));
 const EditAgent = lazy(() => import("@/pages/dashboard/agents/edit"));
 const WebsiteAgent = lazy(() => import("@/pages/dashboard/agents/website"));
 const WhatsAppAgent = lazy(() => import("@/pages/dashboard/agents/whatsapp"));
+const EcommerceAgent = lazy(() => import("@/pages/dashboard/agents/ecommerce"));
 const WebsiteScanner = lazy(() => import("@/pages/dashboard/scan"));
 const KnowledgeBase = lazy(() => import("@/pages/dashboard/knowledge"));
 const Chatbot = lazy(() => import("@/pages/dashboard/chatbot"));
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/dashboard/agents/new">{() => <Protected><CreateAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/website">{() => <Protected><WebsiteAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/whatsapp">{() => <Protected><WhatsAppAgent /></Protected>}</Route>
+      <Route path="/dashboard/agents/ecommerce">{() => <Protected><EcommerceAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/:id/edit">{() => <Protected><EditAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/:id">{() => <Protected><AgentDetails /></Protected>}</Route>
       <Route path="/dashboard/scan">{() => <Protected><WebsiteScanner /></Protected>}</Route>
