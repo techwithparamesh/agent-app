@@ -71,11 +71,14 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByEmailVerificationToken(tokenHash: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
   setPasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
   getUserByResetToken(token: string): Promise<User | undefined>;
   clearPasswordResetToken(userId: string): Promise<void>;
+  setEmailVerificationToken(userId: string, tokenHash: string, expires: Date): Promise<void>;
+  markEmailVerified(userId: string): Promise<void>;
   updateUserProfile(userId: string, data: { firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User | undefined>;
 
   // Agents
@@ -166,6 +169,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmailVerificationToken(tokenHash: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.emailVerificationToken, tokenHash))
+      .limit(1);
+    return user;
+  }
+
   async createUser(userData: UpsertUser): Promise<User> {
     const id = userData.id || crypto.randomUUID();
     await db.insert(users).values({ ...userData, id });
@@ -235,6 +247,30 @@ export class DatabaseStorage implements IStorage {
         resetPasswordToken: null, 
         resetPasswordExpires: null,
         updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async setEmailVerificationToken(userId: string, tokenHash: string, expires: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        emailVerified: false,
+        emailVerificationToken: tokenHash,
+        emailVerificationExpiresAt: expires,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async markEmailVerified(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null,
+        updatedAt: new Date(),
       })
       .where(eq(users.id, userId));
   }

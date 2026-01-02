@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { EmailVerificationRequiredInline } from "@/components/email-verification-required";
 import {
   ArrowLeft,
   ArrowRight,
@@ -89,6 +91,7 @@ function mapTemplateCategoryToDomain(category?: string): DomainId | null {
 export default function CreateAgent() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [agentName, setAgentName] = useState("");
@@ -99,6 +102,7 @@ export default function CreateAgent() {
   const [template, setTemplate] = useState<TemplateData | null>(null);
 
   const isStaticWebsite = selectedPurpose === "static_website";
+  const isEmailVerified = Boolean((user as any)?.emailVerified);
 
   useEffect(() => {
     const templateJson = sessionStorage.getItem("agentTemplate");
@@ -288,6 +292,12 @@ export default function CreateAgent() {
                       </CardContent>
                     </Card>
                   </div>
+
+                  {selectedPurpose === "insurance" && !isEmailVerified && (
+                    <div className="mt-4">
+                      <EmailVerificationRequiredInline featureName="Insurance" />
+                    </div>
+                  )}
                 </div>
               </div>
             )}

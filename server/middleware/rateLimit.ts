@@ -111,6 +111,20 @@ export const passwordResetRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for verification email resend - prevents email spam
+ * 2 requests per 5 minutes per user (fallback to IP)
+ */
+export const emailVerificationRateLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  maxRequests: 2,
+  keyGenerator: (req) => {
+    const userId = req?.user?.claims?.sub || req?.session?.userId;
+    return userId ? `user:${userId}` : (req.ip || req.socket?.remoteAddress || 'unknown');
+  },
+  message: 'Too many verification emails requested. Please try again shortly.',
+});
+
+/**
  * Rate limiter for API endpoints
  * 100 requests per minute per IP
  */

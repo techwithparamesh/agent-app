@@ -88,3 +88,25 @@ export async function sendPasswordResetEmail(params: { to: string; resetUrl: str
     html,
   });
 }
+
+export async function sendEmailVerificationEmail(params: { to: string; verifyUrl: string }): Promise<void> {
+  const { transporter, from } = getTransporter();
+
+  const subject = 'Verify your email';
+  const text = `Welcome! Please verify your email address using the link below:\n\n${params.verifyUrl}\n\nIf you did not create an account, you can ignore this email.`;
+  const html = `
+    <p>Welcome!</p>
+    <p><a href="${params.verifyUrl}">Click here to verify your email</a></p>
+    <p>If the link doesn't work, copy and paste this URL into your browser:</p>
+    <p>${params.verifyUrl}</p>
+    <p>If you did not create an account, you can ignore this email.</p>
+  `;
+
+  await transporter.sendMail({
+    from,
+    to: params.to,
+    subject,
+    text,
+    html,
+  });
+}

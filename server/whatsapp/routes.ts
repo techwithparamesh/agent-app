@@ -7,7 +7,7 @@ import { Router, type Request, type Response } from 'express';
 import { agentRuntime } from './agentRuntime';
 import { db } from '../db';
 import { eq, and } from 'drizzle-orm';
-import { agentWhatsappConfig, agents } from '@shared/schema';
+import { agentWhatsappConfig, agents, users } from '@shared/schema';
 import { encrypt, decrypt, verifyHmacSignature } from '../utils/encryption';
 import { isValidE164Phone, normalizeE164Phone } from '@shared/phone';
 import { sanitizeForLogs } from './logScrub';
@@ -62,6 +62,20 @@ async function verifyAgentOwnership(req: Request, res: Response, next: Function)
   }
   
   try {
+    // Sensitive gating: require verified email for WhatsApp enablement/config.
+    const [user] = await db
+      .select({ emailVerified: users.emailVerified })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user?.emailVerified) {
+      return res.status(403).json({
+        message: 'Email verification required for WhatsApp features',
+        code: 'email_verification_required',
+      });
+    }
+
     const [agent] = await db
       .select()
       .from(agents)

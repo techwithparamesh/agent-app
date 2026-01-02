@@ -31,6 +31,7 @@ const Cookies = lazy(() => import("@/pages/cookies"));
 // Auth Pages - lazy loaded
 const Login = lazy(() => import("@/pages/login"));
 const Signup = lazy(() => import("@/pages/signup"));
+const VerifyEmail = lazy(() => import("@/pages/verify-email"));
 
 // Dashboard Pages - lazy loaded
 const Dashboard = lazy(() => import("@/pages/dashboard/index"));
@@ -91,6 +92,7 @@ function Router() {
       {/* Auth Pages */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/verify-email" component={VerifyEmail} />
 
       {/* Dashboard Routes - Protected */}
       <Route path="/dashboard">{() => <Protected><Dashboard /></Protected>}</Route>

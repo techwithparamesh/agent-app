@@ -1,5 +1,6 @@
 import { useRoute, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { EmailVerificationRequiredInline, isEmailVerificationRequiredError } from "@/components/email-verification-required";
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -203,12 +204,22 @@ export default function AgentDetails() {
   });
 
   // Fetch WhatsApp config for WhatsApp agents
-  const { data: whatsappConfig, isLoading: whatsappConfigLoading, refetch: refetchWhatsappConfig } = useQuery<WhatsAppConfig | null>({
+  const {
+    data: whatsappConfig,
+    isLoading: whatsappConfigLoading,
+    refetch: refetchWhatsappConfig,
+    error: whatsappConfigError,
+  } = useQuery<WhatsAppConfig | null>({
     queryKey: ["/api/whatsapp/agents", agentId, "whatsapp-config"],
     queryFn: async () => {
       const res = await fetch(`/api/whatsapp/agents/${agentId}/whatsapp-config`);
       if (res.status === 404) return null;
-      if (!res.ok) throw new Error("Failed to fetch WhatsApp config");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const err: any = new Error((body as any)?.message || "Failed to fetch WhatsApp config");
+        if (typeof (body as any)?.code === "string") err.code = (body as any).code;
+        throw err;
+      }
       return res.json();
     },
     enabled: !!agentId && isWhatsAppAgent,
@@ -584,6 +595,10 @@ export default function AgentDetails() {
               </TabsContent>
 
               <TabsContent value="whatsapp-settings" className="space-y-6">
+                {isEmailVerificationRequiredError(whatsappConfigError) && (
+                  <EmailVerificationRequiredInline featureName="WhatsApp" />
+                )}
+
                 {/* Connection Status */}
                 <Card>
                   <CardHeader>

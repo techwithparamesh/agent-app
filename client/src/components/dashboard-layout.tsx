@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,8 +14,13 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, refetchUser } = useAuth();
   const { toast } = useToast();
+  const [isResending, setIsResending] = useState(false);
+
+  const isEmailVerified = useMemo(() => {
+    return Boolean((user as any)?.emailVerified);
+  }, [user]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,6 +34,20 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
       }, 500);
     }
   }, [isAuthenticated, isLoading, toast]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("email_verified") === "1") {
+      toast({
+        title: "Email verified",
+        description: "Thanks — your account is now verified.",
+      });
+      params.delete("email_verified");
+      const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", next);
+      refetchUser();
+    }
+  }, [toast, refetchUser]);
 
   if (isLoading) {
     return (
@@ -75,6 +96,54 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6 md:p-8">
+            {!isEmailVerified && (
+              <div className="mb-6">
+                <Alert>
+                  <AlertTitle>Verify your email to unlock all features</AlertTitle>
+                  <AlertDescription>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p>
+                        Some sensitive features (WhatsApp and Insurance) require a verified email. You can keep using the
+                        app in the meantime.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isResending}
+                        onClick={async () => {
+                          try {
+                            setIsResending(true);
+                            const res = await fetch("/api/auth/resend-verification", {
+                              method: "POST",
+                              credentials: "include",
+                            });
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok) {
+                              throw new Error((data as any)?.message || "Failed to resend verification email");
+                            }
+                            toast({
+                              title: "Verification email sent",
+                              description: "Check your inbox (and spam) for the link.",
+                            });
+                          } catch (e) {
+                            const message = e instanceof Error ? e.message : "Failed to resend verification email";
+                            toast({
+                              title: "Could not resend",
+                              description: message,
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setIsResending(false);
+                          }
+                        }}
+                      >
+                        {isResending ? "Sending..." : "Resend email"}
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
             {children}
           </main>
         </div>

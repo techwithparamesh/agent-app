@@ -42,6 +42,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { isValidE164Phone, normalizeE164Phone } from "@shared/phone";
+import { EmailVerificationRequiredInline, isEmailVerificationRequiredError } from "@/components/email-verification-required";
 
 interface PhoneNumber {
   id: string;
@@ -94,7 +95,7 @@ export default function PhoneNumbersPage() {
   });
 
   // Fetch phone numbers
-  const { data: phoneNumbers, isLoading: loadingNumbers } = useQuery<PhoneNumber[]>({
+  const { data: phoneNumbers, isLoading: loadingNumbers, error: phoneNumbersError } = useQuery<PhoneNumber[]>({
     queryKey: [`/api/bsp/accounts/${wabaId}/phone-numbers`],
     enabled: !!wabaId,
   });
@@ -103,6 +104,16 @@ export default function PhoneNumbersPage() {
   const { data: agents } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
   });
+
+  if (isEmailVerificationRequiredError(phoneNumbersError)) {
+    return (
+      <DashboardLayout title="Phone Numbers">
+        <div className="space-y-6">
+          <EmailVerificationRequiredInline featureName="WhatsApp" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Create phone number mutation
   const createPhoneMutation = useMutation({

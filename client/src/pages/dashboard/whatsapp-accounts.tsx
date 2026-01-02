@@ -31,6 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { EmailVerificationRequiredInline, isEmailVerificationRequiredError } from "@/components/email-verification-required";
 
 interface WhatsAppBusinessAccount {
   id: string;
@@ -75,9 +76,19 @@ export default function WhatsAppAccountsPage() {
   });
 
   // Fetch accounts
-  const { data: accounts, isLoading } = useQuery<WhatsAppBusinessAccount[]>({
+  const { data: accounts, isLoading, error } = useQuery<WhatsAppBusinessAccount[]>({
     queryKey: ["/api/bsp/accounts"],
   });
+
+  if (isEmailVerificationRequiredError(error)) {
+    return (
+      <DashboardLayout title="WhatsApp Accounts">
+        <div className="space-y-6">
+          <EmailVerificationRequiredInline featureName="WhatsApp" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Create account mutation
   const createAccountMutation = useMutation({

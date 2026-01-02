@@ -19,17 +19,19 @@ import workflowWebhookRoutes from "./integrations/workflowWebhooks";
 import { startIntegrationTriggerEngine } from "./integrations/triggerEngine";
 import { stripeService } from "./billing/stripe";
 import express from "express";
-import { 
-  authRateLimiter, 
-  signupRateLimiter, 
-  passwordResetRateLimiter 
+import {
+  authRateLimiter,
+  signupRateLimiter,
+  passwordResetRateLimiter,
+  emailVerificationRateLimiter,
 } from "./middleware/rateLimit";
 import { v4 as uuidv4 } from "uuid";
 import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 import net from "net";
 import { assertSafeOutboundUrlCached } from "./utils/outboundUrlSecurity";
+import { requireVerifiedEmail } from "./middleware/requireVerifiedEmail";
 
-import { isMailerConfigured, sendPasswordResetEmail } from "./utils/mailer";
+import { isMailerConfigured, sendEmailVerificationEmail, sendPasswordResetEmail } from "./utils/mailer";
 import {
   isUuidLike,
   generateWidgetKey,
@@ -297,7 +299,7 @@ export async function registerRoutes(
 
   // ========== BSP/SAAS ROUTES ==========
   // Mount BSP routes for WhatsApp Business Account management
-  app.use("/api/bsp", isAuthenticated, bspRoutes);
+  app.use("/api/bsp", isAuthenticated, requireVerifiedEmail, bspRoutes);
 
   // ========== PUBLIC BILLING ROUTES ==========
   // Plans endpoint is public (for pricing page)
@@ -340,6 +342,11 @@ export async function registerRoutes(
       
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create email verification token (hashed in DB)
+      const rawVerifyToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
+      const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
       
       // Create user
       const user = await storage.createUser({
@@ -348,7 +355,22 @@ export async function registerRoutes(
         firstName,
         lastName,
         profileImageUrl: `https://ui-avatars.com/api/?name=${firstName}+${lastName}`,
+        emailVerified: false,
+        emailVerificationToken: tokenHash,
+        emailVerificationExpiresAt: verifyExpires,
       });
+
+      // Send verification email (best-effort; do not block account creation)
+      const verifyUrl = `${APP_CONFIG.appUrl}/verify-email?token=${rawVerifyToken}`;
+      if (isMailerConfigured()) {
+        try {
+          await sendEmailVerificationEmail({ to: email, verifyUrl });
+        } catch (mailError) {
+          console.error("Verification email send error:", mailError);
+        }
+      } else if (process.env.NODE_ENV === "development") {
+        console.log("[Dev] Email verification link:", verifyUrl);
+      }
       
       // Set session and save it (clear loggedOut flag if set)
       req.session.userId = user.id;
@@ -367,6 +389,82 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid input data" });
       }
       res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  // Verify email (magic link)
+  app.get("/api/auth/verify-email", async (req: any, res) => {
+    try {
+      const token = typeof req.query?.token === "string" ? req.query.token.trim() : "";
+      if (!token) {
+        return res.redirect("/login");
+      }
+
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const user = await storage.getUserByEmailVerificationToken(tokenHash);
+      if (!user) {
+        return res.redirect("/login");
+      }
+
+      if ((user as any).emailVerified) {
+        // Already verified; ensure session for low friction
+        req.session.userId = user.id;
+        req.session.loggedOut = false;
+        return req.session.save(() => res.redirect("/dashboard?email_verified=1"));
+      }
+
+      const expiresAt = (user as any).emailVerificationExpiresAt as Date | null | undefined;
+      if (expiresAt && expiresAt.getTime() < Date.now()) {
+        return res.redirect("/login");
+      }
+
+      await storage.markEmailVerified(user.id);
+
+      // Auto-login on verify (low friction)
+      req.session.userId = user.id;
+      req.session.loggedOut = false;
+      req.session.save(() => res.redirect("/dashboard?email_verified=1"));
+    } catch (error) {
+      console.error("Verify email error:", error);
+      res.redirect("/login");
+    }
+  });
+
+  // Resend verification email (authenticated, rate limited)
+  app.post("/api/auth/resend-verification", isAuthenticated, emailVerificationRateLimiter, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if ((user as any).emailVerified) {
+        return res.json({ message: "Email already verified" });
+      }
+
+      const rawVerifyToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
+      const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await storage.setEmailVerificationToken(user.id, tokenHash, verifyExpires);
+
+      const email = String((user as any).email || "");
+      const verifyUrl = `${APP_CONFIG.appUrl}/verify-email?token=${rawVerifyToken}`;
+
+      if (isMailerConfigured()) {
+        await sendEmailVerificationEmail({ to: email, verifyUrl });
+      } else if (process.env.NODE_ENV === "development") {
+        console.log("[Dev] Email verification link:", verifyUrl);
+      }
+
+      res.json({ message: "Verification email sent" });
+    } catch (error: any) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification email" });
     }
   });
 
@@ -523,6 +621,7 @@ export async function registerRoutes(
         return res.json({
           id: "dev-user-001",
           email: "dev@example.com",
+          emailVerified: true,
           name: "Development User",
           profileImageUrl: "https://ui-avatars.com/api/?name=Dev+User",
           plan: "pro",
@@ -922,7 +1021,19 @@ export async function registerRoutes(
         : [];
       const requestedDomains = capabilities.filter((c: string) => allowedDomains.has(c));
 
-      if (requestedDomains.length > 0) {
+      // Sensitive gating: do not enable the Insurance domain unless the user has a verified email.
+      // This does not block agent creation.
+      let verifiedForInsurance = true;
+      if (requestedDomains.includes("insurance")) {
+        const user = await storage.getUser(userId);
+        verifiedForInsurance = Boolean((user as any)?.emailVerified);
+      }
+
+      const effectiveRequestedDomains = verifiedForInsurance
+        ? requestedDomains
+        : requestedDomains.filter((d) => d !== "insurance");
+
+      if (effectiveRequestedDomains.length > 0) {
         try {
           const existing = await storage.getDomainConnectionsByAgentId(agent.id);
           const existingDomains = new Set(
@@ -931,7 +1042,7 @@ export async function registerRoutes(
               .map((c) => String((c as any).domain))
           );
 
-          for (const domain of requestedDomains) {
+          for (const domain of effectiveRequestedDomains) {
             if (existingDomains.has(domain)) continue;
             await storage.createDomainConnection({
               agentId: agent.id,
@@ -950,7 +1061,7 @@ export async function registerRoutes(
           console.error("[Agents] Failed to auto-enable domain connection", {
             agentId: agent.id,
             userId,
-            requestedDomains,
+            requestedDomains: effectiveRequestedDomains,
             error: enableError,
           });
 

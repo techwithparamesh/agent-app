@@ -78,7 +78,7 @@ export default function Signup() {
 
       toast({
         title: "Account created!",
-        description: "Welcome to AgentForge AI!",
+        description: "Welcome! Please verify your email to unlock WhatsApp and Insurance features.",
       });
 
       // Redirect to dashboard

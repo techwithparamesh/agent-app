@@ -1,3 +1,17 @@
+
+-- =============================================
+-- Email verification fields (users)
+-- =============================================
+-- Note: email_verified defaults to TRUE so existing users are not impacted.
+-- New signups explicitly set it to FALSE.
+
+ALTER TABLE users
+	ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT TRUE,
+	ADD COLUMN email_verification_token VARCHAR(255) NULL,
+	ADD COLUMN email_verification_expires_at TIMESTAMP NULL;
+
+CREATE INDEX idx_users_email_verify_token ON users (email_verification_token);
+
 -- =====================================================
 -- DATABASE UPDATE SCRIPT FOR VPS DEPLOYMENT
 -- Run these commands in your MySQL database

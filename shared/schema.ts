@@ -37,6 +37,11 @@ export const users = mysqlTable("users", {
   // Password reset fields
   resetPasswordToken: varchar("reset_password_token", { length: 255 }),
   resetPasswordExpires: timestamp("reset_password_expires"),
+  // Email verification fields
+  // Default to true so existing users are not blocked when the column is added.
+  emailVerified: boolean("email_verified").notNull().default(true),
+  emailVerificationToken: varchar("email_verification_token", { length: 255 }),
+  emailVerificationExpiresAt: timestamp("email_verification_expires_at"),
   // Subscription & Usage tracking
   plan: varchar("plan", { length: 50 }).default("free"), // free, starter, pro, enterprise
   messageCount: int("message_count").default(0), // Total messages used
@@ -49,6 +54,7 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 }, (table) => ({
   resetTokenIdx: index("idx_users_reset_token").on(table.resetPasswordToken),
+  emailVerifyTokenIdx: index("idx_users_email_verify_token").on(table.emailVerificationToken),
 }));
 
 // AI Agents table
