@@ -88,6 +88,7 @@ export default function WebsiteScanner() {
   // Get agent from URL params if present
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const preselectedAgent = searchParams.get("agent");
+  const prefilledUrl = searchParams.get("url") || "";
 
   const { data: agents, isLoading: agentsLoading } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
@@ -187,6 +188,14 @@ export default function WebsiteScanner() {
       rescan: false,
     },
   });
+
+  // Prefill URL when arriving from the Create Agent flow.
+  useEffect(() => {
+    if (!prefilledUrl) return;
+    const existing = form.getValues("url");
+    if (existing && existing.trim().length > 0) return;
+    form.setValue("url", prefilledUrl);
+  }, [prefilledUrl, form]);
 
   const startScan = (data: ScanFormValues) => {
     // Close any existing connection

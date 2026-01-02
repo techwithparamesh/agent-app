@@ -203,7 +203,7 @@ function GettingStartedSection() {
             Go to <a href="/signup" className="text-primary hover:underline font-medium">Sign Up</a>, enter your name and email, then confirm your account via the verification email.
           </StepItem>
           <StepItem number={2} title="Create an agent">
-            In the dashboard click <strong>My Agents → Create New Agent</strong>. Choose <em>Website</em> or <em>WhatsApp</em> and give it a descriptive name.
+            In the dashboard click <strong>Create Agent</strong>. Enter a name, select an <em>Agent Purpose</em> (e.g. Real Estate, Insurance, E-Commerce), and optionally choose channels.
           </StepItem>
           <StepItem number={3} title="Scan your website">
             From the agent page choose <strong>Scan Website</strong>, enter your site URL and start the scan. The system extracts pages, FAQs and text automatically.
@@ -268,7 +268,7 @@ function HowItWorksSection() {
           Create your free account at <a href="/signup" className="text-primary hover:underline font-medium">Sign Up</a> and verify your email.
         </StepItem>
         <StepItem number={2} title="Create an AI agent">
-          In your dashboard, click <strong>My Agents → Create New Agent</strong>. Give it a name and choose the channel type.
+          In your dashboard, click <strong>Create Agent</strong>. Give it a name, select an <em>Agent Purpose</em>, and optionally choose channels.
         </StepItem>
         <StepItem number={3} title="Build your knowledge base">
           Scan your website automatically or upload documents (PDF, DOCX, TXT). The AI learns from your content.

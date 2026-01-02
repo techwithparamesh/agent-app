@@ -267,6 +267,18 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
+                  isActive={location === "/dashboard/agents/new"}
+                  className="gap-3"
+                >
+                  <Link href="/dashboard/agents/new">
+                    <Sparkles className="h-5 w-5" />
+                    <span>Create Agent</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
                   isActive={location === "/dashboard/agents"}
                   className="gap-3"
                 >
@@ -278,72 +290,6 @@ export function AppSidebar() {
                         {agents.length}
                       </span>
                     )}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Create Agent Section - Two Clear Paths */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wide text-muted-foreground px-4">
-            Create Agent
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Website Agent Path */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/dashboard/agents/website"}
-                  className="gap-3"
-                >
-                  <Link href="/dashboard/agents/website">
-                    <Globe className="h-5 w-5" />
-                    <span>Website Agent</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              {/* WhatsApp Business Agent Path */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/dashboard/agents/whatsapp"}
-                  className="gap-3"
-                >
-                  <Link href="/dashboard/agents/whatsapp">
-                    <Smartphone className="h-5 w-5" />
-                    <span>WhatsApp Agent</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* E-Commerce Agent Path */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/dashboard/agents/ecommerce"}
-                  className="gap-3"
-                >
-                  <Link href="/dashboard/agents/ecommerce">
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>E-Commerce Agent</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Quick Create */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/dashboard/agents/new"}
-                  className="gap-3"
-                >
-                  <Link href="/dashboard/agents/new">
-                    <Zap className="h-5 w-5" />
-                    <span>Quick Create</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

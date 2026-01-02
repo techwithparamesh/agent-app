@@ -912,6 +912,63 @@ export async function registerRoutes(
       
       const validated = insertAgentSchema.parse(req.body);
       const agent = await storage.createAgent(userId, validated);
+
+      // Auto-enable domain connections when an agent is created with a domain capability.
+      // This keeps domain enablement backend-controlled (no manual SQL) and avoids exposing internals in the UI.
+      const allowedDomains = new Set(["real_estate", "insurance", "ecommerce"]);
+      const capabilitiesRaw = (validated as any)?.capabilities;
+      const capabilities = Array.isArray(capabilitiesRaw)
+        ? capabilitiesRaw.filter((c: any) => typeof c === "string")
+        : [];
+      const requestedDomains = capabilities.filter((c: string) => allowedDomains.has(c));
+
+      if (requestedDomains.length > 0) {
+        try {
+          const existing = await storage.getDomainConnectionsByAgentId(agent.id);
+          const existingDomains = new Set(
+            existing
+              .filter((c) => c.userId === userId)
+              .map((c) => String((c as any).domain))
+          );
+
+          for (const domain of requestedDomains) {
+            if (existingDomains.has(domain)) continue;
+            await storage.createDomainConnection({
+              agentId: agent.id,
+              userId,
+              domain,
+              platform: "internal",
+              displayName: null,
+              baseUrl: null,
+              encryptedCredentials: null,
+              config: null,
+              isActive: true,
+              rateLimitPerMinute: 60,
+            } as any);
+          }
+        } catch (enableError) {
+          console.error("[Agents] Failed to auto-enable domain connection", {
+            agentId: agent.id,
+            userId,
+            requestedDomains,
+            error: enableError,
+          });
+
+          // Best-effort cleanup to avoid orphaned agents that won't work as expected.
+          try {
+            await storage.deleteAgent(agent.id);
+          } catch (cleanupError) {
+            console.error("[Agents] Cleanup failed after auto-enable error", {
+              agentId: agent.id,
+              userId,
+              error: cleanupError,
+            });
+          }
+
+          return res.status(500).json({ message: "Failed to enable agent domain" });
+        }
+      }
+
       console.log("[Agents] Created", { id: agent.id, agentType: (agent as any).agentType });
       res.status(201).json(agent);
     } catch (error: any) {
