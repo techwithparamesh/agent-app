@@ -86,7 +86,7 @@ const formSchema = z.object({
   address: z.string().optional(),
   workingHours: z.string().optional(),
   description: z.string().max(500).optional(),
-  capabilities: z.array(z.string()).min(1, "Select at least one capability"),
+  capabilities: z.array(z.string()).min(1, "Select at least one feature"),
   customPrompt: z.string().optional(),
   // Custom fields are per-category and optional; allow empty/unset values.
   customFields: z.record(z.string(), z.string().optional()).optional(),
@@ -229,7 +229,7 @@ ${data.workingHours ? `- Working Hours: ${data.workingHours}` : ""}
 ${data.description ? `- About: ${data.description}` : ""}
 ${customFieldsSection}
 
-## Your Capabilities
+## What I can help with
 You can help customers with:
 ${capabilityLabels.map((label) => `- ${label}`).join("\n")}
 
@@ -292,7 +292,6 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
   };
 
   const handleSubmit = async (values: FormValues) => {
-    console.log("Form submitted with values:", values);
     try {
       await createAgentMutation.mutateAsync(values);
     } catch (error) {
@@ -304,14 +303,14 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
   const formErrors = form.formState.errors;
   useEffect(() => {
     if (Object.keys(formErrors).length > 0) {
-      console.log("Form validation errors:", formErrors);
+      // Intentionally no console logging in production UI.
     }
   }, [formErrors]);
 
   const steps = [
     { number: 1, title: "Business Type", description: "Select your category" },
     { number: 2, title: "Business Details", description: "Add your info" },
-    { number: 3, title: "Capabilities", description: "Choose features" },
+    { number: 3, title: "Features", description: "Choose what it can do" },
   ];
 
   return (
@@ -379,7 +378,7 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
                 <CardHeader>
                   <CardTitle>What type of business do you have?</CardTitle>
                   <CardDescription>
-                    Select the category that best describes your business. This helps us customize your agent's capabilities.
+                    Select the category that best describes your business. This helps us customize your agent.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -602,11 +601,11 @@ ${data.customPrompt ? `\n## Additional Instructions\n${data.customPrompt}` : ""}
               </Card>
             )}
 
-            {/* Step 3: Select Capabilities */}
+            {/* Step 3: Select Features */}
             {currentStep === 3 && selectedCategory && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Choose Agent Capabilities</CardTitle>
+                  <CardTitle>Choose Agent Features</CardTitle>
                   <CardDescription>
                     Select what your WhatsApp agent can do. You can always change these later.
                   </CardDescription>

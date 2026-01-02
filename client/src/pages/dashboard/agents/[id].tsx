@@ -467,13 +467,13 @@ export default function AgentDetails() {
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
-                {/* Business Category & Capabilities */}
+                {/* Business Category & Features */}
                 {(agent as any).businessCategory && (
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-base">
                         <Target className="h-4 w-4 text-primary" />
-                        Business Category & Capabilities
+                        Business Category & Features
                       </CardTitle>
                     </CardHeader>
                     <CardContent>

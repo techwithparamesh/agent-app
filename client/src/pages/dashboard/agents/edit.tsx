@@ -678,10 +678,10 @@ export default function EditAgent() {
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />
-                      Agent Capabilities
+                      Agent Features
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Select the features your WhatsApp agent should support
+                      Select what your WhatsApp agent should support
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

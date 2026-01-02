@@ -1,5 +1,5 @@
-import { Switch, Route } from "wouter";
-import { lazy, Suspense } from "react";
+import { Switch, Route, useLocation } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -63,6 +63,16 @@ const Protected = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute>{children}</ProtectedRoute>
 );
 
+function RedirectToCreateAgent() {
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    setLocation("/dashboard/agents/new");
+  }, [setLocation]);
+
+  return <PageLoader />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -86,8 +96,8 @@ function Router() {
       <Route path="/dashboard">{() => <Protected><Dashboard /></Protected>}</Route>
       <Route path="/dashboard/agents">{() => <Protected><AgentsList /></Protected>}</Route>
       <Route path="/dashboard/agents/new">{() => <Protected><CreateAgent /></Protected>}</Route>
-      <Route path="/dashboard/agents/website">{() => <Protected><WebsiteAgent /></Protected>}</Route>
-      <Route path="/dashboard/agents/whatsapp">{() => <Protected><WhatsAppAgent /></Protected>}</Route>
+      <Route path="/dashboard/agents/website">{() => <Protected><RedirectToCreateAgent /></Protected>}</Route>
+      <Route path="/dashboard/agents/whatsapp">{() => <Protected><RedirectToCreateAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/ecommerce">{() => <Protected><EcommerceAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/:id/edit">{() => <Protected><EditAgent /></Protected>}</Route>
       <Route path="/dashboard/agents/:id">{() => <Protected><AgentDetails /></Protected>}</Route>

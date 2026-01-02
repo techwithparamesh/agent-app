@@ -134,7 +134,7 @@ const formSchema = z.object({
   supportsProducts: z.boolean().default(true),
   supportsInventory: z.boolean().default(true),
   supportsOrders: z.boolean().default(true),
-  capabilities: z.array(z.string()).min(1, "Select at least one capability"),
+  capabilities: z.array(z.string()).min(1, "Select at least one feature"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -530,13 +530,10 @@ export default function EcommerceAgentPage() {
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>No agents available</AlertTitle>
                       <AlertDescription>
-                        You need to create a Website or WhatsApp agent first before connecting an e-commerce store.
+                        You need to create an agent first before connecting an e-commerce store.
                         <div className="mt-4 flex gap-2">
-                          <Link href="/dashboard/agents/website">
-                            <Button variant="outline" size="sm">Create Website Agent</Button>
-                          </Link>
-                          <Link href="/dashboard/agents/whatsapp">
-                            <Button variant="outline" size="sm">Create WhatsApp Agent</Button>
+                          <Link href="/dashboard/agents/new">
+                            <Button variant="outline" size="sm">Create Agent</Button>
                           </Link>
                         </div>
                       </AlertDescription>
@@ -1002,11 +999,11 @@ export default function EcommerceAgentPage() {
                     </div>
                   </div>
 
-                  {/* Capabilities */}
+                  {/* Features */}
                   <div className="space-y-4 pt-4 border-t">
                     <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
                       <Zap className="h-4 w-4" />
-                      Agent Capabilities
+                      Store Features
                     </h4>
                     
                     <FormField
