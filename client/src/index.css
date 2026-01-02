@@ -59,6 +59,43 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
+  /* ========================================
+   * DESIGN SYSTEM ROLES (SEMANTIC TOKENS)
+   * ======================================== */
+
+  /* Spacing scale (built from --spacing) */
+  --space-1: calc(var(--spacing) * 1);
+  --space-2: calc(var(--spacing) * 2);
+  --space-3: calc(var(--spacing) * 3);
+  --space-4: calc(var(--spacing) * 4);
+  --space-6: calc(var(--spacing) * 6);
+  --space-8: calc(var(--spacing) * 8);
+  --space-12: calc(var(--spacing) * 12);
+  --space-16: calc(var(--spacing) * 16);
+
+  /* Typography scale (semantic sizes) */
+  --type-page-title: 1.875rem; /* 30px */
+  --type-section-title: 1.125rem; /* 18px */
+  --type-body: 1rem; /* 16px */
+  --type-label: 0.875rem; /* 14px */
+  --type-caption: 0.75rem; /* 12px */
+
+  /* Surface roles */
+  --surface-page: hsl(var(--background));
+  --surface-panel: hsl(var(--card));
+  --surface-panel-border: hsl(var(--card-border));
+  --surface-muted: hsl(var(--muted));
+  --surface-popover: hsl(var(--popover));
+
+  /* Text roles */
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-inverse: hsl(var(--primary-foreground));
+
+  /* Border roles */
+  --border-subtle: hsl(var(--border));
+  --border-strong: hsl(var(--input));
+
 /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -137,6 +174,20 @@
   --shadow-xl: 0px 2px 0px 0px hsl(217 33% 17% / 0.00), 0px 8px 10px -1px hsl(217 33% 17% / 0.00);
   --shadow-2xl: 0px 2px 0px 0px hsl(217 33% 17% / 0.00);
 
+  /* Semantic roles (dark maps to the same theme primitives) */
+  --surface-page: hsl(var(--background));
+  --surface-panel: hsl(var(--card));
+  --surface-panel-border: hsl(var(--card-border));
+  --surface-muted: hsl(var(--muted));
+  --surface-popover: hsl(var(--popover));
+
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-inverse: hsl(var(--primary-foreground));
+
+  --border-subtle: hsl(var(--border));
+  --border-strong: hsl(var(--input));
+
 /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -164,6 +215,28 @@
   /* Fallback for older browsers */
   --destructive-border: hsl(var(--destructive));
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+@layer components {
+  .ds-page {
+    @apply max-w-7xl mx-auto;
+  }
+
+  .ds-page-header {
+    @apply flex flex-col gap-3 md:flex-row md:items-end md:justify-between;
+  }
+
+  .ds-page-title {
+    @apply font-display text-3xl font-semibold tracking-tight;
+  }
+
+  .ds-page-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .ds-stat-card {
+    @apply bg-muted/30 border-border/60;
+  }
 }
 
 @layer base {

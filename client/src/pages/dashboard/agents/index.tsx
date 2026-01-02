@@ -81,24 +81,28 @@ export default function AgentsList() {
 
   return (
     <DashboardLayout title="My Agents">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="ds-page space-y-8">
+        <div className="ds-page-header">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">My Agents</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage and configure your AI agents.
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Bot className="h-5 w-5 text-primary" />
+              </div>
+              <h1 className="ds-page-title">My Agents</h1>
+            </div>
+            <p className="ds-page-subtitle">Manage and configure your AI agents.</p>
           </div>
+
           <Link href="/dashboard/agents/new">
-            <Button data-testid="button-create-agent">
-              <PlusCircle className="mr-2 h-4 w-4" />
+            <Button size="lg" data-testid="button-create-agent">
+              <PlusCircle className="mr-2 h-5 w-5" />
               Create Agent
             </Button>
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
               <Card key={i}>
                 <CardContent className="p-6">
@@ -111,12 +115,16 @@ export default function AgentsList() {
             ))}
           </div>
         ) : agents && agents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {agents.map((agent) => (
-              <Card key={agent.id} className="group" data-testid={`card-agent-${agent.id}`}>
+              <Card
+                key={agent.id}
+                className="group hover:shadow-sm transition-shadow"
+                data-testid={`card-agent-${agent.id}`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 border border-border/60 flex items-center justify-center">
                       <Bot className="h-6 w-6 text-primary" />
                     </div>
                     <DropdownMenu>

@@ -15,6 +15,7 @@ import { EmailVerificationRequiredInline } from "@/components/email-verification
 import {
   ArrowLeft,
   ArrowRight,
+  Bot,
   CheckCircle2,
   Globe,
   Upload,
@@ -145,6 +146,16 @@ export default function CreateAgent() {
   const canContinueStep1 = agentName.trim().length > 0 && !!selectedPurpose;
   const canContinueStep2 = !isStaticWebsite || websiteUrl.trim().length > 0;
 
+  const stepMeta = useMemo(() => {
+    const steps = [
+      { step: 1 as const, title: "Basics", description: "Name and choose a purpose." },
+      { step: 2 as const, title: "Knowledge", description: "Choose what your agent learns from." },
+      { step: 3 as const, title: "Channels", description: "Optional: where your agent will appear." },
+      { step: 4 as const, title: "Review", description: "Confirm details before creating." },
+    ];
+    return steps.find((s) => s.step === currentStep) ?? steps[0];
+  }, [currentStep]);
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPurpose) throw new Error("Please select an agent purpose");
@@ -223,18 +234,66 @@ export default function CreateAgent() {
 
   return (
     <DashboardLayout title="Create Agent">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <Link href="/dashboard/agents">
-          <Button variant="ghost" className="group">
-            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            Back to My Agents
-          </Button>
-        </Link>
+      <div className="ds-page max-w-3xl space-y-8">
+        <div className="ds-page-header">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/agents">
+              <Button variant="ghost" size="icon" aria-label="Back to My Agents">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <h1 className="ds-page-title">Create Agent</h1>
+              <p className="ds-page-subtitle">
+                Step {currentStep} of 4   {stepMeta.title}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((n) => {
+            const isDone = n < currentStep;
+            const isActive = n === currentStep;
+            return (
+              <div
+                key={n}
+                className={
+                  "rounded-lg border px-3 py-2 text-xs flex items-center gap-2 " +
+                  (isDone
+                    ? "bg-primary/5 border-primary/20 text-foreground"
+                    : isActive
+                      ? "bg-muted/40 border-border text-foreground"
+                      : "bg-background border-border/60 text-muted-foreground")
+                }
+              >
+                <span
+                  className={
+                    "h-5 w-5 rounded-full flex items-center justify-center text-[11px] font-medium border " +
+                    (isDone
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : isActive
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-muted text-muted-foreground border-border")
+                  }
+                >
+                  {n}
+                </span>
+                <span className="truncate">
+                  {n === 1 ? "Basics" : n === 2 ? "Knowledge" : n === 3 ? "Channels" : "Review"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Create Agent</CardTitle>
-            <CardDescription>Step {currentStep} of 4</CardDescription>
+            <CardTitle>{stepMeta.title}</CardTitle>
+            <CardDescription>{stepMeta.description}</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
@@ -393,7 +452,13 @@ export default function CreateAgent() {
                         </Card>
                       )}
 
-                      <Button type="button" variant="ghost" onClick={() => setKnowledgeSource("none")} className="justify-start">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setKnowledgeSource("none")}
+                        className="justify-start text-muted-foreground hover:text-foreground"
+                      >
                         Clear selection
                       </Button>
                     </>
@@ -476,7 +541,7 @@ export default function CreateAgent() {
             <div className="flex items-center justify-between pt-4 border-t">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setCurrentStep((s) => (s === 1 ? 1 : ((s - 1) as any)))}
                 disabled={currentStep === 1 || createMutation.isPending}
               >
@@ -487,6 +552,7 @@ export default function CreateAgent() {
               {currentStep < 4 ? (
                 <Button
                   type="button"
+                  size="lg"
                   onClick={() => {
                     if (currentStep === 1 && !canContinueStep1) {
                       toast({

@@ -20,6 +20,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Database,
   Webhook,
   Mail,
@@ -1365,27 +1372,40 @@ function IntegrationsPageContent() {
 
   return (
     <DashboardLayout title="Integrations">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="ds-page space-y-8">
         {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-              <Zap className="h-8 w-8 text-primary" />
-              Integrations
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Connect {allIntegrations.length} apps and automate your workflows with AgentForge
+        <div className="ds-page-header">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-primary" />
+              </div>
+              <h1 className="ds-page-title">Integrations</h1>
+            </div>
+            <p className="ds-page-subtitle">
+              Connect apps and automate workflows. {allIntegrations.length} apps available.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="lg" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-5 w-5 mr-2" />
-              Quick Setup
-            </Button>
+
+          <div className="flex items-center gap-2">
             <Button size="lg" onClick={() => openWorkspace()}>
               <Layout className="h-5 w-5 mr-2" />
               Open Flow Builder
             </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" aria-label="More actions">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsCreateOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Quick Setup
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -1400,52 +1420,52 @@ function IntegrationsPageContent() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="ds-stat-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">Total integrations</p>
-                  <p className="text-3xl font-semibold">{userIntegrations.length}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-2xl font-semibold leading-none">{userIntegrations.length}</p>
                 </div>
-                <Link className="h-8 w-8 text-muted-foreground" />
+                <Link className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="ds-stat-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">Active</p>
-                  <p className="text-3xl font-semibold">
+                  <p className="text-xs text-muted-foreground">Active</p>
+                  <p className="text-2xl font-semibold leading-none">
                     {userIntegrations.filter(i => i.isActive).length}
                   </p>
                 </div>
-                <Power className="h-8 w-8 text-muted-foreground" />
+                <Power className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="ds-stat-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">With errors</p>
-                  <p className="text-3xl font-semibold">
+                  <p className="text-xs text-muted-foreground">Errors</p>
+                  <p className="text-2xl font-semibold leading-none">
                     {userIntegrations.filter(i => i.errorCount > 0).length}
                   </p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-muted-foreground" />
+                <AlertCircle className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="ds-stat-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">Available apps</p>
-                  <p className="text-3xl font-semibold">{allIntegrations.length}</p>
+                  <p className="text-xs text-muted-foreground">Apps</p>
+                  <p className="text-2xl font-semibold leading-none">{allIntegrations.length}</p>
                 </div>
-                <Globe className="h-8 w-8 text-muted-foreground" />
+                <Globe className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -1491,11 +1511,11 @@ function IntegrationsPageContent() {
                 {userIntegrations.map((integration) => {
                   const info = getIntegrationInfo(integration.type);
                   return (
-                    <Card key={integration.id} className="hover:shadow-md transition-shadow">
+                    <Card key={integration.id} className="hover:shadow-sm transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${info?.categoryColor || 'bg-muted'} border`}>
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl ${info?.categoryColor || 'bg-muted'} border border-border/60`}>
                               {info?.icon || '🔗'}
                             </div>
                             <div>
@@ -1547,36 +1567,44 @@ function IntegrationsPageContent() {
                                 toggleMutation.mutate({ id: integration.id, isActive: checked })
                               }
                             />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedIntegration(integration);
-                                setIsLogsOpen(true);
-                              }}
-                            >
-                              <Activity className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => testMutation.mutate(integration.id)}
-                              disabled={testMutation.isPending}
-                            >
-                              <Play className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                if (confirm('Delete this integration?')) {
-                                  deleteMutation.mutate(integration.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="Integration actions">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedIntegration(integration);
+                                    setIsLogsOpen(true);
+                                  }}
+                                >
+                                  <Activity className="h-4 w-4" />
+                                  View logs
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => testMutation.mutate(integration.id)}
+                                  disabled={testMutation.isPending}
+                                >
+                                  <Play className="h-4 w-4" />
+                                  Test
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => {
+                                    if (confirm('Delete this integration?')) {
+                                      deleteMutation.mutate(integration.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
 

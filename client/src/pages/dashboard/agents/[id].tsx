@@ -5,6 +5,12 @@ import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -45,6 +51,7 @@ import {
   Palette,
   Code,
   Eye,
+  MoreVertical,
 } from "lucide-react";
 
 interface WhatsAppConfig {
@@ -387,27 +394,50 @@ export default function AgentDetails() {
 
   return (
     <DashboardLayout title={agent.name}>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <Link href="/dashboard/agents">
-            <Button variant="ghost">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Agents
-            </Button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link href={`/dashboard/chatbot?agent=${agent.id}`}>
-              <Button variant="outline">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Test Chatbot
+      <div className="ds-page max-w-4xl space-y-8">
+        <div className="ds-page-header">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/agents">
+              <Button variant="ghost" size="icon" aria-label="Back to Agents">
+                <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              {isWhatsAppAgent ? (
+                <Smartphone className="h-5 w-5 text-primary" />
+              ) : (
+                <Bot className="h-5 w-5 text-primary" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <h1 className="ds-page-title">{agent.name}</h1>
+              <p className="ds-page-subtitle">Overview and settings</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <Link href={`/dashboard/agents/${agent.id}/edit`}>
-              <Button data-testid="button-edit-agent">
-                <Pencil className="mr-2 h-4 w-4" />
+              <Button size="lg" data-testid="button-edit-agent">
+                <Pencil className="mr-2 h-5 w-5" />
                 Edit Agent
               </Button>
             </Link>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" aria-label="More actions">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/chatbot?agent=${agent.id}`}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Test Chatbot
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
