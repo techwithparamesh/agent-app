@@ -17,6 +17,7 @@ import {
   Globe,
   Upload,
   LayoutTemplate,
+  FileText,
   Home,
   Shield,
   ShoppingCart,
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 
 type DomainId = "real_estate" | "insurance" | "ecommerce";
+type PurposeId = "static_website" | DomainId;
 type ChannelId = "website" | "whatsapp";
 type KnowledgeSource = "scan" | "upload" | "template" | "none";
 
@@ -38,12 +40,18 @@ type TemplateData = {
   welcomeMessage?: string;
 };
 
-const DOMAIN_OPTIONS: Array<{
-  id: DomainId;
+const PURPOSE_OPTIONS: Array<{
+  id: PurposeId;
   label: string;
   description: string;
   icon: React.ElementType;
 }> = [
+  {
+    id: "static_website",
+    label: "Static Website",
+    description: "Answer questions using scanned website content only",
+    icon: FileText,
+  },
   {
     id: "real_estate",
     label: "Real Estate",
@@ -84,11 +92,13 @@ export default function CreateAgent() {
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [agentName, setAgentName] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState<DomainId | null>(null);
+  const [selectedPurpose, setSelectedPurpose] = useState<PurposeId | null>(null);
   const [channels, setChannels] = useState<ChannelId[]>([]);
   const [knowledgeSource, setKnowledgeSource] = useState<KnowledgeSource>("none");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [template, setTemplate] = useState<TemplateData | null>(null);
+
+  const isStaticWebsite = selectedPurpose === "static_website";
 
   useEffect(() => {
     const templateJson = sessionStorage.getItem("agentTemplate");
@@ -102,7 +112,7 @@ export default function CreateAgent() {
         setAgentName(templateData.name.trim());
       }
       const inferredDomain = mapTemplateCategoryToDomain(templateData.category);
-      if (inferredDomain) setSelectedDomain(inferredDomain);
+      if (inferredDomain) setSelectedPurpose(inferredDomain);
     } catch (e) {
       console.error("Failed to parse template data:", e);
     } finally {
@@ -110,10 +120,16 @@ export default function CreateAgent() {
     }
   }, []);
 
-  const selectedDomainLabel = useMemo(() => {
-    const match = DOMAIN_OPTIONS.find((d) => d.id === selectedDomain);
+  useEffect(() => {
+    if (selectedPurpose === "static_website") {
+      setKnowledgeSource("scan");
+    }
+  }, [selectedPurpose]);
+
+  const selectedPurposeLabel = useMemo(() => {
+    const match = PURPOSE_OPTIONS.find((d) => d.id === selectedPurpose);
     return match?.label || "";
-  }, [selectedDomain]);
+  }, [selectedPurpose]);
 
   const selectedChannelsLabel = useMemo(() => {
     const labels: string[] = [];
@@ -122,24 +138,30 @@ export default function CreateAgent() {
     return labels;
   }, [channels]);
 
-  const canContinueStep1 = agentName.trim().length > 0 && !!selectedDomain;
+  const canContinueStep1 = agentName.trim().length > 0 && !!selectedPurpose;
+  const canContinueStep2 = !isStaticWebsite || websiteUrl.trim().length > 0;
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedDomain) throw new Error("Please select an agent purpose");
+      if (!selectedPurpose) throw new Error("Please select an agent purpose");
       const trimmedName = agentName.trim();
       if (!trimmedName) throw new Error("Agent name is required");
+
+      if (selectedPurpose === "static_website") {
+        const urlTrimmed = websiteUrl.trim();
+        if (!urlTrimmed) throw new Error("Website URL is required for Static Website");
+      }
 
       const agentType = channels.includes("whatsapp") && !channels.includes("website") ? "whatsapp" : "website";
 
       const payload: any = {
         name: trimmedName,
         agentType,
-        capabilities: [selectedDomain],
+        capabilities: selectedPurpose === "static_website" ? [] : [selectedPurpose],
       };
 
-      if (knowledgeSource === "scan") {
-        const urlTrimmed = websiteUrl.trim();
+      const urlTrimmed = websiteUrl.trim();
+      if (selectedPurpose === "static_website" || knowledgeSource === "scan") {
         if (urlTrimmed) payload.websiteUrl = urlTrimmed;
       }
 
@@ -162,11 +184,13 @@ export default function CreateAgent() {
 
       const encodedUrl = websiteUrl.trim().length > 0 ? `&url=${encodeURIComponent(websiteUrl.trim())}` : "";
       const nextUrl =
-        knowledgeSource === "scan"
-          ? `/dashboard/scan?agent=${agent.id}${encodedUrl}`
-          : knowledgeSource === "upload"
-            ? `/dashboard/knowledge?agent=${agent.id}`
-            : `/dashboard/agents/${agent.id}`;
+        selectedPurpose === "static_website"
+          ? `/dashboard/scan?agent=${agent.id}${encodedUrl}&autostart=1`
+          : knowledgeSource === "scan"
+            ? `/dashboard/scan?agent=${agent.id}${encodedUrl}`
+            : knowledgeSource === "upload"
+              ? `/dashboard/knowledge?agent=${agent.id}`
+              : `/dashboard/agents/${agent.id}`;
 
       setLocation(nextUrl);
     },
@@ -225,14 +249,14 @@ export default function CreateAgent() {
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Agent Purpose</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {DOMAIN_OPTIONS.map((opt) => {
+                    {PURPOSE_OPTIONS.map((opt) => {
                       const Icon = opt.icon;
-                      const isSelected = selectedDomain === opt.id;
+                      const isSelected = selectedPurpose === opt.id;
                       return (
                         <button
                           key={opt.id}
                           type="button"
-                          onClick={() => setSelectedDomain(opt.id)}
+                          onClick={() => setSelectedPurpose(opt.id)}
                           className="text-left"
                         >
                           <Card className={isSelected ? "border-primary" : ""}>
@@ -270,6 +294,106 @@ export default function CreateAgent() {
 
             {currentStep === 2 && (
               <div className="space-y-4">
+                <div className="text-sm font-medium">Knowledge Source</div>
+                <div className="grid grid-cols-1 gap-3">
+                  <button type="button" onClick={() => setKnowledgeSource("scan")} className="text-left">
+                    <Card className={knowledgeSource === "scan" ? "border-primary" : ""}>
+                      <CardContent className="p-4 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Globe className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium">Scan my website</div>
+                          <div className="text-sm text-muted-foreground">Automatically pull content from a public site</div>
+                        </div>
+                        {knowledgeSource === "scan" && <Badge variant="secondary">Selected</Badge>}
+                      </CardContent>
+                    </Card>
+                  </button>
+
+                  <div className="pl-1">
+                    <label className="text-sm font-medium">
+                      Website URL {isStaticWebsite ? "(required)" : "(optional)"}
+                    </label>
+                    <Input
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      placeholder="https://example.com"
+                      className="mt-2"
+                      data-testid="input-agent-website"
+                    />
+                  </div>
+
+                  {!isStaticWebsite && (
+                    <>
+                      <button type="button" onClick={() => setKnowledgeSource("upload")} className="text-left">
+                        <Card className={knowledgeSource === "upload" ? "border-primary" : ""}>
+                          <CardContent className="p-4 flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Upload className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">Upload documents</div>
+                              <div className="text-sm text-muted-foreground">Add PDFs, DOCX, or text after creation</div>
+                            </div>
+                            {knowledgeSource === "upload" && <Badge variant="secondary">Selected</Badge>}
+                          </CardContent>
+                        </Card>
+                      </button>
+
+                      {template ? (
+                        <button
+                          type="button"
+                          onClick={() => setKnowledgeSource("template")}
+                          className="text-left"
+                        >
+                          <Card className={knowledgeSource === "template" ? "border-primary" : ""}>
+                            <CardContent className="p-4 flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <LayoutTemplate className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium">Use template</div>
+                                <div className="text-sm text-muted-foreground">Template loaded: {template.name}</div>
+                              </div>
+                              {knowledgeSource === "template" ? (
+                                <Badge variant="secondary">Selected</Badge>
+                              ) : (
+                                <Badge variant="outline">Available</Badge>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </button>
+                      ) : (
+                        <Card>
+                          <CardContent className="p-4 flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <LayoutTemplate className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">Use template</div>
+                              <div className="text-sm text-muted-foreground">Pick a template and come back here</div>
+                            </div>
+                            <Link href="/dashboard/templates">
+                              <Button type="button" variant="outline" size="sm">
+                                Browse templates
+                              </Button>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      <Button type="button" variant="ghost" onClick={() => setKnowledgeSource("none")} className="justify-start">
+                        Clear selection
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentStep === 3 && (
+              <div className="space-y-4">
                 <div className="text-sm font-medium">Channels (optional)</div>
                 <Card>
                   <CardContent className="p-4 space-y-4">
@@ -299,102 +423,6 @@ export default function CreateAgent() {
               </div>
             )}
 
-            {currentStep === 3 && (
-              <div className="space-y-4">
-                <div className="text-sm font-medium">Knowledge Source (optional)</div>
-                <div className="grid grid-cols-1 gap-3">
-                  <button type="button" onClick={() => setKnowledgeSource("scan")} className="text-left">
-                    <Card className={knowledgeSource === "scan" ? "border-primary" : ""}>
-                      <CardContent className="p-4 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Globe className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium">Scan my website</div>
-                          <div className="text-sm text-muted-foreground">Automatically pull content from a public site</div>
-                        </div>
-                        {knowledgeSource === "scan" && <Badge variant="secondary">Selected</Badge>}
-                      </CardContent>
-                    </Card>
-                  </button>
-
-                  {knowledgeSource === "scan" && (
-                    <div className="pl-1">
-                      <label className="text-sm font-medium">Website URL (optional)</label>
-                      <Input
-                        value={websiteUrl}
-                        onChange={(e) => setWebsiteUrl(e.target.value)}
-                        placeholder="https://example.com"
-                        className="mt-2"
-                        data-testid="input-agent-website"
-                      />
-                    </div>
-                  )}
-
-                  <button type="button" onClick={() => setKnowledgeSource("upload")} className="text-left">
-                    <Card className={knowledgeSource === "upload" ? "border-primary" : ""}>
-                      <CardContent className="p-4 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Upload className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium">Upload documents</div>
-                          <div className="text-sm text-muted-foreground">Add PDFs, DOCX, or text after creation</div>
-                        </div>
-                        {knowledgeSource === "upload" && <Badge variant="secondary">Selected</Badge>}
-                      </CardContent>
-                    </Card>
-                  </button>
-
-                  {template ? (
-                    <button
-                      type="button"
-                      onClick={() => setKnowledgeSource("template")}
-                      className="text-left"
-                    >
-                      <Card className={knowledgeSource === "template" ? "border-primary" : ""}>
-                        <CardContent className="p-4 flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <LayoutTemplate className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium">Use template</div>
-                            <div className="text-sm text-muted-foreground">Template loaded: {template.name}</div>
-                          </div>
-                          {knowledgeSource === "template" ? (
-                            <Badge variant="secondary">Selected</Badge>
-                          ) : (
-                            <Badge variant="outline">Available</Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </button>
-                  ) : (
-                    <Card>
-                      <CardContent className="p-4 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <LayoutTemplate className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium">Use template</div>
-                          <div className="text-sm text-muted-foreground">Pick a template and come back here</div>
-                        </div>
-                        <Link href="/dashboard/templates">
-                          <Button type="button" variant="outline" size="sm">
-                            Browse templates
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  <Button type="button" variant="ghost" onClick={() => setKnowledgeSource("none")} className="justify-start">
-                    Clear selection
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {currentStep === 4 && (
               <div className="space-y-4">
                 <div className="text-sm font-medium">Review</div>
@@ -405,8 +433,8 @@ export default function CreateAgent() {
                       <span className="text-sm font-medium">{agentName.trim() || "—"}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Selected domain</span>
-                      <span className="text-sm font-medium">{selectedDomainLabel || "—"}</span>
+                      <span className="text-sm text-muted-foreground">Purpose</span>
+                      <span className="text-sm font-medium">{selectedPurposeLabel || "—"}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Channels</span>
@@ -454,6 +482,14 @@ export default function CreateAgent() {
                       toast({
                         title: "Complete step 1",
                         description: "Enter an agent name and select a purpose.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (currentStep === 2 && !canContinueStep2) {
+                      toast({
+                        title: "Website URL required",
+                        description: "Enter a website URL to scan for Static Website.",
                         variant: "destructive",
                       });
                       return;

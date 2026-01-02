@@ -89,6 +89,8 @@ export default function WebsiteScanner() {
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const preselectedAgent = searchParams.get("agent");
   const prefilledUrl = searchParams.get("url") || "";
+  const autoStart = searchParams.get("autostart") === "1";
+  const hasAutoStartedRef = useRef(false);
 
   const { data: agents, isLoading: agentsLoading } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
@@ -196,6 +198,19 @@ export default function WebsiteScanner() {
     if (existing && existing.trim().length > 0) return;
     form.setValue("url", prefilledUrl);
   }, [prefilledUrl, form]);
+
+  // Auto-start scan when requested (Static Website creation flow).
+  useEffect(() => {
+    if (!autoStart) return;
+    if (hasAutoStartedRef.current) return;
+    if (scanStatus !== "idle") return;
+    const agentId = form.getValues("agentId");
+    const url = form.getValues("url");
+    if (!agentId || !url) return;
+
+    hasAutoStartedRef.current = true;
+    void form.handleSubmit(startScan)();
+  }, [autoStart, form, scanStatus]);
 
   const startScan = (data: ScanFormValues) => {
     // Close any existing connection
