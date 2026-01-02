@@ -1116,7 +1116,7 @@ export async function registerRoutes(
   app.post("/api/ecommerce/connections", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { agentId, platform, storeName, storeUrl, credentials, supportsProducts, supportsInventory, supportsOrders, capabilities, isActive, rateLimitPerMinute } = req.body;
+      const { agentId, platform, storeName, storeUrl, credentials, supportsProducts, supportsInventory, supportsOrders, capabilities, isActive, rateLimitPerMinute, cacheTtlMs } = req.body;
       
       // Validate required fields
       if (!agentId || !platform || !storeUrl) {
@@ -1165,6 +1165,16 @@ export async function registerRoutes(
         }
         rateLimitValue = Math.floor(n);
       }
+
+      // Validate cacheTtlMs (0 = real-time, max 1 hour)
+      let cacheTtlValue: number | undefined;
+      if (cacheTtlMs !== undefined) {
+        const n = Number(cacheTtlMs);
+        if (!Number.isFinite(n) || n < 0 || n > 3600000) {
+          return res.status(400).json({ message: "cacheTtlMs must be between 0 and 3600000 (1 hour)" });
+        }
+        cacheTtlValue = Math.floor(n);
+      }
       
       // Encrypt credentials
       const { encrypt } = await import('./utils/encryption');
@@ -1183,7 +1193,7 @@ export async function registerRoutes(
         supportsOrders: supportsOrders ?? true,
         isActive: isActive ?? true,
         rateLimitPerMinute: rateLimitValue ?? 60,
-        config: { capabilities: capabilities || [] },
+        config: { capabilities: capabilities || [], cacheTtlMs: cacheTtlValue },
       });
       
       // Update agent capabilities if needed
@@ -1253,6 +1263,12 @@ export async function registerRoutes(
           const caps = (config as any).capabilities;
           if (!Array.isArray(caps) || caps.length === 0 || caps.some((c: any) => typeof c !== 'string')) {
             return res.status(400).json({ message: 'Select at least one capability' });
+          }
+        }
+        if (config && Object.prototype.hasOwnProperty.call(config, 'cacheTtlMs')) {
+          const n = Number((config as any).cacheTtlMs);
+          if (!Number.isFinite(n) || n < 0 || n > 3600000) {
+            return res.status(400).json({ message: 'cacheTtlMs must be between 0 and 3600000 (1 hour)' });
           }
         }
         updateData.config = config;
@@ -4413,47 +4429,46 @@ export async function registerRoutes(
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
 
-      // Check for e-commerce intent and get live data
-      let ecommerceContext = '';
-      let ecommerceHandoffContext = '';
-      const ecommerceConnection = await storage.getEcommerceConnectionByAgentId(agentId);
-      if (ecommerceConnection?.isActive) {
-        try {
-          const { ecommerceIntentRouter } = await import('./ecommerce');
-          const intent = ecommerceIntentRouter.detectIntent(messageText);
-          
-          if (intent) {
-            const entities = ecommerceIntentRouter.extractEntities(messageText, intent);
-            const result = await ecommerceIntentRouter.route({
-              agentId,
-              userId: agent.userId,
-              intent,
-              entities,
-              conversationId: conversation.id,
-            });
-            
-            if (result?.message) {
-              // Always provide the router's recommended response (even for refunds / no-data).
-              ecommerceContext = `\n\n[ECOMMERCE ROUTER RESULT]\n${result.message}`;
+      // Domain execution (e-commerce today; future dynamic domains plug in here)
+      // IMPORTANT: policy-enforced behavior:
+      // - DETERMINISTIC_ONLY intents bypass the LLM (no hallucinations)
+      // - LLM_ALLOWED intents must not execute domain connectors (no static/live mixing)
+      let domainContext = '';
+      let domainHandoffContext = '';
+      try {
+        const { runDeterministicDomainIfNeeded } = await import('./domains/runtime');
+        const run = await runDeterministicDomainIfNeeded({
+          agentId,
+          userId: agent.userId,
+          conversationId: conversation.id,
+          messageText,
+        });
 
-              // If live data exists, tag it accordingly as well.
-              if (result.data?.products) {
-                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
-              } else if (result.data?.order) {
-                ecommerceContext += `\n\n[LIVE ORDER DATA]\n${result.message}`;
-              } else if (result.data?.product) {
-                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
-              }
-            }
+        if (run.handled) {
+          const responseText = run.responseText;
 
-            if (result?.fallbackToLeadCapture) {
-              ecommerceHandoffContext = `\n\n[HANDOFF REQUIRED]\n- Ask for name, email, and phone\n- Confirm the best contact method and time\n- Do NOT request payment details\n- Do NOT attempt checkout/refund automation`;
-            }
+          // Deterministic path: respond directly and skip the LLM.
+          await storage.addMessage({
+            conversationId: conversation.id,
+            role: 'assistant',
+            content: responseText,
+          });
+
+          const usageMode = (process.env.WIDGET_USAGE_MODE || 'cost').toLowerCase();
+          if (usageMode === 'product') {
+            await storage.incrementMessageCount(agent.userId);
           }
-        } catch (ecomError) {
-          console.error('[Widget] E-commerce error:', ecomError);
-          // Continue without e-commerce data
+
+          return res.json({
+            response: responseText,
+            sessionId,
+            handoff: run.handoff,
+          });
         }
+
+        // If LLM_ALLOWED (or static KB), continue to LLM with knowledgeContext only.
+      } catch (domainError) {
+        console.error('[Widget] Domain execution error:', domainError);
       }
 
       // Use custom systemPrompt if available, otherwise generate one
@@ -4486,7 +4501,7 @@ Remember: SHORT, CLEAR, BULLET POINTS when listing things.`;
 
       const systemPrompt = `${basePrompt}
 
-    ${knowledgeContext ? `Here is relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}${ecommerceContext ? `\n\n${ecommerceContext}` : ""}${ecommerceHandoffContext ? `\n\n${ecommerceHandoffContext}` : ""}`;
+    ${knowledgeContext ? `Here is relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}${domainContext ? `\n\n${domainContext}` : ""}${domainHandoffContext ? `\n\n${domainHandoffContext}` : ""}`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
@@ -4635,41 +4650,39 @@ Remember: SHORT, CLEAR, BULLET POINTS when listing things.`;
         .map((k) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
         .join("\n\n---\n\n");
 
-      // Check for e-commerce intent and get live data (dashboard chat)
-      let ecommerceContext = '';
-      let ecommerceHandoffContext = '';
-      const ecommerceConnection = await storage.getEcommerceConnectionByAgentId(agentId);
-      if (ecommerceConnection?.isActive) {
-        try {
-          const { ecommerceIntentRouter } = await import('./ecommerce');
-          const intent = ecommerceIntentRouter.detectIntent(messageText);
-          if (intent) {
-            const entities = ecommerceIntentRouter.extractEntities(messageText, intent);
-            const result = await ecommerceIntentRouter.route({
-              agentId,
-              userId,
-              intent,
-              entities,
-              conversationId: conversation.id,
-            });
+      // Domain execution (dashboard chat)
+      // Policy-enforced:
+      // - DETERMINISTIC_ONLY intents bypass the LLM
+      // - LLM_ALLOWED intents must not execute domain connectors
+      let domainContext = '';
+      let domainHandoffContext = '';
+      try {
+        const { runDeterministicDomainIfNeeded } = await import('./domains/runtime');
+        const run = await runDeterministicDomainIfNeeded({
+          agentId,
+          userId,
+          conversationId: conversation.id,
+          messageText,
+        });
 
-            if (result?.message) {
-              ecommerceContext = `\n\n[ECOMMERCE ROUTER RESULT]\n${result.message}`;
-              if (result.data?.products) {
-                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
-              } else if (result.data?.order) {
-                ecommerceContext += `\n\n[LIVE ORDER DATA]\n${result.message}`;
-              } else if (result.data?.product) {
-                ecommerceContext += `\n\n[LIVE PRODUCT DATA]\n${result.message}`;
-              }
-            }
-            if (result?.fallbackToLeadCapture) {
-              ecommerceHandoffContext = `\n\n[HANDOFF REQUIRED]\n- Ask for name, email, and phone\n- Confirm the best contact method and time\n- Do NOT request payment details\n- Do NOT attempt checkout/refund automation`;
-            }
-          }
-        } catch (ecomError) {
-          console.error('[Dashboard Chat] E-commerce error:', ecomError);
+        if (run.handled) {
+          const responseText = run.responseText;
+
+          await storage.addMessage({
+            conversationId: conversation.id,
+            role: 'assistant',
+            content: responseText,
+          });
+
+          // Keep existing cost-based counting behavior: dashboard chat increments only when LLM is used.
+          return res.json({
+            response: responseText,
+            sessionId,
+            handoff: run.handoff,
+          });
         }
+      } catch (domainError) {
+        console.error('[Dashboard Chat] Domain execution error:', domainError);
       }
 
       // Use custom systemPrompt if available, otherwise generate one
@@ -4687,7 +4700,7 @@ IMPORTANT INSTRUCTIONS:
 
       const systemPrompt = `${basePrompt}
 
-    ${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}${ecommerceContext ? `\n\n${ecommerceContext}` : ""}${ecommerceHandoffContext ? `\n\n${ecommerceHandoffContext}` : ""}`;
+    ${knowledgeContext ? `Here is the relevant information from the knowledge base that you should use to answer questions:\n\n${knowledgeContext}` : ""}${domainContext ? `\n\n${domainContext}` : ""}${domainHandoffContext ? `\n\n${domainHandoffContext}` : ""}`;
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {

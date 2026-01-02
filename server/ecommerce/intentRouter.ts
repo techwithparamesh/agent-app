@@ -273,14 +273,16 @@ export class EcommerceIntentRouter {
       limit: Math.min(limit, 10) 
     });
 
-    // Cache basic product data for future requests
-    try {
-      const ttlMs = 5 * 60_000;
-      await Promise.all(
-        (products || []).slice(0, 10).map((p) => storage.upsertProductCacheByExternalId(productToCacheRow(String(connection.id), p, ttlMs) as any))
-      );
-    } catch (e) {
-      console.warn('[EcomRouter] Product cache upsert failed:', e);
+    // Cache basic product data for future requests (configurable TTL, default 5 min)
+    const cacheTtlMs = Number((connection.config as any)?.cacheTtlMs) || 5 * 60_000;
+    if (cacheTtlMs > 0) {
+      try {
+        await Promise.all(
+          (products || []).slice(0, 10).map((p) => storage.upsertProductCacheByExternalId(productToCacheRow(String(connection.id), p, cacheTtlMs) as any))
+        );
+      } catch (e) {
+        console.warn('[EcomRouter] Product cache upsert failed:', e);
+      }
     }
     
     if (products.length === 0) {
@@ -308,14 +310,18 @@ export class EcommerceIntentRouter {
     const { productId, sku, productName } = entities;
     
     let product: Product | null = null;
+    const cacheTtlMs = Number((connection.config as any)?.cacheTtlMs);
+    const cacheEnabled = cacheTtlMs === undefined || cacheTtlMs > 0;
 
-    // Cache-first for direct identifiers
-    if (productId) {
-      const cached = await storage.getCachedProductByExternalId(String(connection.id), String(productId));
-      if (cached) product = mapCachedProductToProduct(cached as any);
-    } else if (sku) {
-      const cached = await storage.getCachedProductBySku(String(connection.id), String(sku));
-      if (cached) product = mapCachedProductToProduct(cached as any);
+    // Cache-first for direct identifiers (if caching enabled)
+    if (cacheEnabled) {
+      if (productId) {
+        const cached = await storage.getCachedProductByExternalId(String(connection.id), String(productId));
+        if (cached) product = mapCachedProductToProduct(cached as any);
+      } else if (sku) {
+        const cached = await storage.getCachedProductBySku(String(connection.id), String(sku));
+        if (cached) product = mapCachedProductToProduct(cached as any);
+      }
     }
 
     if (product) {
@@ -347,12 +353,14 @@ export class EcommerceIntentRouter {
       };
     }
 
-    // Cache the product briefly (prices can change)
-    try {
-      const ttlMs = 60_000;
-      await storage.upsertProductCacheByExternalId(productToCacheRow(String(connection.id), product, ttlMs) as any);
-    } catch {
-      // ignore
+    // Cache the product briefly (prices can change) - use configured TTL or 1 min default
+    if (cacheEnabled) {
+      try {
+        const ttlMs = cacheTtlMs || 60_000;
+        await storage.upsertProductCacheByExternalId(productToCacheRow(String(connection.id), product, ttlMs) as any);
+      } catch {
+        // ignore
+      }
     }
     
     return {

@@ -4,6 +4,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { sanitizeForLogs } from "./whatsapp/logScrub";
+import { isAuthenticated } from "./replitAuth";
+import { realEstateRoutes } from "../src/domains/realEstate/realEstate.routes";
+import { insuranceRoutes } from "../src/domains/insurance/insurance.routes";
 
 const app = express();
 const httpServer = createServer(app);
@@ -62,6 +65,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+app.use("/api/domains/real-estate", isAuthenticated, (req, _res, next) => { (req as any).user = { ...(req as any).user, id: (req as any).user?.id ?? (req as any).user?.claims?.sub }; next(); }, realEstateRoutes);
+app.use("/api/domains/insurance", isAuthenticated, (req, _res, next) => { (req as any).user = { ...(req as any).user, id: (req as any).user?.id ?? (req as any).user?.claims?.sub }; next(); }, insuranceRoutes);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

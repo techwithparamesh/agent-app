@@ -58,6 +58,7 @@ import {
   Settings,
   Shield,
   Zap,
+  Clock,
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Agent } from "@shared/schema";
@@ -128,6 +129,8 @@ const formSchema = z.object({
   // Step 3: Features
   isActive: z.boolean().default(true),
   rateLimitPerMinute: z.coerce.number().int().min(1, "Must be at least 1").max(600, "Max is 600").default(60),
+  // Cache TTL: 0 = real-time (no cache), otherwise milliseconds (default 5 min)
+  cacheTtlMs: z.coerce.number().int().min(0).max(3600000).default(300000),
   supportsProducts: z.boolean().default(true),
   supportsInventory: z.boolean().default(true),
   supportsOrders: z.boolean().default(true),
@@ -194,6 +197,7 @@ export default function EcommerceAgentPage() {
       const caps = Array.isArray((existingConnection.config as any)?.capabilities)
         ? ((existingConnection.config as any).capabilities as unknown[]).filter((c) => typeof c === 'string') as string[]
         : ["product_lookup", "price_check", "stock_check"];
+      const existingCacheTtl = (existingConnection.config as any)?.cacheTtlMs;
 
       form.reset({
         agentId: selectedAgentId,
@@ -203,6 +207,7 @@ export default function EcommerceAgentPage() {
         credentials: {},
         isActive: existingConnection.isActive ?? true,
         rateLimitPerMinute: existingConnection.rateLimitPerMinute ?? 60,
+        cacheTtlMs: typeof existingCacheTtl === 'number' ? existingCacheTtl : 300000,
         supportsProducts: existingConnection.supportsProducts ?? true,
         supportsInventory: existingConnection.supportsInventory ?? true,
         supportsOrders: existingConnection.supportsOrders ?? true,
@@ -220,6 +225,7 @@ export default function EcommerceAgentPage() {
       credentials: {},
       isActive: true,
       rateLimitPerMinute: 60,
+      cacheTtlMs: 300000, // 5 minutes default
       supportsProducts: true,
       supportsInventory: true,
       supportsOrders: true,
@@ -242,6 +248,7 @@ export default function EcommerceAgentPage() {
         supportsInventory: values.supportsInventory,
         supportsOrders: values.supportsOrders,
         capabilities: values.capabilities,
+        cacheTtlMs: values.cacheTtlMs,
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -291,7 +298,7 @@ export default function EcommerceAgentPage() {
         supportsOrders: values.supportsOrders,
         isActive: values.isActive,
         rateLimitPerMinute: values.rateLimitPerMinute,
-        config: { capabilities: values.capabilities },
+        config: { capabilities: values.capabilities, cacheTtlMs: values.cacheTtlMs },
         ...(hasAnyCred ? { credentials } : {}),
       });
 
@@ -352,6 +359,7 @@ export default function EcommerceAgentPage() {
         credentials: {},
         isActive: true,
         rateLimitPerMinute: 60,
+        cacheTtlMs: 300000,
         supportsProducts: true,
         supportsInventory: true,
         supportsOrders: true,
@@ -867,6 +875,55 @@ export default function EcommerceAgentPage() {
                             <Input type="number" min={1} max={600} step={1} {...field} />
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Data Freshness */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Data Freshness
+                    </h4>
+                    <FormField
+                      control={form.control}
+                      name="cacheTtlMs"
+                      render={({ field }) => (
+                        <FormItem className="rounded-lg border p-4">
+                          <FormLabel className="text-base">Product Cache Duration</FormLabel>
+                          <FormDescription>
+                            How long to cache product data before fetching fresh data from your store.
+                            Use <strong>0</strong> for real-time (always fetch live data).
+                          </FormDescription>
+                          <Select
+                            value={String(field.value)}
+                            onValueChange={(val) => field.onChange(Number(val))}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select cache duration" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">Real-time (no caching)</SelectItem>
+                              <SelectItem value="60000">1 minute</SelectItem>
+                              <SelectItem value="300000">5 minutes (recommended)</SelectItem>
+                              <SelectItem value="600000">10 minutes</SelectItem>
+                              <SelectItem value="1800000">30 minutes</SelectItem>
+                              <SelectItem value="3600000">1 hour</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                          {field.value === 0 && (
+                            <Alert className="mt-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertDescription className="text-xs">
+                                Real-time mode makes an API call for every product question. 
+                                This may hit rate limits on busy stores.
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </FormItem>
                       )}
                     />

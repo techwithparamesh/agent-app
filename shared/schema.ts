@@ -846,6 +846,45 @@ export const integrationLogs = mysqlTable("integration_logs", {
 
 // ========== E-COMMERCE CONNECTIONS ==========
 
+// ========== DOMAIN CONNECTIONS (FUTURE DYNAMIC DOMAINS) ==========
+
+// Generic Domain Connections - Links agents to domain-specific systems of record.
+// NOTE: This is intentionally not wired into UX yet. It is safe and backward-compatible.
+export const domainConnections = mysqlTable("domain_connections", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  agentId: varchar("agent_id", { length: 36 }).notNull().references(() => agents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Domain & Platform
+  domain: varchar("domain", { length: 50 }).notNull(), // 'real_estate', 'insurance', 'education', ...
+  platform: varchar("platform", { length: 100 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }),
+
+  // Optional endpoint (API-first). MUST be validated with SSRF protections at runtime.
+  baseUrl: varchar("base_url", { length: 500 }),
+
+  // Encrypted credentials (if needed for API auth).
+  encryptedCredentials: text("encrypted_credentials"),
+
+  // Domain-specific config (capabilities, TTL, custom mappings)
+  config: json("config").$type<{
+    capabilities?: string[];
+    cacheTtlMs?: number;
+    custom?: Record<string, any>;
+  }>(),
+
+  // Controls
+  isActive: boolean("is_active").default(true),
+  rateLimitPerMinute: int("rate_limit_per_minute").default(60),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  agentIdx: index("idx_domain_agent").on(table.agentId),
+  userIdx: index("idx_domain_user").on(table.userId),
+  domainIdx: index("idx_domain_domain").on(table.domain),
+}));
+
 // E-Commerce Store Connections - Links agents to stores (Shopify, WooCommerce, Generic REST)
 export const ecommerceConnections = mysqlTable("ecommerce_connections", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
@@ -868,6 +907,8 @@ export const ecommerceConnections = mysqlTable("ecommerce_connections", {
     productEndpoint?: string;
     orderEndpoint?: string;
     capabilities?: string[];
+    // Cache TTL in milliseconds. Set to 0 for real-time (no caching). Default: 300000 (5 min)
+    cacheTtlMs?: number;
   }>(),
   
   // Feature Flags
@@ -1466,6 +1507,12 @@ export type InsertWorkflowExecution = z.infer<typeof insertWorkflowExecutionSche
 export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
 
 // E-Commerce Insert Schemas
+export const insertDomainConnectionSchema = createInsertSchema(domainConnections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertEcommerceConnectionSchema = createInsertSchema(ecommerceConnections).omit({
   id: true,
   createdAt: true,
@@ -1483,6 +1530,9 @@ export const insertOrderLookupLogSchema = createInsertSchema(orderLookupLogs).om
 });
 
 // E-Commerce Types
+export type InsertDomainConnection = z.infer<typeof insertDomainConnectionSchema>;
+export type DomainConnection = typeof domainConnections.$inferSelect;
+
 export type InsertEcommerceConnection = z.infer<typeof insertEcommerceConnectionSchema>;
 export type EcommerceConnection = typeof ecommerceConnections.$inferSelect;
 

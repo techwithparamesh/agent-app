@@ -1,0 +1,62 @@
+export type TenantId = string;
+
+export type RealEstateListingType = string; // e.g. '1BHK', '2BHK', 'villa'
+
+export interface RealEstateListing {
+  id: number;
+  tenantId: TenantId;
+  title: string;
+  city: string;
+  area: string | null;
+  type: RealEstateListingType | null;
+  price: string; // decimal returned as string by mysql2
+  available: boolean;
+  locationSlug: string | null;
+  createdAt: Date | null;
+}
+
+export interface RealEstateLocation {
+  id: number;
+  slug: string;
+  description: string | null;
+  nearbyLandmarks: string | null;
+  createdAt: Date | null;
+}
+
+export interface RealEstateVisit {
+  id: number;
+  tenantId: TenantId;
+  listingId: number;
+  name: string;
+  phone: string;
+  preferredDate: string | null; // YYYY-MM-DD
+  preferredTime: string | null; // HH:MM:SS
+  createdAt: Date;
+}
+
+export interface ListingSearchParams {
+  q?: string;
+  city?: string;
+  area?: string;
+  type?: string;
+  locationSlug?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  available?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateVisitInput {
+  listingId: number;
+  name: string;
+  phone: string;
+  preferredDate?: string;
+  preferredTime?: string;
+}
+
+export interface ListingAvailabilityResult {
+  found: boolean;
+  listingId: number;
+  available: boolean;
+}

@@ -235,69 +235,42 @@ export class AgentRuntime {
     // Update context with knowledge
     conversation.context.knowledgeContext = knowledgeResult.combinedContext || undefined;
 
-    // Step 1b: E-commerce live data fetch (WhatsApp)
-    // If we detect an e-commerce intent, fetch live data and let the AI respond with that context.
-    // This mirrors the widget/dashboard behavior, but stays inside the WhatsApp runtime.
+    // Step 1b: Domain routing (WhatsApp)
+    // Deterministic/transactional intents bypass the LLM (safe, no hallucinations).
     try {
-      const { ecommerceIntentRouter } = await import('../ecommerce');
-      const ecomIntent = ecommerceIntentRouter.detectIntent(message.content);
+      const { runDeterministicDomainIfNeeded } = await import('../domains/runtime');
+      const run = await runDeterministicDomainIfNeeded({
+        agentId: agent.id,
+        userId: agent.userId,
+        conversationId: conversation.id,
+        requesterPhone: context.user.phone,
+        messageText: message.content,
+      });
 
-      if (ecomIntent) {
-        const entities = ecommerceIntentRouter.extractEntities(message.content, ecomIntent);
-        const ecomResult = await ecommerceIntentRouter.route({
-          agentId: agent.id,
-          userId: agent.userId,
-          intent: ecomIntent,
-          entities,
-          conversationId: conversation.id,
-          requesterPhone: context.user.phone,
-        });
-
-        const handoffContext = ecomResult.fallbackToLeadCapture
-          ? `HANDOFF REQUIRED\n- Ask for name, email, and phone\n- Confirm the best contact method and time\n- Do NOT request payment details\n- Do NOT attempt checkout/refund automation`
-          : '';
-
-        const additionalContextParts = [
-          knowledgeResult.combinedContext ? `KNOWLEDGE BASE\n${knowledgeResult.combinedContext}` : '',
-          ecomResult?.message ? `ECOMMERCE ROUTER RESULT\n${ecomResult.message}` : '',
-          handoffContext,
-        ].filter(Boolean);
-
-        const additionalContext = additionalContextParts.join('\n\n');
-
+      if (run.handled) {
         // If router indicates we should fall back to lead capture, capture a lead now (safe default).
-        if (ecomResult.fallbackToLeadCapture) {
+        if (run.result?.fallbackToLeadCapture) {
           await toolEngine.execute('capture_lead', {
             agentId: agent.id,
             conversationId: conversation.id,
             name: context.user.name,
             phone: context.user.phone,
-            email: typeof entities.email === 'string' ? entities.email : undefined,
-            interest: `E-commerce: ${ecomIntent}`,
+            interest: `Domain: ${run.plan.domain} / ${run.plan.intent}`,
             notes: message.content,
             customFields: {
-              ecommerceIntent: ecomIntent,
-              routerMessage: ecomResult.message,
-              entities,
+              domain: run.plan.domain,
+              intent: run.plan.intent,
+              routerMessage: run.result.message,
+              entities: run.plan.entities,
             },
           });
         }
 
-        const aiResponse = await aiDecisionLayer.generateResponse(
-          conversation.context,
-          agent,
-          undefined,
-          additionalContext
-        );
-
-        return responseComposer.composeTextResponse(
-          context.user.phone,
-          aiResponse || ecomResult.message
-        );
+        return responseComposer.composeTextResponse(context.user.phone, run.responseText);
       }
-    } catch (ecomError) {
-      console.error('[AgentRuntime] E-commerce routing error:', ecomError);
-      // Continue without e-commerce live context
+    } catch (domainError) {
+      console.error('[AgentRuntime] Domain routing error:', domainError);
+      // Continue without domain live context
     }
 
     // Step 2: AI Decision - Intent detection & entity extraction

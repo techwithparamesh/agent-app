@@ -19,6 +19,7 @@ import {
   integrationCredentials,
   integrationWorkflows,
   workflowExecutions,
+  domainConnections,
   ecommerceConnections,
   productCache,
   orderLookupLogs,
@@ -56,6 +57,8 @@ import {
   type InsertIntegrationWorkflow,
   type WorkflowExecution,
   type InsertWorkflowExecution,
+  type DomainConnection,
+  type InsertDomainConnection,
   type EcommerceConnection,
   type InsertEcommerceConnection,
   type ProductCache,
@@ -123,6 +126,14 @@ export interface IStorage {
   getExecutionById(id: string): Promise<WorkflowExecution | undefined>;
   createExecution(execution: InsertWorkflowExecution): Promise<WorkflowExecution>;
   updateExecution(id: string, data: Partial<InsertWorkflowExecution>): Promise<WorkflowExecution | undefined>;
+
+  // Domain Connections (future dynamic domains)
+  getDomainConnectionsByUserId(userId: string): Promise<DomainConnection[]>;
+  getDomainConnectionsByAgentId(agentId: string): Promise<DomainConnection[]>;
+  getDomainConnectionById(id: string): Promise<DomainConnection | undefined>;
+  createDomainConnection(data: InsertDomainConnection): Promise<DomainConnection>;
+  updateDomainConnection(id: string, data: Partial<InsertDomainConnection>): Promise<DomainConnection | undefined>;
+  deleteDomainConnection(id: string): Promise<void>;
 
   // E-Commerce Connections
   getEcommerceConnectionsByUserId(userId: string): Promise<EcommerceConnection[]>;
@@ -1036,6 +1047,52 @@ export class DatabaseStorage implements IStorage {
       .set(data)
       .where(eq(workflowExecutions.id, id));
     return this.getExecutionById(id);
+  }
+
+  // ========== DOMAIN CONNECTIONS (FUTURE DYNAMIC DOMAINS) ==========
+  async getDomainConnectionsByUserId(userId: string): Promise<DomainConnection[]> {
+    return db
+      .select()
+      .from(domainConnections)
+      .where(eq(domainConnections.userId, userId))
+      .orderBy(desc(domainConnections.createdAt));
+  }
+
+  async getDomainConnectionsByAgentId(agentId: string): Promise<DomainConnection[]> {
+    return db
+      .select()
+      .from(domainConnections)
+      .where(eq(domainConnections.agentId, agentId))
+      .orderBy(desc(domainConnections.createdAt));
+  }
+
+  async getDomainConnectionById(id: string): Promise<DomainConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(domainConnections)
+      .where(eq(domainConnections.id, id));
+    return connection;
+  }
+
+  async createDomainConnection(data: InsertDomainConnection): Promise<DomainConnection> {
+    const id = crypto.randomUUID();
+    await db.insert(domainConnections).values({ ...data, id });
+    return this.getDomainConnectionById(id) as Promise<DomainConnection>;
+  }
+
+  async updateDomainConnection(
+    id: string,
+    data: Partial<InsertDomainConnection>
+  ): Promise<DomainConnection | undefined> {
+    await db
+      .update(domainConnections)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(domainConnections.id, id));
+    return this.getDomainConnectionById(id);
+  }
+
+  async deleteDomainConnection(id: string): Promise<void> {
+    await db.delete(domainConnections).where(eq(domainConnections.id, id));
   }
 
   // ========== E-COMMERCE CONNECTIONS ==========
