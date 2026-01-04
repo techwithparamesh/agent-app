@@ -333,6 +333,15 @@ export async function registerRoutes(
   app.post("/api/auth/signup", signupRateLimiter, async (req: any, res) => {
     try {
       const { email, password, firstName, lastName } = signupSchema.parse(req.body);
+
+      // In production, require mailer to be configured so users can actually verify.
+      if (APP_CONFIG.isProduction && !isMailerConfigured()) {
+        return res.status(503).json({
+          code: "mailer_not_configured",
+          message:
+            "Email delivery is not configured. Please set SMTP_URL (recommended) or SMTP_HOST/SMTP_PORT/SMTP_FROM (and SMTP_USER/SMTP_PASS if needed).",
+        });
+      }
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -455,10 +464,27 @@ export async function registerRoutes(
       const email = String((user as any).email || "");
       const verifyUrl = `${APP_CONFIG.appUrl}/verify-email?token=${rawVerifyToken}`;
 
-      if (isMailerConfigured()) {
+      if (!isMailerConfigured()) {
+        if (APP_CONFIG.isDevelopment) {
+          console.log("[Dev] Email verification link:", verifyUrl);
+          return res.json({ message: "Verification email link generated (dev)", verifyUrl });
+        }
+        return res.status(503).json({
+          code: "mailer_not_configured",
+          message:
+            "Email delivery is not configured. Please set SMTP_URL (recommended) or SMTP_HOST/SMTP_PORT/SMTP_FROM (and SMTP_USER/SMTP_PASS if needed).",
+        });
+      }
+
+      try {
         await sendEmailVerificationEmail({ to: email, verifyUrl });
-      } else if (process.env.NODE_ENV === "development") {
-        console.log("[Dev] Email verification link:", verifyUrl);
+      } catch (mailError: any) {
+        console.error("Verification email send error:", mailError);
+        return res.status(502).json({
+          code: "mailer_send_failed",
+          message:
+            "Could not send verification email. Please verify SMTP settings and (for Gmail) use an App Password.",
+        });
       }
 
       res.json({ message: "Verification email sent" });
