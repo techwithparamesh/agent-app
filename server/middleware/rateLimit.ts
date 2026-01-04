@@ -78,6 +78,23 @@ export function createRateLimiter(options: RateLimitOptions) {
   };
 }
 
+function parsePositiveInt(value: unknown): number | undefined {
+  const n = Number.parseInt(String(value ?? '').trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+function getAppEnv(): string {
+  return String(process.env.APP_ENV || process.env.VERCEL_ENV || process.env.NODE_ENV || 'development').toLowerCase();
+}
+
+function isStagingEnv(env: string): boolean {
+  return ['staging', 'stage', 'preview', 'preprod', 'qa', 'test'].includes(env);
+}
+
+function passThroughLimiter() {
+  return (_req: any, _res: any, next: () => void) => next();
+}
+
 // Pre-configured rate limiters for common use cases
 
 /**
@@ -92,13 +109,27 @@ export const authRateLimiter = createRateLimiter({
 
 /**
  * Rate limiter for signup - prevents mass account creation
- * 3 signups per hour per IP
+ * Defaults:
+ * - production: 10 signups per hour per IP
+ * - staging: 5 signups per hour per IP
+ * - development: disabled (avoid blocking local testing)
+ *
+ * Override via:
+ * - SIGNUP_RATE_LIMIT_MAX
+ * - SIGNUP_RATE_LIMIT_WINDOW_MS
  */
-export const signupRateLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 3,
-  message: 'Too many accounts created. Please try again later.',
-});
+const appEnv = getAppEnv();
+const signupWindowMs = parsePositiveInt(process.env.SIGNUP_RATE_LIMIT_WINDOW_MS) ?? 60 * 60 * 1000;
+const signupDefaultMax = appEnv === 'production' ? 10 : (isStagingEnv(appEnv) ? 5 : Number.POSITIVE_INFINITY);
+const signupMax = parsePositiveInt(process.env.SIGNUP_RATE_LIMIT_MAX) ?? signupDefaultMax;
+
+export const signupRateLimiter = Number.isFinite(signupMax)
+  ? createRateLimiter({
+      windowMs: signupWindowMs,
+      maxRequests: signupMax,
+      message: 'Too many accounts created. Please try again later.',
+    })
+  : passThroughLimiter();
 
 /**
  * Rate limiter for password reset - prevents email spam
