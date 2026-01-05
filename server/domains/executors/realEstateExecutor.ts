@@ -153,8 +153,16 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
         case "price_filter":
         case "listing_search": {
+          // Use extracted entities when available for better matching
+          const propertyType = typeof plan.entities?.propertyType === "string" ? (plan.entities.propertyType as string) : undefined;
+          const bedrooms = typeof plan.entities?.bedrooms === "string" ? (plan.entities.bedrooms as string) : undefined;
+          
+          // Build search query from the message, stripping out common words
+          const searchQuery = extractSearchTerms(ctx.messageText);
+          
           const items = await service.searchListings(ctx.userId, {
-            q: ctx.messageText,
+            q: searchQuery,
+            type: propertyType,
             locationSlug,
             minPrice,
             maxPrice,
@@ -163,10 +171,21 @@ export class RealEstateDomainExecutor implements DomainExecutor {
             offset: 0,
           });
 
+          if (items.length === 0) {
+            // Provide a helpful response when no results
+            const typeHint = propertyType ? ` for ${propertyType}` : "";
+            const priceHint = minPrice || maxPrice ? " in your budget" : "";
+            return {
+              handled: true,
+              message: `I couldn't find any matching properties${typeHint}${priceHint}. Could you provide more details like:\n- City or area name\n- Budget range\n- Number of bedrooms (BHK)`,
+              data: { items, bedroomsFilter: bedrooms },
+            };
+          }
+
           return {
             handled: true,
-            message: items.length ? formatListingList(items) : "No matching properties found.",
-            data: { items },
+            message: formatListingList(items),
+            data: { items, bedroomsFilter: bedrooms },
           };
         }
 
@@ -223,4 +242,28 @@ function formatLocationInfo(location: any): string {
     location.nearbyLandmarks ? `Nearby: ${location.nearbyLandmarks}` : undefined,
   ].filter(Boolean);
   return parts.join("\n");
+}
+
+/**
+ * Extract meaningful search terms from user message
+ * Strips common filler words and keeps property-related keywords
+ */
+function extractSearchTerms(text: string): string {
+  const lower = text.toLowerCase();
+  
+  // Common filler words to remove
+  const stopWords = new Set([
+    "show", "me", "the", "a", "an", "i", "want", "to", "see", "find",
+    "looking", "for", "need", "please", "can", "you", "get", "list",
+    "available", "properties", "property", "listings", "listing",
+    "what", "are", "is", "there", "any", "some", "give", "tell",
+    "about", "details", "info", "information", "search", "browse",
+  ]);
+  
+  // Split on non-word chars, filter stopwords, keep meaningful terms
+  const words = lower
+    .split(/\W+/)
+    .filter(w => w.length > 1 && !stopWords.has(w));
+  
+  return words.join(" ");
 }

@@ -2,21 +2,28 @@ import type { DomainExecutionPlan, DomainRequestContext } from "@shared/domainFr
 import { getPolicy } from "./policies";
 import type { DomainRouter } from "./router";
 
+// Broad set of keywords to detect real estate queries
 const REAL_ESTATE_KEYWORDS = [
-  "apartment",
-  "villa",
-  "property",
-  "listing",
-  "rent",
-  "rental",
-  "buy",
-  "sale",
-  "house",
-  "plot",
-  "bhk",
-  "site visit",
-  "viewing",
-  "visit",
+  // Property types
+  "apartment", "flat", "villa", "house", "home", "bungalow", "penthouse",
+  "duplex", "studio", "farmhouse", "cottage", "mansion", "condo", "townhouse",
+  // BHK variants
+  "bhk", "1bhk", "2bhk", "3bhk", "4bhk", "1 bhk", "2 bhk", "3 bhk", "4 bhk",
+  "bedroom", "bedrooms", "room", "rooms",
+  // Transaction types
+  "property", "properties", "listing", "listings",
+  "rent", "rental", "lease", "buy", "purchase", "sale", "sell", "selling",
+  // Land
+  "plot", "land", "site", "acre", "sq ft", "sqft", "square feet", "square foot",
+  // Commercial
+  "office", "shop", "commercial", "warehouse", "godown",
+  // Actions
+  "looking for", "searching", "find", "show", "available", "vacancy", "vacant",
+  "visit", "viewing", "site visit", "tour",
+  // Price related
+  "price", "cost", "budget", "lakh", "lakhs", "crore", "crores", "lac", "lacs",
+  // Location hints
+  "near", "nearby", "close to", "location", "area", "locality", "neighborhood",
 ];
 
 export class RealEstateDomainRouter implements DomainRouter {
@@ -29,9 +36,11 @@ export class RealEstateDomainRouter implements DomainRouter {
       ...extractListingId(text),
       ...extractPriceRange(text),
       ...extractLocationHints(text),
+      ...extractPropertyType(text),
+      ...extractBedrooms(text),
     };
 
-    const intent = detectIntent(text);
+    const intent = detectIntent(text, entities);
 
     return {
       domain: "real_estate",
@@ -42,49 +51,76 @@ export class RealEstateDomainRouter implements DomainRouter {
   }
 }
 
-function detectIntent(text: string): DomainExecutionPlan["intent"] {
-  const hasListingId = /(?:listing|property|id)\s*#?\s*(\d{1,10})/i.test(text) || /#(\d{1,10})/.test(text);
+function detectIntent(text: string, entities: Record<string, unknown>): DomainExecutionPlan["intent"] {
+  const hasListingId = typeof entities.listingId === "number";
 
-  if (text.includes("schedule") || text.includes("book") || text.includes("appointment") || text.includes("site visit") || text.includes("viewing")) {
+  // Schedule visit - only if explicitly requesting AND has a listing ID
+  if (hasListingId && (text.includes("schedule") || text.includes("book") || text.includes("appointment"))) {
     return "schedule_visit";
   }
 
-  if (text.includes("available") || text.includes("availability") || text.includes("vacant")) {
+  // Availability check - only with listing ID
+  if (hasListingId && (text.includes("available") || text.includes("availability") || text.includes("vacant"))) {
     return "availability_check";
   }
 
-  if (text.includes("similar") || text.includes("like this") || text.includes("alternatives")) {
+  // Similar properties - only with listing ID
+  if (hasListingId && (text.includes("similar") || text.includes("like this") || text.includes("alternatives"))) {
     return "similar_properties";
   }
 
-  // "show me" is ambiguous: treat as property_details only when the user refers to a specific listing.
-  // Otherwise it's usually a discovery/search request.
-  if (
-    text.includes("details") ||
-    text.includes("more info") ||
-    text.includes("tell me about") ||
-    text.includes("specs") ||
-    (text.includes("show me") && hasListingId)
-  ) {
+  // Property details - only with explicit listing ID
+  if (hasListingId) {
     return "property_details";
   }
 
-  if (text.includes("area") || text.includes("neighborhood") || text.includes("locality") || text.includes("landmark") || text.includes("location")) {
-    return "location_info";
-  }
-
-  if (text.includes("budget") || text.includes("under") || text.includes("below") || text.includes("between") || text.includes("min") || text.includes("max")) {
-    return "price_filter";
-  }
-
+  // Everything else is a search - this is the default and most common case
+  // Whether user says "show me villas", "villa details", "2bhk in city", etc.
   return "listing_search";
 }
 
 function extractListingId(text: string): Record<string, unknown> {
+  // Match patterns like: listing #123, property 456, id 789, #123
   const m = text.match(/(?:listing|property|id)\s*#?\s*(\d{1,10})/i) || text.match(/#(\d{1,10})/);
   if (!m) return {};
   const listingId = Number(m[1]);
   return Number.isFinite(listingId) ? { listingId } : {};
+}
+
+function extractPropertyType(text: string): Record<string, unknown> {
+  const types: Record<string, string> = {
+    villa: "villa",
+    apartment: "apartment",
+    flat: "apartment",
+    house: "house",
+    "independent house": "independent_house",
+    bungalow: "bungalow",
+    penthouse: "penthouse",
+    duplex: "duplex",
+    studio: "studio",
+    farmhouse: "farmhouse",
+    plot: "plot",
+    land: "plot",
+    office: "commercial",
+    shop: "commercial",
+    commercial: "commercial",
+  };
+
+  for (const [keyword, type] of Object.entries(types)) {
+    if (text.includes(keyword)) {
+      return { propertyType: type };
+    }
+  }
+  return {};
+}
+
+function extractBedrooms(text: string): Record<string, unknown> {
+  // Match: 2bhk, 2 bhk, 2-bhk, 2 bedroom, 2 bedrooms
+  const m = text.match(/(\d)\s*[-]?\s*(?:bhk|bedroom|bedrooms|bed)/i);
+  if (m) {
+    return { bedrooms: m[1] };
+  }
+  return {};
 }
 
 function extractPriceRange(text: string): Record<string, unknown> {
