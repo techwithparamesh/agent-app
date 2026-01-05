@@ -279,19 +279,23 @@ export async function registerRoutes(
   app.use("/api/whatsapp", whatsappRoutes);
 
   // ========== STRIPE WEBHOOK (raw body needed) ==========
-  app.post("/api/billing/webhook", 
-    express.raw({ type: 'application/json' }), 
-    async (req: any, res) => {
-      try {
-        const signature = req.headers['stripe-signature'] as string;
-        await stripeService.handleWebhook(req.body, signature);
-        res.sendStatus(200);
-      } catch (error: any) {
-        console.error('[Stripe Webhook] Error:', error);
-        res.status(400).send(`Webhook Error: ${error.message}`);
+  // NOTE: We already capture raw JSON bytes globally via express.json({ verify }) in server/index.ts.
+  // Using express.raw() here can be bypassed if a previous body parser has already consumed the stream.
+  app.post("/api/billing/webhook", async (req: any, res) => {
+    try {
+      const signature = req.headers['stripe-signature'] as string;
+      const rawBody = req.rawBody;
+      if (!rawBody) {
+        return res.status(400).send('Webhook Error: Missing raw body');
       }
+      const payloadBuffer = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody));
+      await stripeService.handleWebhook(payloadBuffer, signature);
+      res.sendStatus(200);
+    } catch (error: any) {
+      console.error('[Stripe Webhook] Error:', error);
+      res.status(400).send(`Webhook Error: ${error.message}`);
     }
-  );
+  });
 
   // ========== WORKFLOW WEBHOOK ROUTES (public) ==========
   // Workflow-specific webhooks are public and keyed by an unguessable webhookId.

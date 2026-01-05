@@ -165,9 +165,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
   // Keep webhook logs minimal; avoid printing full payloads.
   try {
+    const rawBody = (req as any).rawBody as unknown;
     const safeSummary = sanitizeForLogs({
       object: (req.body as any)?.object,
       entryCount: Array.isArray((req.body as any)?.entry) ? (req.body as any).entry.length : 0,
+      hasRawBody: !!rawBody,
     });
     console.log('[WhatsApp Webhook] Received POST (verified):', JSON.stringify(safeSummary));
   } catch {

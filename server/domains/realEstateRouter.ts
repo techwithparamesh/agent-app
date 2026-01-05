@@ -43,6 +43,8 @@ export class RealEstateDomainRouter implements DomainRouter {
 }
 
 function detectIntent(text: string): DomainExecutionPlan["intent"] {
+  const hasListingId = /(?:listing|property|id)\s*#?\s*(\d{1,10})/i.test(text) || /#(\d{1,10})/.test(text);
+
   if (text.includes("schedule") || text.includes("book") || text.includes("appointment") || text.includes("site visit") || text.includes("viewing")) {
     return "schedule_visit";
   }
@@ -55,7 +57,15 @@ function detectIntent(text: string): DomainExecutionPlan["intent"] {
     return "similar_properties";
   }
 
-  if (text.includes("details") || text.includes("more info") || text.includes("tell me about") || text.includes("show me") || text.includes("specs")) {
+  // "show me" is ambiguous: treat as property_details only when the user refers to a specific listing.
+  // Otherwise it's usually a discovery/search request.
+  if (
+    text.includes("details") ||
+    text.includes("more info") ||
+    text.includes("tell me about") ||
+    text.includes("specs") ||
+    (text.includes("show me") && hasListingId)
+  ) {
     return "property_details";
   }
 
