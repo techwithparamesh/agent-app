@@ -160,6 +160,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
           // Build search query from the message, stripping out common words
           const searchQuery = extractSearchTerms(ctx.messageText);
           
+          console.log(`[RealEstateExecutor] listing_search: userId=${ctx.userId}, query="${searchQuery}", original="${ctx.messageText}"`);
+          
           const items = await service.searchListings(ctx.userId, {
             q: searchQuery,
             locationSlug,
@@ -169,6 +171,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
             limit: 10,
             offset: 0,
           });
+
+          console.log(`[RealEstateExecutor] listing_search: found ${items.length} items`);
 
           if (items.length === 0) {
             // Provide a helpful response when no results

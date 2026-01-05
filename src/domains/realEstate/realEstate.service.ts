@@ -149,11 +149,13 @@ export class RealEstateService {
       if (tokens.length > 0) {
         const tokenConditions = tokens.map((token) => {
           const pattern = `%${token}%`;
+          // Use case-insensitive LIKE (MySQL default collation is usually case-insensitive,
+          // but we use LOWER() to be safe across different collations)
           return or(
-            like(realEstateListings.title, pattern),
-            like(realEstateListings.city, pattern),
-            like(realEstateListings.area, pattern),
-            like(realEstateListings.type, pattern)
+            sql`LOWER(${realEstateListings.title}) LIKE LOWER(${pattern})`,
+            sql`LOWER(${realEstateListings.city}) LIKE LOWER(${pattern})`,
+            sql`LOWER(${realEstateListings.area}) LIKE LOWER(${pattern})`,
+            sql`LOWER(${realEstateListings.type}) LIKE LOWER(${pattern})`
           )!;
         });
         // Require each token to match at least one field.
