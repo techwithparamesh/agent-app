@@ -172,7 +172,24 @@ export class RealEstateDomainExecutor implements DomainExecutor {
             offset: 0,
           });
 
-          console.log(`[RealEstateExecutor] listing_search: found ${items.length} items`);
+          console.log(`[RealEstateExecutor] listing_search: found ${items.length} items from listings table`);
+
+          // If no listings in database, fall back to knowledge base search
+          if (items.length === 0 && ctx.agentId) {
+            console.log(`[RealEstateExecutor] No listings found, searching knowledge base for agentId=${ctx.agentId}`);
+            
+            const knowledgeResults = await searchKnowledgeBase(ctx.agentId, ctx.messageText);
+            
+            if (knowledgeResults.length > 0) {
+              console.log(`[RealEstateExecutor] Found ${knowledgeResults.length} knowledge base entries`);
+              // Return as not handled so the LLM can use knowledge base context
+              return {
+                handled: false,
+                message: undefined,
+                data: { knowledgeResults, source: 'knowledge_base' },
+              };
+            }
+          }
 
           if (items.length === 0) {
             // Provide a helpful response when no results
@@ -269,4 +286,49 @@ function extractSearchTerms(text: string): string {
     .filter(w => w.length > 1 && !stopWords.has(w));
   
   return words.join(" ");
+}
+
+/**
+ * Search knowledge base for property-related content
+ * Falls back to this when real_estate_listings table is empty
+ */
+async function searchKnowledgeBase(agentId: string, query: string): Promise<any[]> {
+  try {
+    const { storage } = await import('../../storage');
+    const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
+    
+    if (!allKnowledge || allKnowledge.length === 0) {
+      return [];
+    }
+    
+    // Property-related keywords to look for in knowledge base
+    const propertyKeywords = [
+      'villa', 'apartment', 'flat', 'house', 'plot', 'land', 'property',
+      'bhk', 'bedroom', 'sqft', 'sq ft', 'price', 'rent', 'sale',
+      'tirupati', 'location', 'area', 'available'
+    ];
+    
+    const queryLower = query.toLowerCase();
+    const queryWords = queryLower.split(/\W+/).filter(w => w.length > 2);
+    
+    // Filter knowledge entries that match property keywords or query terms
+    const relevant = allKnowledge.filter(k => {
+      const content = (k.content || '').toLowerCase();
+      const title = (k.title || '').toLowerCase();
+      const combined = `${title} ${content}`;
+      
+      // Check if content contains property-related keywords
+      const hasPropertyKeyword = propertyKeywords.some(kw => combined.includes(kw));
+      
+      // Check if content matches any query words
+      const matchesQuery = queryWords.some(w => combined.includes(w));
+      
+      return hasPropertyKeyword && matchesQuery;
+    });
+    
+    return relevant.slice(0, 10);
+  } catch (error) {
+    console.error('[RealEstateExecutor] Knowledge base search error:', error);
+    return [];
+  }
 }
