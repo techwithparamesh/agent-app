@@ -153,17 +153,35 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
         case "price_filter":
         case "listing_search": {
+          const extractedQ = extractSearchTerms(ctx.messageText);
+
+          const isBroadListAllQuery =
+            extractedQ.length === 0 &&
+            !locationSlug &&
+            typeof minPrice !== "number" &&
+            typeof maxPrice !== "number";
+
           const items = await service.searchListings(ctx.userId, {
-            q: ctx.messageText,
+            q: extractedQ.length > 0 ? extractedQ : undefined,
             locationSlug,
             minPrice,
             maxPrice,
-            available: true,
+            // For broad "list all properties" queries, don't auto-filter by availability.
+            available: isBroadListAllQuery ? undefined : true,
             limit: 10,
             offset: 0,
           });
 
           if (items.length === 0) {
+            if (isBroadListAllQuery) {
+              return {
+                handled: true,
+                message:
+                  "No properties have been published yet for this agent. Add properties as drafts and get admin approval to publish them before they can appear in search.",
+                data: { items },
+                reason: "no_published_listings",
+              };
+            }
             // Provide a helpful response when no results
             const priceHint = minPrice || maxPrice ? " in your budget" : "";
             return {
@@ -233,4 +251,56 @@ function formatLocationInfo(location: any): string {
     location.nearbyLandmarks ? `Nearby: ${location.nearbyLandmarks}` : undefined,
   ].filter(Boolean);
   return parts.join("\n");
+}
+
+function extractSearchTerms(text: string): string {
+  const lower = text.toLowerCase();
+
+  const stopWords = new Set([
+    "show",
+    "me",
+    "the",
+    "a",
+    "an",
+    "i",
+    "want",
+    "to",
+    "see",
+    "find",
+    "looking",
+    "for",
+    "need",
+    "please",
+    "can",
+    "you",
+    "get",
+    "list",
+    "all",
+    "available",
+    "properties",
+    "property",
+    "listings",
+    "listing",
+    "what",
+    "are",
+    "is",
+    "there",
+    "any",
+    "some",
+    "give",
+    "tell",
+    "about",
+    "details",
+    "info",
+    "information",
+    "search",
+    "browse",
+  ]);
+
+  const words = lower
+    .split(/\W+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 1 && !stopWords.has(w));
+
+  return words.join(" ");
 }
