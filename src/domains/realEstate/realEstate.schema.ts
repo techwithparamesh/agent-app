@@ -78,3 +78,30 @@ export const realEstateVisits = mysqlTable(
     createdIdx: index("idx_real_estate_visits_created").on(table.createdAt),
   })
 );
+
+export const realEstatePropertyDrafts = mysqlTable(
+  "real_estate_property_drafts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: varchar("tenant_id", { length: 36 }).notNull(),
+    agentId: varchar("agent_id", { length: 36 }).notNull(),
+
+    title: varchar("title", { length: 500 }).notNull(),
+    propertyType: varchar("property_type", { length: 100 }),
+    city: varchar("city", { length: 255 }).notNull(),
+    area: varchar("area", { length: 255 }),
+    price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+    bedrooms: varchar("bedrooms", { length: 50 }),
+    description: text("description"),
+
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+
+    createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("idx_real_estate_property_drafts_tenant").on(table.tenantId),
+    agentIdx: index("idx_real_estate_property_drafts_agent").on(table.agentId),
+    statusIdx: index("idx_real_estate_property_drafts_status").on(table.status),
+    createdIdx: index("idx_real_estate_property_drafts_created").on(table.createdAt),
+  })
+);

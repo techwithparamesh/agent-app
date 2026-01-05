@@ -60,3 +60,30 @@ export interface ListingAvailabilityResult {
   listingId: number;
   available: boolean;
 }
+
+export type PropertyDraftStatus = "pending" | "approved" | "rejected";
+
+export interface RealEstatePropertyDraft {
+  id: number;
+  tenantId: TenantId;
+  agentId: string;
+  title: string;
+  propertyType: string | null;
+  city: string;
+  area: string | null;
+  price: string;
+  bedrooms: string | null;
+  description: string | null;
+  status: PropertyDraftStatus;
+  createdAt: Date;
+}
+
+export interface CreatePropertyDraftInput {
+  title: string;
+  propertyType?: string;
+  city: string;
+  area?: string;
+  price: number;
+  bedrooms?: string;
+  description?: string;
+}

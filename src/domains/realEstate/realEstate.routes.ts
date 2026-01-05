@@ -149,3 +149,105 @@ realEstateRoutes.post("/visits", async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to schedule visit" });
   }
 });
+
+realEstateRoutes.post("/properties/draft", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+
+  const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
+  const title = typeof (req.body as any)?.title === "string" ? (req.body as any).title : "";
+  const propertyType = typeof (req.body as any)?.propertyType === "string" ? (req.body as any).propertyType : undefined;
+  const city = typeof (req.body as any)?.city === "string" ? (req.body as any).city : "";
+  const area = typeof (req.body as any)?.area === "string" ? (req.body as any).area : undefined;
+  const price = parseNumber((req.body as any)?.price);
+  const bedrooms = typeof (req.body as any)?.bedrooms === "string" ? (req.body as any).bedrooms : undefined;
+  const description = typeof (req.body as any)?.description === "string" ? (req.body as any).description : undefined;
+
+  if (!agentId) return res.status(400).json({ error: "agentId is required" });
+  if (title.trim().length < 2) return res.status(400).json({ error: "title is required (min 2 chars)" });
+  if (city.trim().length < 2) return res.status(400).json({ error: "city is required (min 2 chars)" });
+  if (typeof price !== "number" || price <= 0) return res.status(400).json({ error: "price must be a positive number" });
+
+  try {
+    const draft = await service.createPropertyDraft(tenantId, agentId, {
+      title,
+      propertyType,
+      city,
+      area,
+      price,
+      bedrooms,
+      description,
+    });
+
+    if (!draft) {
+      return res.status(500).json({ error: "Failed to create draft" });
+    }
+
+    return res.status(201).json({ draft });
+  } catch {
+    return res.status(500).json({ error: "Failed to create property draft" });
+  }
+});
+
+realEstateRoutes.get("/properties/drafts", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+
+  const agentId = typeof req.query.agentId === "string" ? req.query.agentId.trim() : "";
+  const status = typeof req.query.status === "string" ? req.query.status.trim() : undefined;
+
+  if (!agentId) return res.status(400).json({ error: "agentId query param is required" });
+
+  try {
+    const drafts = await service.getPropertyDrafts(tenantId, agentId, status);
+    return res.json({ drafts });
+  } catch {
+    return res.status(500).json({ error: "Failed to fetch drafts" });
+  }
+});
+
+realEstateRoutes.post("/properties/:id/approve", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+
+  const draftId = Number(req.params.id);
+  if (!Number.isFinite(draftId)) return res.status(400).json({ error: "Invalid draft id" });
+
+  const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
+  if (!agentId) return res.status(400).json({ error: "agentId is required" });
+
+  try {
+    const result = await service.approvePropertyDraft(tenantId, agentId, draftId);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    return res.json({ success: true, listingId: result.listingId });
+  } catch {
+    return res.status(500).json({ error: "Failed to approve draft" });
+  }
+});
+
+realEstateRoutes.post("/properties/:id/reject", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+
+  const draftId = Number(req.params.id);
+  if (!Number.isFinite(draftId)) return res.status(400).json({ error: "Invalid draft id" });
+
+  const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
+  if (!agentId) return res.status(400).json({ error: "agentId is required" });
+
+  try {
+    const result = await service.rejectPropertyDraft(tenantId, agentId, draftId);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    return res.json({ success: true });
+  } catch {
+    return res.status(500).json({ error: "Failed to reject draft" });
+  }
+});
