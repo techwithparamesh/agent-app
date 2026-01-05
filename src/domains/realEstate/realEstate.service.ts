@@ -112,34 +112,35 @@ export class RealEstateService {
     const limit = clampNumber(params.limit ?? 20, 1, 100);
     const offset = Math.max(0, params.offset ?? 0);
 
-    const conditions = [eq(realEstateListings.tenantId, tenantId)];
+    // Build search conditions (excluding tenant filter initially)
+    const searchConditions: ReturnType<typeof eq>[] = [];
 
     if (typeof params.available === "boolean") {
-      conditions.push(eq(realEstateListings.available, params.available));
+      searchConditions.push(eq(realEstateListings.available, params.available));
     }
 
     if (params.city && params.city.trim().length > 0) {
-      conditions.push(eq(realEstateListings.city, params.city.trim()));
+      searchConditions.push(eq(realEstateListings.city, params.city.trim()));
     }
 
     if (params.area && params.area.trim().length > 0) {
-      conditions.push(eq(realEstateListings.area, params.area.trim()));
+      searchConditions.push(eq(realEstateListings.area, params.area.trim()));
     }
 
     if (params.type && params.type.trim().length > 0) {
-      conditions.push(eq(realEstateListings.type, params.type.trim()));
+      searchConditions.push(eq(realEstateListings.type, params.type.trim()));
     }
 
     if (params.locationSlug && params.locationSlug.trim().length > 0) {
-      conditions.push(eq(realEstateListings.locationSlug, params.locationSlug.trim()));
+      searchConditions.push(eq(realEstateListings.locationSlug, params.locationSlug.trim()));
     }
 
     if (typeof params.minPrice === "number" && Number.isFinite(params.minPrice)) {
-      conditions.push(sql`${realEstateListings.price} >= ${params.minPrice}`);
+      searchConditions.push(sql`${realEstateListings.price} >= ${params.minPrice}`);
     }
 
     if (typeof params.maxPrice === "number" && Number.isFinite(params.maxPrice)) {
-      conditions.push(sql`${realEstateListings.price} <= ${params.maxPrice}`);
+      searchConditions.push(sql`${realEstateListings.price} <= ${params.maxPrice}`);
     }
 
     const q = params.q?.trim();
@@ -156,17 +157,31 @@ export class RealEstateService {
           )!;
         });
         // Require each token to match at least one field.
-        conditions.push(and(...tokenConditions));
+        searchConditions.push(and(...tokenConditions) as any);
       }
     }
 
-    const rows = await db
+    // First: try tenant-scoped search
+    const tenantConditions = [eq(realEstateListings.tenantId, tenantId), ...searchConditions];
+    let rows = await db
       .select()
       .from(realEstateListings)
-      .where(and(...conditions))
+      .where(and(...tenantConditions))
       .orderBy(desc(realEstateListings.createdAt))
       .limit(limit)
       .offset(offset);
+
+    // Fallback: if no tenant-scoped results, search globally (shared inventory mode)
+    // This allows Real Estate agents to access listings from any tenant (demo/shared catalog).
+    if (rows.length === 0 && searchConditions.length > 0) {
+      rows = await db
+        .select()
+        .from(realEstateListings)
+        .where(and(...searchConditions))
+        .orderBy(desc(realEstateListings.createdAt))
+        .limit(limit)
+        .offset(offset);
+    }
 
     return rows as unknown as RealEstateListing[];
   }
