@@ -63,6 +63,7 @@ const verificationColors: Record<string, string> = {
 export default function WhatsAppAccountsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const agentToLink = new URLSearchParams(window.location.search).get("agent") || "";
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     bspProvider: "360dialog",
@@ -373,7 +374,13 @@ export default function WhatsAppAccountsPage() {
                         </a>
                       </Button>
                       <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <a href={`/dashboard/whatsapp/accounts/${account.id}/numbers`}>
+                        <a
+                          href={
+                            agentToLink
+                              ? `/dashboard/whatsapp/accounts/${account.id}/numbers?agent=${encodeURIComponent(agentToLink)}`
+                              : `/dashboard/whatsapp/accounts/${account.id}/numbers`
+                          }
+                        >
                           <Phone className="h-4 w-4 mr-1" />
                           Numbers
                         </a>

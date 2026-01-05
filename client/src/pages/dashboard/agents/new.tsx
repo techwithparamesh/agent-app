@@ -198,6 +198,8 @@ export default function CreateAgent() {
       queryClient.invalidateQueries({ queryKey: ["/api/agents"] });
 
       const encodedUrl = websiteUrl.trim().length > 0 ? `&url=${encodeURIComponent(websiteUrl.trim())}` : "";
+      const isWhatsAppOnly = channels.includes("whatsapp") && !channels.includes("website");
+
       const nextUrl =
         selectedPurpose === "static_website"
           ? `/dashboard/scan?agent=${agent.id}${encodedUrl}&autostart=1`
@@ -205,7 +207,9 @@ export default function CreateAgent() {
             ? `/dashboard/scan?agent=${agent.id}${encodedUrl}`
             : knowledgeSource === "upload"
               ? `/dashboard/knowledge?agent=${agent.id}`
-              : `/dashboard/agents/${agent.id}`;
+              : isWhatsAppOnly
+                  ? `/dashboard/whatsapp/accounts?agent=${encodeURIComponent(agent.id)}`
+                : `/dashboard/agents/${agent.id}`;
 
       setLocation(nextUrl);
     },
@@ -493,6 +497,12 @@ export default function CreateAgent() {
                       </div>
                       <Checkbox checked={channels.includes("whatsapp")} onCheckedChange={() => toggleChannel("whatsapp")} />
                     </div>
+
+                    {channels.includes("whatsapp") && !isEmailVerified && (
+                      <div className="pt-2">
+                        <EmailVerificationRequiredInline featureName="WhatsApp" />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

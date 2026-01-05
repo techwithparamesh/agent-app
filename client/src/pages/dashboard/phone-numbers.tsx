@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -81,6 +81,16 @@ export default function PhoneNumbersPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const preselectedAgentId = useMemo(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("agent") || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
+  const didApplyPreselectRef = useRef(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [selectedPhoneId, setSelectedPhoneId] = useState<string | null>(null);
@@ -104,6 +114,22 @@ export default function PhoneNumbersPage() {
   const { data: agents } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
   });
+
+  const preselectedAgentName = useMemo(() => {
+    if (!preselectedAgentId) return "";
+    const agent = agents?.find((a) => a.id === preselectedAgentId);
+    return agent?.name || "";
+  }, [agents, preselectedAgentId]);
+
+  useEffect(() => {
+    if (didApplyPreselectRef.current) return;
+    if (!preselectedAgentId) return;
+    if (!agents || agents.length === 0) return;
+    const exists = agents.some((a) => a.id === preselectedAgentId);
+    if (!exists) return;
+    setSelectedAgentId(preselectedAgentId);
+    didApplyPreselectRef.current = true;
+  }, [agents, preselectedAgentId]);
 
   if (isEmailVerificationRequiredError(phoneNumbersError)) {
     return (
@@ -369,6 +395,12 @@ export default function PhoneNumbersPage() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {preselectedAgentId && selectedAgentId === preselectedAgentId && (
+                  <p className="text-xs text-muted-foreground">
+                    Preselected from setup: {preselectedAgentName || "selected agent"}
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
