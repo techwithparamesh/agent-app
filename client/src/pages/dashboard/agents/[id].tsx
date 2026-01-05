@@ -136,6 +136,16 @@ export default function AgentDetails() {
   });
 
   const isWhatsAppAgent = (agent as any)?.agentType === "whatsapp";
+  const agentCapabilities = (((agent as any)?.capabilities ?? []) as string[]).filter(
+    (c) => typeof c === "string" && c.length > 0
+  );
+  const agentBusinessCategory = (agent as any)?.businessCategory as string | undefined;
+  const shouldShowAppointmentBooking =
+    isWhatsAppAgent &&
+    agentCapabilities.includes("appointments") &&
+    (agentBusinessCategory === "healthcare" || agentCapabilities.includes("doctors"));
+  const shouldPromptForCategorySetup =
+    isWhatsAppAgent && (!agentBusinessCategory || agentCapabilities.length === 0);
 
   useEffect(() => {
     if (!agent || !isWhatsAppAgent) return;
@@ -839,18 +849,41 @@ export default function AgentDetails() {
                   </CardContent>
                 </Card>
 
+                {shouldPromptForCategorySetup && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                        WhatsApp Business Settings
+                      </CardTitle>
+                      <CardDescription>
+                        Category-specific fields and features appear after you select a business category and enable capabilities.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="text-sm text-muted-foreground">
+                        Open the agent editor to set your category, business info, and enabled features.
+                      </div>
+                      <Button asChild variant="outline">
+                        <Link href={`/dashboard/agents/${agentId}/edit`}>Edit Agent</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Appointment Booking */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      Appointment Booking
-                    </CardTitle>
-                    <CardDescription>
-                      Configure doctor availability so your WhatsApp agent can check slots and book appointments (no website needed).
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
+                {shouldShowAppointmentBooking && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        Appointment Booking
+                      </CardTitle>
+                      <CardDescription>
+                        Configure doctor availability so your WhatsApp agent can check slots and book appointments (no website needed).
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="maxDaysAhead">Max days in advance</Label>
@@ -1132,27 +1165,28 @@ export default function AgentDetails() {
                       )}
                     </div>
 
-                    <div className="pt-2 flex justify-end">
-                      <Button
-                        type="button"
-                        onClick={() => updateAppointmentSettingsMutation.mutate()}
-                        disabled={updateAppointmentSettingsMutation.isPending}
-                      >
-                        {updateAppointmentSettingsMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Check className="mr-2 h-4 w-4" />
-                            Save Appointment Settings
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="pt-2 flex justify-end">
+                        <Button
+                          type="button"
+                          onClick={() => updateAppointmentSettingsMutation.mutate()}
+                          disabled={updateAppointmentSettingsMutation.isPending}
+                        >
+                          {updateAppointmentSettingsMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Save Appointment Settings
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Setup Instructions */}
                 <Card>
