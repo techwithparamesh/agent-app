@@ -1,6 +1,8 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { RealEstateService } from "./realEstate.service";
+import { storage } from "../../../server/storage";
+import { decrypt, encrypt } from "../../../server/utils/encryption";
 
 function getTenantId(req: Request): string | null {
   const user = (req as any)?.user;
@@ -27,6 +29,120 @@ const service = new RealEstateService();
 export const realEstateRoutes = Router();
 
 // Base path (for mounting): /api/domains/real-estate
+
+realEstateRoutes.get("/property-sync/config", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+
+  const agentId = typeof req.query.agentId === "string" ? req.query.agentId.trim() : "";
+  if (!agentId) return res.status(400).json({ error: "agentId query param is required" });
+
+  const agent = await storage.getAgentById(agentId);
+  if (!agent || agent.userId !== tenantId) return res.status(404).json({ error: "Agent not found" });
+
+  try {
+    const config = await service.getPropertySyncConfig(tenantId, agentId);
+    const hasApiKey = Boolean(config?.credentialId);
+    return res.json({
+      config: config
+        ? {
+            sourceType: (config as any).sourceType,
+            websiteUrl: (config as any).websiteUrl,
+            apiEndpoint: (config as any).apiEndpoint,
+            lastSyncedAt: (config as any).lastSyncedAt,
+            hasApiKey,
+          }
+        : null,
+    });
+  } catch {
+    return res.status(500).json({ error: "Failed to fetch sync config" });
+  }
+});
+
+realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+
+  const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
+  const sourceType = typeof (req.body as any)?.sourceType === "string" ? (req.body as any).sourceType.trim() : "";
+  const websiteUrl = typeof (req.body as any)?.websiteUrl === "string" ? (req.body as any).websiteUrl : undefined;
+  const apiEndpoint = typeof (req.body as any)?.apiEndpoint === "string" ? (req.body as any).apiEndpoint : undefined;
+  const apiKey = typeof (req.body as any)?.apiKey === "string" ? (req.body as any).apiKey : undefined;
+
+  if (!agentId) return res.status(400).json({ error: "agentId is required" });
+  if (!sourceType || !["wordpress", "custom_api", "unknown"].includes(sourceType)) {
+    return res.status(400).json({ error: "Invalid sourceType" });
+  }
+
+  const agent = await storage.getAgentById(agentId);
+  if (!agent || agent.userId !== tenantId) return res.status(404).json({ error: "Agent not found" });
+
+  let credentialId: string | undefined;
+  let resolvedApiKey: string | undefined = apiKey;
+
+  if (sourceType === "custom_api") {
+    const appId = `real_estate_property_sync:${agentId}`;
+    const existing = await storage.getCredentialByUserAndApp(tenantId, appId);
+
+    if (typeof apiKey === "string" && apiKey.trim().length > 0) {
+      const encryptedData = encrypt(JSON.stringify({ apiKey: apiKey.trim() }));
+      if (existing) {
+        await storage.updateCredential(existing.id, {
+          name: existing.name || `Property Sync (${agentId})`,
+          credentialType: existing.credentialType || "api_key",
+          encryptedData,
+          isValid: true,
+        } as any);
+        credentialId = existing.id;
+      } else {
+        const created = await storage.createCredential(tenantId, {
+          name: `Property Sync (${agentId})`,
+          appId,
+          credentialType: "api_key",
+          encryptedData,
+          isValid: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any);
+        credentialId = created.id;
+      }
+      resolvedApiKey = apiKey.trim();
+    } else if (existing?.encryptedData) {
+      credentialId = existing.id;
+      const decrypted = decrypt(String(existing.encryptedData));
+      try {
+        const parsed = JSON.parse(decrypted || "{}");
+        if (typeof parsed?.apiKey === "string") {
+          resolvedApiKey = parsed.apiKey;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  try {
+    const result = await service.syncPropertiesNow(tenantId, agentId, {
+      sourceType: sourceType as any,
+      websiteUrl,
+      apiEndpoint,
+      apiKey: resolvedApiKey,
+      credentialId,
+    });
+
+    return res.json({
+      imported: result.imported,
+      skipped: result.skipped,
+      fetched: result.fetched,
+      message:
+        result.imported > 0
+          ? `${result.imported} properties imported for review.`
+          : "No new properties were imported.",
+    });
+  } catch {
+    return res.status(500).json({ error: "Failed to sync properties" });
+  }
+});
 
 realEstateRoutes.get("/listings", async (req: Request, res: Response) => {
   const tenantId = getTenantId(req);

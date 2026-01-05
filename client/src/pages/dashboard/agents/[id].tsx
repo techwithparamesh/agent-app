@@ -66,11 +66,42 @@ interface WhatsAppConfig {
   createdAt: string;
 }
 
+type PropertySyncSourceType = "wordpress" | "custom_api" | "unknown";
+type PropertySyncConfig = {
+  sourceType: PropertySyncSourceType;
+  websiteUrl: string | null;
+  apiEndpoint: string | null;
+  lastSyncedAt: string | null;
+  hasApiKey: boolean;
+};
+type PropertySyncConfigResponse = { config: PropertySyncConfig | null };
+type PropertySyncSyncResponse = {
+  imported: number;
+  skipped: number;
+  fetched: number;
+  message: string;
+};
+type PropertyDraft = {
+  id: number;
+  title: string;
+  city: string;
+  area: string | null;
+  price: string;
+  status: "pending" | "approved" | "rejected";
+};
+type PropertyDraftsResponse = { drafts: PropertyDraft[] };
+
 export default function AgentDetails() {
   const [, params] = useRoute("/dashboard/agents/:id");
   const agentId = params?.id;
   const { toast } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Real Estate Property Sync state
+  const [propertySyncSource, setPropertySyncSource] = useState<PropertySyncSourceType>("wordpress");
+  const [propertySyncWebsiteUrl, setPropertySyncWebsiteUrl] = useState<string>("");
+  const [propertySyncApiEndpoint, setPropertySyncApiEndpoint] = useState<string>("");
+  const [propertySyncApiKey, setPropertySyncApiKey] = useState<string>("");
 
   // Widget customization state
   const [widgetConfig, setWidgetConfig] = useState({
@@ -139,6 +170,7 @@ export default function AgentDetails() {
   const agentCapabilities = (((agent as any)?.capabilities ?? []) as string[]).filter(
     (c) => typeof c === "string" && c.length > 0
   );
+  const shouldShowPropertySync = agentCapabilities.includes("real_estate");
   const agentBusinessCategory = (agent as any)?.businessCategory as string | undefined;
   const shouldShowAppointmentBooking =
     isWhatsAppAgent &&
@@ -190,6 +222,297 @@ export default function AgentDetails() {
         .filter(Boolean) as DoctorForm[],
     });
   }, [agent, isWhatsAppAgent]);
+
+  const { data: propertySyncConfigData, isLoading: propertySyncConfigLoading } = useQuery<PropertySyncConfigResponse>({
+    queryKey: [agentId ? `/api/domains/real-estate/property-sync/config?agentId=${agentId}` : ""],
+    enabled: Boolean(agentId) && shouldShowPropertySync,
+  });
+
+  const { data: propertyDraftsData, isLoading: propertyDraftsLoading } = useQuery<PropertyDraftsResponse>({
+    queryKey: [agentId ? `/api/domains/real-estate/properties/drafts?agentId=${agentId}` : ""],
+    enabled: Boolean(agentId) && shouldShowPropertySync,
+  });
+
+  useEffect(() => {
+    const config = propertySyncConfigData?.config;
+    if (config) {
+      setPropertySyncSource(config.sourceType);
+      setPropertySyncWebsiteUrl(config.websiteUrl || (agent as any)?.websiteUrl || "");
+      setPropertySyncApiEndpoint(config.apiEndpoint || "");
+      return;
+    }
+    if ((agent as any)?.websiteUrl && !propertySyncWebsiteUrl) {
+      setPropertySyncWebsiteUrl((agent as any).websiteUrl);
+    }
+  }, [propertySyncConfigData?.config, agent, propertySyncWebsiteUrl]);
+
+  const syncPropertiesMutation = useMutation({
+    mutationFn: async () => {
+      if (!agentId) throw new Error("Missing agent id");
+      const payload: any = {
+        agentId,
+        sourceType: propertySyncSource,
+      };
+      if (propertySyncSource === "wordpress") {
+        payload.websiteUrl = propertySyncWebsiteUrl;
+      }
+      if (propertySyncSource === "custom_api") {
+        payload.apiEndpoint = propertySyncApiEndpoint;
+        if (propertySyncApiKey.trim().length > 0) payload.apiKey = propertySyncApiKey.trim();
+      }
+      if (propertySyncSource === "unknown") {
+        payload.websiteUrl = propertySyncWebsiteUrl;
+      }
+
+      const res = await apiRequest("POST", "/api/domains/real-estate/property-sync/sync", payload);
+      return (await res.json()) as PropertySyncSyncResponse;
+    },
+    onSuccess: async (data) => {
+      toast({
+        title: "Sync complete",
+        description: data.message || `${data.imported} properties imported for review.`,
+      });
+      setPropertySyncApiKey("");
+      if (agentId) {
+        await queryClient.invalidateQueries({
+          queryKey: [`/api/domains/real-estate/properties/drafts?agentId=${agentId}`],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: [`/api/domains/real-estate/property-sync/config?agentId=${agentId}`],
+        });
+      }
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Sync failed",
+        description: err?.message || "Could not sync properties.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const approveDraftMutation = useMutation({
+    mutationFn: async (draftId: number) => {
+      if (!agentId) throw new Error("Missing agent id");
+      const res = await apiRequest("POST", `/api/domains/real-estate/properties/${draftId}/approve`, { agentId });
+      return res.json();
+    },
+    onSuccess: async () => {
+      toast({ title: "Property approved", description: "This property is now visible to the AI agent." });
+      if (agentId) {
+        await queryClient.invalidateQueries({
+          queryKey: [`/api/domains/real-estate/properties/drafts?agentId=${agentId}`],
+        });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not approve", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const rejectDraftMutation = useMutation({
+    mutationFn: async (draftId: number) => {
+      if (!agentId) throw new Error("Missing agent id");
+      const res = await apiRequest("POST", `/api/domains/real-estate/properties/${draftId}/reject`, { agentId });
+      return res.json();
+    },
+    onSuccess: async () => {
+      toast({ title: "Property rejected" });
+      if (agentId) {
+        await queryClient.invalidateQueries({
+          queryKey: [`/api/domains/real-estate/properties/drafts?agentId=${agentId}`],
+        });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not reject", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const renderPropertySyncTab = () => {
+    const config = propertySyncConfigData?.config;
+    const drafts = propertyDraftsData?.drafts ?? [];
+    const lastSyncedText = config?.lastSyncedAt ? new Date(config.lastSyncedAt).toLocaleString() : null;
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Sync</CardTitle>
+            <CardDescription>
+              Connect your website to keep your property listings up to date. You continue managing properties on your website.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-sm text-muted-foreground">
+              The AI agent answers only using approved listings and website information.
+            </div>
+
+            <div className="space-y-3">
+              <Label>How is your website built?</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPropertySyncSource("wordpress")}
+                  className={`text-left rounded-lg border p-4 transition-colors ${
+                    propertySyncSource === "wordpress" ? "border-primary" : "border-border"
+                  }`}
+                >
+                  <div className="font-medium">[Recommended] My website is built on WordPress</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPropertySyncSource("custom_api")}
+                  className={`text-left rounded-lg border p-4 transition-colors ${
+                    propertySyncSource === "custom_api" ? "border-primary" : "border-border"
+                  }`}
+                >
+                  <div className="font-medium">My website was built by a developer</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPropertySyncSource("unknown")}
+                  className={`text-left rounded-lg border p-4 transition-colors ${
+                    propertySyncSource === "unknown" ? "border-primary" : "border-border"
+                  }`}
+                >
+                  <div className="font-medium">I’m not sure / I don’t know</div>
+                </button>
+              </div>
+            </div>
+
+            {propertySyncSource === "wordpress" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="propertySyncWebsiteUrl">Website URL</Label>
+                  <Input
+                    id="propertySyncWebsiteUrl"
+                    placeholder="https://example.com"
+                    value={propertySyncWebsiteUrl}
+                    onChange={(e) => setPropertySyncWebsiteUrl(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">We’ll auto-detect property data</p>
+                </div>
+              </div>
+            )}
+
+            {propertySyncSource === "custom_api" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="propertySyncApiEndpoint">API Endpoint</Label>
+                  <Input
+                    id="propertySyncApiEndpoint"
+                    placeholder="https://example.com/api/properties"
+                    value={propertySyncApiEndpoint}
+                    onChange={(e) => setPropertySyncApiEndpoint(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="propertySyncApiKey">API Key (optional)</Label>
+                  <Input
+                    id="propertySyncApiKey"
+                    placeholder={config?.hasApiKey ? "Saved" : ""}
+                    value={propertySyncApiKey}
+                    onChange={(e) => setPropertySyncApiKey(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {propertySyncSource === "unknown" && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  If you’re not sure, you can still use website scanning for general information and then approve imported properties before they go live.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Only approved properties are visible to the AI agent.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-xs text-muted-foreground">
+                {propertySyncConfigLoading ? "Loading…" : lastSyncedText ? `Last synced: ${lastSyncedText}` : "Not synced yet"}
+              </div>
+              <Button
+                onClick={() => syncPropertiesMutation.mutate()}
+                disabled={syncPropertiesMutation.isPending}
+              >
+                {syncPropertiesMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Syncing…
+                  </>
+                ) : (
+                  "Sync Properties"
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Imported Properties</CardTitle>
+            <CardDescription>
+              Review and approve properties. Only approved properties are visible to the AI agent.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {propertyDraftsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading drafts…
+              </div>
+            ) : drafts.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No imported properties yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {drafts.map((d) => {
+                  const location = d.area ? `${d.city}, ${d.area}` : d.city;
+                  const statusLabel = d.status === "pending" ? "Pending approval" : d.status;
+                  return (
+                    <div key={d.id} className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium truncate">{d.title}</div>
+                          <Badge variant={d.status === "pending" ? "secondary" : "outline"}>
+                            {statusLabel}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">{location}</div>
+                        <div className="text-sm text-muted-foreground">Price: {d.price}</div>
+                      </div>
+
+                      {d.status === "pending" ? (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => approveDraftMutation.mutate(d.id)}
+                            disabled={approveDraftMutation.isPending || rejectDraftMutation.isPending}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => rejectDraftMutation.mutate(d.id)}
+                            disabled={approveDraftMutation.isPending || rejectDraftMutation.isPending}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const updateAppointmentSettingsMutation = useMutation({
     mutationFn: async () => {
@@ -508,12 +831,18 @@ export default function AgentDetails() {
           {/* WhatsApp Agent Tabs */}
           {isWhatsAppAgent ? (
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className={`grid w-full ${shouldShowPropertySync ? "grid-cols-4" : "grid-cols-3"}`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="whatsapp-settings">
                   <Settings className="h-4 w-4 mr-2" />
                   WhatsApp Settings
                 </TabsTrigger>
+                {shouldShowPropertySync && (
+                  <TabsTrigger value="property-sync">
+                    <Globe className="h-4 w-4 mr-2" />
+                    Property Sync
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
               </TabsList>
 
@@ -1230,6 +1559,12 @@ export default function AgentDetails() {
                 </Card>
               </TabsContent>
 
+              {shouldShowPropertySync && (
+                <TabsContent value="property-sync" className="space-y-6">
+                  {renderPropertySyncTab()}
+                </TabsContent>
+              )}
+
               <TabsContent value="knowledge" className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -1311,12 +1646,18 @@ export default function AgentDetails() {
           ) : (
             /* Layout for Website Agents with Tabs */
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className={`grid w-full ${shouldShowPropertySync ? "grid-cols-4" : "grid-cols-3"}`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="widget">
                   <Code className="h-4 w-4 mr-2" />
                   Widget Setup
                 </TabsTrigger>
+                {shouldShowPropertySync && (
+                  <TabsTrigger value="property-sync">
+                    <Globe className="h-4 w-4 mr-2" />
+                    Property Sync
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
               </TabsList>
 
@@ -1615,6 +1956,12 @@ export default function AgentDetails() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {shouldShowPropertySync && (
+                <TabsContent value="property-sync" className="space-y-6">
+                  {renderPropertySyncTab()}
+                </TabsContent>
+              )}
 
               <TabsContent value="knowledge" className="space-y-6">
                 {/* Knowledge Base */}

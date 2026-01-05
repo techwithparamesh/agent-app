@@ -86,6 +86,8 @@ export const realEstatePropertyDrafts = mysqlTable(
     tenantId: varchar("tenant_id", { length: 36 }).notNull(),
     agentId: varchar("agent_id", { length: 36 }).notNull(),
 
+    externalPropertyId: varchar("external_property_id", { length: 191 }),
+
     title: varchar("title", { length: 500 }).notNull(),
     propertyType: varchar("property_type", { length: 100 }),
     city: varchar("city", { length: 255 }).notNull(),
@@ -101,7 +103,37 @@ export const realEstatePropertyDrafts = mysqlTable(
   (table) => ({
     tenantIdx: index("idx_real_estate_property_drafts_tenant").on(table.tenantId),
     agentIdx: index("idx_real_estate_property_drafts_agent").on(table.agentId),
+    tenantExternalIdx: uniqueIndex("uq_real_estate_property_drafts_tenant_external").on(
+      table.tenantId,
+      table.externalPropertyId
+    ),
     statusIdx: index("idx_real_estate_property_drafts_status").on(table.status),
     createdIdx: index("idx_real_estate_property_drafts_created").on(table.createdAt),
+  })
+);
+
+export const realEstatePropertySyncConfigs = mysqlTable(
+  "real_estate_property_sync_configs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: varchar("tenant_id", { length: 36 }).notNull(),
+    agentId: varchar("agent_id", { length: 36 }).notNull(),
+
+    sourceType: varchar("source_type", { length: 30 }).notNull(),
+    websiteUrl: varchar("website_url", { length: 2048 }),
+    apiEndpoint: varchar("api_endpoint", { length: 2048 }),
+    credentialId: varchar("credential_id", { length: 36 }),
+
+    lastSyncedAt: timestamp("last_synced_at"),
+    createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("idx_real_estate_property_sync_configs_tenant").on(table.tenantId),
+    agentIdx: index("idx_real_estate_property_sync_configs_agent").on(table.agentId),
+    tenantAgentUnique: uniqueIndex("uq_real_estate_property_sync_configs_tenant_agent").on(
+      table.tenantId,
+      table.agentId
+    ),
   })
 );

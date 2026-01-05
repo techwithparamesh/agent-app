@@ -67,6 +67,7 @@ export interface RealEstatePropertyDraft {
   id: number;
   tenantId: TenantId;
   agentId: string;
+  externalPropertyId?: string | null;
   title: string;
   propertyType: string | null;
   city: string;
@@ -76,6 +77,29 @@ export interface RealEstatePropertyDraft {
   description: string | null;
   status: PropertyDraftStatus;
   createdAt: Date;
+}
+
+export type PropertySyncSourceType = "wordpress" | "custom_api" | "unknown";
+
+export interface RealEstatePropertySyncConfig {
+  id: number;
+  tenantId: TenantId;
+  agentId: string;
+  sourceType: PropertySyncSourceType;
+  websiteUrl: string | null;
+  apiEndpoint: string | null;
+  credentialId: string | null;
+  lastSyncedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PropertySyncNowInput {
+  sourceType: PropertySyncSourceType;
+  websiteUrl?: string;
+  apiEndpoint?: string;
+  apiKey?: string;
+  credentialId?: string;
 }
 
 export interface CreatePropertyDraftInput {
