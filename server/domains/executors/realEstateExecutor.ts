@@ -162,7 +162,6 @@ export class RealEstateDomainExecutor implements DomainExecutor {
           
           const items = await service.searchListings(ctx.userId, {
             q: searchQuery,
-            type: propertyType,
             locationSlug,
             minPrice,
             maxPrice,

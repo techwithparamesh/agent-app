@@ -33,6 +33,80 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function tokenizeListingSearchQuery(q: string): string[] {
+  const stopWords = new Set([
+    "a",
+    "an",
+    "and",
+    "are",
+    "at",
+    "available",
+    "below",
+    "between",
+    "budget",
+    "buy",
+    "can",
+    "cost",
+    "details",
+    "find",
+    "for",
+    "from",
+    "give",
+    "i",
+    "in",
+    "info",
+    "information",
+    "is",
+    "list",
+    "listing",
+    "listings",
+    "me",
+    "near",
+    "nearby",
+    "need",
+    "of",
+    "on",
+    "please",
+    "price",
+    "properties",
+    "property",
+    "rent",
+    "rental",
+    "sale",
+    "search",
+    "see",
+    "sell",
+    "show",
+    "some",
+    "tell",
+    "the",
+    "to",
+    "under",
+    "want",
+    "what",
+    "you",
+    "your",
+  ]);
+
+  const rawTokens = q
+    .toLowerCase()
+    .trim()
+    .split(/[^a-z0-9]+/g)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .filter((t) => t.length > 1)
+    .filter((t) => !stopWords.has(t));
+
+  const normalized = rawTokens.map((t) => {
+    if (t.endsWith("s") && t.length > 3) return t.slice(0, -1);
+    return t;
+  });
+
+  // Avoid overly broad queries and keep SQL manageable
+  const unique = Array.from(new Set(normalized));
+  return unique.slice(0, 8);
+}
+
 export class RealEstateService {
   async searchListings(tenantId: TenantId, params: ListingSearchParams): Promise<RealEstateListing[]> {
     const limit = clampNumber(params.limit ?? 20, 1, 100);
@@ -70,15 +144,20 @@ export class RealEstateService {
 
     const q = params.q?.trim();
     if (q) {
-      const pattern = `%${q}%`;
-      conditions.push(
-        or(
-          like(realEstateListings.title, pattern),
-          like(realEstateListings.city, pattern),
-          like(realEstateListings.area, pattern),
-          like(realEstateListings.type, pattern)
-        )!
-      );
+      const tokens = tokenizeListingSearchQuery(q);
+      if (tokens.length > 0) {
+        const tokenConditions = tokens.map((token) => {
+          const pattern = `%${token}%`;
+          return or(
+            like(realEstateListings.title, pattern),
+            like(realEstateListings.city, pattern),
+            like(realEstateListings.area, pattern),
+            like(realEstateListings.type, pattern)
+          )!;
+        });
+        // Require each token to match at least one field.
+        conditions.push(and(...tokenConditions));
+      }
     }
 
     const rows = await db
