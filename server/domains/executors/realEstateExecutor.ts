@@ -153,17 +153,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
         case "price_filter":
         case "listing_search": {
-          // Use extracted entities when available for better matching
-          const propertyType = typeof plan.entities?.propertyType === "string" ? (plan.entities.propertyType as string) : undefined;
-          const bedrooms = typeof plan.entities?.bedrooms === "string" ? (plan.entities.bedrooms as string) : undefined;
-          
-          // Build search query from the message, stripping out common words
-          const searchQuery = extractSearchTerms(ctx.messageText);
-          
-          console.log(`[RealEstateExecutor] listing_search: userId=${ctx.userId}, query="${searchQuery}", original="${ctx.messageText}"`);
-          
           const items = await service.searchListings(ctx.userId, {
-            q: searchQuery,
+            q: ctx.messageText,
             locationSlug,
             minPrice,
             maxPrice,
@@ -172,40 +163,20 @@ export class RealEstateDomainExecutor implements DomainExecutor {
             offset: 0,
           });
 
-          console.log(`[RealEstateExecutor] listing_search: found ${items.length} items from listings table`);
-
-          // If no listings in database, fall back to knowledge base search
-          if (items.length === 0 && ctx.agentId) {
-            console.log(`[RealEstateExecutor] No listings found, searching knowledge base for agentId=${ctx.agentId}`);
-            
-            const knowledgeResults = await searchKnowledgeBase(ctx.agentId, ctx.messageText);
-            
-            if (knowledgeResults.length > 0) {
-              console.log(`[RealEstateExecutor] Found ${knowledgeResults.length} knowledge base entries`);
-              // Return as not handled so the LLM can use knowledge base context
-              return {
-                handled: false,
-                message: undefined,
-                data: { knowledgeResults, source: 'knowledge_base' },
-              };
-            }
-          }
-
           if (items.length === 0) {
             // Provide a helpful response when no results
-            const typeHint = propertyType ? ` for ${propertyType}` : "";
             const priceHint = minPrice || maxPrice ? " in your budget" : "";
             return {
               handled: true,
-              message: `I couldn't find any matching properties${typeHint}${priceHint}. Could you provide more details like:\n- City or area name\n- Budget range\n- Number of bedrooms (BHK)`,
-              data: { items, bedroomsFilter: bedrooms },
+              message: `I couldn't find any matching properties${priceHint}. Could you provide more details like:\n- City or area name\n- Budget range\n- Number of bedrooms (BHK)`,
+              data: { items },
             };
           }
 
           return {
             handled: true,
             message: formatListingList(items),
-            data: { items, bedroomsFilter: bedrooms },
+            data: { items },
           };
         }
 
@@ -262,73 +233,4 @@ function formatLocationInfo(location: any): string {
     location.nearbyLandmarks ? `Nearby: ${location.nearbyLandmarks}` : undefined,
   ].filter(Boolean);
   return parts.join("\n");
-}
-
-/**
- * Extract meaningful search terms from user message
- * Strips common filler words and keeps property-related keywords
- */
-function extractSearchTerms(text: string): string {
-  const lower = text.toLowerCase();
-  
-  // Common filler words to remove
-  const stopWords = new Set([
-    "show", "me", "the", "a", "an", "i", "want", "to", "see", "find",
-    "looking", "for", "need", "please", "can", "you", "get", "list",
-    "available", "properties", "property", "listings", "listing",
-    "what", "are", "is", "there", "any", "some", "give", "tell",
-    "about", "details", "info", "information", "search", "browse",
-  ]);
-  
-  // Split on non-word chars, filter stopwords, keep meaningful terms
-  const words = lower
-    .split(/\W+/)
-    .filter(w => w.length > 1 && !stopWords.has(w));
-  
-  return words.join(" ");
-}
-
-/**
- * Search knowledge base for property-related content
- * Falls back to this when real_estate_listings table is empty
- */
-async function searchKnowledgeBase(agentId: string, query: string): Promise<any[]> {
-  try {
-    const { storage } = await import('../../storage');
-    const allKnowledge = await storage.getKnowledgeByAgentId(agentId);
-    
-    if (!allKnowledge || allKnowledge.length === 0) {
-      return [];
-    }
-    
-    // Property-related keywords to look for in knowledge base
-    const propertyKeywords = [
-      'villa', 'apartment', 'flat', 'house', 'plot', 'land', 'property',
-      'bhk', 'bedroom', 'sqft', 'sq ft', 'price', 'rent', 'sale',
-      'tirupati', 'location', 'area', 'available'
-    ];
-    
-    const queryLower = query.toLowerCase();
-    const queryWords = queryLower.split(/\W+/).filter(w => w.length > 2);
-    
-    // Filter knowledge entries that match property keywords or query terms
-    const relevant = allKnowledge.filter(k => {
-      const content = (k.content || '').toLowerCase();
-      const title = (k.title || '').toLowerCase();
-      const combined = `${title} ${content}`;
-      
-      // Check if content contains property-related keywords
-      const hasPropertyKeyword = propertyKeywords.some(kw => combined.includes(kw));
-      
-      // Check if content matches any query words
-      const matchesQuery = queryWords.some(w => combined.includes(w));
-      
-      return hasPropertyKeyword && matchesQuery;
-    });
-    
-    return relevant.slice(0, 10);
-  } catch (error) {
-    console.error('[RealEstateExecutor] Knowledge base search error:', error);
-    return [];
-  }
 }

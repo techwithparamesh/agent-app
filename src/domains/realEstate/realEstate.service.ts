@@ -33,157 +33,61 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function tokenizeListingSearchQuery(q: string): string[] {
-  const stopWords = new Set([
-    "a",
-    "an",
-    "and",
-    "are",
-    "at",
-    "available",
-    "below",
-    "between",
-    "budget",
-    "buy",
-    "can",
-    "cost",
-    "details",
-    "find",
-    "for",
-    "from",
-    "give",
-    "i",
-    "in",
-    "info",
-    "information",
-    "is",
-    "list",
-    "listing",
-    "listings",
-    "me",
-    "near",
-    "nearby",
-    "need",
-    "of",
-    "on",
-    "please",
-    "price",
-    "properties",
-    "property",
-    "rent",
-    "rental",
-    "sale",
-    "search",
-    "see",
-    "sell",
-    "show",
-    "some",
-    "tell",
-    "the",
-    "to",
-    "under",
-    "want",
-    "what",
-    "you",
-    "your",
-  ]);
-
-  const rawTokens = q
-    .toLowerCase()
-    .trim()
-    .split(/[^a-z0-9]+/g)
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .filter((t) => t.length > 1)
-    .filter((t) => !stopWords.has(t));
-
-  const normalized = rawTokens.map((t) => {
-    if (t.endsWith("s") && t.length > 3) return t.slice(0, -1);
-    return t;
-  });
-
-  // Avoid overly broad queries and keep SQL manageable
-  const unique = Array.from(new Set(normalized));
-  return unique.slice(0, 8);
-}
-
 export class RealEstateService {
   async searchListings(tenantId: TenantId, params: ListingSearchParams): Promise<RealEstateListing[]> {
     const limit = clampNumber(params.limit ?? 20, 1, 100);
     const offset = Math.max(0, params.offset ?? 0);
 
-    // Build search conditions (excluding tenant filter initially)
-    const searchConditions: ReturnType<typeof eq>[] = [];
+    const conditions = [eq(realEstateListings.tenantId, tenantId)];
 
     if (typeof params.available === "boolean") {
-      searchConditions.push(eq(realEstateListings.available, params.available));
+      conditions.push(eq(realEstateListings.available, params.available));
     }
 
     if (params.city && params.city.trim().length > 0) {
-      searchConditions.push(eq(realEstateListings.city, params.city.trim()));
+      conditions.push(eq(realEstateListings.city, params.city.trim()));
     }
 
     if (params.area && params.area.trim().length > 0) {
-      searchConditions.push(eq(realEstateListings.area, params.area.trim()));
+      conditions.push(eq(realEstateListings.area, params.area.trim()));
     }
 
     if (params.type && params.type.trim().length > 0) {
-      searchConditions.push(eq(realEstateListings.type, params.type.trim()));
+      conditions.push(eq(realEstateListings.type, params.type.trim()));
     }
 
     if (params.locationSlug && params.locationSlug.trim().length > 0) {
-      searchConditions.push(eq(realEstateListings.locationSlug, params.locationSlug.trim()));
+      conditions.push(eq(realEstateListings.locationSlug, params.locationSlug.trim()));
     }
 
     if (typeof params.minPrice === "number" && Number.isFinite(params.minPrice)) {
-      searchConditions.push(sql`${realEstateListings.price} >= ${params.minPrice}`);
+      conditions.push(sql`${realEstateListings.price} >= ${params.minPrice}`);
     }
 
     if (typeof params.maxPrice === "number" && Number.isFinite(params.maxPrice)) {
-      searchConditions.push(sql`${realEstateListings.price} <= ${params.maxPrice}`);
+      conditions.push(sql`${realEstateListings.price} <= ${params.maxPrice}`);
     }
 
     const q = params.q?.trim();
     if (q) {
-      const tokens = tokenizeListingSearchQuery(q);
-      if (tokens.length > 0) {
-        const tokenConditions = tokens.map((token) => {
-          const pattern = `%${token}%`;
-          // Use case-insensitive LIKE (MySQL default collation is usually case-insensitive,
-          // but we use LOWER() to be safe across different collations)
-          return or(
-            sql`LOWER(${realEstateListings.title}) LIKE LOWER(${pattern})`,
-            sql`LOWER(${realEstateListings.city}) LIKE LOWER(${pattern})`,
-            sql`LOWER(${realEstateListings.area}) LIKE LOWER(${pattern})`,
-            sql`LOWER(${realEstateListings.type}) LIKE LOWER(${pattern})`
-          )!;
-        });
-        // Require each token to match at least one field.
-        searchConditions.push(and(...tokenConditions) as any);
-      }
+      const pattern = `%${q}%`;
+      conditions.push(
+        or(
+          like(realEstateListings.title, pattern),
+          like(realEstateListings.city, pattern),
+          like(realEstateListings.area, pattern),
+          like(realEstateListings.type, pattern)
+        )!
+      );
     }
 
-    // First: try tenant-scoped search
-    const tenantConditions = [eq(realEstateListings.tenantId, tenantId), ...searchConditions];
-    let rows = await db
+    const rows = await db
       .select()
       .from(realEstateListings)
-      .where(and(...tenantConditions))
+      .where(and(...conditions))
       .orderBy(desc(realEstateListings.createdAt))
       .limit(limit)
       .offset(offset);
-
-    // Fallback: if no tenant-scoped results, search globally (shared inventory mode)
-    // This allows Real Estate agents to access listings from any tenant (demo/shared catalog).
-    if (rows.length === 0 && searchConditions.length > 0) {
-      rows = await db
-        .select()
-        .from(realEstateListings)
-        .where(and(...searchConditions))
-        .orderBy(desc(realEstateListings.createdAt))
-        .limit(limit)
-        .offset(offset);
-    }
 
     return rows as unknown as RealEstateListing[];
   }
@@ -323,7 +227,13 @@ export class RealEstateService {
     const [row] = await db
       .select()
       .from(realEstatePropertyDrafts)
-      .where(eq(realEstatePropertyDrafts.id, insertedId))
+      .where(
+        and(
+          eq(realEstatePropertyDrafts.tenantId, tenantId),
+          eq(realEstatePropertyDrafts.agentId, agentId),
+          eq(realEstatePropertyDrafts.id, insertedId)
+        )
+      )
       .limit(1);
 
     return (row as unknown as RealEstatePropertyDraft) ?? null;
@@ -377,56 +287,65 @@ export class RealEstateService {
     agentId: string,
     draftId: number
   ): Promise<{ success: boolean; listingId?: number; error?: string }> {
-    const draft = await this.getPropertyDraftById(tenantId, agentId, draftId);
-
-    if (!draft) {
-      return { success: false, error: "Draft not found" };
-    }
-
-    if (draft.status !== "pending") {
-      return { success: false, error: `Draft is already ${draft.status}` };
-    }
-
-    const connection = await pool.getConnection();
-
     try {
-      await connection.beginTransaction();
+      return await db.transaction(async (tx) => {
+        const [draft] = await tx
+          .select()
+          .from(realEstatePropertyDrafts)
+          .where(
+            and(
+              eq(realEstatePropertyDrafts.tenantId, tenantId),
+              eq(realEstatePropertyDrafts.agentId, agentId),
+              eq(realEstatePropertyDrafts.id, draftId)
+            )
+          )
+          .limit(1);
 
-      const [insertResult]: any = await connection.execute(
-        `INSERT INTO real_estate_listings (tenant_id, title, city, area, type, price, available, location_slug, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
+        if (!draft) {
+          return { success: false as const, error: "Draft not found" };
+        }
+
+        if ((draft as any).status !== "pending") {
+          return { success: false as const, error: `Draft is already ${(draft as any).status}` };
+        }
+
+        const insertResult: any = await tx.insert(realEstateListings).values({
           tenantId,
-          draft.title,
-          draft.city,
-          draft.area || null,
-          draft.propertyType || null,
-          draft.price,
-          true,
-          null,
-        ]
-      );
+          title: (draft as any).title,
+          city: (draft as any).city,
+          area: (draft as any).area ?? null,
+          type: (draft as any).propertyType ?? null,
+          price: (draft as any).price,
+          available: true,
+          locationSlug: null,
+        } as any);
 
-      const listingId = insertResult?.insertId;
+        const listingId: number | undefined =
+          typeof insertResult?.[0]?.insertId === "number"
+            ? insertResult[0].insertId
+            : typeof insertResult?.insertId === "number"
+              ? insertResult.insertId
+              : undefined;
 
-      if (!listingId) {
-        await connection.rollback();
-        return { success: false, error: "Failed to create listing" };
-      }
+        if (!listingId) {
+          return { success: false as const, error: "Failed to create listing" };
+        }
 
-      await connection.execute(
-        `UPDATE real_estate_property_drafts SET status = ? WHERE id = ?`,
-        ["approved", draftId]
-      );
+        await tx
+          .update(realEstatePropertyDrafts)
+          .set({ status: "approved" })
+          .where(
+            and(
+              eq(realEstatePropertyDrafts.tenantId, tenantId),
+              eq(realEstatePropertyDrafts.agentId, agentId),
+              eq(realEstatePropertyDrafts.id, draftId)
+            )
+          );
 
-      await connection.commit();
-
-      return { success: true, listingId };
+        return { success: true as const, listingId };
+      });
     } catch (err) {
-      await connection.rollback();
-      throw err;
-    } finally {
-      connection.release();
+      return { success: false, error: "Failed to approve draft" };
     }
   }
 
@@ -448,7 +367,13 @@ export class RealEstateService {
     await db
       .update(realEstatePropertyDrafts)
       .set({ status: "rejected" })
-      .where(eq(realEstatePropertyDrafts.id, draftId));
+      .where(
+        and(
+          eq(realEstatePropertyDrafts.tenantId, tenantId),
+          eq(realEstatePropertyDrafts.agentId, agentId),
+          eq(realEstatePropertyDrafts.id, draftId)
+        )
+      );
 
     return { success: true };
   }
