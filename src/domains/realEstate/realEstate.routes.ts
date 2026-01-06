@@ -138,6 +138,7 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
   }
 
   try {
+    console.log("[PropertySync] calling syncPropertiesNow with:", { tenantId, agentId, sourceType, websiteUrl, apiEndpoint, hasApiKey: !!resolvedApiKey });
     const result = await service.syncPropertiesNow(tenantId, agentId, {
       sourceType: sourceType as any,
       websiteUrl,
@@ -145,6 +146,7 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
       apiKey: resolvedApiKey,
       credentialId,
     });
+    console.log("[PropertySync] syncPropertiesNow result:", result);
 
     return res.json({
       imported: result.imported,
@@ -155,7 +157,8 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
           ? `${result.imported} properties imported for review.`
           : "No new properties were imported.",
     });
-  } catch {
+  } catch (err: any) {
+    console.error("[PropertySync] sync error:", err?.message || err, err?.stack);
     return res.status(500).json({ message: "Failed to sync properties" });
   }
 });
