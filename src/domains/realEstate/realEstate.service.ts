@@ -171,10 +171,15 @@ export class RealEstateService {
 
     const externalIds = Array.from(new Set(drafts.map((d) => d.externalPropertyId))).slice(0, 500);
 
+    // Deduplication is per-agent (not per-tenant) so different agents can import the same properties
     const existingRows = await db
       .select({ externalPropertyId: realEstatePropertyDrafts.externalPropertyId })
       .from(realEstatePropertyDrafts)
-      .where(and(eq(realEstatePropertyDrafts.tenantId, tenantId), inArray(realEstatePropertyDrafts.externalPropertyId, externalIds)));
+      .where(and(
+        eq(realEstatePropertyDrafts.tenantId, tenantId),
+        eq(realEstatePropertyDrafts.agentId, agentId),
+        inArray(realEstatePropertyDrafts.externalPropertyId, externalIds)
+      ));
 
     const existingSet = new Set(
       existingRows

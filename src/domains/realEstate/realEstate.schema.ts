@@ -103,8 +103,9 @@ export const realEstatePropertyDrafts = mysqlTable(
   (table) => ({
     tenantIdx: index("idx_real_estate_property_drafts_tenant").on(table.tenantId),
     agentIdx: index("idx_real_estate_property_drafts_agent").on(table.agentId),
-    tenantExternalIdx: uniqueIndex("uq_real_estate_property_drafts_tenant_external").on(
-      table.tenantId,
+    // Unique per agent (not per tenant) so different agents can import the same properties
+    agentExternalIdx: uniqueIndex("uq_real_estate_property_drafts_agent_external").on(
+      table.agentId,
       table.externalPropertyId
     ),
     statusIdx: index("idx_real_estate_property_drafts_status").on(table.status),
