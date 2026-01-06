@@ -156,9 +156,10 @@ export default function AgentDetails() {
     doctors: [],
   });
   const [newHoliday, setNewHoliday] = useState<string>("");
-  const { data: agent, isLoading: agentLoading } = useQuery<Agent>({
+  const { data: agent, isLoading: agentLoading, error: agentError } = useQuery<Agent>({
     queryKey: ["/api/agents", agentId],
     enabled: !!agentId,
+    retry: false,
   });
 
   const { data: knowledgeBase, isLoading: kbLoading } = useQuery<KnowledgeBase[]>({
@@ -701,6 +702,31 @@ export default function AgentDetails() {
               <Skeleton className="h-4 w-3/4" />
             </CardContent>
           </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Handle 403 Forbidden (user doesn't own this agent)
+  if (agentError && (agentError as any)?.status === 403) {
+    return (
+      <DashboardLayout title="Access Denied">
+        <div className="max-w-4xl mx-auto text-center py-12">
+          <div className="mb-6 flex justify-center">
+            <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <Shield className="h-8 w-8 text-destructive" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-muted-foreground mb-6">
+            You don't have permission to view this agent. It may belong to a different account.
+          </p>
+          <Link href="/dashboard/agents">
+            <Button>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Your Agents
+            </Button>
+          </Link>
         </div>
       </DashboardLayout>
     );
