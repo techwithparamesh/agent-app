@@ -32,13 +32,14 @@ export const realEstateRoutes = Router();
 
 realEstateRoutes.get("/property-sync/config", async (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
-  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
   const agentId = typeof req.query.agentId === "string" ? req.query.agentId.trim() : "";
-  if (!agentId) return res.status(400).json({ error: "agentId query param is required" });
+  if (!agentId) return res.status(400).json({ message: "agentId query param is required" });
 
   const agent = await storage.getAgentById(agentId);
-  if (!agent || agent.userId !== tenantId) return res.status(404).json({ error: "Agent not found" });
+  if (!agent) return res.status(404).json({ message: "Agent not found" });
+  if (agent.userId !== tenantId) return res.status(403).json({ message: "Forbidden" });
 
   try {
     const config = await service.getPropertySyncConfig(tenantId, agentId);
@@ -55,13 +56,13 @@ realEstateRoutes.get("/property-sync/config", async (req: Request, res: Response
         : null,
     });
   } catch {
-    return res.status(500).json({ error: "Failed to fetch sync config" });
+    return res.status(500).json({ message: "Failed to fetch sync config" });
   }
 });
 
 realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
-  if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
   const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
   const sourceType = typeof (req.body as any)?.sourceType === "string" ? (req.body as any).sourceType.trim() : "";
@@ -69,13 +70,14 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
   const apiEndpoint = typeof (req.body as any)?.apiEndpoint === "string" ? (req.body as any).apiEndpoint : undefined;
   const apiKey = typeof (req.body as any)?.apiKey === "string" ? (req.body as any).apiKey : undefined;
 
-  if (!agentId) return res.status(400).json({ error: "agentId is required" });
+  if (!agentId) return res.status(400).json({ message: "agentId is required" });
   if (!sourceType || !["wordpress", "custom_api", "unknown"].includes(sourceType)) {
-    return res.status(400).json({ error: "Invalid sourceType" });
+    return res.status(400).json({ message: "Invalid sourceType" });
   }
 
   const agent = await storage.getAgentById(agentId);
-  if (!agent || agent.userId !== tenantId) return res.status(404).json({ error: "Agent not found" });
+  if (!agent) return res.status(404).json({ message: "Agent not found" });
+  if (agent.userId !== tenantId) return res.status(403).json({ message: "Forbidden" });
 
   let credentialId: string | undefined;
   let resolvedApiKey: string | undefined = apiKey;
@@ -140,7 +142,7 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
           : "No new properties were imported.",
     });
   } catch {
-    return res.status(500).json({ error: "Failed to sync properties" });
+    return res.status(500).json({ message: "Failed to sync properties" });
   }
 });
 
