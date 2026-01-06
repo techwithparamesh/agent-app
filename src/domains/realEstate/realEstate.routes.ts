@@ -61,7 +61,10 @@ realEstateRoutes.get("/property-sync/config", async (req: Request, res: Response
 });
 
 realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response) => {
+  const user = (req as any)?.user;
+  console.log("[PropertySync] user object:", JSON.stringify(user));
   const tenantId = getTenantId(req);
+  console.log("[PropertySync] extracted tenantId:", tenantId);
   if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
   const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
@@ -76,6 +79,7 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
   }
 
   const agent = await storage.getAgentById(agentId);
+  console.log("[PropertySync] agent lookup - agentId:", agentId, "found:", !!agent, "agent.userId:", agent?.userId, "tenantId:", tenantId, "match:", agent?.userId === tenantId);
   if (!agent) return res.status(404).json({ message: "Agent not found" });
   if (agent.userId !== tenantId) return res.status(403).json({ message: "Forbidden" });
 
