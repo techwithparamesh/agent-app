@@ -6,7 +6,7 @@ import { decrypt, encrypt } from "../../../server/utils/encryption";
 
 function getTenantId(req: Request): string | null {
   const user = (req as any)?.user;
-  const tenantId = user?.id;
+  const tenantId = user?.claims?.sub ?? user?.id;
   return typeof tenantId === "string" && tenantId.length > 0 ? tenantId : null;
 }
 
