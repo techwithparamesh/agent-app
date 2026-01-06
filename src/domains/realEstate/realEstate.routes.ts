@@ -68,7 +68,10 @@ realEstateRoutes.get("/property-sync/config", async (req: Request, res: Response
 });
 
 realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response) => {
+  const session = (req as any)?.session;
   const user = (req as any)?.user;
+  console.log("[PropertySync] session:", JSON.stringify(session));
+  console.log("[PropertySync] session.userId:", session?.userId);
   console.log("[PropertySync] user object:", JSON.stringify(user));
   const tenantId = getTenantId(req);
   console.log("[PropertySync] extracted tenantId:", tenantId);
