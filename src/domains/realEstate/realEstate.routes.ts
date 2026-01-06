@@ -5,6 +5,13 @@ import { storage } from "../../../server/storage";
 import { decrypt, encrypt } from "../../../server/utils/encryption";
 
 function getTenantId(req: Request): string | null {
+  // First check session-based auth (local login) - this is most reliable in production
+  const sessionUserId = (req as any)?.session?.userId;
+  if (typeof sessionUserId === "string" && sessionUserId.length > 0) {
+    return sessionUserId;
+  }
+  
+  // Fall back to user object set by middleware
   const user = (req as any)?.user;
   const tenantId = user?.claims?.sub ?? user?.id;
   return typeof tenantId === "string" && tenantId.length > 0 ? tenantId : null;
