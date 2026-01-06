@@ -30,6 +30,8 @@ import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 import net from "net";
 import { assertSafeOutboundUrlCached } from "./utils/outboundUrlSecurity";
 import { requireVerifiedEmail } from "./middleware/requireVerifiedEmail";
+import { realEstateRoutes } from "../src/domains/realEstate/realEstate.routes";
+import { insuranceRoutes } from "../src/domains/insurance/insurance.routes";
 
 import { isMailerConfigured, sendEmailVerificationEmail, sendPasswordResetEmail } from "./utils/mailer";
 import {
@@ -271,8 +273,20 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup auth middleware
+  // Setup auth middleware (MUST be first - sets up session)
   await setupAuth(app);
+
+  // ========== DOMAIN ROUTES ==========
+  // These must be registered AFTER setupAuth so session middleware is available
+  app.use("/api/domains/real-estate", isAuthenticated, (req, _res, next) => {
+    (req as any).user = { ...(req as any).user, id: (req as any).user?.id ?? (req as any).user?.claims?.sub };
+    next();
+  }, realEstateRoutes);
+  
+  app.use("/api/domains/insurance", isAuthenticated, requireVerifiedEmail, (req, _res, next) => {
+    (req as any).user = { ...(req as any).user, id: (req as any).user?.id ?? (req as any).user?.claims?.sub };
+    next();
+  }, insuranceRoutes);
 
   // ========== WHATSAPP WEBHOOK ROUTES ==========
   // Mount WhatsApp routes (before auth middleware for webhook verification)
