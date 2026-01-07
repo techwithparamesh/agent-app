@@ -71,30 +71,39 @@ Return a JSON object:
 }
 
 MATCHING RULES:
-- "apartment", "apartments", "flat", "flats" → match to property type containing "Apartment" (case-insensitive)
-- "villa", "villas" → match to property type containing "Villa"
-- "house", "houses", "independent house" → match to property type containing "House" or "Independent"
-- "land", "lands", "plot", "plots" → match to property type containing "Land" or "Plot"
-- "commercial", "office", "shop" → match to property type containing "Commercial"
+- "apartment", "apartments", "flat", "flats", "apt" → match to property type containing "Apartment" (case-insensitive)
+- "villa", "villas", "bungalow", "bungalows" → match to property type containing "Villa" or "Bungalow"
+- "house", "houses", "independent house", "individual house", "home", "homes" → match to property type containing "House" or "Independent"
+- "land", "lands", "plot", "plots", "site", "sites", "open land" → match to property type containing "Land" or "Plot"
+- "commercial", "office", "offices", "shop", "shops", "showroom", "retail", "warehouse", "godown" → match to property type containing "Commercial"
+- "penthouse", "duplex", "triplex", "studio" → match accordingly
+- "pg", "paying guest", "hostel" → match to PG or Hostel types
+- "farm", "farmhouse", "farm house", "agricultural" → match to Farm or Agricultural
 
 PRICE CONVERSION (Indian currency):
-- "50 lakhs" or "50 lakh" = 5000000
-- "1 crore" = 10000000
-- "1.5 crore" = 15000000
-- "under X" → maxPrice = X
-- "above X" or "over X" → minPrice = X
-- "between X and Y" → minPrice = X, maxPrice = Y
+- "50 lakhs", "50 lakh", "50L", "50 L" = 5000000
+- "1 crore", "1 cr", "1CR" = 10000000
+- "1.5 crore", "1.5 cr" = 15000000
+- "under X", "below X", "less than X", "within X", "upto X", "up to X", "max X", "maximum X" → maxPrice = X
+- "above X", "over X", "more than X", "greater than X", "min X", "minimum X", "starting X", "from X" → minPrice = X
+- "between X and Y", "X to Y", "X - Y", "from X to Y", "range X Y" → minPrice = X, maxPrice = Y
+- "budget X" or "my budget is X" → maxPrice = X
+- "affordable", "cheap", "low budget" → maxPrice should be lower range
+- "premium", "luxury", "high-end" → minPrice should be higher range
 
 BEDROOM EXTRACTION:
-- "2bhk", "2 bhk", "2-bhk", "2 bedroom", "two bedroom" → bedrooms: "2"
-- "3bhk" → bedrooms: "3"
+- "2bhk", "2 bhk", "2-bhk", "2 bedroom", "two bedroom", "2 bed", "2br", "2 room" → bedrooms: "2"
+- "3bhk", "3 bhk", "3 bedroom", "three bedroom", "3 bed" → bedrooms: "3"
+- "1bhk", "1 bhk", "1 bedroom", "one bedroom", "single bedroom", "1rk", "1 rk" → bedrooms: "1"
+- "4bhk", "4 bhk", "4 bedroom", "four bedroom" → bedrooms: "4"
+- "5bhk", "5+ bhk", "5 bedroom", "five bedroom" → bedrooms: "5"
 
 ACTION DETECTION:
-- "show", "list", "find", "search", "looking for" → action: "search"
-- "details", "detail", "info", "information", "tell me about", "more about", "more details", "more info", "give me info", "give me details" → action: "details"
-- "compare" → action: "compare"
-- "schedule", "book", "visit", "appointment" → action: "schedule_visit"
-- General questions about real estate → action: "general_inquiry"
+- "show", "show me", "list", "find", "search", "looking for", "i want", "i need", "get me", "display", "give me list", "available", "any", "suggest", "recommend", "options", "what are", "do you have", "is there", "are there" → action: "search"
+- "details", "detail", "info", "information", "tell me about", "more about", "more details", "more info", "give me info", "give me details", "describe", "description", "full details", "complete info", "specifications", "specs", "features", "amenities", "know more", "learn more", "elaborate", "explain" → action: "details"
+- "compare", "comparison", "difference", "vs", "versus", "which is better", "better option" → action: "compare"
+- "schedule", "book", "visit", "appointment", "site visit", "viewing", "tour", "see the property", "inspect", "check out", "want to see", "can i visit", "arrange visit" → action: "schedule_visit"
+- General questions about real estate, market, trends, tips → action: "general_inquiry"
 
 PROPERTY NAME EXTRACTION (Important!):
 - When user asks for details/info about a specific property, extract the property name
