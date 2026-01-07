@@ -96,7 +96,12 @@ export const realEstatePropertyDrafts = mysqlTable(
     bedrooms: varchar("bedrooms", { length: 50 }),
     description: text("description"),
 
-    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    // AI visibility control: when true, property is in real_estate_listings and AI can see it
+    aiEnabled: boolean("ai_enabled").notNull().default(true),
+    // Reference to the listing record when AI is enabled (null when disabled)
+    listingId: int("listing_id"),
+    // Status for tracking property state: 'active' or 'removed_from_website'
+    status: varchar("status", { length: 30 }).notNull().default("active"),
 
     createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   },
@@ -108,7 +113,7 @@ export const realEstatePropertyDrafts = mysqlTable(
       table.agentId,
       table.externalPropertyId
     ),
-    statusIdx: index("idx_real_estate_property_drafts_status").on(table.status),
+    aiEnabledIdx: index("idx_real_estate_property_drafts_ai_enabled").on(table.aiEnabled),
     createdIdx: index("idx_real_estate_property_drafts_created").on(table.createdAt),
   })
 );
@@ -125,6 +130,7 @@ export const realEstatePropertySyncConfigs = mysqlTable(
     apiEndpoint: varchar("api_endpoint", { length: 2048 }),
     credentialId: varchar("credential_id", { length: 36 }),
 
+    autoSyncEnabled: boolean("auto_sync_enabled").notNull().default(false),
     lastSyncedAt: timestamp("last_synced_at"),
     createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),

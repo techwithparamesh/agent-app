@@ -33,6 +33,23 @@ function parseNumber(value: unknown): number | undefined {
 
 const service = new RealEstateService();
 
+function buildSyncMessage(result: { imported: number; removed: number; reactivated: number }): string {
+  const parts: string[] = [];
+  if (result.imported > 0) {
+    parts.push(`${result.imported} new ${result.imported === 1 ? "property" : "properties"} imported`);
+  }
+  if (result.reactivated > 0) {
+    parts.push(`${result.reactivated} ${result.reactivated === 1 ? "property" : "properties"} reactivated`);
+  }
+  if (result.removed > 0) {
+    parts.push(`${result.removed} ${result.removed === 1 ? "property" : "properties"} no longer on website`);
+  }
+  if (parts.length === 0) {
+    return "Properties are up to date.";
+  }
+  return parts.join(", ") + ".";
+}
+
 export const realEstateRoutes = Router();
 
 // Base path (for mounting): /api/domains/real-estate
@@ -58,6 +75,7 @@ realEstateRoutes.get("/property-sync/config", async (req: Request, res: Response
             websiteUrl: (config as any).websiteUrl,
             apiEndpoint: (config as any).apiEndpoint,
             lastSyncedAt: (config as any).lastSyncedAt,
+            autoSyncEnabled: (config as any).autoSyncEnabled ?? false,
             hasApiKey,
           }
         : null,
@@ -152,14 +170,37 @@ realEstateRoutes.post("/property-sync/sync", async (req: Request, res: Response)
       imported: result.imported,
       skipped: result.skipped,
       fetched: result.fetched,
-      message:
-        result.imported > 0
-          ? `${result.imported} properties imported for review.`
-          : "No new properties were imported.",
+      removed: result.removed,
+      reactivated: result.reactivated,
+      message: buildSyncMessage(result),
     });
   } catch (err: any) {
     console.error("[PropertySync] sync error:", err?.message || err, err?.stack);
     return res.status(500).json({ message: "Failed to sync properties" });
+  }
+});
+
+realEstateRoutes.patch("/property-sync/auto-sync", async (req: Request, res: Response) => {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
+  const autoSyncEnabled = (req.body as any)?.autoSyncEnabled === true;
+
+  if (!agentId) return res.status(400).json({ message: "agentId is required" });
+
+  const agent = await storage.getAgentById(agentId);
+  if (!agent) return res.status(404).json({ message: "Agent not found" });
+  if (agent.userId !== tenantId) return res.status(403).json({ message: "Forbidden" });
+
+  try {
+    const result = await service.updateAutoSyncEnabled(tenantId, agentId, autoSyncEnabled);
+    if (!result.success) {
+      return res.status(400).json({ message: "No sync configuration found. Please sync properties first." });
+    }
+    return res.json({ success: true, autoSyncEnabled });
+  } catch {
+    return res.status(500).json({ message: "Failed to update auto-sync setting" });
   }
 });
 
@@ -329,30 +370,31 @@ realEstateRoutes.get("/properties/drafts", async (req: Request, res: Response) =
   if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
 
   const agentId = typeof req.query.agentId === "string" ? req.query.agentId.trim() : "";
-  const status = typeof req.query.status === "string" ? req.query.status.trim() : undefined;
+  const aiEnabledStr = typeof req.query.aiEnabled === "string" ? req.query.aiEnabled.trim() : undefined;
+  const aiEnabled = aiEnabledStr === "true" ? true : aiEnabledStr === "false" ? false : undefined;
 
   if (!agentId) return res.status(400).json({ error: "agentId query param is required" });
 
   try {
-    const drafts = await service.getPropertyDrafts(tenantId, agentId, status);
+    const drafts = await service.getPropertyDrafts(tenantId, agentId, aiEnabled);
     return res.json({ drafts });
   } catch {
-    return res.status(500).json({ error: "Failed to fetch drafts" });
+    return res.status(500).json({ error: "Failed to fetch properties" });
   }
 });
 
-realEstateRoutes.post("/properties/:id/approve", async (req: Request, res: Response) => {
+realEstateRoutes.post("/properties/:id/enable-ai", async (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
 
-  const draftId = Number(req.params.id);
-  if (!Number.isFinite(draftId)) return res.status(400).json({ error: "Invalid draft id" });
+  const propertyId = Number(req.params.id);
+  if (!Number.isFinite(propertyId)) return res.status(400).json({ error: "Invalid property id" });
 
   const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
   if (!agentId) return res.status(400).json({ error: "agentId is required" });
 
   try {
-    const result = await service.approvePropertyDraft(tenantId, agentId, draftId);
+    const result = await service.enableAiForProperty(tenantId, agentId, propertyId);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -360,22 +402,22 @@ realEstateRoutes.post("/properties/:id/approve", async (req: Request, res: Respo
 
     return res.json({ success: true, listingId: result.listingId });
   } catch {
-    return res.status(500).json({ error: "Failed to approve draft" });
+    return res.status(500).json({ error: "Failed to enable AI for property" });
   }
 });
 
-realEstateRoutes.post("/properties/:id/reject", async (req: Request, res: Response) => {
+realEstateRoutes.post("/properties/:id/disable-ai", async (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
 
-  const draftId = Number(req.params.id);
-  if (!Number.isFinite(draftId)) return res.status(400).json({ error: "Invalid draft id" });
+  const propertyId = Number(req.params.id);
+  if (!Number.isFinite(propertyId)) return res.status(400).json({ error: "Invalid property id" });
 
   const agentId = typeof (req.body as any)?.agentId === "string" ? (req.body as any).agentId.trim() : "";
   if (!agentId) return res.status(400).json({ error: "agentId is required" });
 
   try {
-    const result = await service.rejectPropertyDraft(tenantId, agentId, draftId);
+    const result = await service.disableAiForProperty(tenantId, agentId, propertyId);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -383,6 +425,6 @@ realEstateRoutes.post("/properties/:id/reject", async (req: Request, res: Respon
 
     return res.json({ success: true });
   } catch {
-    return res.status(500).json({ error: "Failed to reject draft" });
+    return res.status(500).json({ error: "Failed to disable AI for property" });
   }
 });

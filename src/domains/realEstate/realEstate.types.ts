@@ -61,7 +61,7 @@ export interface ListingAvailabilityResult {
   available: boolean;
 }
 
-export type PropertyDraftStatus = "pending" | "approved" | "rejected";
+export type PropertyDraftStatus = "active" | "removed_from_website";
 
 export interface RealEstatePropertyDraft {
   id: number;
@@ -75,6 +75,8 @@ export interface RealEstatePropertyDraft {
   price: string;
   bedrooms: string | null;
   description: string | null;
+  aiEnabled: boolean;
+  listingId: number | null;
   status: PropertyDraftStatus;
   createdAt: Date;
 }
@@ -89,6 +91,7 @@ export interface RealEstatePropertySyncConfig {
   websiteUrl: string | null;
   apiEndpoint: string | null;
   credentialId: string | null;
+  autoSyncEnabled: boolean;
   lastSyncedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

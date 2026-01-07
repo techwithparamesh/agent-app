@@ -17,6 +17,7 @@ import { integrationRoutes } from "./integrations/routes";
 import credentialsRoutes from "./integrations/credentialsRoutes";
 import workflowWebhookRoutes from "./integrations/workflowWebhooks";
 import { startIntegrationTriggerEngine } from "./integrations/triggerEngine";
+import { startPropertySyncScheduler } from "../src/domains/realEstate/realEstate.scheduler";
 import { stripeService } from "./billing/stripe";
 import express from "express";
 import {
@@ -344,6 +345,9 @@ export async function registerRoutes(
 
   // Start polling triggers (Google Drive/Calendar)
   startIntegrationTriggerEngine();
+
+  // Start property sync scheduler (24-hour auto-sync)
+  startPropertySyncScheduler();
 
   // ========== AUTH ROUTES ==========
   

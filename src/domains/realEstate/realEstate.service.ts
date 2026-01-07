@@ -21,6 +21,7 @@ import type {
   TenantId,
   PropertySyncSourceType,
   PropertySyncNowInput,
+  PropertyDraftStatus,
 } from "./realEstate.types";
 
 const db = drizzle(pool, {
@@ -153,6 +154,38 @@ export class RealEstateService {
     return row as unknown as RealEstatePropertySyncConfig;
   }
 
+  async updateAutoSyncEnabled(
+    tenantId: TenantId,
+    agentId: string,
+    autoSyncEnabled: boolean
+  ): Promise<{ success: boolean }> {
+    const existing = await this.getPropertySyncConfig(tenantId, agentId);
+    if (!existing) {
+      return { success: false };
+    }
+
+    await db
+      .update(realEstatePropertySyncConfigs)
+      .set({ autoSyncEnabled, updatedAt: new Date() })
+      .where(
+        and(
+          eq(realEstatePropertySyncConfigs.tenantId, tenantId),
+          eq(realEstatePropertySyncConfigs.agentId, agentId)
+        )
+      );
+
+    return { success: true };
+  }
+
+  async getAutoSyncEnabledConfigs(): Promise<RealEstatePropertySyncConfig[]> {
+    const rows = await db
+      .select()
+      .from(realEstatePropertySyncConfigs)
+      .where(eq(realEstatePropertySyncConfigs.autoSyncEnabled, true));
+
+    return rows as unknown as RealEstatePropertySyncConfig[];
+  }
+
   private async importDrafts(
     tenantId: TenantId,
     agentId: string,
@@ -166,35 +199,87 @@ export class RealEstateService {
       bedrooms?: string | null;
       description?: string | null;
     }>
-  ): Promise<{ imported: number; skipped: number }> {
-    if (drafts.length === 0) return { imported: 0, skipped: 0 };
+  ): Promise<{ imported: number; skipped: number; removed: number; reactivated: number }> {
+    if (drafts.length === 0) {
+      // Handle case where website returns no properties - mark all existing as removed
+      const existingDrafts = await db
+        .select()
+        .from(realEstatePropertyDrafts)
+        .where(and(
+          eq(realEstatePropertyDrafts.tenantId, tenantId),
+          eq(realEstatePropertyDrafts.agentId, agentId),
+          eq(realEstatePropertyDrafts.status, "active")
+        ));
+
+      let removed = 0;
+      for (const draft of existingDrafts) {
+        if ((draft as any).externalPropertyId) {
+          await this.markPropertyAsRemoved(tenantId, agentId, (draft as any).id);
+          removed++;
+        }
+      }
+
+      return { imported: 0, skipped: 0, removed, reactivated: 0 };
+    }
 
     const externalIds = Array.from(new Set(drafts.map((d) => d.externalPropertyId))).slice(0, 500);
+    const fetchedExternalIdSet = new Set(externalIds);
 
-    // Deduplication is per-agent (not per-tenant) so different agents can import the same properties
+    // Get all existing drafts for this agent (both active and removed)
     const existingRows = await db
-      .select({ externalPropertyId: realEstatePropertyDrafts.externalPropertyId })
+      .select()
       .from(realEstatePropertyDrafts)
       .where(and(
         eq(realEstatePropertyDrafts.tenantId, tenantId),
-        eq(realEstatePropertyDrafts.agentId, agentId),
-        inArray(realEstatePropertyDrafts.externalPropertyId, externalIds)
+        eq(realEstatePropertyDrafts.agentId, agentId)
       ));
 
-    const existingSet = new Set(
-      existingRows
-        .map((r: any) => (typeof r?.externalPropertyId === "string" ? r.externalPropertyId : null))
-        .filter(Boolean)
-    );
+    const existingByExternalId = new Map<string, any>();
+    for (const row of existingRows) {
+      const extId = (row as any).externalPropertyId;
+      if (typeof extId === "string") {
+        existingByExternalId.set(extId, row);
+      }
+    }
 
     let imported = 0;
     let skipped = 0;
+    let reactivated = 0;
 
+    // Import new properties and reactivate removed ones that reappeared
     for (const d of drafts) {
-      if (existingSet.has(d.externalPropertyId)) {
-        skipped++;
+      const existing = existingByExternalId.get(d.externalPropertyId);
+
+      if (existing) {
+        const status = (existing as any).status as string;
+        if (status === "removed_from_website") {
+          // Property reappeared - reactivate it
+          await this.reactivateProperty(tenantId, agentId, (existing as any).id, d);
+          reactivated++;
+        } else {
+          skipped++;
+        }
         continue;
       }
+
+      // New property - auto-enable for AI
+      const listingResult: any = await db.insert(realEstateListings).values({
+        tenantId,
+        title: d.title,
+        city: d.city,
+        area: d.area ?? null,
+        type: d.propertyType ?? null,
+        price: String(d.price),
+        available: true,
+        locationSlug: null,
+      } as any);
+
+      const listingId: number | undefined =
+        typeof listingResult?.[0]?.insertId === "number"
+          ? listingResult[0].insertId
+          : typeof listingResult?.insertId === "number"
+            ? listingResult.insertId
+            : undefined;
 
       await db.insert(realEstatePropertyDrafts).values({
         tenantId,
@@ -207,13 +292,130 @@ export class RealEstateService {
         price: String(d.price),
         bedrooms: d.bedrooms ?? null,
         description: d.description ?? null,
-        status: "pending",
+        aiEnabled: true,
+        listingId: listingId ?? null,
+        status: "active",
       } as any);
 
       imported++;
     }
 
-    return { imported, skipped };
+    // Mark properties that are no longer on the website as removed
+    let removed = 0;
+    for (const [extId, existing] of existingByExternalId) {
+      if (!fetchedExternalIdSet.has(extId) && (existing as any).status === "active") {
+        await this.markPropertyAsRemoved(tenantId, agentId, (existing as any).id);
+        removed++;
+      }
+    }
+
+    return { imported, skipped, removed, reactivated };
+  }
+
+  private async markPropertyAsRemoved(
+    tenantId: TenantId,
+    agentId: string,
+    draftId: number
+  ): Promise<void> {
+    const [draft] = await db
+      .select()
+      .from(realEstatePropertyDrafts)
+      .where(
+        and(
+          eq(realEstatePropertyDrafts.tenantId, tenantId),
+          eq(realEstatePropertyDrafts.agentId, agentId),
+          eq(realEstatePropertyDrafts.id, draftId)
+        )
+      )
+      .limit(1);
+
+    if (!draft) return;
+
+    const listingId = (draft as any).listingId as number | null;
+
+    // Remove from listings to hide from AI
+    if (listingId) {
+      await db
+        .delete(realEstateListings)
+        .where(
+          and(
+            eq(realEstateListings.tenantId, tenantId),
+            eq(realEstateListings.id, listingId)
+          )
+        );
+    }
+
+    await db
+      .update(realEstatePropertyDrafts)
+      .set({
+        aiEnabled: false,
+        listingId: null,
+        status: "removed_from_website",
+      })
+      .where(
+        and(
+          eq(realEstatePropertyDrafts.tenantId, tenantId),
+          eq(realEstatePropertyDrafts.agentId, agentId),
+          eq(realEstatePropertyDrafts.id, draftId)
+        )
+      );
+  }
+
+  private async reactivateProperty(
+    tenantId: TenantId,
+    agentId: string,
+    draftId: number,
+    propertyData: {
+      title: string;
+      propertyType?: string | null;
+      city: string;
+      area?: string | null;
+      price: number;
+      bedrooms?: string | null;
+      description?: string | null;
+    }
+  ): Promise<void> {
+    // Create new listing
+    const listingResult: any = await db.insert(realEstateListings).values({
+      tenantId,
+      title: propertyData.title,
+      city: propertyData.city,
+      area: propertyData.area ?? null,
+      type: propertyData.propertyType ?? null,
+      price: String(propertyData.price),
+      available: true,
+      locationSlug: null,
+    } as any);
+
+    const listingId: number | undefined =
+      typeof listingResult?.[0]?.insertId === "number"
+        ? listingResult[0].insertId
+        : typeof listingResult?.insertId === "number"
+          ? listingResult.insertId
+          : undefined;
+
+    // Update draft with new data and reactivate
+    await db
+      .update(realEstatePropertyDrafts)
+      .set({
+        title: propertyData.title,
+        propertyType: propertyData.propertyType ?? null,
+        city: propertyData.city,
+        area: propertyData.area ?? null,
+        price: String(propertyData.price),
+        bedrooms: propertyData.bedrooms ?? null,
+        description: propertyData.description ?? null,
+        aiEnabled: true,
+        listingId: listingId ?? null,
+        status: "active",
+      })
+      .where(
+        and(
+          eq(realEstatePropertyDrafts.tenantId, tenantId),
+          eq(realEstatePropertyDrafts.agentId, agentId),
+          eq(realEstatePropertyDrafts.id, draftId)
+        )
+      );
   }
 
   private async fetchWordPressProperties(
@@ -376,13 +578,13 @@ export class RealEstateService {
     tenantId: TenantId,
     agentId: string,
     input: PropertySyncNowInput
-  ): Promise<{ imported: number; skipped: number; fetched: number }> {
+  ): Promise<{ imported: number; skipped: number; fetched: number; removed: number; reactivated: number }> {
     const sourceType = input.sourceType;
 
     if (sourceType === "wordpress") {
       const websiteUrl = typeof input.websiteUrl === "string" ? input.websiteUrl : "";
       const fetched = await this.fetchWordPressProperties(websiteUrl);
-      const { imported, skipped } = await this.importDrafts(tenantId, agentId, fetched);
+      const result = await this.importDrafts(tenantId, agentId, fetched);
       await this.upsertPropertySyncConfig(tenantId, agentId, {
         sourceType,
         websiteUrl: websiteUrl || null,
@@ -390,13 +592,13 @@ export class RealEstateService {
         credentialId: null,
         touchLastSynced: true,
       });
-      return { imported, skipped, fetched: fetched.length };
+      return { ...result, fetched: fetched.length };
     }
 
     if (sourceType === "custom_api") {
       const apiEndpoint = typeof input.apiEndpoint === "string" ? input.apiEndpoint : "";
       const fetched = await this.fetchCustomApiProperties(apiEndpoint, input.apiKey);
-      const { imported, skipped } = await this.importDrafts(tenantId, agentId, fetched);
+      const result = await this.importDrafts(tenantId, agentId, fetched);
       await this.upsertPropertySyncConfig(tenantId, agentId, {
         sourceType,
         websiteUrl: null,
@@ -404,7 +606,7 @@ export class RealEstateService {
         credentialId: typeof input.credentialId === "string" ? input.credentialId : null,
         touchLastSynced: true,
       });
-      return { imported, skipped, fetched: fetched.length };
+      return { ...result, fetched: fetched.length };
     }
 
     await this.upsertPropertySyncConfig(tenantId, agentId, {
@@ -415,7 +617,7 @@ export class RealEstateService {
       touchLastSynced: true,
     });
 
-    return { imported: 0, skipped: 0, fetched: 0 };
+    return { imported: 0, skipped: 0, fetched: 0, removed: 0, reactivated: 0 };
   }
 
   async searchListings(tenantId: TenantId, params: ListingSearchParams): Promise<RealEstateListing[]> {
@@ -626,15 +828,15 @@ export class RealEstateService {
   async getPropertyDrafts(
     tenantId: TenantId,
     agentId: string,
-    status?: string
+    aiEnabled?: boolean
   ): Promise<RealEstatePropertyDraft[]> {
     const conditions = [
       eq(realEstatePropertyDrafts.tenantId, tenantId),
       eq(realEstatePropertyDrafts.agentId, agentId),
     ];
 
-    if (status && ["pending", "approved", "rejected"].includes(status)) {
-      conditions.push(eq(realEstatePropertyDrafts.status, status));
+    if (typeof aiEnabled === "boolean") {
+      conditions.push(eq(realEstatePropertyDrafts.aiEnabled, aiEnabled));
     }
 
     const rows = await db
@@ -666,7 +868,7 @@ export class RealEstateService {
     return (row as unknown as RealEstatePropertyDraft) ?? null;
   }
 
-  async approvePropertyDraft(
+  async enableAiForProperty(
     tenantId: TenantId,
     agentId: string,
     draftId: number
@@ -686,13 +888,14 @@ export class RealEstateService {
           .limit(1);
 
         if (!draft) {
-          return { success: false as const, error: "Draft not found" };
+          return { success: false as const, error: "Property not found" };
         }
 
-        if ((draft as any).status !== "pending") {
-          return { success: false as const, error: `Draft is already ${(draft as any).status}` };
+        if ((draft as any).aiEnabled === true) {
+          return { success: true as const, listingId: (draft as any).listingId ?? undefined };
         }
 
+        // Insert into listings to make visible to AI
         const insertResult: any = await tx.insert(realEstateListings).values({
           tenantId,
           title: (draft as any).title,
@@ -717,7 +920,7 @@ export class RealEstateService {
 
         await tx
           .update(realEstatePropertyDrafts)
-          .set({ status: "approved" })
+          .set({ aiEnabled: true, listingId, status: "active" })
           .where(
             and(
               eq(realEstatePropertyDrafts.tenantId, tenantId),
@@ -729,36 +932,66 @@ export class RealEstateService {
         return { success: true as const, listingId };
       });
     } catch (err) {
-      return { success: false, error: "Failed to approve draft" };
+      return { success: false, error: "Failed to enable AI for property" };
     }
   }
 
-  async rejectPropertyDraft(
+  async disableAiForProperty(
     tenantId: TenantId,
     agentId: string,
     draftId: number
   ): Promise<{ success: boolean; error?: string }> {
-    const draft = await this.getPropertyDraftById(tenantId, agentId, draftId);
+    try {
+      return await db.transaction(async (tx) => {
+        const [draft] = await tx
+          .select()
+          .from(realEstatePropertyDrafts)
+          .where(
+            and(
+              eq(realEstatePropertyDrafts.tenantId, tenantId),
+              eq(realEstatePropertyDrafts.agentId, agentId),
+              eq(realEstatePropertyDrafts.id, draftId)
+            )
+          )
+          .limit(1);
 
-    if (!draft) {
-      return { success: false, error: "Draft not found" };
+        if (!draft) {
+          return { success: false as const, error: "Property not found" };
+        }
+
+        if ((draft as any).aiEnabled === false) {
+          return { success: true as const };
+        }
+
+        const listingId = (draft as any).listingId as number | null;
+
+        // Remove from listings to hide from AI
+        if (listingId) {
+          await tx
+            .delete(realEstateListings)
+            .where(
+              and(
+                eq(realEstateListings.tenantId, tenantId),
+                eq(realEstateListings.id, listingId)
+              )
+            );
+        }
+
+        await tx
+          .update(realEstatePropertyDrafts)
+          .set({ aiEnabled: false, listingId: null })
+          .where(
+            and(
+              eq(realEstatePropertyDrafts.tenantId, tenantId),
+              eq(realEstatePropertyDrafts.agentId, agentId),
+              eq(realEstatePropertyDrafts.id, draftId)
+            )
+          );
+
+        return { success: true as const };
+      });
+    } catch (err) {
+      return { success: false, error: "Failed to disable AI for property" };
     }
-
-    if (draft.status !== "pending") {
-      return { success: false, error: `Draft is already ${draft.status}` };
-    }
-
-    await db
-      .update(realEstatePropertyDrafts)
-      .set({ status: "rejected" })
-      .where(
-        and(
-          eq(realEstatePropertyDrafts.tenantId, tenantId),
-          eq(realEstatePropertyDrafts.agentId, agentId),
-          eq(realEstatePropertyDrafts.id, draftId)
-        )
-      );
-
-    return { success: true };
   }
 }

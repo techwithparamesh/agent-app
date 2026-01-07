@@ -72,6 +72,7 @@ type PropertySyncConfig = {
   websiteUrl: string | null;
   apiEndpoint: string | null;
   lastSyncedAt: string | null;
+  autoSyncEnabled: boolean;
   hasApiKey: boolean;
 };
 type PropertySyncConfigResponse = { config: PropertySyncConfig | null };
@@ -79,15 +80,19 @@ type PropertySyncSyncResponse = {
   imported: number;
   skipped: number;
   fetched: number;
+  removed: number;
+  reactivated: number;
   message: string;
 };
+type PropertyDraftStatus = "active" | "removed_from_website";
 type PropertyDraft = {
   id: number;
   title: string;
   city: string;
   area: string | null;
   price: string;
-  status: "pending" | "approved" | "rejected";
+  aiEnabled: boolean;
+  status: PropertyDraftStatus;
 };
 type PropertyDraftsResponse = { drafts: PropertyDraft[] };
 
@@ -292,14 +297,14 @@ export default function AgentDetails() {
     },
   });
 
-  const approveDraftMutation = useMutation({
+  const enableAiMutation = useMutation({
     mutationFn: async (draftId: number) => {
       if (!agentId) throw new Error("Missing agent id");
-      const res = await apiRequest("POST", `/api/domains/real-estate/properties/${draftId}/approve`, { agentId });
+      const res = await apiRequest("POST", `/api/domains/real-estate/properties/${draftId}/enable-ai`, { agentId });
       return res.json();
     },
     onSuccess: async () => {
-      toast({ title: "Property approved", description: "This property is now visible to the AI agent." });
+      toast({ title: "AI enabled", description: "This property is now visible to the AI agent." });
       if (agentId) {
         await queryClient.invalidateQueries({
           queryKey: [`/api/domains/real-estate/properties/drafts?agentId=${agentId}`],
@@ -307,18 +312,18 @@ export default function AgentDetails() {
       }
     },
     onError: (err: any) => {
-      toast({ title: "Could not approve", description: err?.message || "Please try again.", variant: "destructive" });
+      toast({ title: "Could not enable AI", description: err?.message || "Please try again.", variant: "destructive" });
     },
   });
 
-  const rejectDraftMutation = useMutation({
+  const disableAiMutation = useMutation({
     mutationFn: async (draftId: number) => {
       if (!agentId) throw new Error("Missing agent id");
-      const res = await apiRequest("POST", `/api/domains/real-estate/properties/${draftId}/reject`, { agentId });
+      const res = await apiRequest("POST", `/api/domains/real-estate/properties/${draftId}/disable-ai`, { agentId });
       return res.json();
     },
     onSuccess: async () => {
-      toast({ title: "Property rejected" });
+      toast({ title: "AI disabled", description: "This property is no longer visible to the AI agent." });
       if (agentId) {
         await queryClient.invalidateQueries({
           queryKey: [`/api/domains/real-estate/properties/drafts?agentId=${agentId}`],
@@ -326,7 +331,31 @@ export default function AgentDetails() {
       }
     },
     onError: (err: any) => {
-      toast({ title: "Could not reject", description: err?.message || "Please try again.", variant: "destructive" });
+      toast({ title: "Could not disable AI", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const toggleAutoSyncMutation = useMutation({
+    mutationFn: async (autoSyncEnabled: boolean) => {
+      if (!agentId) throw new Error("Missing agent id");
+      const res = await apiRequest("PATCH", `/api/domains/real-estate/property-sync/auto-sync`, { agentId, autoSyncEnabled });
+      return res.json();
+    },
+    onSuccess: async (_data, autoSyncEnabled) => {
+      toast({
+        title: autoSyncEnabled ? "Auto-sync enabled" : "Auto-sync disabled",
+        description: autoSyncEnabled
+          ? "Properties will sync automatically every 24 hours."
+          : "Automatic syncing has been turned off.",
+      });
+      if (agentId) {
+        await queryClient.invalidateQueries({
+          queryKey: [`/api/domains/real-estate/property-sync/config?agentId=${agentId}`],
+        });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not update setting", description: err?.message || "Please try again.", variant: "destructive" });
     },
   });
 
@@ -346,7 +375,7 @@ export default function AgentDetails() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-sm text-muted-foreground">
-              The AI agent answers only using approved listings and website information.
+              Imported properties are automatically enabled for the AI agent. You can disable individual properties below.
             </div>
 
             <div className="space-y-3">
@@ -426,28 +455,50 @@ export default function AgentDetails() {
                   If you’re not sure, you can still use website scanning for general information and then approve imported properties before they go live.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Only approved properties are visible to the AI agent.
+                  You can disable individual properties from AI visibility at any time below.
                 </p>
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-xs text-muted-foreground">
-                {propertySyncConfigLoading ? "Loading…" : lastSyncedText ? `Last synced: ${lastSyncedText}` : "Not synced yet"}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="text-xs text-muted-foreground">
+                  {propertySyncConfigLoading ? "Loading…" : lastSyncedText ? `Last synced: ${lastSyncedText}` : "Not synced yet"}
+                </div>
+                <Button
+                  onClick={() => syncPropertiesMutation.mutate()}
+                  disabled={syncPropertiesMutation.isPending}
+                >
+                  {syncPropertiesMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Syncing…
+                    </>
+                  ) : (
+                    "Sync properties now"
+                  )}
+                </Button>
               </div>
-              <Button
-                onClick={() => syncPropertiesMutation.mutate()}
-                disabled={syncPropertiesMutation.isPending}
-              >
-                {syncPropertiesMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Syncing…
-                  </>
-                ) : (
-                  "Sync Properties"
-                )}
-              </Button>
+
+              {config && (
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <div className="text-sm font-medium">Automatic sync</div>
+                    <div className="text-xs text-muted-foreground">
+                      Sync properties from your website every 24 hours
+                    </div>
+                  </div>
+                  <Switch
+                    checked={config.autoSyncEnabled}
+                    onCheckedChange={(checked) => toggleAutoSyncMutation.mutate(checked)}
+                    disabled={toggleAutoSyncMutation.isPending}
+                  />
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                This controls what the AI agent can answer. It does not affect your website.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -456,14 +507,14 @@ export default function AgentDetails() {
           <CardHeader>
             <CardTitle>Imported Properties</CardTitle>
             <CardDescription>
-              Review and approve properties. Only approved properties are visible to the AI agent.
+              Manage AI visibility for imported properties. Toggle whether each property is available to the AI agent.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {propertyDraftsLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading drafts…
+                Loading properties…
               </div>
             ) : drafts.length === 0 ? (
               <div className="text-sm text-muted-foreground">No imported properties yet.</div>
@@ -471,39 +522,52 @@ export default function AgentDetails() {
               <div className="space-y-3">
                 {drafts.map((d) => {
                   const location = d.area ? `${d.city}, ${d.area}` : d.city;
-                  const statusLabel = d.status === "pending" ? "Pending approval" : d.status;
+                  const isRemoved = d.status === "removed_from_website";
                   return (
                     <div key={d.id} className="flex items-start justify-between gap-4 rounded-lg border p-4">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="font-medium truncate">{d.title}</div>
-                          <Badge variant={d.status === "pending" ? "secondary" : "outline"}>
-                            {statusLabel}
-                          </Badge>
+                          {isRemoved ? (
+                            <Badge variant="destructive">Removed from website</Badge>
+                          ) : d.aiEnabled ? (
+                            <Badge variant="default">🟢 Enabled for AI</Badge>
+                          ) : (
+                            <Badge variant="secondary">⚪ Disabled for AI</Badge>
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">{location}</div>
                         <div className="text-sm text-muted-foreground">Price: {d.price}</div>
                       </div>
 
-                      {d.status === "pending" ? (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        {isRemoved ? (
                           <Button
                             size="sm"
-                            onClick={() => approveDraftMutation.mutate(d.id)}
-                            disabled={approveDraftMutation.isPending || rejectDraftMutation.isPending}
+                            onClick={() => enableAiMutation.mutate(d.id)}
+                            disabled={enableAiMutation.isPending || disableAiMutation.isPending}
                           >
-                            Approve
+                            Enable for AI
                           </Button>
+                        ) : d.aiEnabled ? (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => rejectDraftMutation.mutate(d.id)}
-                            disabled={approveDraftMutation.isPending || rejectDraftMutation.isPending}
+                            onClick={() => disableAiMutation.mutate(d.id)}
+                            disabled={enableAiMutation.isPending || disableAiMutation.isPending}
                           >
-                            Reject
+                            Disable for AI
                           </Button>
-                        </div>
-                      ) : null}
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => enableAiMutation.mutate(d.id)}
+                            disabled={enableAiMutation.isPending || disableAiMutation.isPending}
+                          >
+                            Enable for AI
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
