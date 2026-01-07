@@ -1,7 +1,7 @@
 /**
  * LLM-powered Real Estate Search
  * 
- * Uses OpenAI to understand user intent and match against actual database values.
+ * Uses Claude (Anthropic) to understand user intent and match against actual database values.
  * This solves the problem of "apartments" not matching "Apartments" in the database.
  */
 
@@ -32,47 +32,49 @@ export interface DatabaseContext {
 }
 
 // ============================================================================
-// LLM Integration
+// Claude API Integration
 // ============================================================================
 
-async function callOpenAI(
+async function callClaude(
   systemPrompt: string,
-  userMessage: string,
-  jsonMode: boolean = true
+  userMessage: string
 ): Promise<string | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("[RealEstate LLM] OPENAI_API_KEY not configured");
+    console.error("[RealEstate LLM] ANTHROPIC_API_KEY not configured");
     return null;
   }
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 500,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
-        temperature: 0,
-        max_tokens: 500,
-        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[RealEstate LLM] OpenAI API error ${response.status}:`, errorText);
+      console.error(`[RealEstate LLM] Claude API error ${response.status}:`, errorText);
       return null;
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || null;
+    const content = data.content?.[0];
+    if (content?.type === "text") {
+      return content.text;
+    }
+    return null;
   } catch (error) {
     console.error("[RealEstate LLM] API call failed:", error);
     return null;
@@ -137,13 +139,16 @@ ACTION DETECTION:
 - "schedule", "book", "visit", "appointment" → action: "schedule_visit"
 - General questions about real estate → action: "general_inquiry"
 
-Return ONLY valid JSON. No markdown, no explanation.`;
+Return ONLY valid JSON. No markdown, no code blocks, no explanation.`;
 
-  const content = await callOpenAI(systemPrompt, message, true);
+  const content = await callClaude(systemPrompt, message);
   
   if (content) {
     try {
-      const parsed = JSON.parse(content) as SearchIntent;
+      // Extract JSON from response (Claude may wrap it in text)
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      const parsed = JSON.parse(jsonStr) as SearchIntent;
       console.log("[RealEstate LLM] Parsed intent:", JSON.stringify(parsed));
       return parsed;
     } catch (e) {
@@ -164,7 +169,7 @@ export async function generateSmartResponse(
   userMessage: string
 ): Promise<string> {
   // If no LLM available or simple case, use formatted output
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return formatListingsSimple(listings, intent);
   }
 
@@ -192,10 +197,9 @@ Generate a friendly, helpful response (2-3 sentences max).
 - Be encouraging and helpful
 Don't mention technical details or database.`;
 
-  const content = await callOpenAI(
+  const content = await callClaude(
     systemPrompt,
-    `User asked: "${userMessage}"\nFilters tried: ${JSON.stringify(intent.filters)}`,
-    false
+    `User asked: "${userMessage}"\nFilters tried: ${JSON.stringify(intent.filters)}`
   );
 
   return content || `I couldn't find any properties matching your search. Try adjusting your criteria - perhaps a different property type, area, or budget range?`;

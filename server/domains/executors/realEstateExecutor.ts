@@ -12,8 +12,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
       const { RealEstateService } = await import("../../../src/domains/realEstate/realEstate.service");
       const service = new RealEstateService();
 
-      // Check if we should use LLM-powered search
-      const useLLM = process.env.OPENAI_API_KEY && plan.intent === "listing_search";
+      // Check if we should use LLM-powered search (Claude/Anthropic)
+      const useLLM = process.env.ANTHROPIC_API_KEY && plan.intent === "listing_search";
       
       if (useLLM) {
         return await this.executeLLMSearch(service, ctx);
@@ -161,8 +161,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
         case "price_filter":
         case "listing_search": {
-          // Use LLM-powered search if available
-          if (process.env.OPENAI_API_KEY) {
+          // Use LLM-powered search if available (Claude/Anthropic)
+          if (process.env.ANTHROPIC_API_KEY) {
             return await this.executeLLMSearch(service, ctx);
           }
           
