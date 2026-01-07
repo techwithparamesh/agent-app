@@ -91,16 +91,19 @@ BEDROOM EXTRACTION:
 
 ACTION DETECTION:
 - "show", "list", "find", "search", "looking for" → action: "search"
-- "details", "info", "tell me about", "more about", "more details" → action: "details"
+- "details", "detail", "info", "information", "tell me about", "more about", "more details", "more info", "give me info", "give me details" → action: "details"
 - "compare" → action: "compare"
 - "schedule", "book", "visit", "appointment" → action: "schedule_visit"
 - General questions about real estate → action: "general_inquiry"
 
 PROPERTY NAME EXTRACTION (Important!):
-- When user asks for details about a specific property, extract the property name
+- When user asks for details/info about a specific property, extract the property name
 - "show me details about raja villa" → action: "details", propertyName: "raja villa"
 - "tell me more about countryside luxury villa" → action: "details", propertyName: "countryside luxury villa"
 - "info on green meadows apartment" → action: "details", propertyName: "green meadows apartment"
+- "give more info on raja villa" → action: "details", propertyName: "raja villa"
+- "information about sunrise residency" → action: "details", propertyName: "sunrise residency"
+- "give me details of ocean view apartment" → action: "details", propertyName: "ocean view apartment"
 
 Return ONLY valid JSON. No markdown, no code blocks, no explanation.`;
 
