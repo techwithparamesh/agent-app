@@ -154,6 +154,9 @@ export class RealEstateDomainExecutor implements DomainExecutor {
         case "price_filter":
         case "listing_search": {
           const extractedQ = extractSearchTerms(ctx.messageText);
+          const wantsDetails = /\b(detail|details|info|information|spec|specs|specifications)\b/i.test(
+            ctx.messageText
+          );
 
           const isBroadListAllQuery =
             extractedQ.length === 0 &&
@@ -177,7 +180,7 @@ export class RealEstateDomainExecutor implements DomainExecutor {
               return {
                 handled: true,
                 message:
-                  "No properties have been published yet for this agent. Add properties as drafts and get admin approval to publish them before they can appear in search.",
+                  "No properties are enabled for this agent yet. Import/sync properties in the dashboard (or enable them for AI) before they can appear in search.",
                 data: { items },
                 reason: "no_published_listings",
               };
@@ -193,7 +196,12 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
           return {
             handled: true,
-            message: formatListingList(items),
+            message: wantsDetails
+              ? items
+                  .slice(0, 5)
+                  .map((l) => `#${l.id}\n${formatListingDetails(l)}`)
+                  .join("\n\n")
+              : formatListingList(items),
             data: { items },
           };
         }
@@ -256,6 +264,15 @@ function formatLocationInfo(location: any): string {
 function extractSearchTerms(text: string): string {
   const lower = text.toLowerCase();
 
+  function normalizeToken(token: string): string {
+    // Basic plural normalization for common real estate terms (villa(s), apartment(s), etc.)
+    // Keeps it intentionally simple to avoid harming unrelated words.
+    if (token.length <= 3) return token;
+    if (token.endsWith("ies") && token.length > 4) return `${token.slice(0, -3)}y`;
+    if (token.endsWith("s") && !token.endsWith("ss")) return token.slice(0, -1);
+    return token;
+  }
+
   const stopWords = new Set([
     "show",
     "me",
@@ -302,5 +319,5 @@ function extractSearchTerms(text: string): string {
     .map((w) => w.trim())
     .filter((w) => w.length > 1 && !stopWords.has(w));
 
-  return words.join(" ");
+  return words.map(normalizeToken).join(" ");
 }
