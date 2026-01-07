@@ -313,7 +313,7 @@ export default function ChatbotPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {currentAgent && (
+                    {currentAgent && currentAgent.purpose && currentAgent.purpose !== '-' && (
                       <Badge variant="outline">{currentAgent.purpose}</Badge>
                     )}
                   </div>
