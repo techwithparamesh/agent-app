@@ -294,6 +294,31 @@ export class RealEstateDomainExecutor implements DomainExecutor {
         }
       }
 
+      // If user asked for details about a specific property by name, search for it
+      if (intent.action === "details" && intent.propertyName) {
+        const nameSearch = await service.searchListings(ctx.userId, {
+          q: intent.propertyName,
+          limit: 5,
+        });
+        
+        // Filter to find best match (title contains the search term)
+        const matchedListings = nameSearch.filter(l => 
+          l.title.toLowerCase().includes(intent.propertyName!.toLowerCase())
+        );
+        
+        if (matchedListings.length > 0) {
+          // Show detailed view for the matched property(ies)
+          const message = await generateSmartResponse(matchedListings, intent, ctx.messageText);
+          return { handled: true, message, data: { items: matchedListings } };
+        }
+        
+        // If no exact match, still show what we found with the search
+        if (nameSearch.length > 0) {
+          const message = await generateSmartResponse(nameSearch, intent, ctx.messageText);
+          return { handled: true, message, data: { items: nameSearch } };
+        }
+      }
+
       // 4. Execute search
       const items = await service.searchListings(ctx.userId, searchParams);
       

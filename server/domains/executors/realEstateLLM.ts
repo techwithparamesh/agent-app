@@ -23,6 +23,7 @@ export interface SearchIntent {
     bedrooms?: string;
   };
   listingIds?: number[];
+  propertyName?: string;  // For "details about raja villa" type queries
   question?: string;
 }
 
@@ -65,6 +66,7 @@ Return a JSON object:
     "bedrooms": "string like '2' or '3' or null"
   },
   "listingIds": [array of listing IDs if user mentions specific ones like #14 or listing 2],
+  "propertyName": "the specific property name/title user is asking about, or null",
   "question": "what the user is asking if it's a general inquiry"
 }
 
@@ -89,10 +91,16 @@ BEDROOM EXTRACTION:
 
 ACTION DETECTION:
 - "show", "list", "find", "search", "looking for" → action: "search"
-- "details", "info", "tell me about", "more about" → action: "details"
+- "details", "info", "tell me about", "more about", "more details" → action: "details"
 - "compare" → action: "compare"
 - "schedule", "book", "visit", "appointment" → action: "schedule_visit"
 - General questions about real estate → action: "general_inquiry"
+
+PROPERTY NAME EXTRACTION (Important!):
+- When user asks for details about a specific property, extract the property name
+- "show me details about raja villa" → action: "details", propertyName: "raja villa"
+- "tell me more about countryside luxury villa" → action: "details", propertyName: "countryside luxury villa"
+- "info on green meadows apartment" → action: "details", propertyName: "green meadows apartment"
 
 Return ONLY valid JSON. No markdown, no code blocks, no explanation.`;
 
