@@ -1,5 +1,6 @@
 import type { DomainExecutionPlan, DomainExecutionResult, DomainRequestContext } from "@shared/domainFramework";
 import type { DomainExecutor } from "../orchestrator";
+import { parseUserIntent, generateSmartResponse, getDbContext } from "./realEstateLLM";
 
 export class RealEstateDomainExecutor implements DomainExecutor {
   canExecute(plan: DomainExecutionPlan): boolean {
@@ -10,6 +11,13 @@ export class RealEstateDomainExecutor implements DomainExecutor {
     try {
       const { RealEstateService } = await import("../../../src/domains/realEstate/realEstate.service");
       const service = new RealEstateService();
+
+      // Check if we should use LLM-powered search
+      const useLLM = process.env.OPENAI_API_KEY && plan.intent === "listing_search";
+      
+      if (useLLM) {
+        return await this.executeLLMSearch(service, ctx);
+      }
 
       const listingId = typeof plan.entities?.listingId === "number" ? (plan.entities.listingId as number) : undefined;
       const locationSlug = typeof plan.entities?.locationSlug === "string" ? (plan.entities.locationSlug as string) : undefined;
@@ -153,6 +161,12 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
         case "price_filter":
         case "listing_search": {
+          // Use LLM-powered search if available
+          if (process.env.OPENAI_API_KEY) {
+            return await this.executeLLMSearch(service, ctx);
+          }
+          
+          // Fallback to rule-based search
           const extractedQ = extractSearchTerms(ctx.messageText);
           const wantsDetails = /\b(detail|details|info|information|spec|specs|specifications)\b/i.test(
             ctx.messageText
@@ -224,6 +238,81 @@ export class RealEstateDomainExecutor implements DomainExecutor {
         handoffContext:
           "HANDOFF REQUIRED\n- Ask for city and area\n- Ask for budget and property type\n- Ask for name and phone",
         reason: "real_estate_executor_error",
+      };
+    }
+  }
+
+  /**
+   * LLM-powered property search that understands natural language
+   * and matches user terms to actual database values.
+   */
+  private async executeLLMSearch(
+    service: InstanceType<typeof import("../../../src/domains/realEstate/realEstate.service").RealEstateService>,
+    ctx: DomainRequestContext
+  ): Promise<DomainExecutionResult> {
+    try {
+      // 1. Get database context (available property types, cities, areas)
+      const dbContext = await getDbContext(ctx.userId);
+      
+      // 2. Use LLM to parse user intent with context
+      const intent = await parseUserIntent(ctx.messageText, dbContext);
+      
+      // 3. Build search params from LLM-parsed intent
+      const searchParams: import("../../../src/domains/realEstate/realEstate.types").ListingSearchParams = {
+        limit: 10,
+        offset: 0,
+      };
+
+      // Apply LLM-extracted filters
+      if (intent.filters.propertyType) {
+        searchParams.type = intent.filters.propertyType;
+      }
+      if (intent.filters.city) {
+        searchParams.city = intent.filters.city;
+      }
+      if (intent.filters.area) {
+        searchParams.area = intent.filters.area;
+      }
+      if (intent.filters.minPrice) {
+        searchParams.minPrice = intent.filters.minPrice;
+      }
+      if (intent.filters.maxPrice) {
+        searchParams.maxPrice = intent.filters.maxPrice;
+      }
+
+      // If user asked for specific listing IDs, fetch those
+      if (intent.listingIds && intent.listingIds.length > 0) {
+        const listings = [];
+        for (const id of intent.listingIds.slice(0, 5)) {
+          const listing = await service.getListingById(ctx.userId, id);
+          if (listing) listings.push(listing);
+        }
+        if (listings.length > 0) {
+          const message = await generateSmartResponse(listings, intent, ctx.messageText);
+          return { handled: true, message, data: { items: listings } };
+        }
+      }
+
+      // 4. Execute search
+      const items = await service.searchListings(ctx.userId, searchParams);
+      
+      console.log(`[RealEstate LLM] Search with filters:`, JSON.stringify(searchParams), `→ ${items.length} results`);
+
+      // 5. Generate smart response
+      const message = await generateSmartResponse(items, intent, ctx.messageText);
+
+      return {
+        handled: true,
+        message,
+        data: { items, intent },
+      };
+    } catch (error) {
+      console.error("[RealEstate LLM] Search error:", error);
+      // Fall back to simple response
+      return {
+        handled: true,
+        message: "I'm having trouble searching right now. Please try again or rephrase your request.",
+        reason: "llm_search_error",
       };
     }
   }
