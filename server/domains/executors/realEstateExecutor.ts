@@ -1,6 +1,7 @@
 import type { DomainExecutionPlan, DomainExecutionResult, DomainRequestContext } from "@shared/domainFramework";
 import type { DomainExecutor } from "../orchestrator";
 import { parseUserIntent, generateSmartResponse, getDbContext } from "./realEstateLLM";
+import { isLLMAvailable } from "../../lib/llm";
 
 export class RealEstateDomainExecutor implements DomainExecutor {
   canExecute(plan: DomainExecutionPlan): boolean {
@@ -12,8 +13,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
       const { RealEstateService } = await import("../../../src/domains/realEstate/realEstate.service");
       const service = new RealEstateService();
 
-      // Check if we should use LLM-powered search (Claude/Anthropic)
-      const useLLM = process.env.ANTHROPIC_API_KEY && plan.intent === "listing_search";
+      // Check if we should use LLM-powered search (any provider)
+      const useLLM = isLLMAvailable() && plan.intent === "listing_search";
       
       if (useLLM) {
         return await this.executeLLMSearch(service, ctx);
@@ -161,8 +162,8 @@ export class RealEstateDomainExecutor implements DomainExecutor {
 
         case "price_filter":
         case "listing_search": {
-          // Use LLM-powered search if available (Claude/Anthropic)
-          if (process.env.ANTHROPIC_API_KEY) {
+          // Use LLM-powered search if any provider is available
+          if (isLLMAvailable()) {
             return await this.executeLLMSearch(service, ctx);
           }
           

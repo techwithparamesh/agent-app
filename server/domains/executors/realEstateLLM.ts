@@ -1,11 +1,12 @@
 /**
  * LLM-powered Real Estate Search
  * 
- * Uses Claude (Anthropic) to understand user intent and match against actual database values.
- * This solves the problem of "apartments" not matching "Apartments" in the database.
+ * Uses the unified LLM interface to understand user intent and match against actual database values.
+ * Automatically uses whichever LLM provider is configured (Claude, OpenAI, Gemini, Groq).
  */
 
 import type { RealEstateListing } from "../../../src/domains/realEstate/realEstate.types";
+import { llm, parseJSON, isLLMAvailable } from "../../lib/llm";
 
 // ============================================================================
 // Types
@@ -32,54 +33,8 @@ export interface DatabaseContext {
 }
 
 // ============================================================================
-// Claude API Integration
+// LLM-powered Intent Parsing
 // ============================================================================
-
-async function callClaude(
-  systemPrompt: string,
-  userMessage: string
-): Promise<string | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error("[RealEstate LLM] ANTHROPIC_API_KEY not configured");
-    return null;
-  }
-
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: [
-          { role: "user", content: userMessage },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[RealEstate LLM] Claude API error ${response.status}:`, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    const content = data.content?.[0];
-    if (content?.type === "text") {
-      return content.text;
-    }
-    return null;
-  } catch (error) {
-    console.error("[RealEstate LLM] API call failed:", error);
-    return null;
-  }
-}
 
 /**
  * Use LLM to understand user intent and extract search parameters.
@@ -141,19 +96,12 @@ ACTION DETECTION:
 
 Return ONLY valid JSON. No markdown, no code blocks, no explanation.`;
 
-  const content = await callClaude(systemPrompt, message);
+  const content = await llm.chat(systemPrompt, message, true);
+  const parsed = parseJSON<SearchIntent>(content);
   
-  if (content) {
-    try {
-      // Extract JSON from response (Claude may wrap it in text)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : content;
-      const parsed = JSON.parse(jsonStr) as SearchIntent;
-      console.log("[RealEstate LLM] Parsed intent:", JSON.stringify(parsed));
-      return parsed;
-    } catch (e) {
-      console.error("[RealEstate LLM] Failed to parse JSON:", content);
-    }
+  if (parsed) {
+    console.log("[RealEstate LLM] Parsed intent:", JSON.stringify(parsed));
+    return parsed;
   }
 
   // Fallback to basic search
@@ -169,7 +117,7 @@ export async function generateSmartResponse(
   userMessage: string
 ): Promise<string> {
   // If no LLM available or simple case, use formatted output
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!isLLMAvailable()) {
     return formatListingsSimple(listings, intent);
   }
 
@@ -197,7 +145,7 @@ Generate a friendly, helpful response (2-3 sentences max).
 - Be encouraging and helpful
 Don't mention technical details or database.`;
 
-  const content = await callClaude(
+  const content = await llm.chat(
     systemPrompt,
     `User asked: "${userMessage}"\nFilters tried: ${JSON.stringify(intent.filters)}`
   );
