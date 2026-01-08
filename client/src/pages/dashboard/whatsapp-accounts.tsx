@@ -66,7 +66,7 @@ export default function WhatsAppAccountsPage() {
   const agentToLink = new URLSearchParams(window.location.search).get("agent") || "";
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    bspProvider: "360dialog",
+    bspProvider: "twilio",
     businessName: "",
     businessEmail: "",
     businessWebsite: "",
@@ -110,7 +110,7 @@ export default function WhatsAppAccountsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/bsp/accounts"] });
       setIsCreateDialogOpen(false);
       setFormData({
-        bspProvider: "360dialog",
+        bspProvider: "twilio",
         businessName: "",
         businessEmail: "",
         businessWebsite: "",
@@ -192,9 +192,9 @@ export default function WhatsAppAccountsPage() {
                       <SelectValue placeholder="Select provider" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="360dialog">360dialog</SelectItem>
-                      <SelectItem value="twilio" disabled>Twilio (Coming Soon)</SelectItem>
-                      <SelectItem value="messagebird" disabled>MessageBird (Coming Soon)</SelectItem>
+                      <SelectItem value="twilio">Twilio</SelectItem>
+                      <SelectItem value="messagebird">MessageBird</SelectItem>
+                      <SelectItem value="gupshup">Gupshup</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
