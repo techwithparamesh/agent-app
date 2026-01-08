@@ -24,6 +24,7 @@ import {
   whatsappCloudTemplates,
   whatsappCloudAuditLog,
   agents,
+  users,
 } from "../../shared/schema";
 import {
   generateEmbeddedSignupUrl,
@@ -44,11 +45,6 @@ function getUserId(req: Request): string | null {
   return (req as any).user?.claims?.sub || (req as any).session?.userId || null;
 }
 
-// Helper to check if email is verified
-function isEmailVerified(req: Request): boolean {
-  return (req as any).session?.emailVerified === true;
-}
-
 // ============================================================================
 // Middleware
 // ============================================================================
@@ -67,13 +63,33 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * Ensure user has verified email
+ * Ensure user has verified email (checks database)
  */
-function requireVerifiedEmail(req: Request, res: Response, next: NextFunction) {
-  if (!isEmailVerified(req)) {
-    return res.status(403).json({ error: "Email verification required" });
+async function requireVerifiedEmail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check email verification status from database
+    const [user] = await db.select({ emailVerified: users.emailVerified })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    
+    if (!user || !user.emailVerified) {
+      return res.status(403).json({ 
+        error: "Email verification required",
+        code: "email_verification_required"
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error("Email verification check error:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
-  next();
 }
 
 /**
