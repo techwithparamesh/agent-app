@@ -123,17 +123,17 @@ export default function WhatsAppAccountsPage() {
   const handleConnectWhatsApp = async () => {
     setIsConnecting(true);
     try {
-      const res = await fetch("/api/whatsapp-cloud/embedded-signup/start", {
-        method: "POST",
+      const res = await fetch("/api/whatsapp-cloud/oauth/start", {
+        method: "GET",
         credentials: "include",
       });
       
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to start signup");
+        throw new Error(error.message || error.error || "Failed to start signup");
       }
       
-      const { signupUrl } = await res.json();
+      const data = await res.json();
       
       // Open Meta's Embedded Signup in a popup
       const width = 600;
@@ -142,7 +142,7 @@ export default function WhatsAppAccountsPage() {
       const top = window.screenY + (window.outerHeight - height) / 2;
       
       window.open(
-        signupUrl,
+        data.signupUrl,
         "whatsapp_embedded_signup",
         `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
       );
