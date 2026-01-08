@@ -30,8 +30,9 @@ export {
   generateSystemUserToken,
   verifyTokenPermissions,
   refreshTokenIfNeeded,
-  OAuthCallbackResult,
 } from "./embeddedSignup";
+
+export type { OAuthCallbackResult } from "./embeddedSignup";
 
 export {
   sendTextMessage,
