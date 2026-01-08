@@ -58,6 +58,7 @@ const Docs = lazy(() => import("@/pages/docs"));
 const WhatsAppAccounts = lazy(() => import("@/pages/dashboard/whatsapp-accounts"));
 const PhoneNumbers = lazy(() => import("@/pages/dashboard/phone-numbers"));
 const Billing = lazy(() => import("@/pages/dashboard/billing"));
+const Settings = lazy(() => import("@/pages/dashboard/settings"));
 
 // Protected Route wrapper component
 const Protected = ({ children }: { children: React.ReactNode }) => (
@@ -120,6 +121,7 @@ function Router() {
       <Route path="/dashboard/whatsapp/accounts">{() => <Protected><WhatsAppAccounts /></Protected>}</Route>
       <Route path="/dashboard/whatsapp/accounts/:wabaId/numbers">{() => <Protected><PhoneNumbers /></Protected>}</Route>
       <Route path="/dashboard/billing">{() => <Protected><Billing /></Protected>}</Route>
+      <Route path="/dashboard/settings">{() => <Protected><Settings /></Protected>}</Route>
 
       {/* 404 Fallback */}
       <Route component={NotFound} />

@@ -60,6 +60,7 @@ import {
   Phone,
   FileText,
   Workflow,
+  Settings,
 } from "lucide-react";
 import type { Agent } from "@shared/schema";
 
@@ -515,15 +516,26 @@ export function AppSidebar() {
             </p>
           </div>
         </div>
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start gap-3" 
-          data-testid="button-logout"
-          onClick={logout}
-        >
-          <LogOut className="h-4 w-4" />
-          Log Out
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Link href="/dashboard/settings">
+            <Button 
+              variant={location === "/dashboard/settings" ? "secondary" : "ghost"}
+              className="w-full justify-start gap-3"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
+          </Link>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start gap-3" 
+            data-testid="button-logout"
+            onClick={logout}
+          >
+            <LogOut className="h-4 w-4" />
+            Log Out
+          </Button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
