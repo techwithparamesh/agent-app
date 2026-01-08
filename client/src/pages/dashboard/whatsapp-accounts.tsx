@@ -1,12 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -18,68 +14,100 @@ import {
   Clock, 
   AlertCircle,
   ArrowRight,
-  Globe,
-  Mail,
-  MapPin
+  MessageSquare,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+  Unlink,
+  Mail
 } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EmailVerificationRequiredInline, isEmailVerificationRequiredError } from "@/components/email-verification-required";
 
-interface WhatsAppBusinessAccount {
+// WhatsApp Cloud API Account interface
+interface WhatsAppCloudAccount {
   id: string;
-  bspProvider: string;
+  wabaId: string;
   businessName: string;
   businessEmail: string | null;
-  businessWebsite: string | null;
-  businessCategory: string | null;
-  status: string;
-  verificationStatus: string;
-  isActive: boolean;
+  metaBusinessId: string | null;
+  status: "pending" | "active" | "suspended" | "disconnected";
+  verificationStatus: "not_verified" | "pending" | "verified";
+  timezone: string;
+  currency: string;
+  connectedAt: string | null;
   createdAt: string;
+  phoneNumbers?: WhatsAppPhoneNumber[];
+}
+
+interface WhatsAppPhoneNumber {
+  id: string;
+  phoneNumberId: string;
+  phoneNumber: string;
+  displayPhoneNumber: string;
+  verifiedName: string | null;
+  qualityRating: string;
+  status: string;
 }
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  active: "bg-green-100 text-green-800",
-  suspended: "bg-red-100 text-red-800",
-  terminated: "bg-gray-100 text-gray-800",
+  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  suspended: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  disconnected: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
 };
 
 const verificationColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  submitted: "bg-blue-100 text-blue-800",
-  verified: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
+  not_verified: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  verified: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
 };
 
 export default function WhatsAppAccountsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const agentToLink = new URLSearchParams(window.location.search).get("agent") || "";
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    bspProvider: "twilio",
-    businessName: "",
-    businessEmail: "",
-    businessWebsite: "",
-    businessAddress: "",
-    businessCategory: "",
-    businessDescription: "",
-    timezone: "UTC",
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+  const [accountToDisconnect, setAccountToDisconnect] = useState<string | null>(null);
+
+  // Fetch WhatsApp Cloud accounts
+  const { data: accounts, isLoading, error, refetch } = useQuery<WhatsAppCloudAccount[]>({
+    queryKey: ["/api/whatsapp-cloud/accounts"],
   });
 
-  // Fetch accounts
-  const { data: accounts, isLoading, error } = useQuery<WhatsAppBusinessAccount[]>({
-    queryKey: ["/api/bsp/accounts"],
-  });
+  // Handle OAuth callback result from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get("success");
+    const errorMsg = params.get("error");
+    
+    if (success === "true") {
+      toast({
+        title: "WhatsApp Connected!",
+        description: "Your WhatsApp Business Account has been connected successfully.",
+      });
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+      refetch();
+    } else if (errorMsg) {
+      toast({
+        title: "Connection Failed",
+        description: decodeURIComponent(errorMsg),
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast, refetch]);
 
   if (isEmailVerificationRequiredError(error)) {
     return (
@@ -91,37 +119,64 @@ export default function WhatsAppAccountsPage() {
     );
   }
 
-  // Create account mutation
-  const createAccountMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const res = await fetch("/api/bsp/accounts", {
+  // Start Embedded Signup flow
+  const handleConnectWhatsApp = async () => {
+    setIsConnecting(true);
+    try {
+      const res = await fetch("/api/whatsapp-cloud/embedded-signup/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to start signup");
+      }
+      
+      const { signupUrl } = await res.json();
+      
+      // Open Meta's Embedded Signup in a popup
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      window.open(
+        signupUrl,
+        "whatsapp_embedded_signup",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to start WhatsApp connection",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Disconnect account mutation
+  const disconnectMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      const res = await fetch(`/api/whatsapp-cloud/accounts/${accountId}/disconnect`, {
+        method: "POST",
         credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to create account");
+        throw new Error(error.message || "Failed to disconnect account");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bsp/accounts"] });
-      setIsCreateDialogOpen(false);
-      setFormData({
-        bspProvider: "twilio",
-        businessName: "",
-        businessEmail: "",
-        businessWebsite: "",
-        businessAddress: "",
-        businessCategory: "",
-        businessDescription: "",
-        timezone: "UTC",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp-cloud/accounts"] });
+      setShowDisconnectDialog(false);
+      setAccountToDisconnect(null);
       toast({
-        title: "Account Created",
-        description: "Your WhatsApp Business Account has been created successfully.",
+        title: "Account Disconnected",
+        description: "Your WhatsApp Business Account has been disconnected.",
       });
     },
     onError: (error: Error) => {
@@ -133,24 +188,14 @@ export default function WhatsAppAccountsPage() {
     },
   });
 
-  const handleCreateAccount = () => {
-    if (!formData.businessName.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Business name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-    createAccountMutation.mutate(formData);
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "active":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />;
+      case "disconnected":
+        return <Unlink className="h-4 w-4 text-gray-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-red-500" />;
     }
@@ -164,133 +209,74 @@ export default function WhatsAppAccountsPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">WhatsApp Accounts</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage your WhatsApp Business API accounts and phone numbers
+              Connect your WhatsApp Business Account using Meta's official Cloud API
             </p>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Account
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[525px]">
-              <DialogHeader>
-                <DialogTitle>Create WhatsApp Business Account</DialogTitle>
-                <DialogDescription>
-                  Set up a new WhatsApp Business Account through our BSP partner
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="bspProvider">BSP Provider</Label>
-                  <Select
-                    value={formData.bspProvider}
-                    onValueChange={(value) => setFormData({ ...formData, bspProvider: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="twilio">Twilio</SelectItem>
-                      <SelectItem value="messagebird">MessageBird</SelectItem>
-                      <SelectItem value="gupshup">Gupshup</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="businessName">Business Name *</Label>
-                  <Input
-                    id="businessName"
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    placeholder="Your Business Name"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="businessEmail">Business Email</Label>
-                  <Input
-                    id="businessEmail"
-                    type="email"
-                    value={formData.businessEmail}
-                    onChange={(e) => setFormData({ ...formData, businessEmail: e.target.value })}
-                    placeholder="contact@yourbusiness.com"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="businessWebsite">Website</Label>
-                  <Input
-                    id="businessWebsite"
-                    value={formData.businessWebsite}
-                    onChange={(e) => setFormData({ ...formData, businessWebsite: e.target.value })}
-                    placeholder="https://yourbusiness.com"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="businessCategory">Business Category</Label>
-                  <Select
-                    value={formData.businessCategory}
-                    onValueChange={(value) => setFormData({ ...formData, businessCategory: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="healthcare">Healthcare</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
-                      <SelectItem value="hospitality">Hospitality</SelectItem>
-                      <SelectItem value="real_estate">Real Estate</SelectItem>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="businessAddress">Business Address</Label>
-                  <Textarea
-                    id="businessAddress"
-                    value={formData.businessAddress}
-                    onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
-                    placeholder="123 Business St, City, Country"
-                    rows={2}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleCreateAccount}
-                  disabled={createAccountMutation.isPending}
-                >
-                  {createAccountMutation.isPending ? "Creating..." : "Create Account"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button onClick={handleConnectWhatsApp} disabled={isConnecting}>
+              {isConnecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Connect WhatsApp
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
-        {/* Setup Guide */}
+        {/* Info Banner */}
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 dark:text-green-100">WhatsApp Cloud API</h3>
+                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                  Direct integration with Meta's official WhatsApp Cloud API. Connect your WhatsApp Business Account 
+                  through Meta's secure Embedded Signup flow - no third-party BSP required.
+                </p>
+              </div>
+              <a 
+                href="https://developers.facebook.com/docs/whatsapp/cloud-api" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-600 hover:text-green-700 dark:text-green-400"
+              >
+                <ExternalLink className="h-5 w-5" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Setup Guide - shown when no accounts */}
         {(!accounts || accounts.length === 0) && !isLoading && (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Get Started with WhatsApp Business API</h3>
+              <h3 className="text-lg font-semibold mb-2">Get Started with WhatsApp Cloud API</h3>
               <p className="text-muted-foreground text-center max-w-md mb-6">
-                Create your first WhatsApp Business Account to start sending and receiving messages through your AI agents.
+                Connect your WhatsApp Business Account to start sending and receiving messages through your AI agents.
               </p>
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">1</div>
-                  <span className="text-sm">Create Account</span>
+                  <span className="text-sm">Connect Account</span>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-medium">2</div>
-                  <span className="text-sm">Add Phone Number</span>
+                  <span className="text-sm">Verify Phone</span>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 <div className="flex items-center gap-2">
@@ -298,10 +284,22 @@ export default function WhatsAppAccountsPage() {
                   <span className="text-sm">Link to Agent</span>
                 </div>
               </div>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Account
+              <Button onClick={handleConnectWhatsApp} disabled={isConnecting} size="lg">
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Connect Your WhatsApp Business
+                  </>
+                )}
               </Button>
+              <p className="text-xs text-muted-foreground mt-4">
+                You'll be redirected to Meta to authorize your WhatsApp Business Account
+              </p>
             </CardContent>
           </Card>
         )}
@@ -333,15 +331,13 @@ export default function WhatsAppAccountsPage() {
                     </div>
                     {getStatusIcon(account.status)}
                   </div>
-                  <CardDescription className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {account.bspProvider}
+                  <CardDescription className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                      Cloud API
                     </Badge>
-                    {account.businessCategory && (
-                      <Badge variant="secondary" className="text-xs">
-                        {account.businessCategory}
-                      </Badge>
-                    )}
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      WABA: {account.wabaId}
+                    </Badge>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -352,23 +348,32 @@ export default function WhatsAppAccountsPage() {
                         {account.businessEmail}
                       </div>
                     )}
-                    {account.businessWebsite && (
+                    
+                    {/* Phone Numbers */}
+                    {account.phoneNumbers && account.phoneNumbers.length > 0 && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Globe className="h-4 w-4" />
-                        {account.businessWebsite}
+                        <Phone className="h-4 w-4" />
+                        {account.phoneNumbers[0].displayPhoneNumber}
+                        {account.phoneNumbers.length > 1 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{account.phoneNumbers.length - 1} more
+                          </Badge>
+                        )}
                       </div>
                     )}
+                    
                     <div className="flex items-center gap-2 pt-2">
                       <Badge className={statusColors[account.status] || "bg-gray-100"}>
                         {account.status}
                       </Badge>
                       <Badge className={verificationColors[account.verificationStatus] || "bg-gray-100"}>
-                        {account.verificationStatus}
+                        {account.verificationStatus.replace("_", " ")}
                       </Badge>
                     </div>
+                    
                     <div className="flex gap-2 pt-2">
                       <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <a href={`/dashboard/whatsapp/accounts/${account.id}`}>
+                        <a href={`/dashboard/whatsapp-cloud/accounts/${account.id}`}>
                           <Settings className="h-4 w-4 mr-1" />
                           Manage
                         </a>
@@ -377,8 +382,8 @@ export default function WhatsAppAccountsPage() {
                         <a
                           href={
                             agentToLink
-                              ? `/dashboard/whatsapp/accounts/${account.id}/numbers?agent=${encodeURIComponent(agentToLink)}`
-                              : `/dashboard/whatsapp/accounts/${account.id}/numbers`
+                              ? `/dashboard/whatsapp-cloud/accounts/${account.id}/numbers?agent=${encodeURIComponent(agentToLink)}`
+                              : `/dashboard/whatsapp-cloud/accounts/${account.id}/numbers`
                           }
                         >
                           <Phone className="h-4 w-4 mr-1" />
@@ -386,6 +391,21 @@ export default function WhatsAppAccountsPage() {
                         </a>
                       </Button>
                     </div>
+                    
+                    {account.status === "active" && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full text-destructive hover:text-destructive"
+                        onClick={() => {
+                          setAccountToDisconnect(account.id);
+                          setShowDisconnectDialog(true);
+                        }}
+                      >
+                        <Unlink className="h-4 w-4 mr-1" />
+                        Disconnect
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -393,6 +413,28 @@ export default function WhatsAppAccountsPage() {
           </div>
         ) : null}
       </div>
+
+      {/* Disconnect Confirmation Dialog */}
+      <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect WhatsApp Account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will disconnect your WhatsApp Business Account from this platform. 
+              You can reconnect it later, but any ongoing conversations may be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => accountToDisconnect && disconnectMutation.mutate(accountToDisconnect)}
+            >
+              {disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
