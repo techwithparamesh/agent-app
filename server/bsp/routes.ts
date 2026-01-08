@@ -13,7 +13,7 @@ const router = Router();
 // ========== VALIDATION SCHEMAS ==========
 
 const createWabaSchema = z.object({
-  bspProvider: z.enum(['360dialog', 'twilio', 'messagebird', 'gupshup']),
+  bspProvider: z.enum(['twilio', 'messagebird', 'gupshup']),
   businessName: z.string().min(1).max(255),
   businessEmail: z.string().email().optional(),
   businessWebsite: z.string().url().optional(),

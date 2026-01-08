@@ -11,6 +11,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import puppeteer from "puppeteer";
 import whatsappRoutes from "./whatsapp/routes";
+import { whatsappCloudRoutes } from "./whatsapp-cloud";
 import bspRoutes from "./bsp/routes";
 import billingRoutes from "./billing/routes";
 import { integrationRoutes } from "./integrations/routes";
@@ -292,6 +293,11 @@ export async function registerRoutes(
   // ========== WHATSAPP WEBHOOK ROUTES ==========
   // Mount WhatsApp routes (before auth middleware for webhook verification)
   app.use("/api/whatsapp", whatsappRoutes);
+  
+  // ========== WHATSAPP CLOUD API (Direct Meta Integration) ==========
+  // Production-ready Meta-approved WhatsApp Cloud API with Embedded Signup
+  // Webhook endpoints are public; account management requires authentication
+  app.use("/api/whatsapp-cloud", whatsappCloudRoutes);
 
   // ========== STRIPE WEBHOOK (raw body needed) ==========
   // NOTE: We already capture raw JSON bytes globally via express.json({ verify }) in server/index.ts.

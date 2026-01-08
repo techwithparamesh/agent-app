@@ -58,11 +58,14 @@ export const WHATSAPP_CONFIG = {
   baseUrl: `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION || 'v18.0'}`,
 };
 
-// 360Dialog BSP Configuration
-export const DIALOG360_CONFIG = {
-  partnerId: process.env.DIALOG360_PARTNER_ID || '',
-  apiKey: process.env.DIALOG360_API_KEY || '',
-  apiUrl: process.env.DIALOG360_API_URL || 'https://waba.360dialog.io',
+// WhatsApp Cloud API Configuration (Direct Meta Integration)
+export const WHATSAPP_CLOUD_CONFIG = {
+  appId: process.env.META_APP_ID || '',
+  appSecret: process.env.META_APP_SECRET || '',
+  embeddedSignupConfigId: process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || '',
+  oauthCallbackUrl: process.env.META_OAUTH_CALLBACK_URL || '',
+  graphApiVersion: process.env.META_GRAPH_API_VERSION || 'v18.0',
+  isConfigured: !!(process.env.META_APP_ID && process.env.META_APP_SECRET),
 };
 
 // Google OAuth Configuration
@@ -111,8 +114,8 @@ export function validateConfig() {
   if (!STRIPE_CONFIG.isConfigured) {
     warnings.push('Stripe not configured - billing features disabled');
   }
-  if (!DIALOG360_CONFIG.apiKey) {
-    warnings.push('360Dialog not configured - BSP features disabled');
+  if (!WHATSAPP_CLOUD_CONFIG.isConfigured) {
+    warnings.push('WhatsApp Cloud API not configured - WhatsApp features disabled');
   }
   
   return { errors, warnings, isValid: errors.length === 0 };
@@ -123,7 +126,7 @@ export default {
   PLAN_LIMITS,
   AI_CONFIG,
   WHATSAPP_CONFIG,
-  DIALOG360_CONFIG,
+  WHATSAPP_CLOUD_CONFIG,
   GOOGLE_CONFIG,
   STRIPE_CONFIG,
   SCANNER_CONFIG,

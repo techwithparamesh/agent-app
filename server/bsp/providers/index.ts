@@ -1,11 +1,14 @@
 /**
  * BSP Provider Interface & Factory
- * Supports multiple WhatsApp Business Service Providers
+ * 
+ * NOTE: BSP providers have been deprecated in favor of direct Meta WhatsApp Cloud API
+ * integration via Embedded Signup. See server/whatsapp-cloud/ for the new implementation.
+ * 
+ * This interface is kept for backward compatibility but new integrations should use
+ * the WhatsApp Cloud API directly.
  */
 
-import { Dialog360Provider, dialog360 } from './360dialog';
-
-export type BSPProviderType = '360dialog' | 'twilio' | 'messagebird' | 'gupshup';
+export type BSPProviderType = 'twilio' | 'messagebird' | 'gupshup';
 
 export interface BSPProvider {
   // Account Management
@@ -38,23 +41,21 @@ export interface BSPProvider {
 
 /**
  * Get the BSP provider instance based on provider type
+ * 
+ * @deprecated Use WhatsApp Cloud API direct integration instead (server/whatsapp-cloud/)
  */
 export function getBSPProvider(providerType: BSPProviderType): BSPProvider {
   switch (providerType) {
-    case '360dialog':
-      return dialog360;
     case 'twilio':
-      // TODO: Implement Twilio provider
-      throw new Error('Twilio provider not yet implemented');
+      // TODO: Implement Twilio provider if needed
+      throw new Error('Twilio provider not yet implemented. Use WhatsApp Cloud API instead.');
     case 'messagebird':
-      // TODO: Implement MessageBird provider
-      throw new Error('MessageBird provider not yet implemented');
+      // TODO: Implement MessageBird provider if needed
+      throw new Error('MessageBird provider not yet implemented. Use WhatsApp Cloud API instead.');
     case 'gupshup':
-      // TODO: Implement Gupshup provider
-      throw new Error('Gupshup provider not yet implemented');
+      // TODO: Implement Gupshup provider if needed
+      throw new Error('Gupshup provider not yet implemented. Use WhatsApp Cloud API instead.');
     default:
-      throw new Error(`Unknown BSP provider: ${providerType}`);
+      throw new Error(`Unknown BSP provider: ${providerType}. Use WhatsApp Cloud API for direct Meta integration.`);
   }
 }
-
-export { dialog360, Dialog360Provider };

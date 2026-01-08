@@ -385,12 +385,13 @@ export const handoffQueue = mysqlTable("handoff_queue", {
 // ========== BSP/WHATSAPP BUSINESS SAAS TABLES ==========
 
 // WhatsApp Business Accounts (WABA) - Created via BSP
+// NOTE: For new integrations, use WhatsApp Cloud API (server/whatsapp-cloud/) instead of BSP
 export const whatsappBusinessAccounts = mysqlTable("whatsapp_business_accounts", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
   
-  // BSP Account Details (360dialog, Twilio, etc.)
-  bspProvider: varchar("bsp_provider", { length: 50 }).notNull(), // '360dialog', 'twilio', 'messagebird', 'gupshup'
+  // BSP Account Details (Twilio, MessageBird, Gupshup)
+  bspProvider: varchar("bsp_provider", { length: 50 }).notNull(), // 'twilio', 'messagebird', 'gupshup'
   bspAccountId: varchar("bsp_account_id", { length: 255 }), // Account ID from BSP
   bspApiKey: text("bsp_api_key"), // Encrypted API key from BSP
   bspPartnerId: varchar("bsp_partner_id", { length: 255 }),
@@ -1547,3 +1548,314 @@ export type ProductCache = typeof productCache.$inferSelect;
 
 export type InsertOrderLookupLog = z.infer<typeof insertOrderLookupLogSchema>;
 export type OrderLookupLog = typeof orderLookupLogs.$inferSelect;
+
+// ============================================================================
+// WhatsApp Cloud API - Multi-tenant Direct Meta Integration
+// ============================================================================
+
+// WhatsApp Cloud Accounts - One per tenant (WABA)
+export const whatsappCloudAccounts = mysqlTable("whatsapp_cloud_accounts", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  wabaId: varchar("waba_id", { length: 50 }).notNull(), // WhatsApp Business Account ID
+  businessName: varchar("business_name", { length: 255 }),
+  businessVerificationStatus: varchar("business_verification_status", { length: 50 }).default("pending"),
+  accountReviewStatus: varchar("account_review_status", { length: 50 }).default("pending"),
+  // Encrypted system user access token (AES-256-GCM)
+  encryptedAccessToken: text("encrypted_access_token").notNull(),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  // Meta OAuth metadata
+  metaBusinessId: varchar("meta_business_id", { length: 50 }),
+  currency: varchar("currency", { length: 10 }).default("USD"),
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
+  // Messaging tier limits
+  messagingTier: varchar("messaging_tier", { length: 20 }).default("TIER_1K"),
+  dailyMessageLimit: int("daily_message_limit").default(1000),
+  // Status
+  status: varchar("status", { length: 20 }).default("active"),
+  webhookVerifyToken: varchar("webhook_verify_token", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  userIdx: index("idx_wca_user").on(table.userId),
+  wabaIdx: uniqueIndex("idx_wca_waba").on(table.wabaId),
+  statusIdx: index("idx_wca_status").on(table.status),
+}));
+
+// WhatsApp Cloud Phone Numbers - Each WABA can have multiple phone numbers
+export const whatsappCloudPhoneNumbers = mysqlTable("whatsapp_cloud_phone_numbers", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  accountId: varchar("account_id", { length: 36 }).notNull().references(() => whatsappCloudAccounts.id, { onDelete: "cascade" }),
+  phoneNumberId: varchar("phone_number_id", { length: 50 }).notNull(), // Meta's phone number ID
+  displayPhoneNumber: varchar("display_phone_number", { length: 20 }).notNull(),
+  verifiedName: varchar("verified_name", { length: 255 }),
+  qualityRating: varchar("quality_rating", { length: 20 }).default("GREEN"),
+  messagingLimitTier: varchar("messaging_limit_tier", { length: 20 }).default("TIER_1K"),
+  codeVerificationStatus: varchar("code_verification_status", { length: 20 }).default("NOT_VERIFIED"),
+  platformType: varchar("platform_type", { length: 20 }).default("CLOUD_API"),
+  // Webhook routing
+  isWebhookEnabled: boolean("is_webhook_enabled").default(true),
+  // Status
+  status: varchar("status", { length: 20 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  accountIdx: index("idx_wcpn_account").on(table.accountId),
+  phoneNumberIdIdx: uniqueIndex("idx_wcpn_phone_number_id").on(table.phoneNumberId),
+  statusIdx: index("idx_wcpn_status").on(table.status),
+}));
+
+// WhatsApp Cloud Agent Links - Connect phone numbers to agents
+export const whatsappCloudAgentLinks = mysqlTable("whatsapp_cloud_agent_links", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  phoneNumberId: varchar("phone_number_id", { length: 36 }).notNull().references(() => whatsappCloudPhoneNumbers.id, { onDelete: "cascade" }),
+  agentId: varchar("agent_id", { length: 36 }).notNull().references(() => agents.id, { onDelete: "cascade" }),
+  isPrimary: boolean("is_primary").default(false),
+  routingStrategy: varchar("routing_strategy", { length: 30 }).default("primary"), // primary, round_robin, availability, skill_based
+  priority: int("priority").default(1),
+  skills: json("skills").$type<string[]>(),
+  maxConcurrentChats: int("max_concurrent_chats").default(10),
+  isAvailable: boolean("is_available").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  phoneNumberIdx: index("idx_wcal_phone_number").on(table.phoneNumberId),
+  agentIdx: index("idx_wcal_agent").on(table.agentId),
+  primaryIdx: index("idx_wcal_primary").on(table.phoneNumberId, table.isPrimary),
+}));
+
+// WhatsApp Cloud Conversations - Track active conversations
+export const whatsappCloudConversations = mysqlTable("whatsapp_cloud_conversations", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  phoneNumberId: varchar("phone_number_id", { length: 36 }).notNull().references(() => whatsappCloudPhoneNumbers.id, { onDelete: "cascade" }),
+  agentId: varchar("agent_id", { length: 36 }).references(() => agents.id, { onDelete: "set null" }),
+  customerWaId: varchar("customer_wa_id", { length: 50 }).notNull(), // Customer's WhatsApp ID
+  customerName: varchar("customer_name", { length: 255 }),
+  customerProfileName: varchar("customer_profile_name", { length: 255 }),
+  status: varchar("status", { length: 20 }).default("active"), // active, resolved, transferred, expired
+  // 24-hour window tracking
+  lastCustomerMessageAt: timestamp("last_customer_message_at"),
+  windowExpiresAt: timestamp("window_expires_at"),
+  // Conversation metadata
+  messageCount: int("message_count").default(0),
+  context: json("context").$type<Record<string, any>>(),
+  tags: json("tags").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  resolvedAt: timestamp("resolved_at"),
+}, (table) => ({
+  phoneNumberIdx: index("idx_wcc_phone_number").on(table.phoneNumberId),
+  agentIdx: index("idx_wcc_agent").on(table.agentId),
+  customerIdx: index("idx_wcc_customer").on(table.customerWaId),
+  statusIdx: index("idx_wcc_status").on(table.status),
+  windowIdx: index("idx_wcc_window").on(table.windowExpiresAt),
+}));
+
+// WhatsApp Cloud Messages - Message history
+export const whatsappCloudMessages = mysqlTable("whatsapp_cloud_messages", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  conversationId: varchar("conversation_id", { length: 36 }).notNull().references(() => whatsappCloudConversations.id, { onDelete: "cascade" }),
+  waMessageId: varchar("wa_message_id", { length: 100 }), // Meta's message ID
+  direction: varchar("direction", { length: 10 }).notNull(), // inbound, outbound
+  messageType: varchar("message_type", { length: 20 }).notNull(), // text, image, document, audio, video, template, interactive, location, contacts, sticker
+  content: text("content"), // Text content or JSON for complex types
+  mediaUrl: varchar("media_url", { length: 2048 }),
+  mediaId: varchar("media_id", { length: 100 }),
+  templateName: varchar("template_name", { length: 255 }),
+  templateLanguage: varchar("template_language", { length: 10 }),
+  // Delivery status
+  status: varchar("status", { length: 20 }).default("pending"), // pending, sent, delivered, read, failed
+  errorCode: varchar("error_code", { length: 50 }),
+  errorMessage: text("error_message"),
+  // Timestamps
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  conversationIdx: index("idx_wcm_conversation").on(table.conversationId),
+  waMessageIdIdx: index("idx_wcm_wa_message_id").on(table.waMessageId),
+  directionIdx: index("idx_wcm_direction").on(table.direction),
+  statusIdx: index("idx_wcm_status").on(table.status),
+  createdAtIdx: index("idx_wcm_created_at").on(table.createdAt),
+}));
+
+// WhatsApp Cloud Templates - Message templates
+export const whatsappCloudTemplates = mysqlTable("whatsapp_cloud_templates", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  accountId: varchar("account_id", { length: 36 }).notNull().references(() => whatsappCloudAccounts.id, { onDelete: "cascade" }),
+  templateId: varchar("template_id", { length: 100 }), // Meta's template ID
+  name: varchar("name", { length: 255 }).notNull(),
+  language: varchar("language", { length: 10 }).notNull().default("en"),
+  category: varchar("category", { length: 50 }).notNull(), // UTILITY, MARKETING, AUTHENTICATION
+  status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, APPROVED, REJECTED, PAUSED, DISABLED
+  // Template components
+  components: json("components").$type<Array<{
+    type: "HEADER" | "BODY" | "FOOTER" | "BUTTONS";
+    format?: "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT" | "LOCATION";
+    text?: string;
+    example?: { header_text?: string[]; body_text?: string[][] };
+    buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string }>;
+  }>>(),
+  // Rejection reason if any
+  rejectedReason: text("rejected_reason"),
+  qualityScore: varchar("quality_score", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  accountIdx: index("idx_wct_account").on(table.accountId),
+  nameIdx: index("idx_wct_name").on(table.name),
+  statusIdx: index("idx_wct_status").on(table.status),
+}));
+
+// WhatsApp Cloud Audit Log - Security and compliance logging
+export const whatsappCloudAuditLog = mysqlTable("whatsapp_cloud_audit_log", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  accountId: varchar("account_id", { length: 36 }).references(() => whatsappCloudAccounts.id, { onDelete: "set null" }),
+  userId: varchar("user_id", { length: 36 }).references(() => users.id, { onDelete: "set null" }),
+  action: varchar("action", { length: 50 }).notNull(), // oauth_start, oauth_complete, token_refresh, message_sent, webhook_received, etc.
+  resourceType: varchar("resource_type", { length: 50 }), // account, phone_number, message, template, conversation
+  resourceId: varchar("resource_id", { length: 100 }),
+  details: json("details").$type<Record<string, any>>(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  status: varchar("status", { length: 20 }).default("success"), // success, failure
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  accountIdx: index("idx_wcal_account").on(table.accountId),
+  userIdx: index("idx_wcal_user").on(table.userId),
+  actionIdx: index("idx_wcal_action").on(table.action),
+  createdAtIdx: index("idx_wcal_created_at").on(table.createdAt),
+}));
+
+// WhatsApp Cloud Relations
+export const whatsappCloudAccountsRelations = relations(whatsappCloudAccounts, ({ one, many }) => ({
+  user: one(users, {
+    fields: [whatsappCloudAccounts.userId],
+    references: [users.id],
+  }),
+  phoneNumbers: many(whatsappCloudPhoneNumbers),
+  templates: many(whatsappCloudTemplates),
+  auditLogs: many(whatsappCloudAuditLog),
+}));
+
+export const whatsappCloudPhoneNumbersRelations = relations(whatsappCloudPhoneNumbers, ({ one, many }) => ({
+  account: one(whatsappCloudAccounts, {
+    fields: [whatsappCloudPhoneNumbers.accountId],
+    references: [whatsappCloudAccounts.id],
+  }),
+  agentLinks: many(whatsappCloudAgentLinks),
+  conversations: many(whatsappCloudConversations),
+}));
+
+export const whatsappCloudAgentLinksRelations = relations(whatsappCloudAgentLinks, ({ one }) => ({
+  phoneNumber: one(whatsappCloudPhoneNumbers, {
+    fields: [whatsappCloudAgentLinks.phoneNumberId],
+    references: [whatsappCloudPhoneNumbers.id],
+  }),
+  agent: one(agents, {
+    fields: [whatsappCloudAgentLinks.agentId],
+    references: [agents.id],
+  }),
+}));
+
+export const whatsappCloudConversationsRelations = relations(whatsappCloudConversations, ({ one, many }) => ({
+  phoneNumber: one(whatsappCloudPhoneNumbers, {
+    fields: [whatsappCloudConversations.phoneNumberId],
+    references: [whatsappCloudPhoneNumbers.id],
+  }),
+  agent: one(agents, {
+    fields: [whatsappCloudConversations.agentId],
+    references: [agents.id],
+  }),
+  messages: many(whatsappCloudMessages),
+}));
+
+export const whatsappCloudMessagesRelations = relations(whatsappCloudMessages, ({ one }) => ({
+  conversation: one(whatsappCloudConversations, {
+    fields: [whatsappCloudMessages.conversationId],
+    references: [whatsappCloudConversations.id],
+  }),
+}));
+
+export const whatsappCloudTemplatesRelations = relations(whatsappCloudTemplates, ({ one }) => ({
+  account: one(whatsappCloudAccounts, {
+    fields: [whatsappCloudTemplates.accountId],
+    references: [whatsappCloudAccounts.id],
+  }),
+}));
+
+export const whatsappCloudAuditLogRelations = relations(whatsappCloudAuditLog, ({ one }) => ({
+  account: one(whatsappCloudAccounts, {
+    fields: [whatsappCloudAuditLog.accountId],
+    references: [whatsappCloudAccounts.id],
+  }),
+  user: one(users, {
+    fields: [whatsappCloudAuditLog.userId],
+    references: [users.id],
+  }),
+}));
+
+// WhatsApp Cloud Insert Schemas
+export const insertWhatsappCloudAccountSchema = createInsertSchema(whatsappCloudAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWhatsappCloudPhoneNumberSchema = createInsertSchema(whatsappCloudPhoneNumbers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWhatsappCloudAgentLinkSchema = createInsertSchema(whatsappCloudAgentLinks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWhatsappCloudConversationSchema = createInsertSchema(whatsappCloudConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWhatsappCloudMessageSchema = createInsertSchema(whatsappCloudMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWhatsappCloudTemplateSchema = createInsertSchema(whatsappCloudTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWhatsappCloudAuditLogSchema = createInsertSchema(whatsappCloudAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+// WhatsApp Cloud Types
+export type InsertWhatsappCloudAccount = z.infer<typeof insertWhatsappCloudAccountSchema>;
+export type WhatsappCloudAccount = typeof whatsappCloudAccounts.$inferSelect;
+
+export type InsertWhatsappCloudPhoneNumber = z.infer<typeof insertWhatsappCloudPhoneNumberSchema>;
+export type WhatsappCloudPhoneNumber = typeof whatsappCloudPhoneNumbers.$inferSelect;
+
+export type InsertWhatsappCloudAgentLink = z.infer<typeof insertWhatsappCloudAgentLinkSchema>;
+export type WhatsappCloudAgentLink = typeof whatsappCloudAgentLinks.$inferSelect;
+
+export type InsertWhatsappCloudConversation = z.infer<typeof insertWhatsappCloudConversationSchema>;
+export type WhatsappCloudConversation = typeof whatsappCloudConversations.$inferSelect;
+
+export type InsertWhatsappCloudMessage = z.infer<typeof insertWhatsappCloudMessageSchema>;
+export type WhatsappCloudMessage = typeof whatsappCloudMessages.$inferSelect;
+
+export type InsertWhatsappCloudTemplate = z.infer<typeof insertWhatsappCloudTemplateSchema>;
+export type WhatsappCloudTemplate = typeof whatsappCloudTemplates.$inferSelect;
+
+export type InsertWhatsappCloudAuditLog = z.infer<typeof insertWhatsappCloudAuditLogSchema>;
+export type WhatsappCloudAuditLog = typeof whatsappCloudAuditLog.$inferSelect;
