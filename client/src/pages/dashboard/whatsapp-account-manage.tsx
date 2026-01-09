@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -396,6 +397,66 @@ export default function WhatsAppAccountManagePage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Webhook Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Webhook Configuration
+            </CardTitle>
+            <CardDescription>Configure webhooks in Meta Developer Console to receive messages</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">Callback URL</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="flex-1 text-sm bg-muted px-3 py-2 rounded font-mono">
+                  https://digitalagency4us.cloud/api/whatsapp-cloud/webhook
+                </code>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText("https://digitalagency4us.cloud/api/whatsapp-cloud/webhook");
+                    toast({ title: "Copied!", description: "Webhook URL copied to clipboard" });
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+            <Separator />
+            <div>
+              <Label className="text-sm text-muted-foreground">Verify Token</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="flex-1 text-sm bg-muted px-3 py-2 rounded font-mono">
+                  {account.webhookVerifyToken || "Not set"}
+                </code>
+                {account.webhookVerifyToken && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(account.webhookVerifyToken!);
+                      toast({ title: "Copied!", description: "Verify token copied to clipboard" });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Separator />
+            <div className="text-sm text-muted-foreground">
+              <p className="mb-2"><strong>Subscribe to these webhook fields:</strong></p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><code className="bg-muted px-1 rounded">messages</code> - Receive incoming messages</li>
+                <li><code className="bg-muted px-1 rounded">message_template_status_update</code> - Template approvals</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Danger Zone */}
         <Card className="border-destructive/50">
