@@ -264,47 +264,117 @@ export default function WhatsAppAccountsPage() {
 
         {/* Setup Guide - shown when no accounts */}
         {(!accounts || accounts.length === 0) && !isLoading && (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Get Started with WhatsApp Cloud API</h3>
-              <p className="text-muted-foreground text-center max-w-md mb-6">
-                Connect your WhatsApp Business Account to start sending and receiving messages through your AI agents.
-              </p>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">1</div>
-                  <span className="text-sm">Connect Account</span>
+          <div className="space-y-6">
+            {/* Prerequisites Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  Before You Start
+                </CardTitle>
+                <CardDescription>Make sure you have these ready</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <h4 className="font-medium mb-2">📱 Phone Number</h4>
+                    <p className="text-sm text-muted-foreground">
+                      A number <strong>NOT</strong> currently registered with WhatsApp (personal or business)
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <h4 className="font-medium mb-2">👤 Meta Account</h4>
+                    <p className="text-sm text-muted-foreground">
+                      A Facebook account to access Meta Business Suite
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <h4 className="font-medium mb-2">🏢 Business Info</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Business name and category for your WhatsApp profile
+                    </p>
+                  </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-medium">2</div>
-                  <span className="text-sm">Verify Phone</span>
+              </CardContent>
+            </Card>
+
+            {/* Main CTA Card */}
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Get Started with WhatsApp Cloud API</h3>
+                <p className="text-muted-foreground text-center max-w-md mb-6">
+                  Connect your WhatsApp Business Account to start receiving messages handled by your AI agents.
+                </p>
+                
+                {/* Steps */}
+                <div className="w-full max-w-2xl mb-8">
+                  <div className="grid md:grid-cols-3 gap-4 text-center">
+                    <div className="p-4 rounded-lg border bg-card">
+                      <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold mx-auto mb-3">1</div>
+                      <h4 className="font-medium mb-1">Connect Account</h4>
+                      <p className="text-xs text-muted-foreground">Click below and follow Meta's popup to connect</p>
+                    </div>
+                    <div className="p-4 rounded-lg border bg-card">
+                      <div className="h-10 w-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold mx-auto mb-3">2</div>
+                      <h4 className="font-medium mb-1">Register Phone</h4>
+                      <p className="text-xs text-muted-foreground">Add & verify your phone number in Meta Business Suite</p>
+                    </div>
+                    <div className="p-4 rounded-lg border bg-card">
+                      <div className="h-10 w-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold mx-auto mb-3">3</div>
+                      <h4 className="font-medium mb-1">Link Agent</h4>
+                      <p className="text-xs text-muted-foreground">Connect your AI agent to handle incoming messages</p>
+                    </div>
+                  </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-medium">3</div>
-                  <span className="text-sm">Link to Agent</span>
+
+                <Button onClick={handleConnectWhatsApp} disabled={isConnecting} size="lg">
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Connect Your WhatsApp Business
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-4">
+                  You'll be redirected to Meta to authorize your WhatsApp Business Account
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* After Connection Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">After Connecting</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="text-primary font-bold">→</span>
+                    <p><strong>Register your phone number</strong> - Go to <a href="https://business.facebook.com/settings/whatsapp-business-accounts" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meta Business Suite</a> → Your WABA → Phone Numbers → Add your number and verify via SMS</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-primary font-bold">→</span>
+                    <p><strong>Configure webhooks</strong> - In your account's Manage page, you'll find the webhook URL and verify token to configure in Meta Developer Console</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-primary font-bold">→</span>
+                    <p><strong>Link an agent</strong> - Go to Manage Numbers and link your AI agent to handle incoming messages</p>
+                  </div>
                 </div>
-              </div>
-              <Button onClick={handleConnectWhatsApp} disabled={isConnecting} size="lg">
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Connect Your WhatsApp Business
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground mt-4">
-                You'll be redirected to Meta to authorize your WhatsApp Business Account
-              </p>
-            </CardContent>
-          </Card>
+                <div className="mt-4 pt-4 border-t">
+                  <a href="/dashboard/docs" className="text-sm text-primary hover:underline flex items-center gap-1">
+                    View full documentation <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Accounts List */}

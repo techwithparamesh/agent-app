@@ -293,24 +293,70 @@ function HowItWorksSection() {
 function WhatsAppGuideSection() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Overview */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Setup Guide</h2>
+        <h2 className="text-xl font-semibold mb-4">WhatsApp Cloud API Integration</h2>
+        <p className="text-muted-foreground mb-4">
+          AgentForge uses Meta's WhatsApp Cloud API with Embedded Signup for seamless WhatsApp Business integration.
+          Your AI agents can receive and respond to WhatsApp messages 24/7.
+        </p>
+        <DocsCallout type="info" title="Requirements">
+          <ul className="list-disc list-inside space-y-1 text-sm">
+            <li>A Meta (Facebook) account</li>
+            <li>A phone number NOT currently registered with WhatsApp</li>
+            <li>At least one AI agent created in AgentForge</li>
+          </ul>
+        </DocsCallout>
+      </div>
+
+      {/* Step-by-step Guide */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Setup Steps</h2>
         <div className="space-y-4">
-          <StepItem number={1} title="Connect WhatsApp Business">Go to <strong>Integrations → WhatsApp</strong> and connect your WhatsApp Business account.</StepItem>
-          <StepItem number={2} title="Assign Phone Number">Link a phone number to your AI agent.</StepItem>
-          <StepItem number={3} title="Configure Agent">Set up your knowledge base and test responses.</StepItem>
-          <StepItem number={4} title="Activate">Toggle the integration to active.</StepItem>
+          <StepItem number={1} title="Connect WhatsApp Account">
+            Go to <strong>WhatsApp Business → WhatsApp Accounts</strong> and click <strong>"Connect WhatsApp Account"</strong>. 
+            A Meta popup will appear to guide you through connecting your WhatsApp Business Account.
+          </StepItem>
+          <StepItem number={2} title="Complete Meta Signup">
+            In the Meta popup:
+            <ul className="list-disc list-inside mt-2 ml-4 space-y-1 text-muted-foreground">
+              <li>Login with your Facebook account</li>
+              <li>Select or create a Meta Business Portfolio</li>
+              <li>Select or create a WhatsApp Business Account</li>
+              <li>Grant the required permissions</li>
+            </ul>
+          </StepItem>
+          <StepItem number={3} title="Register Phone Number">
+            Add your phone number via <strong>Meta Business Suite</strong>:
+            <ul className="list-disc list-inside mt-2 ml-4 space-y-1 text-muted-foreground">
+              <li>Go to <a href="https://business.facebook.com/settings/whatsapp-business-accounts" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">business.facebook.com/settings/whatsapp-business-accounts</a></li>
+              <li>Click on your WABA → Phone Numbers → Add Phone Number</li>
+              <li>Complete SMS/Voice verification</li>
+            </ul>
+          </StepItem>
+          <StepItem number={4} title="Configure Webhooks">
+            In your account's <strong>Manage</strong> page, you'll find the <strong>Webhook Configuration</strong> section.
+            Copy the Callback URL and Verify Token, then configure them in Meta Developer Console → Webhooks.
+          </StepItem>
+          <StepItem number={5} title="Link Agent to Phone Number">
+            Go to <strong>Manage Numbers</strong>, click <strong>"Link Agent"</strong> on your phone number, 
+            and select the AI agent that should handle incoming messages.
+          </StepItem>
+          <StepItem number={6} title="Test">
+            Send a WhatsApp message to your business number from any phone. Your AI agent will respond automatically!
+          </StepItem>
         </div>
       </div>
 
+      {/* Message Flow */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Message Flow</h2>
         <div className="flex flex-col md:flex-row gap-4 items-center justify-center p-8 bg-gradient-to-br from-muted/30 to-background rounded-2xl border">
           {[
             { icon: MessageSquare, label: "Customer sends message" },
-            { icon: Workflow, label: "Platform processes" },
-            { icon: Bot, label: "AI finds answer" },
-            { icon: MessageSquare, label: "Reply sent" },
+            { icon: Workflow, label: "Webhook receives" },
+            { icon: Bot, label: "AI agent processes" },
+            { icon: MessageSquare, label: "Reply sent via API" },
           ].map((step, i) => (
             <div key={i} className="flex items-center gap-4">
               <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
@@ -321,6 +367,117 @@ function WhatsAppGuideSection() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Phone Number Requirements */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Phone Number Requirements</h2>
+        <DocsCallout type="warning" title="Important">
+          The phone number you use <strong>cannot</strong> be currently registered with WhatsApp (personal or business app).
+          If your number is on WhatsApp, you must delete WhatsApp from that phone first, wait 5-10 minutes, then register it.
+        </DocsCallout>
+      </div>
+
+      {/* Account Statuses */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Understanding Statuses</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Badge className="bg-green-100 text-green-800">Active</Badge>
+                Account Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Account is connected and ready to send/receive messages.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Badge className="bg-yellow-100 text-yellow-800">Not Verified</Badge>
+                Business Verification
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Normal for new accounts. You can still test. Verification is needed for higher limits.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                Account Review
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Meta is reviewing your account. This is automatic and usually takes 24-72 hours.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Badge variant="outline">TIER_1K</Badge>
+                Messaging Tier
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Default tier allows 1,000 business-initiated conversations per 24 hours.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Troubleshooting */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Common Issues</h2>
+        <div className="space-y-4">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">"Phone number already registered"</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">The number is used on WhatsApp. Delete WhatsApp from that phone, wait 5-10 minutes, then try again.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">"Verification code limit exceeded"</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Too many attempts. Wait 1-24 hours before trying again.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Phone number shows "Pending"</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">The number is only in your local database, not registered with Meta. Add it via Meta Business Suite and click "Sync with Meta".</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Messages not received</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Check: 1) Webhook is configured in Meta, 2) Phone number is registered with Meta, 3) Agent is linked to the phone number.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Tips */}
+      <div>
+        <DocsCallout type="tip" title="Pro Tips">
+          <ul className="list-disc list-inside space-y-1 text-sm">
+            <li>Use "Sync with Meta" to refresh account status from Meta's servers</li>
+            <li>You can link different agents to different phone numbers</li>
+            <li>Business verification increases your messaging limits</li>
+            <li>Test with a different phone than your business number</li>
+          </ul>
+        </DocsCallout>
       </div>
     </div>
   );
