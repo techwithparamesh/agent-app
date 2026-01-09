@@ -330,39 +330,73 @@ async function exchangeForLongLivedToken(
 
 /**
  * Get WABA IDs shared during Embedded Signup
- * Uses the debug_token endpoint to find shared WABAs
+ * Uses the debug_token endpoint to find granular scopes/shared WABAs
  */
 async function getSharedWabaIds(
   accessToken: string,
   config: MetaAppConfig
 ): Promise<string[]> {
-  // First, get the user's business integrations
-  const response = await fetch(
-    `https://graph.facebook.com/${config.graphApiVersion}/me/businesses?access_token=${accessToken}`
-  );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Failed to get businesses: ${JSON.stringify(error)}`);
-  }
-
-  const data = await response.json();
   const wabaIds: string[] = [];
 
-  // For each business, get the WABAs
-  for (const business of data.data || []) {
-    const wabaResponse = await fetch(
-      `https://graph.facebook.com/${config.graphApiVersion}/${business.id}/owned_whatsapp_business_accounts?access_token=${accessToken}`
+  // Method 1: Try debug_token endpoint to get shared WABAs from granular scopes
+  try {
+    const debugResponse = await fetch(
+      `https://graph.facebook.com/${config.graphApiVersion}/debug_token?input_token=${accessToken}&access_token=${config.appId}|${config.appSecret}`
     );
 
-    if (wabaResponse.ok) {
-      const wabaData = await wabaResponse.json();
-      for (const waba of wabaData.data || []) {
-        wabaIds.push(waba.id);
+    if (debugResponse.ok) {
+      const debugData = await debugResponse.json();
+      const granularScopes = debugData.data?.granular_scopes || [];
+      
+      // Look for whatsapp_business_management scope which contains WABA IDs
+      for (const scope of granularScopes) {
+        if (scope.scope === 'whatsapp_business_management' && scope.target_ids) {
+          wabaIds.push(...scope.target_ids);
+        }
+      }
+
+      if (wabaIds.length > 0) {
+        console.log('[Embedded Signup] Found WABAs from debug_token:', wabaIds);
+        return wabaIds;
       }
     }
+  } catch (e) {
+    console.log('[Embedded Signup] debug_token method failed, trying alternatives');
   }
 
+  // Method 2: Try to get WABAs via the shared_waba_ids endpoint
+  try {
+    const sharedResponse = await fetch(
+      `https://graph.facebook.com/${config.graphApiVersion}/me?fields=id,name&access_token=${accessToken}`
+    );
+
+    if (sharedResponse.ok) {
+      const userData = await sharedResponse.json();
+      console.log('[Embedded Signup] User data:', userData);
+      
+      // Try to get WABAs the user has access to via the token
+      const wabaResponse = await fetch(
+        `https://graph.facebook.com/${config.graphApiVersion}/me/whatsapp_business_accounts?access_token=${accessToken}`
+      );
+
+      if (wabaResponse.ok) {
+        const wabaData = await wabaResponse.json();
+        for (const waba of wabaData.data || []) {
+          wabaIds.push(waba.id);
+        }
+        if (wabaIds.length > 0) {
+          console.log('[Embedded Signup] Found WABAs from /me/whatsapp_business_accounts:', wabaIds);
+          return wabaIds;
+        }
+      }
+    }
+  } catch (e) {
+    console.log('[Embedded Signup] /me endpoint method failed');
+  }
+
+  // Method 3: For Embedded Signup, check if WABA was passed in the OAuth response
+  // The WABA ID might be in token's associated data
+  console.log('[Embedded Signup] No WABAs found through standard methods');
   return wabaIds;
 }
 
