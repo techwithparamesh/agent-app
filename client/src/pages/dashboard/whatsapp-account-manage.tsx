@@ -23,8 +23,7 @@ import {
   Globe,
   DollarSign,
   Loader2,
-  Unlink,
-  Link2
+  Unlink
 } from "lucide-react";
 import {
   AlertDialog,
@@ -386,7 +385,7 @@ export default function WhatsAppAccountManagePage() {
                   <Phone className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No phone numbers linked yet</p>
                   <Button 
-                    variant="link" 
+                    variant="ghost" 
                     className="mt-2"
                     onClick={() => navigate(`/dashboard/whatsapp/accounts/${accountId}/numbers`)}
                   >
