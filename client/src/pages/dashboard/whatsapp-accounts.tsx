@@ -369,9 +369,11 @@ export default function WhatsAppAccountsPage() {
                       <Badge className={statusColors[account.status] || "bg-gray-100"}>
                         {account.status}
                       </Badge>
-                      <Badge className={verificationColors[account.verificationStatus] || "bg-gray-100"}>
-                        {account.verificationStatus.replace("_", " ")}
-                      </Badge>
+                      {account.verificationStatus && (
+                        <Badge className={verificationColors[account.verificationStatus] || "bg-gray-100"}>
+                          {account.verificationStatus.replace("_", " ")}
+                        </Badge>
+                      )}
                     </div>
                     
                     <div className="flex gap-2 pt-2">
