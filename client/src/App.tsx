@@ -56,6 +56,7 @@ const Docs = lazy(() => import("@/pages/docs"));
 
 // WhatsApp Business & Billing Pages - lazy loaded
 const WhatsAppAccounts = lazy(() => import("@/pages/dashboard/whatsapp-accounts"));
+const WhatsAppAccountManage = lazy(() => import("@/pages/dashboard/whatsapp-account-manage"));
 const PhoneNumbers = lazy(() => import("@/pages/dashboard/phone-numbers"));
 const Billing = lazy(() => import("@/pages/dashboard/billing"));
 const Settings = lazy(() => import("@/pages/dashboard/settings"));
@@ -119,6 +120,7 @@ function Router() {
       
       {/* WhatsApp Business & Billing Routes - Protected */}
       <Route path="/dashboard/whatsapp/accounts">{() => <Protected><WhatsAppAccounts /></Protected>}</Route>
+      <Route path="/dashboard/whatsapp/accounts/:accountId/manage">{() => <Protected><WhatsAppAccountManage /></Protected>}</Route>
       <Route path="/dashboard/whatsapp/accounts/:wabaId/numbers">{() => <Protected><PhoneNumbers /></Protected>}</Route>
       <Route path="/dashboard/billing">{() => <Protected><Billing /></Protected>}</Route>
       <Route path="/dashboard/settings">{() => <Protected><Settings /></Protected>}</Route>

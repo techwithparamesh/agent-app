@@ -378,7 +378,7 @@ export default function WhatsAppAccountsPage() {
                     
                     <div className="flex gap-2 pt-2">
                       <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <a href={`/dashboard/whatsapp/accounts/${account.id}/numbers`}>
+                        <a href={`/dashboard/whatsapp/accounts/${account.id}/manage`}>
                           <Settings className="h-4 w-4 mr-1" />
                           Manage
                         </a>
