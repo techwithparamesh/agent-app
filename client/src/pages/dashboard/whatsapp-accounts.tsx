@@ -81,9 +81,12 @@ export default function WhatsAppAccountsPage() {
   const [accountToDisconnect, setAccountToDisconnect] = useState<string | null>(null);
 
   // Fetch WhatsApp Cloud accounts
-  const { data: accounts, isLoading, error, refetch } = useQuery<WhatsAppCloudAccount[]>({
+  const { data: accountsResponse, isLoading, error, refetch } = useQuery<{ success: boolean; accounts: WhatsAppCloudAccount[] }>({
     queryKey: ["/api/whatsapp-cloud/accounts"],
   });
+  
+  // Extract accounts array from response
+  const accounts = accountsResponse?.accounts || [];
 
   // Handle OAuth callback result from URL
   useEffect(() => {
