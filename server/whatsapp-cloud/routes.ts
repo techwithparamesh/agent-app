@@ -472,6 +472,40 @@ router.post("/accounts/:id/sync", requireAuth, async (req: Request, res: Respons
   }
 });
 
+/**
+ * GET /api/whatsapp-cloud/accounts/:id/phone-numbers
+ * Get phone numbers for a specific account
+ */
+router.get("/accounts/:id/phone-numbers", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const accountId = req.params.id;
+    
+    // Verify ownership
+    const [account] = await db.select()
+      .from(whatsappCloudAccounts)
+      .where(and(
+        eq(whatsappCloudAccounts.id, accountId),
+        eq(whatsappCloudAccounts.userId, userId)
+      ))
+      .limit(1);
+    
+    if (!account) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+    
+    // Get phone numbers
+    const phoneNumbers = await db.select()
+      .from(whatsappCloudPhoneNumbers)
+      .where(eq(whatsappCloudPhoneNumbers.accountId, accountId));
+    
+    res.json({ success: true, phoneNumbers });
+  } catch (error: any) {
+    console.error("Get phone numbers error:", error);
+    res.status(500).json({ error: "Failed to get phone numbers" });
+  }
+});
+
 // ============================================================================
 // Phone Number Management Routes
 // ============================================================================

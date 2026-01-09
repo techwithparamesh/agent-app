@@ -105,10 +105,12 @@ export default function PhoneNumbersPage() {
   });
 
   // Fetch phone numbers
-  const { data: phoneNumbers, isLoading: loadingNumbers, error: phoneNumbersError } = useQuery<PhoneNumber[]>({
-    queryKey: [`/api/bsp/accounts/${wabaId}/phone-numbers`],
+  const { data: phoneNumbersResponse, isLoading: loadingNumbers, error: phoneNumbersError } = useQuery<{ success: boolean; phoneNumbers: PhoneNumber[] }>({
+    queryKey: [`/api/whatsapp-cloud/accounts/${wabaId}/phone-numbers`],
     enabled: !!wabaId,
   });
+  
+  const phoneNumbers = phoneNumbersResponse?.phoneNumbers || [];
 
   // Fetch agents for linking
   const { data: agents } = useQuery<Agent[]>({

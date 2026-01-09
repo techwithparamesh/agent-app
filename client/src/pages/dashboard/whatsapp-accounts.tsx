@@ -163,8 +163,8 @@ export default function WhatsAppAccountsPage() {
   // Disconnect account mutation
   const disconnectMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      const res = await fetch(`/api/whatsapp-cloud/accounts/${accountId}/disconnect`, {
-        method: "POST",
+      const res = await fetch(`/api/whatsapp-cloud/accounts/${accountId}`, {
+        method: "DELETE",
         credentials: "include",
       });
       if (!res.ok) {
@@ -378,7 +378,7 @@ export default function WhatsAppAccountsPage() {
                     
                     <div className="flex gap-2 pt-2">
                       <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <a href={`/dashboard/whatsapp-cloud/accounts/${account.id}`}>
+                        <a href={`/dashboard/whatsapp/accounts/${account.id}`}>
                           <Settings className="h-4 w-4 mr-1" />
                           Manage
                         </a>
@@ -387,8 +387,8 @@ export default function WhatsAppAccountsPage() {
                         <a
                           href={
                             agentToLink
-                              ? `/dashboard/whatsapp-cloud/accounts/${account.id}/numbers?agent=${encodeURIComponent(agentToLink)}`
-                              : `/dashboard/whatsapp-cloud/accounts/${account.id}/numbers`
+                              ? `/dashboard/whatsapp/accounts/${account.id}/numbers?agent=${encodeURIComponent(agentToLink)}`
+                              : `/dashboard/whatsapp/accounts/${account.id}/numbers`
                           }
                         >
                           <Phone className="h-4 w-4 mr-1" />
