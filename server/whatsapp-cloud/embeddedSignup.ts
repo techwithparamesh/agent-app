@@ -114,7 +114,6 @@ export function generateEmbeddedSignupUrl(
     scope: [
       'whatsapp_business_management',
       'whatsapp_business_messaging',
-      'business_management',
     ].join(','),
     // Embedded Signup specific parameters
     config_id: process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || '',
