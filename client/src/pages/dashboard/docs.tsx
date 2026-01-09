@@ -348,24 +348,26 @@ function WhatsAppGuideSection() {
         </div>
       </div>
 
-      {/* Message Flow */}
+      {/* How It Works - User Focused */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Message Flow</h2>
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-center p-8 bg-gradient-to-br from-muted/30 to-background rounded-2xl border">
-          {[
-            { icon: MessageSquare, label: "Customer sends message" },
-            { icon: Workflow, label: "Webhook receives" },
-            { icon: Bot, label: "AI agent processes" },
-            { icon: MessageSquare, label: "Reply sent via API" },
-          ].map((step, i) => (
-            <div key={i} className="flex items-center gap-4">
-              <div className="text-center p-4 bg-card rounded-xl border shadow-md hover:shadow-lg transition-all duration-200">
-                <step.icon className={cn("h-8 w-8 mx-auto mb-2 text-primary")} />
-                <p className="text-sm font-medium">{step.label}</p>
-              </div>
-              {i < 3 && <ArrowRight className="h-6 w-6 text-muted-foreground hidden md:block" />}
+        <h2 className="text-xl font-semibold mb-4">How It Works</h2>
+        <div className="p-6 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-2xl border border-green-200 dark:border-green-800">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+            <div className="text-center p-6 bg-card rounded-xl border shadow-md max-w-[200px]">
+              <MessageSquare className="h-10 w-10 mx-auto mb-3 text-green-600" />
+              <p className="font-semibold">Customer Messages You</p>
+              <p className="text-xs text-muted-foreground mt-1">Via WhatsApp</p>
             </div>
-          ))}
+            <ArrowRight className="h-8 w-8 text-green-500 hidden md:block" />
+            <div className="text-center p-6 bg-primary/10 rounded-xl border-2 border-primary shadow-lg max-w-[200px]">
+              <Bot className="h-10 w-10 mx-auto mb-3 text-primary" />
+              <p className="font-semibold">AI Agent Responds</p>
+              <p className="text-xs text-muted-foreground mt-1">Instantly, 24/7</p>
+            </div>
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Your AI agent handles conversations automatically — no manual work required.
+          </p>
         </div>
       </div>
 
