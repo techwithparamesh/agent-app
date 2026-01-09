@@ -553,6 +553,161 @@ router.get("/phone-numbers", requireAuth, async (req: Request, res: Response) =>
   }
 });
 
+/**
+ * POST /api/whatsapp-cloud/accounts/:id/phone-numbers
+ * Register a phone number (note: actual phone registration should be done via Meta)
+ */
+router.post("/accounts/:id/phone-numbers", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const accountId = req.params.id;
+    const { phoneNumber, displayPhoneNumber, profileName } = req.body;
+    
+    // Verify account ownership
+    const [account] = await db.select()
+      .from(whatsappCloudAccounts)
+      .where(and(
+        eq(whatsappCloudAccounts.id, accountId),
+        eq(whatsappCloudAccounts.userId, userId)
+      ))
+      .limit(1);
+    
+    if (!account) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+    
+    // For WhatsApp Cloud API, phone numbers should be registered via Meta Business Manager
+    // This endpoint stores the reference locally
+    await db.insert(whatsappCloudPhoneNumbers).values({
+      accountId,
+      phoneNumberId: `local_${Date.now()}`, // Placeholder - will be updated when synced with Meta
+      displayPhoneNumber: displayPhoneNumber || phoneNumber,
+      verifiedName: profileName || null,
+      status: "pending",
+    });
+    
+    res.json({ 
+      success: true, 
+      message: "Phone number registered. Please complete verification in Meta Business Manager.",
+      note: "To fully activate, add and verify this number in your Meta Business Manager WhatsApp settings."
+    });
+  } catch (error: any) {
+    console.error("Create phone number error:", error);
+    res.status(500).json({ error: "Failed to create phone number" });
+  }
+});
+
+/**
+ * POST /api/whatsapp-cloud/phone-numbers/:id/link-agent
+ * Link a phone number to an AI agent
+ */
+router.post("/phone-numbers/:id/link-agent", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const phoneId = req.params.id;
+    const { agentId } = req.body;
+    
+    if (!agentId) {
+      return res.status(400).json({ error: "Agent ID is required" });
+    }
+    
+    // Verify phone number belongs to user's account
+    const [phoneNumber] = await db.select({
+      id: whatsappCloudPhoneNumbers.id,
+      accountId: whatsappCloudPhoneNumbers.accountId,
+    })
+    .from(whatsappCloudPhoneNumbers)
+    .innerJoin(whatsappCloudAccounts, eq(whatsappCloudPhoneNumbers.accountId, whatsappCloudAccounts.id))
+    .where(and(
+      eq(whatsappCloudPhoneNumbers.id, phoneId),
+      eq(whatsappCloudAccounts.userId, userId)
+    ))
+    .limit(1);
+    
+    if (!phoneNumber) {
+      return res.status(404).json({ error: "Phone number not found" });
+    }
+    
+    // Check if agent exists and belongs to user
+    const [agent] = await db.select()
+      .from(agents)
+      .where(and(
+        eq(agents.id, agentId),
+        eq(agents.userId, userId)
+      ))
+      .limit(1);
+    
+    if (!agent) {
+      return res.status(404).json({ error: "Agent not found" });
+    }
+    
+    // Check if link already exists
+    const [existingLink] = await db.select()
+      .from(whatsappCloudAgentLinks)
+      .where(and(
+        eq(whatsappCloudAgentLinks.phoneNumberId, phoneId),
+        eq(whatsappCloudAgentLinks.agentId, agentId)
+      ))
+      .limit(1);
+    
+    if (existingLink) {
+      return res.status(400).json({ error: "This agent is already linked to this phone number" });
+    }
+    
+    // Create the link
+    await db.insert(whatsappCloudAgentLinks).values({
+      phoneNumberId: phoneId,
+      agentId,
+      isPrimary: true,
+    });
+    
+    res.json({ success: true, message: "Agent linked successfully" });
+  } catch (error: any) {
+    console.error("Link agent error:", error);
+    res.status(500).json({ error: "Failed to link agent" });
+  }
+});
+
+/**
+ * DELETE /api/whatsapp-cloud/phone-numbers/:id
+ * Delete a phone number
+ */
+router.delete("/phone-numbers/:id", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const phoneId = req.params.id;
+    
+    // Verify phone number belongs to user's account
+    const [phoneNumber] = await db.select({
+      id: whatsappCloudPhoneNumbers.id,
+    })
+    .from(whatsappCloudPhoneNumbers)
+    .innerJoin(whatsappCloudAccounts, eq(whatsappCloudPhoneNumbers.accountId, whatsappCloudAccounts.id))
+    .where(and(
+      eq(whatsappCloudPhoneNumbers.id, phoneId),
+      eq(whatsappCloudAccounts.userId, userId)
+    ))
+    .limit(1);
+    
+    if (!phoneNumber) {
+      return res.status(404).json({ error: "Phone number not found" });
+    }
+    
+    // Delete agent links first
+    await db.delete(whatsappCloudAgentLinks)
+      .where(eq(whatsappCloudAgentLinks.phoneNumberId, phoneId));
+    
+    // Delete phone number
+    await db.delete(whatsappCloudPhoneNumbers)
+      .where(eq(whatsappCloudPhoneNumbers.id, phoneId));
+    
+    res.json({ success: true, message: "Phone number deleted" });
+  } catch (error: any) {
+    console.error("Delete phone number error:", error);
+    res.status(500).json({ error: "Failed to delete phone number" });
+  }
+});
+
 // ============================================================================
 // Agent Link Management Routes
 // ============================================================================

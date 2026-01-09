@@ -150,10 +150,10 @@ export default function PhoneNumbersPage() {
       if (!isValidE164Phone(normalizedPhone)) {
         throw new Error("Phone number must be in E.164 format (example: +14155552671)");
       }
-      const res = await fetch("/api/bsp/phone-numbers", {
+      const res = await fetch(`/api/whatsapp-cloud/accounts/${wabaId}/phone-numbers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, phoneNumber: normalizedPhone, wabaId }),
+        body: JSON.stringify({ ...data, phoneNumber: normalizedPhone }),
         credentials: "include",
       });
       if (!res.ok) {
@@ -163,7 +163,7 @@ export default function PhoneNumbersPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/bsp/accounts/${wabaId}/phone-numbers`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp-cloud/accounts/${wabaId}/phone-numbers`] });
       setIsCreateDialogOpen(false);
       setFormData({
         phoneNumber: "",
@@ -190,7 +190,7 @@ export default function PhoneNumbersPage() {
   // Link agent mutation
   const linkAgentMutation = useMutation({
     mutationFn: async ({ phoneId, agentId }: { phoneId: string; agentId: string }) => {
-      const res = await fetch(`/api/bsp/phone-numbers/${phoneId}/link-agent`, {
+      const res = await fetch(`/api/whatsapp-cloud/phone-numbers/${phoneId}/link-agent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentId }),
@@ -203,7 +203,7 @@ export default function PhoneNumbersPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/bsp/accounts/${wabaId}/phone-numbers`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp-cloud/accounts/${wabaId}/phone-numbers`] });
       setIsLinkDialogOpen(false);
       setSelectedPhoneId(null);
       setSelectedAgentId("");
@@ -224,7 +224,7 @@ export default function PhoneNumbersPage() {
   // Delete phone number mutation
   const deletePhoneMutation = useMutation({
     mutationFn: async (phoneId: string) => {
-      const res = await fetch(`/api/bsp/phone-numbers/${phoneId}`, {
+      const res = await fetch(`/api/whatsapp-cloud/phone-numbers/${phoneId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -234,7 +234,7 @@ export default function PhoneNumbersPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/bsp/accounts/${wabaId}/phone-numbers`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp-cloud/accounts/${wabaId}/phone-numbers`] });
       toast({
         title: "Phone Number Deleted",
         description: "The phone number has been removed.",
