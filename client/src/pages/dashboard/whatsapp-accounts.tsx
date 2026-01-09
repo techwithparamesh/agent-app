@@ -378,7 +378,7 @@ export default function WhatsAppAccountsPage() {
                     
                     <div className="flex gap-2 pt-2">
                       <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <a href={`/dashboard/whatsapp/accounts/${account.id}`}>
+                        <a href={`/dashboard/whatsapp/accounts/${account.id}/numbers`}>
                           <Settings className="h-4 w-4 mr-1" />
                           Manage
                         </a>
@@ -397,7 +397,7 @@ export default function WhatsAppAccountsPage() {
                       </Button>
                     </div>
                     
-                    {account.status === "active" && (
+                    {account.status === "active" ? (
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -410,7 +410,18 @@ export default function WhatsAppAccountsPage() {
                         <Unlink className="h-4 w-4 mr-1" />
                         Disconnect
                       </Button>
-                    )}
+                    ) : account.status === "disconnected" ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={handleConnectWhatsApp}
+                        disabled={isConnecting}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Reconnect
+                      </Button>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
