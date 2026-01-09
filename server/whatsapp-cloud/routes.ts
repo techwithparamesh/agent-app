@@ -270,28 +270,55 @@ async function syncPhoneNumbers(accountId: string, accessToken: string) {
   
   // Fetch phone numbers from Meta
   const phoneNumbers = await fetchWabaPhoneNumbers(account.wabaId, accessToken);
+  console.log("[Sync] Phone numbers from Meta:", JSON.stringify(phoneNumbers, null, 2));
   
   for (const phone of phoneNumbers) {
-    // Check if phone number exists
+    // Check if phone number exists by Meta's phone number ID
     const existing = await db.select()
       .from(whatsappCloudPhoneNumbers)
       .where(eq(whatsappCloudPhoneNumbers.phoneNumberId, phone.id))
       .limit(1);
     
+    // Also check by display phone number (for locally added numbers)
+    const existingByDisplay = await db.select()
+      .from(whatsappCloudPhoneNumbers)
+      .where(and(
+        eq(whatsappCloudPhoneNumbers.accountId, accountId),
+        eq(whatsappCloudPhoneNumbers.displayPhoneNumber, phone.display_phone_number)
+      ))
+      .limit(1);
+    
     if (existing.length > 0) {
-      // Update existing
+      // Update existing by Meta ID
+      console.log(`[Sync] Updating existing phone by Meta ID: ${phone.id}`);
       await db.update(whatsappCloudPhoneNumbers)
         .set({
           displayPhoneNumber: phone.display_phone_number,
           verifiedName: phone.verified_name,
           qualityRating: phone.quality_rating,
           codeVerificationStatus: phone.code_verification_status,
+          platformType: phone.platform_type,
           status: "active",
           updatedAt: new Date(),
         })
         .where(eq(whatsappCloudPhoneNumbers.phoneNumberId, phone.id));
+    } else if (existingByDisplay.length > 0) {
+      // Update locally added phone number with Meta's data
+      console.log(`[Sync] Updating local phone by display number: ${phone.display_phone_number}`);
+      await db.update(whatsappCloudPhoneNumbers)
+        .set({
+          phoneNumberId: phone.id, // Update with real Meta ID
+          verifiedName: phone.verified_name,
+          qualityRating: phone.quality_rating,
+          codeVerificationStatus: phone.code_verification_status,
+          platformType: phone.platform_type,
+          status: "active",
+          updatedAt: new Date(),
+        })
+        .where(eq(whatsappCloudPhoneNumbers.id, existingByDisplay[0].id));
     } else {
       // Create new
+      console.log(`[Sync] Creating new phone: ${phone.display_phone_number}`);
       await db.insert(whatsappCloudPhoneNumbers).values({
         accountId,
         phoneNumberId: phone.id,
@@ -299,6 +326,7 @@ async function syncPhoneNumbers(accountId: string, accessToken: string) {
         verifiedName: phone.verified_name,
         qualityRating: phone.quality_rating,
         codeVerificationStatus: phone.code_verification_status,
+        platformType: phone.platform_type,
         status: "active",
       });
     }
@@ -461,11 +489,14 @@ router.post("/accounts/:id/sync", requireAuth, async (req: Request, res: Respons
     
     // Update WABA details
     const wabaDetails = await fetchWabaDetails(account.wabaId, accessToken);
+    console.log("[Sync] WABA details from Meta:", JSON.stringify(wabaDetails, null, 2));
+    
     if (wabaDetails) {
       await db.update(whatsappCloudAccounts)
         .set({
           businessName: wabaDetails.name,
-          businessVerificationStatus: wabaDetails.account_review_status,
+          businessVerificationStatus: wabaDetails.business_verification_status || null,
+          accountReviewStatus: wabaDetails.account_review_status || null,
           currency: wabaDetails.currency,
           timezone: wabaDetails.timezone_id,
           updatedAt: new Date(),
