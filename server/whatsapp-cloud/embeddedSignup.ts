@@ -234,21 +234,11 @@ export async function handleOAuthCallback(
     const wabaId = sharedWabas[0];
     const wabaInfo = await getWabaDetails(wabaId, longLivedToken.access_token, config);
 
-    // 6. Get phone numbers associated with WABA
+    // 6. Get phone numbers associated with WABA (optional - can be added later)
     const phoneNumbers = await getWabaPhoneNumbers(wabaId, longLivedToken.access_token, config);
     
-    if (!phoneNumbers || phoneNumbers.length === 0) {
-      return {
-        success: false,
-        tenantId,
-        wabaId,
-        error: 'no_phone_numbers',
-        errorDescription: 'No phone numbers found for the WhatsApp Business Account',
-      };
-    }
-
-    // Use first phone number (customer can add more later)
-    const phoneNumber = phoneNumbers[0];
+    // Phone numbers are optional - user can add them later via Meta Business Manager
+    const phoneNumber = phoneNumbers && phoneNumbers.length > 0 ? phoneNumbers[0] : null;
 
     // 7. Subscribe the app to the WABA for webhooks
     await subscribeAppToWaba(wabaId, longLivedToken.access_token, config);
@@ -259,9 +249,9 @@ export async function handleOAuthCallback(
       success: true,
       tenantId,
       wabaId,
-      phoneNumberId: phoneNumber.id,
+      phoneNumberId: phoneNumber?.id || null,
       businessName: wabaInfo.name,
-      displayPhoneNumber: phoneNumber.display_phone_number,
+      displayPhoneNumber: phoneNumber?.display_phone_number || null,
       // Include token and metadata for caller to store
       accessToken: longLivedToken.access_token,
       tokenExpiresAt: longLivedToken.expires_in
