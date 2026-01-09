@@ -46,15 +46,19 @@ import { EmailVerificationRequiredInline, isEmailVerificationRequiredError } fro
 
 interface PhoneNumber {
   id: string;
-  phoneNumber: string;
+  accountId: string;
+  phoneNumberId: string;
   displayPhoneNumber: string | null;
-  provisioningStatus: string;
+  verifiedName: string | null;
   qualityRating: string | null;
-  messagingLimit: string | null;
-  profileName: string | null;
-  agentId: string | null;
-  isActive: boolean;
+  messagingLimitTier: string | null;
+  codeVerificationStatus: string | null;
+  platformType: string | null;
+  isWebhookEnabled: boolean | null;
+  status: string;
   createdAt: string;
+  // For agent linking
+  agentId?: string | null;
 }
 
 interface Agent {
@@ -442,30 +446,30 @@ export default function PhoneNumbersPage() {
                     <div className="flex items-center gap-2">
                       <Phone className="h-5 w-5 text-primary" />
                       <CardTitle className="text-lg font-mono">
-                        {phone.displayPhoneNumber || phone.phoneNumber}
+                        {phone.displayPhoneNumber || phone.phoneNumberId}
                       </CardTitle>
                     </div>
-                    {getStatusIcon(phone.provisioningStatus)}
+                    {getStatusIcon(phone.status)}
                   </div>
                   <CardDescription>
-                    {phone.profileName || "No profile name set"}
+                    {phone.verifiedName || "No profile name set"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-2">
-                      <Badge className={statusColors[phone.provisioningStatus] || "bg-gray-100"}>
-                        {phone.provisioningStatus}
+                      <Badge className={statusColors[phone.status] || "bg-gray-100"}>
+                        {phone.status}
                       </Badge>
                       {phone.qualityRating && (
-                        <Badge className={qualityColors[phone.qualityRating] || "bg-gray-100"}>
+                        <Badge className={qualityColors[phone.qualityRating.toLowerCase()] || "bg-gray-100"}>
                           <Signal className="h-3 w-3 mr-1" />
                           {phone.qualityRating}
                         </Badge>
                       )}
-                      {phone.messagingLimit && (
+                      {phone.messagingLimitTier && (
                         <Badge variant="outline">
-                          {phone.messagingLimit}
+                          {phone.messagingLimitTier}
                         </Badge>
                       )}
                     </div>

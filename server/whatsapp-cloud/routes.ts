@@ -13,7 +13,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
   whatsappCloudAccounts,
@@ -512,7 +512,25 @@ router.get("/accounts/:id/phone-numbers", requireAuth, async (req: Request, res:
       .from(whatsappCloudPhoneNumbers)
       .where(eq(whatsappCloudPhoneNumbers.accountId, accountId));
     
-    res.json({ success: true, phoneNumbers });
+    // Get agent links for these phone numbers
+    const phoneIds = phoneNumbers.map(p => p.id);
+    let agentLinks: any[] = [];
+    if (phoneIds.length > 0) {
+      agentLinks = await db.select()
+        .from(whatsappCloudAgentLinks)
+        .where(inArray(whatsappCloudAgentLinks.phoneNumberId, phoneIds));
+    }
+    
+    // Merge agent info into phone numbers
+    const phoneNumbersWithAgents = phoneNumbers.map(phone => {
+      const link = agentLinks.find(l => l.phoneNumberId === phone.id);
+      return {
+        ...phone,
+        agentId: link?.agentId || null,
+      };
+    });
+    
+    res.json({ success: true, phoneNumbers: phoneNumbersWithAgents });
   } catch (error: any) {
     console.error("Get phone numbers error:", error);
     res.status(500).json({ error: "Failed to get phone numbers" });
@@ -531,7 +549,7 @@ router.get("/phone-numbers", requireAuth, async (req: Request, res: Response) =>
   try {
     const userId = (req as any).userId;
     
-    // Get phone numbers for user's accounts
+    // Get phone numbers for user's accounts with all fields
     const phoneNumbers = await db.select({
       id: whatsappCloudPhoneNumbers.id,
       accountId: whatsappCloudPhoneNumbers.accountId,
@@ -539,14 +557,37 @@ router.get("/phone-numbers", requireAuth, async (req: Request, res: Response) =>
       displayPhoneNumber: whatsappCloudPhoneNumbers.displayPhoneNumber,
       verifiedName: whatsappCloudPhoneNumbers.verifiedName,
       qualityRating: whatsappCloudPhoneNumbers.qualityRating,
+      messagingLimitTier: whatsappCloudPhoneNumbers.messagingLimitTier,
+      codeVerificationStatus: whatsappCloudPhoneNumbers.codeVerificationStatus,
+      platformType: whatsappCloudPhoneNumbers.platformType,
+      isWebhookEnabled: whatsappCloudPhoneNumbers.isWebhookEnabled,
       status: whatsappCloudPhoneNumbers.status,
+      createdAt: whatsappCloudPhoneNumbers.createdAt,
       businessName: whatsappCloudAccounts.businessName,
     })
     .from(whatsappCloudPhoneNumbers)
     .innerJoin(whatsappCloudAccounts, eq(whatsappCloudPhoneNumbers.accountId, whatsappCloudAccounts.id))
     .where(eq(whatsappCloudAccounts.userId, userId));
     
-    res.json({ success: true, phoneNumbers });
+    // Get agent links for these phone numbers
+    const phoneIds = phoneNumbers.map(p => p.id);
+    let agentLinks: any[] = [];
+    if (phoneIds.length > 0) {
+      agentLinks = await db.select()
+        .from(whatsappCloudAgentLinks)
+        .where(inArray(whatsappCloudAgentLinks.phoneNumberId, phoneIds));
+    }
+    
+    // Merge agent info into phone numbers
+    const phoneNumbersWithAgents = phoneNumbers.map(phone => {
+      const link = agentLinks.find(l => l.phoneNumberId === phone.id);
+      return {
+        ...phone,
+        agentId: link?.agentId || null,
+      };
+    });
+    
+    res.json({ success: true, phoneNumbers: phoneNumbersWithAgents });
   } catch (error: any) {
     console.error("List phone numbers error:", error);
     res.status(500).json({ error: "Failed to list phone numbers" });
