@@ -172,11 +172,11 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     }, req, undefined, "failure", String(error_description));
     
     // Redirect to frontend with error
-    return res.redirect(`/whatsapp-accounts?error=${encodeURIComponent(String(error_description || error))}`);
+    return res.redirect(`/dashboard/whatsapp/accounts?error=${encodeURIComponent(String(error_description || error))}`);
   }
   
   if (!code || !state) {
-    return res.redirect("/whatsapp-accounts?error=missing_parameters");
+    return res.redirect("/dashboard/whatsapp/accounts?error=missing_parameters");
   }
   
   try {
@@ -248,11 +248,11 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     }, req, accountId);
     
     // Redirect to success page
-    res.redirect(`/whatsapp-accounts?success=connected&accountId=${accountId}`);
+    res.redirect(`/dashboard/whatsapp/accounts?success=connected&accountId=${accountId}`);
   } catch (error: any) {
     console.error("OAuth callback error:", error);
     await auditLog("oauth_callback", { resourceType: "oauth" }, req, undefined, "failure", error.message);
-    res.redirect(`/whatsapp-accounts?error=${encodeURIComponent(error.message)}`);
+    res.redirect(`/dashboard/whatsapp/accounts?error=${encodeURIComponent(error.message)}`);
   }
 });
 
