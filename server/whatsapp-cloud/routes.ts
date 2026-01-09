@@ -347,6 +347,18 @@ router.get("/accounts/:id", requireAuth, async (req: Request, res: Response) => 
     const userId = (req as any).userId;
     const accountId = req.params.id;
     
+    console.log(`[WhatsApp Cloud] Get account - userId: ${userId}, accountId: ${accountId}`);
+    
+    // First try to find by ID only (for debugging)
+    const [accountById] = await db.select()
+      .from(whatsappCloudAccounts)
+      .where(eq(whatsappCloudAccounts.id, accountId))
+      .limit(1);
+    
+    if (accountById) {
+      console.log(`[WhatsApp Cloud] Account found - owner userId: ${accountById.userId}, request userId: ${userId}`);
+    }
+    
     const [account] = await db.select()
       .from(whatsappCloudAccounts)
       .where(and(
@@ -356,6 +368,7 @@ router.get("/accounts/:id", requireAuth, async (req: Request, res: Response) => 
       .limit(1);
     
     if (!account) {
+      console.log(`[WhatsApp Cloud] Account not found or access denied`);
       return res.status(404).json({ error: "Account not found" });
     }
     
