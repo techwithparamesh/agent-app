@@ -785,6 +785,66 @@ router.delete("/phone-numbers/:id", requireAuth, async (req: Request, res: Respo
 // ============================================================================
 
 /**
+ * GET /api/whatsapp-cloud/agents/:agentId/link
+ * Get WhatsApp Cloud link status for a specific agent
+ */
+router.get("/agents/:agentId/link", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const { agentId } = req.params;
+    
+    // Verify agent belongs to user
+    const [agent] = await db.select()
+      .from(agents)
+      .where(and(
+        eq(agents.id, agentId),
+        eq(agents.userId, userId)
+      ))
+      .limit(1);
+    
+    if (!agent) {
+      return res.status(404).json({ error: "Agent not found" });
+    }
+    
+    // Find agent link with phone number and account details
+    const [link] = await db.select({
+      linkId: whatsappCloudAgentLinks.id,
+      phoneNumberId: whatsappCloudAgentLinks.phoneNumberId,
+      displayPhoneNumber: whatsappCloudPhoneNumbers.displayPhoneNumber,
+      verifiedName: whatsappCloudPhoneNumbers.verifiedName,
+      phoneStatus: whatsappCloudPhoneNumbers.status,
+      accountId: whatsappCloudAccounts.id,
+      businessName: whatsappCloudAccounts.businessName,
+      wabaId: whatsappCloudAccounts.wabaId,
+    })
+    .from(whatsappCloudAgentLinks)
+    .innerJoin(whatsappCloudPhoneNumbers, eq(whatsappCloudAgentLinks.phoneNumberId, whatsappCloudPhoneNumbers.id))
+    .innerJoin(whatsappCloudAccounts, eq(whatsappCloudPhoneNumbers.accountId, whatsappCloudAccounts.id))
+    .where(eq(whatsappCloudAgentLinks.agentId, agentId))
+    .limit(1);
+    
+    if (!link) {
+      return res.status(404).json({ error: "No WhatsApp connection found for this agent" });
+    }
+    
+    res.json({
+      phoneNumber: {
+        displayPhoneNumber: link.displayPhoneNumber,
+        verifiedName: link.verifiedName,
+        status: link.phoneStatus,
+      },
+      account: {
+        businessName: link.businessName,
+        wabaId: link.wabaId,
+      },
+    });
+  } catch (error: any) {
+    console.error("Get agent link error:", error);
+    res.status(500).json({ error: "Failed to get agent link" });
+  }
+});
+
+/**
  * GET /api/whatsapp-cloud/agent-links
  * List agent links for the authenticated user's phone numbers
  */

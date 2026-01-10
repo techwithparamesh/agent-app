@@ -608,7 +608,7 @@ export default function AgentDetails() {
     },
   });
 
-  // Fetch WhatsApp config for WhatsApp agents
+  // Fetch WhatsApp config for WhatsApp agents (legacy)
   const {
     data: whatsappConfig,
     isLoading: whatsappConfigLoading,
@@ -625,6 +625,22 @@ export default function AgentDetails() {
         if (typeof (body as any)?.code === "string") err.code = (body as any).code;
         throw err;
       }
+      return res.json();
+    },
+    enabled: !!agentId && isWhatsAppAgent,
+  });
+
+  // Fetch WhatsApp Cloud link for this agent (new OAuth system)
+  interface WhatsAppCloudLink {
+    phoneNumber: { displayPhoneNumber: string; verifiedName: string; status: string } | null;
+    account: { businessName: string; wabaId: string } | null;
+  }
+  const { data: whatsappCloudLink, isLoading: whatsappCloudLinkLoading } = useQuery<WhatsAppCloudLink | null>({
+    queryKey: ["/api/whatsapp-cloud/agents", agentId, "link"],
+    queryFn: async () => {
+      const res = await fetch(`/api/whatsapp-cloud/agents/${agentId}/link`);
+      if (res.status === 404) return null;
+      if (!res.ok) return null;
       return res.json();
     },
     enabled: !!agentId && isWhatsAppAgent,
@@ -1070,12 +1086,47 @@ export default function AgentDetails() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {whatsappConfigLoading ? (
+                    {(whatsappConfigLoading || whatsappCloudLinkLoading) ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Loading configuration...</span>
                       </div>
+                    ) : whatsappCloudLink?.phoneNumber ? (
+                      // NEW: WhatsApp Cloud OAuth connection
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          {whatsappCloudLink.phoneNumber.status === "active" ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle2 className="h-5 w-5" />
+                              <span className="font-medium">Connected & Active</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-yellow-600">
+                              <AlertCircle className="h-5 w-5" />
+                              <span className="font-medium capitalize">{whatsappCloudLink.phoneNumber.status}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-4 w-4" />
+                          <span>{whatsappCloudLink.phoneNumber.displayPhoneNumber}</span>
+                        </div>
+                        {whatsappCloudLink.account && (
+                          <div className="text-sm text-muted-foreground">
+                            {whatsappCloudLink.phoneNumber.verifiedName || whatsappCloudLink.account.businessName}
+                          </div>
+                        )}
+                        <div className="pt-2">
+                          <Link href="/dashboard/whatsapp/accounts">
+                            <Button variant="outline" size="sm">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Manage WhatsApp Accounts
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
                     ) : whatsappConfig ? (
+                      // LEGACY: Old manual configuration
                       <div className="space-y-4">
                         <div className="flex items-center gap-3">
                           {whatsappConfig.isVerified ? (
@@ -1096,11 +1147,38 @@ export default function AgentDetails() {
                             <span>{whatsappConfig.whatsappPhoneNumber}</span>
                           </div>
                         )}
+                        <div className="pt-2 p-3 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            <strong>Recommended:</strong> Use the new WhatsApp Cloud integration for easier setup.
+                          </p>
+                          <Link href="/dashboard/whatsapp/accounts">
+                            <Button variant="outline" size="sm">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Connect via Meta OAuth
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>Not configured yet. Please add your WhatsApp API credentials below.</span>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="h-5 w-5" />
+                          <span>Not connected to WhatsApp yet.</span>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            <strong>Recommended:</strong> Connect via Meta OAuth for easy setup.
+                          </p>
+                          <Link href="/dashboard/whatsapp/accounts">
+                            <Button size="sm">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Connect WhatsApp Account
+                            </Button>
+                          </Link>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Or enter manual credentials below if you have them.
+                        </p>
                       </div>
                     )}
                   </CardContent>
