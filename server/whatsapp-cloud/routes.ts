@@ -33,7 +33,7 @@ import {
   fetchWabaDetails,
 } from "./embeddedSignup";
 import { sendTextMessage, sendTemplateMessage, markMessageAsRead } from "./messageService";
-import { verifyMetaSignature, processWebhookPayload, onMessage, onStatus } from "./webhookHandler";
+import { verifyMetaSignature, processWebhookPayload, onMessage, onStatus, sanitizePayloadForLog } from "./webhookHandler";
 import { routeToAgent } from "./agentRouter";
 import { encrypt, decrypt } from "../utils/encryption";
 import crypto from "crypto";
@@ -50,6 +50,13 @@ function registerWebhookHandlersOnce() {
   onMessage(async (tenant, message, contact) => {
     const from = message.from;
     const messageText = (message as any)?.text?.body ? String((message as any).text.body) : "";
+
+    console.log("[Webhook] Incoming message", {
+      metaPhoneNumberId: tenant.metaPhoneNumberId,
+      from,
+      type: (message as any)?.type,
+      hasText: Boolean(messageText && messageText.trim()),
+    });
 
     if (!from) {
       console.warn("[Webhook] Missing message.from");
@@ -70,6 +77,13 @@ function registerWebhookHandlersOnce() {
       console.warn("[Webhook] No agent routing decision", { from, metaPhoneNumberId: tenant.metaPhoneNumberId });
       return;
     }
+
+    console.log("[Webhook] Routing decision", {
+      metaPhoneNumberId: tenant.metaPhoneNumberId,
+      from,
+      agentId: decision.agentId,
+      reason: decision.reason,
+    });
 
     // Upsert conversation
     const now = new Date();
@@ -197,7 +211,11 @@ CRITICAL RESPONSE RULES:
     });
 
     if (!sendResult.success) {
-      console.error("[Webhook] Failed to send WhatsApp reply", sendResult.error);
+      console.error("[Webhook] Failed to send WhatsApp reply", {
+        from,
+        metaPhoneNumberId: tenant.metaPhoneNumberId,
+        error: sendResult.error,
+      });
       return;
     }
 
@@ -1338,6 +1356,13 @@ router.post("/webhook", async (req: Request, res: Response) => {
       resourceType: "webhook",
     }, req, undefined, "failure", "Invalid signature");
     return res.status(401).send("Invalid signature");
+  }
+
+  // Log a safe summary so we can confirm what Meta is sending for *real* messages
+  try {
+    console.log("[Webhook] Payload summary", JSON.stringify(sanitizePayloadForLog(req.body)));
+  } catch {
+    // ignore
   }
   
   // Process webhook asynchronously
