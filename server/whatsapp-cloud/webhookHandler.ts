@@ -104,6 +104,7 @@ export async function resolveTenantByPhoneNumberId(
     // Query phone number and join with account
     const [phoneRecord] = await db
       .select({
+        id: whatsappCloudPhoneNumbers.id, // Internal UUID for agent link lookup
         userId: whatsappCloudAccounts.userId,
         wabaId: whatsappCloudAccounts.wabaId,
         businessName: whatsappCloudAccounts.businessName,
@@ -129,13 +130,15 @@ export async function resolveTenantByPhoneNumberId(
       return null;
     }
 
-    // Get linked agents
+    // Get linked agents using the internal phone record ID (not Meta's phone_number_id)
     const agentLinks = await db
       .select({ agentId: whatsappCloudAgentLinks.agentId })
       .from(whatsappCloudAgentLinks)
       .where(
-        eq(whatsappCloudAgentLinks.phoneNumberId, phoneNumberId)
+        eq(whatsappCloudAgentLinks.phoneNumberId, phoneRecord.id)
       );
+
+    console.log(`[Webhook] Found tenant for ${phoneNumberId}: userId=${phoneRecord.userId}, agents=${agentLinks.length}`);
 
     const tenant: ResolvedTenant = {
       tenantId: phoneRecord.userId,
