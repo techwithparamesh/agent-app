@@ -750,8 +750,8 @@ export default function AgentDetails() {
   };
 
   const webhookUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/api/whatsapp/webhook` 
-    : "/api/whatsapp/webhook";
+    ? `${window.location.origin}/api/whatsapp-cloud/webhook` 
+    : "/api/whatsapp-cloud/webhook";
 
   if (agentLoading) {
     return (
