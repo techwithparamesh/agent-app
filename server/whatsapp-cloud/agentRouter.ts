@@ -50,16 +50,16 @@ export async function routeToAgent(
   customerWaId: string,
   context?: { intent?: string; skills?: string[] }
 ): Promise<RoutingDecision | null> {
-  const { phoneNumberId, agentIds } = tenant;
+  const { phoneRecordId, agentIds } = tenant;
 
   if (!agentIds || agentIds.length === 0) {
-    console.warn(`[Agent Router] No agents linked to phone number ${phoneNumberId}`);
+    console.warn(`[Agent Router] No agents linked to phone number ${tenant.metaPhoneNumberId}`);
     return null;
   }
 
   try {
     // Check for existing conversation ownership
-    const existingConversation = await getActiveConversation(phoneNumberId, customerWaId);
+    const existingConversation = await getActiveConversation(phoneRecordId, customerWaId);
     
     if (existingConversation && existingConversation.agentId) {
       // Check if assigned agent is still valid
@@ -73,12 +73,12 @@ export async function routeToAgent(
     }
 
     // Get routing configuration for this phone number
-    const routingConfigs = await getRoutingConfigs(phoneNumberId);
+    const routingConfigs = await getRoutingConfigs(phoneRecordId);
     
     if (!routingConfigs || routingConfigs.length === 0) {
       // Default: use first agent with primary routing
       const agentId = agentIds[0];
-      await assignConversation(phoneNumberId, customerWaId, agentId);
+      await assignConversation(phoneRecordId, customerWaId, agentId);
       return {
         agentId,
         reason: 'default_primary',
@@ -99,7 +99,7 @@ export async function routeToAgent(
         break;
         
       case 'round_robin':
-        selectedAgentId = await routeRoundRobin(phoneNumberId, routingConfigs);
+        selectedAgentId = await routeRoundRobin(phoneRecordId, routingConfigs);
         routingReason = 'round_robin';
         break;
         
@@ -119,12 +119,12 @@ export async function routeToAgent(
     }
 
     if (!selectedAgentId) {
-      console.warn(`[Agent Router] No suitable agent found for ${phoneNumberId}`);
+      console.warn(`[Agent Router] No suitable agent found for ${tenant.metaPhoneNumberId}`);
       return null;
     }
 
     // Assign or update conversation
-    await assignConversation(phoneNumberId, customerWaId, selectedAgentId);
+    await assignConversation(phoneRecordId, customerWaId, selectedAgentId);
     
     return {
       agentId: selectedAgentId,

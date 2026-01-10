@@ -33,12 +33,199 @@ import {
   fetchWabaDetails,
 } from "./embeddedSignup";
 import { sendTextMessage, sendTemplateMessage, markMessageAsRead } from "./messageService";
-import { verifyMetaSignature, processWebhookPayload } from "./webhookHandler";
+import { verifyMetaSignature, processWebhookPayload, onMessage, onStatus } from "./webhookHandler";
 import { routeToAgent } from "./agentRouter";
 import { encrypt, decrypt } from "../utils/encryption";
 import crypto from "crypto";
+import Anthropic from "@anthropic-ai/sdk";
 
 const router = Router();
+
+let webhookHandlersRegistered = false;
+
+function registerWebhookHandlersOnce() {
+  if (webhookHandlersRegistered) return;
+  webhookHandlersRegistered = true;
+
+  onMessage(async (tenant, message, contact) => {
+    const from = message.from;
+    const messageText = (message as any)?.text?.body ? String((message as any).text.body) : "";
+
+    if (!from) {
+      console.warn("[Webhook] Missing message.from");
+      return;
+    }
+
+    if (!messageText.trim()) {
+      console.log("[Webhook] Non-text or empty message received; skipping", {
+        type: (message as any)?.type,
+        from,
+      });
+      return;
+    }
+
+    // Route to agent
+    const decision = await routeToAgent(tenant, from);
+    if (!decision) {
+      console.warn("[Webhook] No agent routing decision", { from, metaPhoneNumberId: tenant.metaPhoneNumberId });
+      return;
+    }
+
+    // Upsert conversation
+    const now = new Date();
+    const windowExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const [existingConversation] = await db
+      .select()
+      .from(whatsappCloudConversations)
+      .where(and(
+        eq(whatsappCloudConversations.phoneNumberId, tenant.phoneRecordId),
+        eq(whatsappCloudConversations.customerWaId, from),
+        eq(whatsappCloudConversations.status, "active")
+      ))
+      .limit(1);
+
+    let conversationId: string;
+    if (existingConversation) {
+      conversationId = existingConversation.id;
+      await db.update(whatsappCloudConversations)
+        .set({
+          agentId: decision.agentId,
+          customerName: contact?.name || existingConversation.customerName,
+          lastCustomerMessageAt: now,
+          windowExpiresAt,
+          messageCount: (existingConversation.messageCount || 0) + 1,
+          updatedAt: now,
+        })
+        .where(eq(whatsappCloudConversations.id, conversationId));
+    } else {
+      await db.insert(whatsappCloudConversations).values({
+        phoneNumberId: tenant.phoneRecordId,
+        agentId: decision.agentId,
+        customerWaId: from,
+        customerName: contact?.name || null,
+        status: "active",
+        lastCustomerMessageAt: now,
+        windowExpiresAt,
+        messageCount: 1,
+      });
+
+      const [created] = await db
+        .select()
+        .from(whatsappCloudConversations)
+        .where(and(
+          eq(whatsappCloudConversations.phoneNumberId, tenant.phoneRecordId),
+          eq(whatsappCloudConversations.customerWaId, from),
+          eq(whatsappCloudConversations.status, "active")
+        ))
+        .limit(1);
+      conversationId = created?.id as string;
+    }
+
+    // Store inbound message
+    try {
+      await db.insert(whatsappCloudMessages).values({
+        conversationId,
+        waMessageId: (message as any)?.id || null,
+        direction: "inbound",
+        messageType: "text",
+        content: messageText,
+        status: "delivered",
+      });
+    } catch (e) {
+      console.warn("[Webhook] Failed to store inbound message", { err: (e as any)?.message });
+    }
+
+    // Generate response (same core logic style as widget chat)
+    const [agent] = await db.select().from(agents).where(eq(agents.id, decision.agentId)).limit(1);
+    if (!agent || !agent.isActive) {
+      console.warn("[Webhook] Agent not active/not found", { agentId: decision.agentId });
+      return;
+    }
+
+    const usageCheck = await storage.canSendMessage(agent.userId);
+    if (!usageCheck.allowed) {
+      console.warn("[Webhook] Message limit reached for agent owner", { userId: agent.userId });
+      return;
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    let responseText = `Hi! I'm ${agent.name}. How can I help you?`;
+
+    if (apiKey) {
+      const allKnowledge = await storage.getKnowledgeByAgentId(agent.id);
+      const relevantKnowledge = allKnowledge.slice(0, 15);
+      // Keep it simple: use the most recent/available chunks first.
+      const knowledgeContext = relevantKnowledge
+        .map((k: any) => `[${k.title || 'Info'}${k.section ? ' - ' + k.section : ''}]\n${k.content}`)
+        .join("\n\n---\n\n");
+
+      const basePrompt = (agent as any).systemPrompt || `You are ${agent.name}, a helpful AI assistant.
+${(agent as any).description ? `About: ${(agent as any).description}` : ""}
+Tone: ${(agent as any).toneOfVoice || "friendly and professional"}
+
+CRITICAL RESPONSE RULES:
+1. Keep responses SHORT (WhatsApp style)
+2. Use bullet points with - when listing
+3. Answer the question directly first
+4. If you don't know, say so
+`;
+
+      const systemPrompt = `${basePrompt}\n\n${knowledgeContext ? `Here is relevant information from the knowledge base:\n\n${knowledgeContext}` : ""}`;
+      const anthropic = new Anthropic({ apiKey });
+
+      const completion = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 256,
+        system: systemPrompt,
+        messages: [{ role: "user", content: messageText }],
+      });
+
+      responseText =
+        completion.content[0]?.type === "text"
+          ? completion.content[0].text
+          : responseText;
+    }
+
+    // Send response
+    const accessToken = decrypt(tenant.accessToken);
+    const sendResult = await sendTextMessage(from, responseText, {
+      tenantId: tenant.tenantId,
+      phoneNumberId: tenant.metaPhoneNumberId,
+      accessToken,
+      messagingTier: (tenant.messagingTier || "TIER_1K") as any,
+    });
+
+    if (!sendResult.success) {
+      console.error("[Webhook] Failed to send WhatsApp reply", sendResult.error);
+      return;
+    }
+
+    try {
+      await db.insert(whatsappCloudMessages).values({
+        conversationId,
+        waMessageId: sendResult.messageId || null,
+        direction: "outbound",
+        messageType: "text",
+        content: responseText,
+        status: "sent",
+        sentAt: now,
+      });
+    } catch (e) {
+      console.warn("[Webhook] Failed to store outbound message", { err: (e as any)?.message });
+    }
+
+    await storage.incrementMessageCount(agent.userId);
+    console.log("[Webhook] Replied", { from, agentId: agent.id, metaPhoneNumberId: tenant.metaPhoneNumberId });
+  });
+
+  onStatus(async (_tenant, status) => {
+    // Optional: future status persistence
+    console.log("[Webhook] Status update", { status: (status as any)?.status, id: (status as any)?.id });
+  });
+}
+
+registerWebhookHandlersOnce();
 
 // Helper to get user ID from request (supporting both session and user patterns)
 function getUserId(req: Request): string | null {
@@ -1135,11 +1322,16 @@ router.post("/webhook", async (req: Request, res: Response) => {
   // Get raw body for signature verification
   const signature = req.headers["x-hub-signature-256"] as string;
   const appSecret = process.env.META_APP_SECRET || "";
-  
-  // Get raw body - may be string or object depending on body parser
-  const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+
+  // Use raw bytes captured by express.json verify hook.
+  const rawBody = (req as any).rawBody as Buffer | undefined;
   
   // Verify Meta signature
+  if (!rawBody) {
+    console.error("Raw body not available for signature verification");
+    return res.status(500).send("Webhook signature verification misconfigured");
+  }
+
   if (!verifyMetaSignature(rawBody, signature, appSecret)) {
     console.error("Invalid webhook signature");
     await auditLog("webhook_invalid_signature", {

@@ -70,9 +70,18 @@ export function verifyMetaSignature(
 export interface ResolvedTenant {
   tenantId: string;
   wabaId: string;
-  phoneNumberId: string;
+  /**
+   * Internal UUID (whatsapp_cloud_phone_numbers.id)
+   * Used for DB lookups/foreign keys.
+   */
+  phoneRecordId: string;
+  /**
+   * Meta phone_number_id (used for Graph API send/read).
+   */
+  metaPhoneNumberId: string;
   businessName: string;
   accessToken: string; // Encrypted
+  messagingTier?: string;
   agentIds: string[]; // Linked agents for routing
 }
 
@@ -109,6 +118,7 @@ export async function resolveTenantByPhoneNumberId(
         wabaId: whatsappCloudAccounts.wabaId,
         businessName: whatsappCloudAccounts.businessName,
         encryptedAccessToken: whatsappCloudAccounts.encryptedAccessToken,
+        messagingTier: whatsappCloudAccounts.messagingTier,
         phoneNumberId: whatsappCloudPhoneNumbers.phoneNumberId,
       })
       .from(whatsappCloudPhoneNumbers)
@@ -143,9 +153,11 @@ export async function resolveTenantByPhoneNumberId(
     const tenant: ResolvedTenant = {
       tenantId: phoneRecord.userId,
       wabaId: phoneRecord.wabaId,
-      phoneNumberId: phoneRecord.phoneNumberId,
+      phoneRecordId: phoneRecord.id,
+      metaPhoneNumberId: phoneRecord.phoneNumberId,
       businessName: phoneRecord.businessName || '',
       accessToken: phoneRecord.encryptedAccessToken, // Note: Still encrypted, caller must decrypt
+      messagingTier: phoneRecord.messagingTier || undefined,
       agentIds: agentLinks.map(l => l.agentId),
     };
 
