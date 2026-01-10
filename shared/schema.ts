@@ -1565,7 +1565,8 @@ export const whatsappCloudAccounts = mysqlTable("whatsapp_cloud_accounts", {
   encryptedAccessToken: text("encrypted_access_token").notNull(),
   tokenExpiresAt: timestamp("token_expires_at"),
   // Meta OAuth metadata
-  metaBusinessId: varchar("meta_business_id", { length: 50 }),
+  metaBusinessId: varchar("meta_business_id", { length: 100 }),
+  businessManagerId: varchar("business_manager_id", { length: 100 }),
   currency: varchar("currency", { length: 10 }).default("USD"),
   timezone: varchar("timezone", { length: 50 }).default("UTC"),
   // Messaging tier limits

@@ -394,7 +394,7 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     
     // Store the WABA in the database
     // tenantId is the userId that was passed when generating the signup URL
-    const { tenantId, wabaId, accessToken, businessName, metaBusinessId } = result;
+    const { tenantId, wabaId, accessToken, businessName, metaBusinessId, businessManagerId } = result;
     
     // Encrypt the access token
     const encryptedToken = encrypt(accessToken!);
@@ -417,6 +417,7 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
           encryptedAccessToken: encryptedToken,
           businessName: businessName || null,
           metaBusinessId: metaBusinessId || null,
+          businessManagerId: businessManagerId || null,
           status: "active",
           updatedAt: new Date(),
         })
@@ -430,6 +431,7 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
         encryptedAccessToken: encryptedToken,
         businessName: businessName || null,
         metaBusinessId: metaBusinessId || null,
+        businessManagerId: businessManagerId || null,
         webhookVerifyToken,
         status: "active",
       });
@@ -621,6 +623,56 @@ router.get("/accounts/:id", requireAuth, async (req: Request, res: Response) => 
   } catch (error: any) {
     console.error("Get account error:", error);
     res.status(500).json({ error: "Failed to get account" });
+  }
+});
+
+/**
+ * POST /api/whatsapp-cloud/accounts/:id/sync-business
+ * Backfill/update Business IDs (meta_business_id / business_manager_id) from Graph.
+ */
+router.post("/accounts/:id/sync-business", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const accountId = req.params.id;
+
+    const [account] = await db.select()
+      .from(whatsappCloudAccounts)
+      .where(and(eq(whatsappCloudAccounts.id, accountId), eq(whatsappCloudAccounts.userId, userId)))
+      .limit(1);
+
+    if (!account) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const accessToken = decrypt(account.encryptedAccessToken);
+    const details = await fetchWabaDetails(account.wabaId, accessToken);
+
+    if (!details) {
+      return res.status(400).json({ error: "Failed to fetch WABA details from Meta" });
+    }
+
+    const nextMetaBusinessId = details.owner_business_info?.id || details.on_behalf_of_business_info?.id || null;
+    const nextBusinessManagerId = details.on_behalf_of_business_info?.id || details.owner_business_info?.id || null;
+
+    await db.update(whatsappCloudAccounts)
+      .set({
+        businessName: details.name || account.businessName,
+        metaBusinessId: nextMetaBusinessId,
+        businessManagerId: nextBusinessManagerId,
+        updatedAt: new Date(),
+      })
+      .where(eq(whatsappCloudAccounts.id, accountId));
+
+    res.json({
+      success: true,
+      wabaId: account.wabaId,
+      metaBusinessId: nextMetaBusinessId,
+      businessManagerId: nextBusinessManagerId,
+      businessName: details.name,
+    });
+  } catch (error: any) {
+    console.error("Sync business ids error:", error);
+    res.status(500).json({ error: "Failed to sync business ids" });
   }
 });
 

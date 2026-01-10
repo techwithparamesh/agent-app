@@ -170,6 +170,7 @@ export interface OAuthCallbackResult {
   accessToken?: string;
   tokenExpiresAt?: Date | null;
   metaBusinessId?: string | null;
+  businessManagerId?: string | null;
   // Error info
   error?: string;
   errorDescription?: string;
@@ -257,7 +258,10 @@ export async function handleOAuthCallback(
       tokenExpiresAt: longLivedToken.expires_in
         ? new Date(Date.now() + longLivedToken.expires_in * 1000)
         : null,
-      metaBusinessId: wabaInfo.owner_business_info?.id || null,
+      // Meta Business IDs can appear under either owner_business_info or on_behalf_of_business_info
+      // depending on onboarding mode and Meta account setup.
+      metaBusinessId: wabaInfo.owner_business_info?.id || wabaInfo.on_behalf_of_business_info?.id || null,
+      businessManagerId: wabaInfo.on_behalf_of_business_info?.id || wabaInfo.owner_business_info?.id || null,
     };
   } catch (error: any) {
     console.error('[Embedded Signup] OAuth callback error:', error);
@@ -397,7 +401,7 @@ async function getWabaDetails(
 ): Promise<WhatsAppBusinessAccountInfo> {
   const response = await fetch(
     `https://graph.facebook.com/${config.graphApiVersion}/${wabaId}?` +
-    `fields=id,name,currency,timezone_id,message_template_namespace,account_review_status,business_verification_status,on_behalf_of_business_info&` +
+    `fields=id,name,currency,timezone_id,message_template_namespace,account_review_status,business_verification_status,on_behalf_of_business_info,owner_business_info&` +
     `access_token=${accessToken}`
   );
 
