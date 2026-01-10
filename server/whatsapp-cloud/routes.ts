@@ -517,6 +517,69 @@ router.post("/accounts/:id/sync", requireAuth, async (req: Request, res: Respons
 });
 
 /**
+ * POST /api/whatsapp-cloud/accounts/:id/subscribe-webhooks
+ * Subscribe the WABA to receive webhooks for messages
+ */
+router.post("/accounts/:id/subscribe-webhooks", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const accountId = req.params.id;
+    
+    // Verify ownership and get token
+    const [account] = await db.select()
+      .from(whatsappCloudAccounts)
+      .where(and(
+        eq(whatsappCloudAccounts.id, accountId),
+        eq(whatsappCloudAccounts.userId, userId)
+      ))
+      .limit(1);
+    
+    if (!account) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+    
+    // Decrypt access token
+    const accessToken = decrypt(account.encryptedAccessToken);
+    
+    // Subscribe to webhooks
+    const response = await fetch(
+      `https://graph.facebook.com/v21.0/${account.wabaId}/subscribed_apps`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error("[Subscribe] Failed:", result);
+      return res.status(400).json({ 
+        success: false, 
+        error: result.error?.message || "Failed to subscribe to webhooks",
+        details: result
+      });
+    }
+    
+    console.log("[Subscribe] Success for WABA:", account.wabaId, result);
+    
+    await auditLog("webhook_subscribe", {
+      resourceType: "account",
+      resourceId: accountId,
+      wabaId: account.wabaId,
+    }, req, accountId);
+    
+    res.json({ success: true, message: "Subscribed to webhooks successfully", result });
+  } catch (error: any) {
+    console.error("Subscribe webhooks error:", error);
+    res.status(500).json({ error: "Failed to subscribe to webhooks", message: error.message });
+  }
+});
+
+/**
  * GET /api/whatsapp-cloud/accounts/:id/phone-numbers
  * Get phone numbers for a specific account
  */
