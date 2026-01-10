@@ -358,9 +358,18 @@ export default function WhatsAppAccountManagePage() {
           {/* Phone Numbers Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5" />
-                Phone Numbers ({phoneNumbers.length})
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  Phone Numbers ({phoneNumbers.length})
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate(`/dashboard/whatsapp/accounts/${accountId}/numbers`)}
+                >
+                  Manage Numbers
+                </Button>
               </CardTitle>
               <CardDescription>Phone numbers linked to this account</CardDescription>
             </CardHeader>
@@ -375,9 +384,20 @@ export default function WhatsAppAccountManagePage() {
                           <p className="text-sm text-muted-foreground">{phone.verifiedName}</p>
                         )}
                       </div>
-                      <Badge className={statusColors[phone.status] || "bg-gray-100"}>
-                        {phone.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={statusColors[phone.status] || "bg-gray-100"}>
+                          {phone.status}
+                        </Badge>
+                        {phone.status === "active" && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/dashboard/whatsapp/accounts/${accountId}/numbers`)}
+                          >
+                            Link Agent
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
