@@ -461,7 +461,7 @@ export default function PhoneNumbersPage() {
                       <Badge className={statusColors[phone.status] || "bg-gray-100"}>
                         {phone.status}
                       </Badge>
-                      {phone.qualityRating && (
+                      {phone.qualityRating && !['UNKNOWN', 'NA', 'unknown', 'na'].includes(phone.qualityRating) && (
                         <Badge className={qualityColors[phone.qualityRating.toLowerCase()] || "bg-gray-100"}>
                           <Signal className="h-3 w-3 mr-1" />
                           {phone.qualityRating}
