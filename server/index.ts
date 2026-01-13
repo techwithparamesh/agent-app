@@ -45,6 +45,29 @@ if (process.env.NODE_ENV === "production") {
       console.warn(`⚠️  Warning: ${v} not set - related features will be disabled`);
     }
   });
+
+  // WhatsApp Cloud: if configured/enabled, ensure required env vars exist.
+  // This avoids OAuth/webhook failures after deploys/restarts.
+  const looksLikeWhatsAppCloudIsUsed = Boolean(
+    process.env.META_APP_ID ||
+    process.env.META_APP_SECRET ||
+    process.env.META_EMBEDDED_SIGNUP_CONFIG_ID ||
+    process.env.WHATSAPP_WEBHOOK_ENFORCE_SIGNATURE ||
+    process.env.WHATSAPP_WEBHOOK_SECRET
+  );
+
+  if (looksLikeWhatsAppCloudIsUsed) {
+    const whatsappRequired: string[] = [];
+    if (!process.env.META_APP_ID) whatsappRequired.push('META_APP_ID');
+    if (!process.env.META_APP_SECRET) whatsappRequired.push('META_APP_SECRET');
+    if (!process.env.META_EMBEDDED_SIGNUP_CONFIG_ID) whatsappRequired.push('META_EMBEDDED_SIGNUP_CONFIG_ID');
+    if (!process.env.REDIS_URL) whatsappRequired.push('REDIS_URL');
+    const missing = whatsappRequired.filter(Boolean);
+    if (missing.length > 0) {
+      console.error(`❌ Missing required WhatsApp Cloud environment variables: ${missing.join(', ')}`);
+      process.exit(1);
+    }
+  }
 }
 
 declare module "http" {

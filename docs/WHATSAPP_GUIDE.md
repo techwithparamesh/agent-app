@@ -736,6 +736,56 @@ Template Params: [
 | **"Invalid phone number format"** | Wrong number format | Use format: `919876543210` (country code + number, no + or spaces) |
 | **"Media URL not accessible"** | WhatsApp can't fetch your media | Ensure URL is public and HTTPS |
 
+### Risk Controls (Admin)
+
+AgentForge includes conservative safety controls (rate limiting, risk scoring, and kill switches). If outbound sends suddenly stop, check:
+
+- `WHATSAPP_POLICY_DB` must be enabled to persist risk/kill-switch state.
+- Admin access is controlled by `WHATSAPP_ADMIN_EMAILS` (comma-separated allow-list). In non-production, admin endpoints are allowed when the allow-list is not set.
+
+Admin-only endpoints:
+
+- Inspect a user: `GET /api/whatsapp-cloud/admin/users/:userId/risk`
+- Manually re-enable/disable user sending (kill switch): `POST /api/whatsapp-cloud/admin/users/:userId/kill-switch` with body `{ "enabled": false, "reason": "..." }`
+- Optional admin risk reset: `POST /api/whatsapp-cloud/admin/users/:userId/risk/reset` with body `{ "score": 0, "clearReasons": true }`
+- Run risk decay (skips disabled users): `POST /api/whatsapp-cloud/admin/risk/decay` with body `{ "decayPerDay": 5, "maxRows": 1000, "dryRun": true }`
+
+### Observation Sanity Checks (DB)
+
+If you're in an observation phase and want to confirm the end-to-end lifecycle is working (send → webhook status → DB update), these SQL checks are a quick way to validate.
+
+**1) Confirm outbound rows exist (so status updates have something to attach to):**
+
+```sql
+SELECT id, conversation_id, wa_message_id, direction, message_type, status, sent_at, delivered_at, read_at, created_at
+FROM whatsapp_cloud_messages
+WHERE direction = 'outbound'
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+**2) Confirm webhook status updates are landing (delivered/read/failed):**
+
+```sql
+SELECT status, COUNT(*) AS count
+FROM whatsapp_cloud_messages
+WHERE direction = 'outbound'
+  AND created_at >= NOW() - INTERVAL 24 HOUR
+GROUP BY status
+ORDER BY count DESC;
+```
+
+**3) Inspect failures with error details (if any):**
+
+```sql
+SELECT wa_message_id, status, error_code, error_message, sent_at, created_at
+FROM whatsapp_cloud_messages
+WHERE direction = 'outbound'
+  AND status = 'failed'
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
 ### Phone Number Format
 
 **Correct formats:**

@@ -204,6 +204,10 @@ export default function WhatsAppAccountManagePage() {
     );
   }
 
+  const webhookUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/api/whatsapp-cloud/webhook`
+    : "/api/whatsapp-cloud/webhook";
+
   return (
     <DashboardLayout title="Manage Account">
       <div className="space-y-6">
@@ -432,13 +436,13 @@ export default function WhatsAppAccountManagePage() {
               <Label className="text-sm text-muted-foreground">Callback URL</Label>
               <div className="flex items-center gap-2 mt-1">
                 <code className="flex-1 text-sm bg-muted px-3 py-2 rounded font-mono">
-                  https://digitalagency4us.cloud/api/whatsapp-cloud/webhook
+                  {webhookUrl}
                 </code>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    navigator.clipboard.writeText("https://digitalagency4us.cloud/api/whatsapp-cloud/webhook");
+                    navigator.clipboard.writeText(webhookUrl);
                     toast({ title: "Copied!", description: "Webhook URL copied to clipboard" });
                   }}
                 >

@@ -14,6 +14,7 @@
  */
 
 import crypto from 'crypto';
+import { createClient } from "redis";
 import { encrypt, decrypt, generateSecureToken } from '../utils/encryption';
 import type {
   MetaOAuthResponse,
@@ -53,6 +54,95 @@ function getMetaConfig(): MetaAppConfig {
 
 // ========== STATE MANAGEMENT ==========
 
+type RedisClient = ReturnType<typeof createClient>;
+let redisClientPromise: Promise<RedisClient | null> | null = null;
+
+async function getRedisClient(): Promise<RedisClient | null> {
+  const url = process.env.REDIS_URL;
+  if (!url) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("[WhatsApp OAuth] REDIS_URL is required in production for OAuth state.");
+    }
+    return null;
+  }
+
+  if (!redisClientPromise) {
+    redisClientPromise = (async () => {
+      try {
+        const client = createClient({ url });
+        client.on("error", (err) => console.error("[WhatsApp OAuth] Redis error:", err));
+        await client.connect();
+        return client;
+      } catch (err) {
+        console.error("[WhatsApp OAuth] Failed to connect Redis:", err);
+        if (process.env.NODE_ENV === "production") throw err;
+        return null;
+      }
+    })();
+  }
+
+  return redisClientPromise;
+}
+
+type OAuthStateData = {
+  tenantId: string;
+  createdAtMs: number;
+  nonce: string;
+};
+
+const OAUTH_STATE_TTL_SECONDS = 10 * 60; // 10 minutes
+
+function oauthStateKey(state: string) {
+  return `wa:oauth_state:${state}`;
+}
+
+async function storeOAuthState(state: string, data: OAuthStateData): Promise<void> {
+  const redis = await getRedisClient();
+  if (redis) {
+    await redis.set(oauthStateKey(state), JSON.stringify(data), { EX: OAUTH_STATE_TTL_SECONDS });
+    return;
+  }
+
+  pendingOAuthStates.set(state, {
+    tenantId: data.tenantId,
+    createdAt: new Date(data.createdAtMs),
+    nonce: data.nonce,
+  });
+}
+
+async function consumeOAuthState(state: string): Promise<OAuthStateData | null> {
+  const redis = await getRedisClient();
+  if (redis) {
+    const key = oauthStateKey(state);
+    const multi = redis.multi();
+    multi.get(key);
+    multi.del(key);
+    const result = await multi.exec();
+    const raw = result?.[0] as unknown;
+
+    if (typeof raw !== "string" || raw.length === 0) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      if (typeof parsed.tenantId !== "string" || typeof parsed.createdAtMs !== "number" || typeof parsed.nonce !== "string") {
+        return null;
+      }
+      return parsed as OAuthStateData;
+    } catch {
+      return null;
+    }
+  }
+
+  const local = pendingOAuthStates.get(state);
+  if (!local) return null;
+  pendingOAuthStates.delete(state);
+  return {
+    tenantId: local.tenantId,
+    createdAtMs: local.createdAt.getTime(),
+    nonce: local.nonce,
+  };
+}
+
 /**
  * OAuth state store - in production, use Redis or database
  * State links OAuth callback to the correct tenant
@@ -66,7 +156,7 @@ const pendingOAuthStates = new Map<string, {
 // Clean up expired states every 5 minutes
 setInterval(() => {
   const now = new Date();
-  const maxAge = 10 * 60 * 1000; // 10 minutes
+  const maxAge = OAUTH_STATE_TTL_SECONDS * 1000;
   
   for (const [state, data] of pendingOAuthStates.entries()) {
     if (now.getTime() - data.createdAt.getTime() > maxAge) {
@@ -96,11 +186,11 @@ export function generateEmbeddedSignupUrl(
   // Generate cryptographically secure state parameter
   const state = generateSecureToken(32);
   const nonce = generateSecureToken(16);
-  
-  // Store state for verification in callback
-  pendingOAuthStates.set(state, {
+
+  // Store state for verification in callback (Redis in prod; local fallback in dev)
+  void storeOAuthState(state, {
     tenantId,
-    createdAt: new Date(),
+    createdAtMs: Date.now(),
     nonce,
   });
 
@@ -139,9 +229,9 @@ export function getEmbeddedSignupConfig(tenantId: string): {
   const state = generateSecureToken(32);
   const nonce = generateSecureToken(16);
 
-  pendingOAuthStates.set(state, {
+  void storeOAuthState(state, {
     tenantId,
-    createdAt: new Date(),
+    createdAtMs: Date.now(),
     nonce,
   });
 
@@ -187,7 +277,7 @@ export async function handleOAuthCallback(
   const config = getMetaConfig();
 
   // 1. Verify state and get tenant
-  const stateData = pendingOAuthStates.get(state);
+  const stateData = await consumeOAuthState(state);
   if (!stateData) {
     return {
       success: false,
@@ -195,9 +285,6 @@ export async function handleOAuthCallback(
       errorDescription: 'OAuth state is invalid or expired',
     };
   }
-
-  // Remove used state immediately
-  pendingOAuthStates.delete(state);
 
   const { tenantId } = stateData;
 
@@ -250,9 +337,9 @@ export async function handleOAuthCallback(
       success: true,
       tenantId,
       wabaId,
-      phoneNumberId: phoneNumber?.id || null,
+      phoneNumberId: phoneNumber?.id || undefined,
       businessName: wabaInfo.name,
-      displayPhoneNumber: phoneNumber?.display_phone_number || null,
+      displayPhoneNumber: phoneNumber?.display_phone_number || undefined,
       // Include token and metadata for caller to store
       accessToken: longLivedToken.access_token,
       tokenExpiresAt: longLivedToken.expires_in

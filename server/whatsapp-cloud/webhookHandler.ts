@@ -12,6 +12,8 @@ import crypto from 'crypto';
 import type { Request, Response } from 'express';
 import { db } from '../db';
 import { eq, and } from 'drizzle-orm';
+import { createClient } from 'redis';
+import { recordRiskSignal } from './risk';
 import type {
   MetaWebhookPayload,
   MetaWebhookEntry,
@@ -69,6 +71,7 @@ export function verifyMetaSignature(
  */
 export interface ResolvedTenant {
   tenantId: string;
+  accountId: string;
   wabaId: string;
   /**
    * Internal UUID (whatsapp_cloud_phone_numbers.id)
@@ -92,6 +95,131 @@ export interface ResolvedTenant {
 const tenantCache = new Map<string, { data: ResolvedTenant; expiresAt: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// ========== IDEMPOTENCY (REDIS) ==========
+
+type RedisClient = ReturnType<typeof createClient>;
+let redisClientPromise: Promise<RedisClient | null> | null = null;
+
+async function getRedisClient(): Promise<RedisClient | null> {
+  const url = process.env.REDIS_URL;
+  if (!url) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[Webhook] REDIS_URL is required in production for idempotency.');
+    }
+    return null;
+  }
+
+  if (!redisClientPromise) {
+    redisClientPromise = (async () => {
+      try {
+        const client = createClient({ url });
+        client.on('error', (err) => console.error('[Webhook] Redis error:', err));
+        await client.connect();
+        return client;
+      } catch (err) {
+        console.error('[Webhook] Failed to connect Redis:', err);
+        if (process.env.NODE_ENV === 'production') throw err;
+        return null;
+      }
+    })();
+  }
+  return redisClientPromise;
+}
+
+const localIdempotency = new Map<string, number>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, exp] of localIdempotency.entries()) {
+    if (exp <= now) localIdempotency.delete(k);
+  }
+}, 60_000);
+
+async function acquireIdempotency(key: string, ttlSeconds: number): Promise<boolean> {
+  const redis = await getRedisClient();
+  if (redis) {
+    const ok = await redis.set(key, '1', { NX: true, EX: ttlSeconds });
+    return ok === 'OK';
+  }
+
+  const now = Date.now();
+  const exp = localIdempotency.get(key);
+  if (exp && exp > now) return false;
+  localIdempotency.set(key, now + ttlSeconds * 1000);
+  return true;
+}
+
+function parseMetaTimestamp(ts?: string): Date | null {
+  const n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return new Date(n * 1000);
+}
+
+async function persistStatusUpdate(tenant: ResolvedTenant, status: MetaWebhookStatus): Promise<void> {
+  try {
+    const { whatsappCloudMessages } = await import('../../shared/schema');
+    const when = parseMetaTimestamp(status.timestamp);
+    const set: any = {
+      status: status.status,
+    };
+
+    if (status.status === 'delivered' && when) set.deliveredAt = when;
+    if (status.status === 'read' && when) set.readAt = when;
+    if (status.status === 'failed') {
+      const err = status.errors?.[0];
+      if (err?.code) set.errorCode = String(err.code);
+      if (err?.message) set.errorMessage = err.message;
+    }
+
+    await db.update(whatsappCloudMessages)
+      .set(set)
+      .where(eq(whatsappCloudMessages.waMessageId, status.id));
+  } catch (e: any) {
+    // Status persistence is best-effort
+    console.warn('[Webhook] Failed to persist status update', {
+      err: e?.message,
+      waMessageId: status.id,
+      accountId: tenant.accountId,
+    });
+  }
+}
+
+async function auditFailedStatus(tenant: ResolvedTenant, status: MetaWebhookStatus): Promise<void> {
+  if (status.status !== 'failed') return;
+  try {
+    const { whatsappCloudAuditLog } = await import('../../shared/schema');
+    await db.insert(whatsappCloudAuditLog).values({
+      accountId: tenant.accountId || null,
+      userId: tenant.tenantId || null,
+      action: 'message_delivery_failed',
+      resourceType: 'message',
+      resourceId: status.id,
+      details: {
+        recipientId: status.recipient_id,
+        status: status.status,
+        timestamp: status.timestamp,
+        errors: status.errors || [],
+        pricing: status.pricing || null,
+      },
+      ipAddress: null,
+      userAgent: null,
+      status: 'failure',
+      errorMessage: status.errors?.[0]?.message || 'Delivery failed',
+    });
+
+    await recordRiskSignal({
+      userId: tenant.tenantId,
+      type: 'message_status_failed',
+      details: {
+        waMessageId: status.id,
+        recipientId: status.recipient_id,
+        errorCode: status.errors?.[0]?.code,
+      },
+    });
+  } catch (e: any) {
+    console.warn('[Webhook] Failed to audit failed status', { err: e?.message });
+  }
+}
+
 /**
  * Resolve tenant from phone_number_id
  * This is the critical function for tenant isolation
@@ -114,6 +242,7 @@ export async function resolveTenantByPhoneNumberId(
     const [phoneRecord] = await db
       .select({
         id: whatsappCloudPhoneNumbers.id, // Internal UUID for agent link lookup
+        accountId: whatsappCloudAccounts.id,
         userId: whatsappCloudAccounts.userId,
         wabaId: whatsappCloudAccounts.wabaId,
         businessName: whatsappCloudAccounts.businessName,
@@ -152,6 +281,7 @@ export async function resolveTenantByPhoneNumberId(
 
     const tenant: ResolvedTenant = {
       tenantId: phoneRecord.userId,
+      accountId: phoneRecord.accountId,
       wabaId: phoneRecord.wabaId,
       phoneRecordId: phoneRecord.id,
       metaPhoneNumberId: phoneRecord.phoneNumberId,
@@ -253,6 +383,9 @@ export async function processWebhookPayload(
         processed += result.processed;
         errors += result.errors;
         tenantId = result.tenantId;
+      } else if (change.field === 'account_update' || change.field === 'message_template_status_update') {
+        // These payload shapes vary; keep best-effort processing here (idempotent logging can be added later).
+        processed += 1;
       }
     }
   }
@@ -283,6 +416,12 @@ async function processMessagesChange(
   if (value.messages && messageHandler) {
     for (const message of value.messages) {
       try {
+        const eventKey = `wa:webhook:msg:${tenant.metaPhoneNumberId}:${message.id}`;
+        const ok = await acquireIdempotency(eventKey, 7 * 24 * 60 * 60);
+        if (!ok) {
+          continue;
+        }
+
         // Find contact info
         const contact = value.contacts?.find(c => c.wa_id === message.from);
         
@@ -303,6 +442,14 @@ async function processMessagesChange(
   if (value.statuses && statusHandler) {
     for (const status of value.statuses) {
       try {
+        const eventKey = `wa:webhook:st:${tenant.metaPhoneNumberId}:${status.id}:${status.status}`;
+        const ok = await acquireIdempotency(eventKey, 7 * 24 * 60 * 60);
+        if (!ok) {
+          continue;
+        }
+
+        await persistStatusUpdate(tenant, status);
+        await auditFailedStatus(tenant, status);
         await statusHandler(tenant, status);
         processed++;
       } catch (error) {

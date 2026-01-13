@@ -6,6 +6,7 @@
  */
 
 import { decrypt } from '../utils/encryption';
+import { createClient } from "redis";
 import type {
   SendMessageRequest,
   SendTextMessage,
@@ -14,7 +15,6 @@ import type {
   SendMessageResponse,
   TemplateComponent,
   InteractiveAction,
-  RateLimitStatus,
 } from './types';
 
 // ========== CONFIGURATION ==========
@@ -25,95 +25,223 @@ const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 // ========== RATE LIMITING ==========
 
 /**
- * In-memory rate limit tracking
- * In production, use Redis for distributed rate limiting
+ * Multi-scope throttling (MANDATORY):
+ * - per-user
+ * - per-WABA
+ * - per-phone-number
+ *
+ * Distinct limits for:
+ * - free_text_reply
+ * - template
+ * - broadcast
+ *
+ * Uses Redis if REDIS_URL is set; otherwise falls back to in-memory.
  */
-const rateLimitStore = new Map<string, RateLimitStatus>();
 
-// Rate limits per messaging tier
-const RATE_LIMITS = {
+type OutboundCategory = "free_text_reply" | "template" | "broadcast";
+
+const BASE_TIER_LIMITS = {
   TIER_1K: { perSecond: 10, perMinute: 100, perHour: 1000 },
   TIER_10K: { perSecond: 50, perMinute: 500, perHour: 10000 },
   TIER_100K: { perSecond: 100, perMinute: 1000, perHour: 100000 },
   UNLIMITED: { perSecond: 250, perMinute: 2500, perHour: 250000 },
 } as const;
 
-function getRateLimitKey(tenantId: string, phoneNumberId: string): string {
-  return `${tenantId}:${phoneNumberId}`;
+type TierKey = keyof typeof BASE_TIER_LIMITS;
+
+// Conservative tuning aligned with Meta tiers + SaaS plans (plans further cap tier in routes).
+// - Free-text replies are limited to protect quality & avoid spam.
+// - Templates are more restrictive (even though policy-compliant).
+// - Broadcast is the most restrictive.
+const CATEGORY_MULTIPLIER: Record<OutboundCategory, number> = {
+  free_text_reply: 0.5,
+  template: 0.25,
+  broadcast: 0.05,
+};
+
+const CATEGORY_DAILY_CAP: Record<TierKey, Record<OutboundCategory, number | undefined>> = {
+  TIER_1K: { free_text_reply: undefined, template: 250, broadcast: 50 },
+  TIER_10K: { free_text_reply: undefined, template: 1000, broadcast: 200 },
+  TIER_100K: { free_text_reply: undefined, template: 2500, broadcast: 500 },
+  UNLIMITED: { free_text_reply: undefined, template: 5000, broadcast: 1000 },
+};
+
+type RedisClient = ReturnType<typeof createClient>;
+
+let redisClientPromise: Promise<RedisClient | null> | null = null;
+
+async function getRedisClient(): Promise<RedisClient | null> {
+  const url = process.env.REDIS_URL;
+  if (!url) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("[WhatsApp RateLimit] REDIS_URL is required in production.");
+    }
+    console.warn("[WhatsApp RateLimit] REDIS_URL not set; using in-memory rate limiting (single-instance only).");
+    return null;
+  }
+
+  if (!redisClientPromise) {
+    redisClientPromise = (async () => {
+      try {
+        const client = createClient({ url });
+        client.on("error", (err) => console.error("[WhatsApp RateLimit] Redis error:", err));
+        await client.connect();
+        return client;
+      } catch (err) {
+        console.error("[WhatsApp RateLimit] Failed to connect Redis:", err);
+        if (process.env.NODE_ENV === "production") {
+          throw err;
+        }
+        return null;
+      }
+    })();
+  }
+
+  return redisClientPromise;
 }
 
-function checkRateLimit(
-  tenantId: string,
-  phoneNumberId: string,
-  tier: keyof typeof RATE_LIMITS = 'TIER_1K'
-): { allowed: boolean; retryAfter?: number } {
-  const key = getRateLimitKey(tenantId, phoneNumberId);
+const memoryCounters = new Map<string, { count: number; resetAt: number }>();
+
+// Best-effort cleanup for dev/single-instance mode
+setInterval(() => {
   const now = Date.now();
-  const limits = RATE_LIMITS[tier];
+  for (const [key, value] of memoryCounters.entries()) {
+    if (value.resetAt <= now) memoryCounters.delete(key);
+  }
+}, 60_000);
 
-  let status = rateLimitStore.get(key);
-  
-  // Initialize or reset expired status
-  if (!status || status.resetAt.getTime() < now) {
-    status = {
-      tenantId,
-      phoneNumberId,
-      currentSecond: 0,
-      currentMinute: 0,
-      currentHour: 0,
-      templatesSentToday: 0,
-      resetAt: new Date(now + 1000), // Reset in 1 second
-    };
-    rateLimitStore.set(key, status);
+async function consumeCounter(key: string, windowSeconds: number, limit: number): Promise<{ allowed: boolean; retryAfter?: number }> {
+  const redis = await getRedisClient();
+  if (redis) {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, windowSeconds);
+    }
+    if (count > limit) {
+      const ttl = await redis.ttl(key);
+      return { allowed: false, retryAfter: Math.max(1, ttl) };
+    }
+    return { allowed: true };
   }
 
-  // Check limits
-  if (status.currentSecond >= limits.perSecond) {
-    return { allowed: false, retryAfter: 1 };
-  }
-  if (status.currentMinute >= limits.perMinute) {
-    return { allowed: false, retryAfter: 60 };
-  }
-  if (status.currentHour >= limits.perHour) {
-    return { allowed: false, retryAfter: 3600 };
+  const now = Date.now();
+  const existing = memoryCounters.get(key);
+  const windowMs = windowSeconds * 1000;
+
+  if (!existing || existing.resetAt <= now) {
+    memoryCounters.set(key, { count: 1, resetAt: now + windowMs });
+    return { allowed: true };
   }
 
-  // Increment counters
-  status.currentSecond++;
-  status.currentMinute++;
-  status.currentHour++;
+  if (existing.count >= limit) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)) };
+  }
 
+  existing.count += 1;
   return { allowed: true };
 }
 
-// Reset second counter every second
-setInterval(() => {
-  for (const status of rateLimitStore.values()) {
-    status.currentSecond = 0;
-  }
-}, 1000);
+function calcLimit(base: number, mult: number): number {
+  return Math.max(1, Math.floor(base * mult));
+}
 
-// Reset minute counter every minute
-setInterval(() => {
-  for (const status of rateLimitStore.values()) {
-    status.currentMinute = 0;
-  }
-}, 60 * 1000);
+async function enforceOutboundRateLimit(params: {
+  tenantId: string;
+  wabaId?: string;
+  phoneNumberId: string;
+  tier?: TierKey;
+  category: OutboundCategory;
+}): Promise<
+  | { allowed: true }
+  | {
+      allowed: false;
+      retryAfter?: number;
+      hit: {
+        category: OutboundCategory;
+        tier: TierKey;
+        scope: "phone" | "user" | "waba";
+        window: "s" | "m" | "h" | "d";
+        limit: number;
+      };
+    }
+> {
+  const tier = (params.tier || "TIER_1K") as TierKey;
+  const base = BASE_TIER_LIMITS[tier] || BASE_TIER_LIMITS.TIER_1K;
+  const mult = CATEGORY_MULTIPLIER[params.category];
+  const perDayCap = CATEGORY_DAILY_CAP[tier]?.[params.category];
 
-// Reset hour counter every hour
-setInterval(() => {
-  for (const status of rateLimitStore.values()) {
-    status.currentHour = 0;
+  const perPhone = {
+    perSecond: calcLimit(base.perSecond, mult),
+    perMinute: calcLimit(base.perMinute, mult),
+    perHour: calcLimit(base.perHour, mult),
+    perDay: perDayCap,
+  };
+
+  const perWaba = params.wabaId
+    ? {
+        perSecond: perPhone.perSecond * 2,
+        perMinute: perPhone.perMinute * 2,
+        perHour: perPhone.perHour * 2,
+        perDay: perPhone.perDay ? perPhone.perDay * 2 : undefined,
+      }
+    : null;
+
+  const perUser = {
+    perSecond: perPhone.perSecond * 3,
+    perMinute: perPhone.perMinute * 3,
+    perHour: perPhone.perHour * 3,
+    perDay: perPhone.perDay ? perPhone.perDay * 3 : undefined,
+  };
+
+  const scopes: Array<{ scope: "phone" | "user" | "waba"; prefix: string; limits: any }> = [
+    { scope: "phone", prefix: `wa:out:${params.category}:phone:${params.tenantId}:${params.phoneNumberId}`, limits: perPhone },
+    { scope: "user", prefix: `wa:out:${params.category}:user:${params.tenantId}`, limits: perUser },
+  ];
+  if (perWaba && params.wabaId) {
+    scopes.push({ scope: "waba", prefix: `wa:out:${params.category}:waba:${params.tenantId}:${params.wabaId}`, limits: perWaba });
   }
-}, 60 * 60 * 1000);
+
+  const windows: Array<{ suffix: string; seconds: number; getLimit: (l: any) => number | undefined }> = [
+    { suffix: "s", seconds: 1, getLimit: (l) => l.perSecond },
+    { suffix: "m", seconds: 60, getLimit: (l) => l.perMinute },
+    { suffix: "h", seconds: 3600, getLimit: (l) => l.perHour },
+    { suffix: "d", seconds: 86400, getLimit: (l) => l.perDay },
+  ];
+
+  for (const scope of scopes) {
+    for (const w of windows) {
+      const limit = w.getLimit(scope.limits);
+      if (!limit) continue;
+      const key = `${scope.prefix}:${w.suffix}`;
+      const result = await consumeCounter(key, w.seconds, limit);
+      if (!result.allowed) {
+        return {
+          allowed: false,
+          retryAfter: result.retryAfter,
+          hit: {
+            category: params.category,
+            tier,
+            scope: scope.scope,
+            window: w.suffix as any,
+            limit,
+          },
+        };
+      }
+    }
+  }
+
+  return { allowed: true };
+}
 
 // ========== MESSAGE SENDING SERVICE ==========
 
 export interface MessageSendOptions {
   tenantId: string;
+  wabaId?: string;
   phoneNumberId: string;
   accessToken: string; // Encrypted token
-  messagingTier?: keyof typeof RATE_LIMITS;
+  messagingTier?: TierKey;
+  category?: OutboundCategory;
 }
 
 export interface MessageSendResult {
@@ -124,6 +252,13 @@ export interface MessageSendResult {
   errorCode?: number;
   rateLimited?: boolean;
   retryAfter?: number;
+  rateLimit?: {
+    category: OutboundCategory;
+    tier: TierKey;
+    scope: "phone" | "user" | "waba";
+    window: "s" | "m" | "h" | "d";
+    limit: number;
+  };
 }
 
 /**
@@ -134,16 +269,23 @@ export async function sendTextMessage(
   text: string,
   options: MessageSendOptions & { previewUrl?: boolean }
 ): Promise<MessageSendResult> {
-  const { tenantId, phoneNumberId, accessToken, messagingTier, previewUrl } = options;
+  const { tenantId, wabaId, phoneNumberId, accessToken, messagingTier, previewUrl, category } = options;
 
   // Check rate limit
-  const rateCheck = checkRateLimit(tenantId, phoneNumberId, messagingTier);
+  const rateCheck = await enforceOutboundRateLimit({
+    tenantId,
+    wabaId,
+    phoneNumberId,
+    tier: messagingTier,
+    category: category ?? 'free_text_reply',
+  });
   if (!rateCheck.allowed) {
     return {
       success: false,
       error: 'Rate limit exceeded',
       rateLimited: true,
       retryAfter: rateCheck.retryAfter,
+      rateLimit: rateCheck.hit,
     };
   }
 
@@ -171,16 +313,23 @@ export async function sendTemplateMessage(
   components: TemplateComponent[] | undefined,
   options: MessageSendOptions
 ): Promise<MessageSendResult> {
-  const { tenantId, phoneNumberId, accessToken, messagingTier } = options;
+  const { tenantId, wabaId, phoneNumberId, accessToken, messagingTier, category } = options;
 
   // Check rate limit
-  const rateCheck = checkRateLimit(tenantId, phoneNumberId, messagingTier);
+  const rateCheck = await enforceOutboundRateLimit({
+    tenantId,
+    wabaId,
+    phoneNumberId,
+    tier: messagingTier,
+    category: category ?? 'template',
+  });
   if (!rateCheck.allowed) {
     return {
       success: false,
       error: 'Rate limit exceeded',
       rateLimited: true,
       retryAfter: rateCheck.retryAfter,
+      rateLimit: rateCheck.hit,
     };
   }
 
@@ -214,16 +363,23 @@ export async function sendInteractiveMessage(
     footer?: string;
   }
 ): Promise<MessageSendResult> {
-  const { tenantId, phoneNumberId, accessToken, messagingTier, header, footer } = options;
+  const { tenantId, wabaId, phoneNumberId, accessToken, messagingTier, header, footer, category } = options;
 
   // Check rate limit
-  const rateCheck = checkRateLimit(tenantId, phoneNumberId, messagingTier);
+  const rateCheck = await enforceOutboundRateLimit({
+    tenantId,
+    wabaId,
+    phoneNumberId,
+    tier: messagingTier,
+    category: category ?? 'free_text_reply',
+  });
   if (!rateCheck.allowed) {
     return {
       success: false,
       error: 'Rate limit exceeded',
       rateLimited: true,
       retryAfter: rateCheck.retryAfter,
+      rateLimit: rateCheck.hit,
     };
   }
 
@@ -256,16 +412,23 @@ export async function sendMediaMessage(
     filename?: string;
   }
 ): Promise<MessageSendResult> {
-  const { tenantId, phoneNumberId, accessToken, messagingTier, caption, filename } = options;
+  const { tenantId, wabaId, phoneNumberId, accessToken, messagingTier, caption, filename, category } = options;
 
   // Check rate limit
-  const rateCheck = checkRateLimit(tenantId, phoneNumberId, messagingTier);
+  const rateCheck = await enforceOutboundRateLimit({
+    tenantId,
+    wabaId,
+    phoneNumberId,
+    tier: messagingTier,
+    category: category ?? 'free_text_reply',
+  });
   if (!rateCheck.allowed) {
     return {
       success: false,
       error: 'Rate limit exceeded',
       rateLimited: true,
       retryAfter: rateCheck.retryAfter,
+      rateLimit: rateCheck.hit,
     };
   }
 
@@ -296,16 +459,23 @@ export async function sendLocationMessage(
     address?: string;
   }
 ): Promise<MessageSendResult> {
-  const { tenantId, phoneNumberId, accessToken, messagingTier, name, address } = options;
+  const { tenantId, wabaId, phoneNumberId, accessToken, messagingTier, name, address, category } = options;
 
   // Check rate limit
-  const rateCheck = checkRateLimit(tenantId, phoneNumberId, messagingTier);
+  const rateCheck = await enforceOutboundRateLimit({
+    tenantId,
+    wabaId,
+    phoneNumberId,
+    tier: messagingTier,
+    category: category ?? 'free_text_reply',
+  });
   if (!rateCheck.allowed) {
     return {
       success: false,
       error: 'Rate limit exceeded',
       rateLimited: true,
       retryAfter: rateCheck.retryAfter,
+      rateLimit: rateCheck.hit,
     };
   }
 

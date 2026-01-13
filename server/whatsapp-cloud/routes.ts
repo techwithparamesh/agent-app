@@ -13,8 +13,9 @@
  */
 
 import { Router, Request, Response, NextFunction } from "express";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, gte, lte, sql } from "drizzle-orm";
 import { db } from "../db";
+import { storage } from "../storage";
 import {
   whatsappCloudAccounts,
   whatsappCloudPhoneNumbers,
@@ -23,6 +24,8 @@ import {
   whatsappCloudMessages,
   whatsappCloudTemplates,
   whatsappCloudAuditLog,
+  whatsappCloudKillSwitches,
+  whatsappCloudRiskStates,
   agents,
   users,
 } from "../../shared/schema";
@@ -38,6 +41,8 @@ import { routeToAgent } from "./agentRouter";
 import { encrypt, decrypt } from "../utils/encryption";
 import crypto from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
+import { WhatsAppPolicyError, enforceKillSwitch } from "./policy";
+import { recordRiskSignal, applyRiskDecay, adminResetRisk } from "./risk";
 
 const router = Router();
 
@@ -202,15 +207,54 @@ CRITICAL RESPONSE RULES:
     }
 
     // Send response
-    const accessToken = decrypt(tenant.accessToken);
+    await enforceKillSwitch({
+      userId: tenant.tenantId,
+      accountId: tenant.accountId,
+      phoneRecordId: tenant.phoneRecordId,
+    });
+    const ownerPlan = await getUserPlanCached(agent.userId);
     const sendResult = await sendTextMessage(from, responseText, {
       tenantId: tenant.tenantId,
+      wabaId: tenant.wabaId,
       phoneNumberId: tenant.metaPhoneNumberId,
-      accessToken,
-      messagingTier: (tenant.messagingTier || "TIER_1K") as any,
+      // IMPORTANT: messageService expects ENCRYPTED token and decrypts internally.
+      accessToken: tenant.accessToken,
+      messagingTier: clampMessagingTierByPlan({ plan: ownerPlan, messagingTier: tenant.messagingTier || "TIER_1K" }) as any,
+      category: "free_text_reply",
     });
 
     if (!sendResult.success) {
+      if (sendResult.rateLimited) {
+        await recordRiskSignal({
+          userId: tenant.tenantId,
+          type: "rate_limited",
+          details: { source: "webhook_auto_reply", category: "free_text_reply", retryAfter: sendResult.retryAfter },
+        });
+        await db.insert(whatsappCloudAuditLog).values({
+          accountId: tenant.accountId || null,
+          userId: tenant.tenantId || null,
+          action: "whatsapp_throttle_hit",
+          resourceType: "message",
+          resourceId: tenant.metaPhoneNumberId,
+          details: {
+            source: "webhook_auto_reply",
+            to: from,
+            category: "free_text_reply",
+            rateLimit: sendResult.rateLimit || null,
+            retryAfter: sendResult.retryAfter || null,
+          },
+          ipAddress: null,
+          userAgent: null,
+          status: "failure",
+          errorMessage: "Rate limit exceeded",
+        });
+      } else {
+        await recordRiskSignal({
+          userId: tenant.tenantId,
+          type: "message_send_failed",
+          details: { source: "webhook_auto_reply", error: sendResult.error, errorCode: sendResult.errorCode },
+        });
+      }
       console.error("[Webhook] Failed to send WhatsApp reply", {
         from,
         metaPhoneNumberId: tenant.metaPhoneNumberId,
@@ -267,6 +311,82 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+async function requireWhatsAppAdmin(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ error: "Authentication required" });
+
+    const allowList = String(process.env.WHATSAPP_ADMIN_EMAILS || "").trim();
+    if (!allowList) {
+      if (process.env.NODE_ENV !== "production") return next();
+      return res.status(403).json({ error: "Admin access not configured" });
+    }
+
+    const emails = allowList
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    const [user] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    const email = String(user?.email || "").toLowerCase();
+    if (!email || !emails.includes(email)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    next();
+  } catch (e) {
+    console.error("Admin auth error:", e);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+function clampMessagingTierByPlan(params: {
+  plan?: string | null;
+  messagingTier?: string | null;
+}): string {
+  const plan = String(params.plan || "free").toLowerCase();
+  const tier = String(params.messagingTier || "TIER_1K").toUpperCase();
+
+  const tierRank = (t: string): number => {
+    if (t === "TIER_1K") return 1;
+    if (t === "TIER_10K") return 2;
+    if (t === "TIER_100K") return 3;
+    if (t === "UNLIMITED") return 4;
+    return 1;
+  };
+
+  const planCap = (() => {
+    if (plan === "enterprise") return "UNLIMITED";
+    if (plan === "pro") return "TIER_10K";
+    if (plan === "starter") return "TIER_1K";
+    return "TIER_1K";
+  })();
+
+  return tierRank(tier) <= tierRank(planCap) ? tier : planCap;
+}
+
+const userPlanCache = new Map<string, { plan: string; expiresAt: number }>();
+async function getUserPlanCached(userId: string): Promise<string> {
+  const now = Date.now();
+  const cached = userPlanCache.get(userId);
+  if (cached && cached.expiresAt > now) return cached.plan;
+
+  const [user] = await db
+    .select({ plan: users.plan })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  const plan = String(user?.plan || "free");
+  userPlanCache.set(userId, { plan, expiresAt: now + 5 * 60 * 1000 });
+  return plan;
+}
+
 /**
  * Ensure user has verified email (checks database)
  */
@@ -297,6 +417,33 @@ async function requireVerifiedEmail(req: Request, res: Response, next: NextFunct
   }
 }
 
+function parseDateParam(value: any): Date | null {
+  if (!value) return null;
+  const d = new Date(String(value));
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function sanitizeAuditDetails(details: Record<string, any>): Record<string, any> {
+  try {
+    const json = JSON.stringify(details);
+    // Keep DB row sizes predictable; avoid multi-MB payloads.
+    if (json.length <= 20_000) return details;
+    const keys = Object.keys(details || {});
+    return {
+      truncated: true,
+      originalSize: json.length,
+      keys,
+      // Keep minimal context
+      resourceType: (details as any)?.resourceType,
+      resourceId: (details as any)?.resourceId,
+      sample: json.slice(0, 2_000),
+    };
+  } catch {
+    return { truncated: true, error: "failed_to_serialize_details" };
+  }
+}
+
 /**
  * Audit logging helper
  */
@@ -310,13 +457,14 @@ async function auditLog(
 ) {
   try {
     const userId = getUserId(req);
+    const safeDetails = sanitizeAuditDetails(details || {});
     await db.insert(whatsappCloudAuditLog).values({
       accountId: accountId || null,
       userId: userId || null,
       action,
-      resourceType: details.resourceType,
-      resourceId: details.resourceId,
-      details,
+      resourceType: (safeDetails as any)?.resourceType || null,
+      resourceId: (safeDetails as any)?.resourceId || null,
+      details: safeDetails,
       ipAddress: req.ip || req.socket.remoteAddress || null,
       userAgent: req.headers["user-agent"] || null,
       status,
@@ -326,6 +474,385 @@ async function auditLog(
     console.error("Audit log error:", error);
   }
 }
+
+function csvEscape(value: any): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  if (/[",\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function isPolicyDbEnabled(): boolean {
+  const dbEnabled = String(process.env.WHATSAPP_POLICY_DB || "").toLowerCase();
+  return dbEnabled === "1" || dbEnabled === "true" || dbEnabled === "yes";
+}
+
+// ============================================================================
+// Admin Visibility
+// ============================================================================
+
+/**
+ * GET /api/whatsapp-cloud/admin/audit
+ * Admin-only view into throttle hits & kill-switch blocks.
+ */
+router.get("/admin/audit", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    const { action, limit, sinceHours, userId, accountId } = req.query as any;
+
+    const actions = String(action || "whatsapp_throttle_hit,whatsapp_kill_switch_blocked")
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    const take = Math.min(200, Math.max(1, Number(limit || 100)));
+    const hours = Math.min(24 * 30, Math.max(1, Number(sinceHours || 24)));
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+    const predicates: any[] = [
+      gte(whatsappCloudAuditLog.createdAt, since),
+      inArray(whatsappCloudAuditLog.action, actions),
+    ];
+
+    if (userId) predicates.push(eq(whatsappCloudAuditLog.userId, String(userId)));
+    if (accountId) predicates.push(eq(whatsappCloudAuditLog.accountId, String(accountId)));
+
+    const rows = await db
+      .select({
+        id: whatsappCloudAuditLog.id,
+        createdAt: whatsappCloudAuditLog.createdAt,
+        action: whatsappCloudAuditLog.action,
+        accountId: whatsappCloudAuditLog.accountId,
+        userId: whatsappCloudAuditLog.userId,
+        status: whatsappCloudAuditLog.status,
+        details: whatsappCloudAuditLog.details,
+        errorMessage: whatsappCloudAuditLog.errorMessage,
+      })
+      .from(whatsappCloudAuditLog)
+      .where(and(...predicates))
+      .orderBy(desc(whatsappCloudAuditLog.createdAt))
+      .limit(take);
+
+    res.json({ success: true, count: rows.length, rows });
+  } catch (e: any) {
+    console.error("Admin audit fetch error:", e);
+    res.status(500).json({ error: "Failed to load audit logs" });
+  }
+});
+
+/**
+ * GET /api/whatsapp-cloud/admin/audit/export.json
+ * Admin-only export endpoint (JSON) with date-range + paging.
+ */
+router.get("/admin/audit/export.json", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    const { action, limit, offset, start, end, userId, accountId, order } = req.query as any;
+
+    const actions = String(action || "")
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    const take = Math.min(5000, Math.max(1, Number(limit || 500)));
+    const skip = Math.max(0, Number(offset || 0));
+
+    const endDate = parseDateParam(end) || new Date();
+    const startDate = parseDateParam(start) || new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+    const sort = String(order || "desc").toLowerCase() === "asc" ? "asc" : "desc";
+
+    const predicates: any[] = [
+      gte(whatsappCloudAuditLog.createdAt, startDate),
+      lte(whatsappCloudAuditLog.createdAt, endDate),
+    ];
+    if (actions.length > 0) predicates.push(inArray(whatsappCloudAuditLog.action, actions));
+    if (userId) predicates.push(eq(whatsappCloudAuditLog.userId, String(userId)));
+    if (accountId) predicates.push(eq(whatsappCloudAuditLog.accountId, String(accountId)));
+
+    const rows = await db
+      .select({
+        id: whatsappCloudAuditLog.id,
+        createdAt: whatsappCloudAuditLog.createdAt,
+        action: whatsappCloudAuditLog.action,
+        accountId: whatsappCloudAuditLog.accountId,
+        userId: whatsappCloudAuditLog.userId,
+        resourceType: whatsappCloudAuditLog.resourceType,
+        resourceId: whatsappCloudAuditLog.resourceId,
+        status: whatsappCloudAuditLog.status,
+        errorMessage: whatsappCloudAuditLog.errorMessage,
+        details: whatsappCloudAuditLog.details,
+      })
+      .from(whatsappCloudAuditLog)
+      .where(and(...predicates))
+      .orderBy(sort === "asc" ? whatsappCloudAuditLog.createdAt : desc(whatsappCloudAuditLog.createdAt))
+      .limit(take)
+      .offset(skip);
+
+    res.json({
+      success: true,
+      count: rows.length,
+      limit: take,
+      offset: skip,
+      nextOffset: rows.length < take ? null : skip + take,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+      rows,
+    });
+  } catch (e: any) {
+    console.error("Admin audit export.json error:", e);
+    res.status(500).json({ error: "Failed to export audit logs" });
+  }
+});
+
+/**
+ * GET /api/whatsapp-cloud/admin/audit/export.csv
+ * Admin-only export endpoint (CSV) with date-range + paging.
+ */
+router.get("/admin/audit/export.csv", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    const { action, limit, offset, start, end, userId, accountId, order, download } = req.query as any;
+
+    const actions = String(action || "")
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    const take = Math.min(5000, Math.max(1, Number(limit || 500)));
+    const skip = Math.max(0, Number(offset || 0));
+
+    const endDate = parseDateParam(end) || new Date();
+    const startDate = parseDateParam(start) || new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+    const sort = String(order || "desc").toLowerCase() === "asc" ? "asc" : "desc";
+
+    const predicates: any[] = [
+      gte(whatsappCloudAuditLog.createdAt, startDate),
+      lte(whatsappCloudAuditLog.createdAt, endDate),
+    ];
+    if (actions.length > 0) predicates.push(inArray(whatsappCloudAuditLog.action, actions));
+    if (userId) predicates.push(eq(whatsappCloudAuditLog.userId, String(userId)));
+    if (accountId) predicates.push(eq(whatsappCloudAuditLog.accountId, String(accountId)));
+
+    const rows = await db
+      .select({
+        id: whatsappCloudAuditLog.id,
+        createdAt: whatsappCloudAuditLog.createdAt,
+        action: whatsappCloudAuditLog.action,
+        accountId: whatsappCloudAuditLog.accountId,
+        userId: whatsappCloudAuditLog.userId,
+        resourceType: whatsappCloudAuditLog.resourceType,
+        resourceId: whatsappCloudAuditLog.resourceId,
+        status: whatsappCloudAuditLog.status,
+        errorMessage: whatsappCloudAuditLog.errorMessage,
+        details: whatsappCloudAuditLog.details,
+      })
+      .from(whatsappCloudAuditLog)
+      .where(and(...predicates))
+      .orderBy(sort === "asc" ? whatsappCloudAuditLog.createdAt : desc(whatsappCloudAuditLog.createdAt))
+      .limit(take)
+      .offset(skip);
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    if (String(download || "").toLowerCase() === "1" || String(download || "").toLowerCase() === "true") {
+      const name = `whatsapp_audit_${startDate.toISOString().slice(0, 10)}_${endDate.toISOString().slice(0, 10)}.csv`;
+      res.setHeader("Content-Disposition", `attachment; filename=\"${name}\"`);
+    }
+
+    res.write(
+      [
+        "id",
+        "createdAt",
+        "action",
+        "status",
+        "userId",
+        "accountId",
+        "resourceType",
+        "resourceId",
+        "errorMessage",
+        "details",
+      ].join(",") + "\n"
+    );
+
+    for (const row of rows) {
+      res.write(
+        [
+          csvEscape(row.id),
+          csvEscape(row.createdAt ? new Date(row.createdAt as any).toISOString() : ""),
+          csvEscape(row.action),
+          csvEscape(row.status),
+          csvEscape(row.userId),
+          csvEscape(row.accountId),
+          csvEscape(row.resourceType),
+          csvEscape(row.resourceId),
+          csvEscape(row.errorMessage),
+          csvEscape(JSON.stringify(row.details ?? {})),
+        ].join(",") + "\n"
+      );
+    }
+
+    res.end();
+  } catch (e: any) {
+    console.error("Admin audit export.csv error:", e);
+    res.status(500).json({ error: "Failed to export audit logs" });
+  }
+});
+
+/**
+ * GET /api/whatsapp-cloud/admin/users/:userId/risk
+ * Admin-only: inspect risk state + user kill switch.
+ */
+router.get("/admin/users/:userId/risk", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!isPolicyDbEnabled()) return res.status(400).json({ error: "Policy DB features disabled" });
+
+    const userId = String(req.params.userId);
+
+    const [risk] = await db
+      .select({
+        userId: whatsappCloudRiskStates.userId,
+        score: whatsappCloudRiskStates.score,
+        state: whatsappCloudRiskStates.state,
+        reasons: whatsappCloudRiskStates.reasons,
+        lastSignalAt: whatsappCloudRiskStates.lastSignalAt,
+        lastEvaluatedAt: whatsappCloudRiskStates.lastEvaluatedAt,
+        updatedAt: whatsappCloudRiskStates.updatedAt,
+      })
+      .from(whatsappCloudRiskStates)
+      .where(eq(whatsappCloudRiskStates.userId, userId))
+      .limit(1);
+
+    const [killSwitch] = await db
+      .select({
+        id: whatsappCloudKillSwitches.id,
+        scopeType: whatsappCloudKillSwitches.scopeType,
+        scopeId: whatsappCloudKillSwitches.scopeId,
+        enabled: whatsappCloudKillSwitches.enabled,
+        reason: whatsappCloudKillSwitches.reason,
+        updatedAt: whatsappCloudKillSwitches.updatedAt,
+        createdAt: whatsappCloudKillSwitches.createdAt,
+      })
+      .from(whatsappCloudKillSwitches)
+      .where(and(eq(whatsappCloudKillSwitches.scopeType, "user"), eq(whatsappCloudKillSwitches.scopeId, userId)))
+      .limit(1);
+
+    res.json({ success: true, userId, risk: risk || null, killSwitch: killSwitch || null });
+  } catch (e: any) {
+    if (e?.code === "ER_NO_SUCH_TABLE") return res.status(409).json({ error: "Policy tables missing" });
+    console.error("Admin risk inspect error:", e);
+    res.status(500).json({ error: "Failed to load risk state" });
+  }
+});
+
+/**
+ * POST /api/whatsapp-cloud/admin/users/:userId/kill-switch
+ * Admin-only: manually set user kill switch. This is the ONLY path to re-enable after auto-disable.
+ * Body: { enabled: boolean, reason?: string }
+ */
+router.post("/admin/users/:userId/kill-switch", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!isPolicyDbEnabled()) return res.status(400).json({ error: "Policy DB features disabled" });
+
+    const userId = String(req.params.userId);
+    const enabled = Boolean((req.body as any)?.enabled);
+    const reason = (req.body as any)?.reason ? String((req.body as any)?.reason) : null;
+    const now = new Date();
+
+    const [existing] = await db
+      .select({ id: whatsappCloudKillSwitches.id })
+      .from(whatsappCloudKillSwitches)
+      .where(and(eq(whatsappCloudKillSwitches.scopeType, "user"), eq(whatsappCloudKillSwitches.scopeId, userId)))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(whatsappCloudKillSwitches)
+        .set({ enabled, reason, updatedAt: now })
+        .where(eq(whatsappCloudKillSwitches.id, existing.id));
+    } else {
+      await db.insert(whatsappCloudKillSwitches).values({
+        scopeType: "user",
+        scopeId: userId,
+        enabled,
+        reason,
+      });
+    }
+
+    await auditLog(
+      "whatsapp_kill_switch_admin_set",
+      {
+        resourceType: "policy",
+        resourceId: userId,
+        scopeType: "user",
+        scopeId: userId,
+        enabled,
+        reason,
+      },
+      req,
+      undefined,
+      enabled ? "failure" : "success",
+      enabled ? "Kill switch enabled by admin" : undefined
+    );
+
+    res.json({ success: true, userId, enabled, reason });
+  } catch (e: any) {
+    if (e?.code === "ER_NO_SUCH_TABLE") return res.status(409).json({ error: "Policy tables missing" });
+    console.error("Admin kill switch set error:", e);
+    res.status(500).json({ error: "Failed to update kill switch" });
+  }
+});
+
+/**
+ * POST /api/whatsapp-cloud/admin/users/:userId/risk/reset
+ * Admin-only: reset risk score/state (optional score). Never automatic.
+ * Body: { score?: number, clearReasons?: boolean }
+ */
+router.post("/admin/users/:userId/risk/reset", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!isPolicyDbEnabled()) return res.status(400).json({ error: "Policy DB features disabled" });
+
+    const userId = String(req.params.userId);
+    const score = (req.body as any)?.score;
+    const clearReasons = Boolean((req.body as any)?.clearReasons);
+
+    const result = await adminResetRisk({ userId, score, clearReasons });
+    if (!result) return res.status(409).json({ error: "Policy tables missing" });
+
+    res.json({ success: true, ...result });
+  } catch (e: any) {
+    if (e?.code === "ER_NO_SUCH_TABLE") return res.status(409).json({ error: "Policy tables missing" });
+    console.error("Admin risk reset error:", e);
+    res.status(500).json({ error: "Failed to reset risk" });
+  }
+});
+
+/**
+ * POST /api/whatsapp-cloud/admin/risk/decay
+ * Admin-only: run risk decay. Constraint: skips disabled users.
+ * Body: { maxRows?: number, decayPerDay?: number, dryRun?: boolean }
+ */
+router.post("/admin/risk/decay", requireAuth, requireWhatsAppAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!isPolicyDbEnabled()) return res.status(400).json({ error: "Policy DB features disabled" });
+
+    const maxRows = (req.body as any)?.maxRows;
+    const decayPerDay = (req.body as any)?.decayPerDay;
+    const dryRun = Boolean((req.body as any)?.dryRun);
+
+    const result = await applyRiskDecay({ maxRows, decayPerDay, dryRun });
+    if (!result) return res.status(409).json({ error: "Policy tables missing" });
+
+    await auditLog(
+      "whatsapp_risk_decay_admin_run",
+      { resourceType: "risk", maxRows, decayPerDay, dryRun, scanned: result.scanned, updated: result.updated },
+      req
+    );
+
+    res.json({ success: true, ...result });
+  } catch (e: any) {
+    if (e?.code === "ER_NO_SUCH_TABLE") return res.status(409).json({ error: "Policy tables missing" });
+    console.error("Admin risk decay error:", e);
+    res.status(500).json({ error: "Failed to run decay" });
+  }
+});
 
 // ============================================================================
 // OAuth / Embedded Signup Routes
@@ -411,6 +938,10 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     let accountId: string;
     
     if (existing.length > 0) {
+      const ensuredWebhookVerifyToken =
+        (existing[0] as any).webhookVerifyToken && String((existing[0] as any).webhookVerifyToken).trim().length > 0
+          ? String((existing[0] as any).webhookVerifyToken).trim()
+          : webhookVerifyToken;
       // Update existing account
       await db.update(whatsappCloudAccounts)
         .set({
@@ -418,6 +949,7 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
           businessName: businessName || null,
           metaBusinessId: metaBusinessId || null,
           businessManagerId: businessManagerId || null,
+          webhookVerifyToken: ensuredWebhookVerifyToken,
           status: "active",
           updatedAt: new Date(),
         })
@@ -1368,20 +1900,40 @@ router.get("/webhook", async (req: Request, res: Response) => {
   if (mode !== "subscribe") {
     return res.status(400).send("Invalid mode");
   }
+
+  const providedToken = String(token || "").trim();
+  const providedChallenge = String(challenge || "");
+
+  if (!providedToken) {
+    console.error("[Webhook] Missing verify token in challenge");
+    return res.status(403).send("Invalid verify token");
+  }
+
+  if (!providedChallenge) {
+    console.error("[Webhook] Missing challenge in verification request");
+    return res.status(400).send("Missing challenge");
+  }
+
+  // Allow a global fallback token (useful for initial verification / ops)
+  const fallbackVerifyToken = String(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN || "").trim();
+  if (fallbackVerifyToken && providedToken === fallbackVerifyToken) {
+    console.log("[Webhook] Verified via env verify token");
+    return res.status(200).send(providedChallenge);
+  }
   
   // Find account by verify token
   const [account] = await db.select()
     .from(whatsappCloudAccounts)
-    .where(eq(whatsappCloudAccounts.webhookVerifyToken, String(token)))
+    .where(eq(whatsappCloudAccounts.webhookVerifyToken, providedToken))
     .limit(1);
   
   if (!account) {
-    console.error("Invalid webhook verify token");
+    console.error("[Webhook] Invalid webhook verify token");
     return res.status(403).send("Invalid verify token");
   }
   
   console.log("Webhook verified for account:", account.id);
-  res.status(200).send(challenge);
+  res.status(200).send(providedChallenge);
 });
 
 /**
@@ -1389,25 +1941,41 @@ router.get("/webhook", async (req: Request, res: Response) => {
  * Meta webhook for incoming messages and status updates
  */
 router.post("/webhook", async (req: Request, res: Response) => {
-  // Get raw body for signature verification
-  const signature = req.headers["x-hub-signature-256"] as string;
-  const appSecret = process.env.META_APP_SECRET || "";
-
-  // Use raw bytes captured by express.json verify hook.
+  const enforceSignature = String(process.env.WHATSAPP_WEBHOOK_ENFORCE_SIGNATURE || "")
+    .toLowerCase()
+    .trim() === "true";
+  // Prefer dedicated webhook secret; fall back to app secret for convenience.
+  const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET || process.env.META_APP_SECRET;
+  const signature = req.headers["x-hub-signature-256"] as string | undefined;
   const rawBody = (req as any).rawBody as Buffer | undefined;
-  
-  // Verify Meta signature
-  if (!rawBody) {
-    console.error("Raw body not available for signature verification");
+
+  if (enforceSignature && !webhookSecret) {
+    console.error("[Webhook] Signature enforcement enabled but secret is missing");
     return res.status(500).send("Webhook signature verification misconfigured");
   }
 
-  if (!verifyMetaSignature(rawBody, signature, appSecret)) {
-    console.error("Invalid webhook signature");
-    await auditLog("webhook_invalid_signature", {
-      resourceType: "webhook",
-    }, req, undefined, "failure", "Invalid signature");
-    return res.status(401).send("Invalid signature");
+  // If a secret is configured, verify signature. In non-enforced mode, acknowledge but do not process unverified payloads.
+  if (webhookSecret) {
+    if (!rawBody) {
+      console.error("[Webhook] Raw body not available for signature verification");
+      if (enforceSignature) return res.status(500).send("Webhook signature verification misconfigured");
+      return res.status(200).send("OK");
+    }
+
+    const ok = verifyMetaSignature(rawBody, signature, webhookSecret);
+    if (!ok) {
+      console.error("Invalid webhook signature");
+      await auditLog(
+        "webhook_invalid_signature",
+        { resourceType: "webhook" },
+        req,
+        undefined,
+        "failure",
+        "Invalid signature"
+      );
+      if (enforceSignature) return res.status(401).send("Invalid signature");
+      return res.status(200).send("OK");
+    }
   }
 
   // Log a safe summary so we can confirm what Meta is sending for *real* messages
@@ -1453,40 +2021,209 @@ router.post("/send-message", requireAuth, async (req: Request, res: Response) =>
       return res.status(404).json({ error: "Phone number not found" });
     }
     
-    // Get decrypted access token
-    const accessToken = decrypt(phoneNumber.whatsapp_cloud_accounts.encryptedAccessToken);
+    // IMPORTANT: messageService expects ENCRYPTED token and decrypts internally.
+    const encryptedAccessToken = phoneNumber.whatsapp_cloud_accounts.encryptedAccessToken;
     const metaPhoneNumberId = phoneNumber.whatsapp_cloud_phone_numbers.phoneNumberId;
     const accountId = phoneNumber.whatsapp_cloud_accounts.id;
+    const wabaId = phoneNumber.whatsapp_cloud_accounts.wabaId;
     const messagingTier = phoneNumber.whatsapp_cloud_accounts.messagingTier || 'TIER_1K';
+
+    const plan = await getUserPlanCached(userId);
+    const effectiveTier = clampMessagingTierByPlan({ plan, messagingTier });
+
+    await enforceKillSwitch({
+      userId,
+      accountId,
+      phoneRecordId: phoneNumber.whatsapp_cloud_phone_numbers.id,
+    });
+
+    const normalizedTo = String(to || "").replace(/\D/g, "");
+    if (!normalizedTo) {
+      return res.status(400).json({ error: "Invalid recipient" });
+    }
+
+    // Enforce 24h customer-initiated window for free-text
+    // If outside window, require approved template.
+    if (type !== "template") {
+      const [conv] = await db.select({
+        windowExpiresAt: whatsappCloudConversations.windowExpiresAt,
+        status: whatsappCloudConversations.status,
+      })
+      .from(whatsappCloudConversations)
+      .where(and(
+        eq(whatsappCloudConversations.phoneNumberId, phoneNumber.whatsapp_cloud_phone_numbers.id),
+        eq(whatsappCloudConversations.customerWaId, normalizedTo),
+        eq(whatsappCloudConversations.status, "active")
+      ))
+      .orderBy(desc(whatsappCloudConversations.updatedAt))
+      .limit(1);
+
+      const now = new Date();
+      const withinWindow = Boolean(conv?.windowExpiresAt && new Date(conv.windowExpiresAt) > now);
+      if (!withinWindow) {
+        return res.status(400).json({
+          error: "outside_24h_window",
+          message: "Free-text messages are only allowed inside the 24-hour customer-initiated window. Use an approved template message instead.",
+        });
+      }
+    }
     
     // Common options for message sending
     const messageOptions = {
       tenantId: userId,
+      wabaId,
       phoneNumberId: metaPhoneNumberId,
-      accessToken,
-      messagingTier: messagingTier as any,
+      accessToken: encryptedAccessToken,
+      messagingTier: effectiveTier as any,
+      category: (type === "template" ? "template" : "free_text_reply") as "template" | "free_text_reply",
     };
     
     let result;
     
     if (type === "template") {
+      // Enforce approved templates only
+      const language = templateLanguage || "en";
+      const [tpl] = await db.select({ id: whatsappCloudTemplates.id })
+        .from(whatsappCloudTemplates)
+        .where(and(
+          eq(whatsappCloudTemplates.accountId, accountId),
+          eq(whatsappCloudTemplates.name, String(templateName || "")),
+          eq(whatsappCloudTemplates.language, language),
+          eq(whatsappCloudTemplates.status, "APPROVED")
+        ))
+        .limit(1);
+
+      if (!tpl) {
+        return res.status(400).json({
+          error: "template_not_approved",
+          message: "Template is not approved (or not found). Only approved templates can be used for template messages.",
+        });
+      }
+
       result = await sendTemplateMessage(
-        to,
+        normalizedTo,
         templateName,
-        templateLanguage || "en",
+        language,
         templateComponents || [],
         messageOptions
       );
     } else {
       result = await sendTextMessage(
-        to,
+        normalizedTo,
         content,
         messageOptions
       );
     }
     
     if (!result.success) {
+      if (result.rateLimited) {
+        await recordRiskSignal({
+          userId,
+          type: "rate_limited",
+          details: { source: "send_message", category: messageOptions.category, retryAfter: result.retryAfter },
+        });
+        await auditLog(
+          "whatsapp_throttle_hit",
+          {
+            resourceType: "message",
+            resourceId: metaPhoneNumberId,
+            category: messageOptions.category,
+            to: normalizedTo,
+            rateLimit: result.rateLimit || null,
+            retryAfter: result.retryAfter || null,
+          },
+          req,
+          accountId,
+          "failure",
+          "Rate limit exceeded"
+        );
+        return res.status(429).json({
+          error: "rate_limited",
+          message: "Rate limit exceeded",
+          retryAfter: result.retryAfter || 1,
+        });
+      }
+
+      await recordRiskSignal({
+        userId,
+        type: "message_send_failed",
+        details: { source: "send_message", category: messageOptions.category, error: result.error, errorCode: result.errorCode },
+      });
       return res.status(400).json({ error: result.error });
+    }
+
+    // Best-effort persistence for status tracking: ensure we have a conversation row,
+    // and store the outbound message with Meta's wa_message_id.
+    try {
+      const now = new Date();
+
+      const [existingConversation] = await db
+        .select({ id: whatsappCloudConversations.id })
+        .from(whatsappCloudConversations)
+        .where(
+          and(
+            eq(whatsappCloudConversations.phoneNumberId, phoneNumber.whatsapp_cloud_phone_numbers.id),
+            eq(whatsappCloudConversations.customerWaId, normalizedTo),
+            eq(whatsappCloudConversations.status, "active")
+          )
+        )
+        .orderBy(desc(whatsappCloudConversations.updatedAt))
+        .limit(1);
+
+      let conversationId = existingConversation?.id as string | undefined;
+      if (!conversationId) {
+        await db.insert(whatsappCloudConversations).values({
+          phoneNumberId: phoneNumber.whatsapp_cloud_phone_numbers.id,
+          agentId: null,
+          customerWaId: normalizedTo,
+          customerName: null,
+          status: "active",
+          lastCustomerMessageAt: null,
+          windowExpiresAt: null,
+          messageCount: 0,
+        });
+
+        const [created] = await db
+          .select({ id: whatsappCloudConversations.id })
+          .from(whatsappCloudConversations)
+          .where(
+            and(
+              eq(whatsappCloudConversations.phoneNumberId, phoneNumber.whatsapp_cloud_phone_numbers.id),
+              eq(whatsappCloudConversations.customerWaId, normalizedTo),
+              eq(whatsappCloudConversations.status, "active")
+            )
+          )
+          .orderBy(desc(whatsappCloudConversations.updatedAt))
+          .limit(1);
+        conversationId = created?.id as string | undefined;
+      }
+
+      if (conversationId) {
+        await db.insert(whatsappCloudMessages).values({
+          conversationId,
+          waMessageId: result.messageId || null,
+          direction: "outbound",
+          messageType: type === "template" ? "template" : "text",
+          content:
+            type === "template"
+              ? JSON.stringify({ templateName, templateLanguage: templateLanguage || "en", components: templateComponents || [] })
+              : String(content || ""),
+          templateName: type === "template" ? String(templateName || "") : null,
+          templateLanguage: type === "template" ? String(templateLanguage || "en") : null,
+          status: "sent",
+          sentAt: now,
+        });
+
+        await db
+          .update(whatsappCloudConversations)
+          .set({
+            messageCount: sql`${whatsappCloudConversations.messageCount} + 1`,
+            updatedAt: now,
+          })
+          .where(eq(whatsappCloudConversations.id, conversationId));
+      }
+    } catch (e: any) {
+      console.warn("[WhatsApp Cloud] Failed to persist outbound message", { err: e?.message });
     }
     
     await auditLog("message_sent", {
@@ -1502,8 +2239,279 @@ router.post("/send-message", requireAuth, async (req: Request, res: Response) =>
       messageId: result.messageId,
     });
   } catch (error: any) {
+    if (error instanceof WhatsAppPolicyError) {
+      return res.status(error.httpStatus).json({ error: error.code, message: error.message });
+    }
     console.error("Send message error:", error);
     res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+/**
+ * POST /api/whatsapp-cloud/broadcast
+ * Template-only broadcast endpoint using the 'broadcast' budget.
+ */
+router.post("/broadcast", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const {
+      phoneNumberId,
+      recipients,
+      templateName,
+      templateLanguage,
+      templateComponents,
+      dryRun,
+      concurrency,
+    } = req.body || {};
+
+    const list = Array.isArray(recipients) ? recipients : [];
+    const maxRecipients = Math.min(500, Math.max(1, Number(process.env.WHATSAPP_BROADCAST_MAX_RECIPIENTS || 100)));
+    const uniqueRecipients = Array.from(
+      new Set(list.map((x: any) => String(x || "").replace(/\D/g, "")).filter(Boolean))
+    );
+
+    if (!phoneNumberId) return res.status(400).json({ error: "phoneNumberId_required" });
+    if (!templateName) return res.status(400).json({ error: "template_required", message: "Broadcast is template-only." });
+    if (uniqueRecipients.length === 0) return res.status(400).json({ error: "recipients_required" });
+    if (uniqueRecipients.length > maxRecipients) {
+      return res.status(400).json({ error: "too_many_recipients", maxRecipients });
+    }
+
+    const [phoneNumber] = await db
+      .select()
+      .from(whatsappCloudPhoneNumbers)
+      .innerJoin(whatsappCloudAccounts, eq(whatsappCloudPhoneNumbers.accountId, whatsappCloudAccounts.id))
+      .where(and(eq(whatsappCloudPhoneNumbers.id, phoneNumberId), eq(whatsappCloudAccounts.userId, userId)))
+      .limit(1);
+
+    if (!phoneNumber) return res.status(404).json({ error: "Phone number not found" });
+
+    const encryptedAccessToken = phoneNumber.whatsapp_cloud_accounts.encryptedAccessToken;
+    const metaPhoneNumberId = phoneNumber.whatsapp_cloud_phone_numbers.phoneNumberId;
+    const accountId = phoneNumber.whatsapp_cloud_accounts.id;
+    const wabaId = phoneNumber.whatsapp_cloud_accounts.wabaId;
+    const messagingTier = phoneNumber.whatsapp_cloud_accounts.messagingTier || "TIER_1K";
+
+    const plan = await getUserPlanCached(userId);
+    const effectiveTier = clampMessagingTierByPlan({ plan, messagingTier });
+
+    await enforceKillSwitch({
+      userId,
+      accountId,
+      phoneRecordId: phoneNumber.whatsapp_cloud_phone_numbers.id,
+    });
+
+    const language = templateLanguage || "en";
+    const [tpl] = await db
+      .select({ id: whatsappCloudTemplates.id })
+      .from(whatsappCloudTemplates)
+      .where(
+        and(
+          eq(whatsappCloudTemplates.accountId, accountId),
+          eq(whatsappCloudTemplates.name, String(templateName || "")),
+          eq(whatsappCloudTemplates.language, language),
+          eq(whatsappCloudTemplates.status, "APPROVED")
+        )
+      )
+      .limit(1);
+
+    if (!tpl) {
+      return res.status(400).json({
+        error: "template_not_approved",
+        message: "Broadcast requires an approved template (or template not found).",
+      });
+    }
+
+    await auditLog(
+      "broadcast_start",
+      {
+        resourceType: "broadcast",
+        resourceId: metaPhoneNumberId,
+        templateName,
+        templateLanguage: language,
+        recipientsCount: uniqueRecipients.length,
+        dryRun: Boolean(dryRun),
+      },
+      req,
+      accountId
+    );
+
+    if (dryRun) {
+      return res.json({ success: true, dryRun: true, recipientsCount: uniqueRecipients.length });
+    }
+
+    const maxConcurrency = Math.min(10, Math.max(1, Number(concurrency || 3)));
+    let stoppedForRateLimit: { retryAfter?: number; processed: number } | null = null;
+    const failures: Array<{ to: string; error: string }> = [];
+    let sent = 0;
+
+    let idx = 0;
+    const workers = Array.from({ length: maxConcurrency }, async () => {
+      while (true) {
+        const current = idx++;
+        if (current >= uniqueRecipients.length) return;
+        if (stoppedForRateLimit) return;
+
+        const to = uniqueRecipients[current];
+        const result = await sendTemplateMessage(to, templateName, language, templateComponents || [], {
+          tenantId: userId,
+          wabaId,
+          phoneNumberId: metaPhoneNumberId,
+          accessToken: encryptedAccessToken,
+          messagingTier: effectiveTier as any,
+          category: "broadcast",
+        });
+
+        if (!result.success) {
+          if (result.rateLimited) {
+            stoppedForRateLimit = { retryAfter: result.retryAfter, processed: current };
+            return;
+          }
+          failures.push({ to, error: String(result.error || "send_failed") });
+          continue;
+        }
+
+        // Best-effort persistence so webhook status updates can attach to stored messages.
+        try {
+          const now = new Date();
+          const [existingConversation] = await db
+            .select({ id: whatsappCloudConversations.id })
+            .from(whatsappCloudConversations)
+            .where(
+              and(
+                eq(whatsappCloudConversations.phoneNumberId, phoneNumber.whatsapp_cloud_phone_numbers.id),
+                eq(whatsappCloudConversations.customerWaId, to),
+                eq(whatsappCloudConversations.status, "active")
+              )
+            )
+            .orderBy(desc(whatsappCloudConversations.updatedAt))
+            .limit(1);
+
+          let conversationId = existingConversation?.id as string | undefined;
+          if (!conversationId) {
+            await db.insert(whatsappCloudConversations).values({
+              phoneNumberId: phoneNumber.whatsapp_cloud_phone_numbers.id,
+              agentId: null,
+              customerWaId: to,
+              customerName: null,
+              status: "active",
+              lastCustomerMessageAt: null,
+              windowExpiresAt: null,
+              messageCount: 0,
+            });
+
+            const [created] = await db
+              .select({ id: whatsappCloudConversations.id })
+              .from(whatsappCloudConversations)
+              .where(
+                and(
+                  eq(whatsappCloudConversations.phoneNumberId, phoneNumber.whatsapp_cloud_phone_numbers.id),
+                  eq(whatsappCloudConversations.customerWaId, to),
+                  eq(whatsappCloudConversations.status, "active")
+                )
+              )
+              .orderBy(desc(whatsappCloudConversations.updatedAt))
+              .limit(1);
+            conversationId = created?.id as string | undefined;
+          }
+
+          if (conversationId) {
+            await db.insert(whatsappCloudMessages).values({
+              conversationId,
+              waMessageId: result.messageId || null,
+              direction: "outbound",
+              messageType: "template",
+              content: JSON.stringify({ templateName, templateLanguage: language, components: templateComponents || [] }),
+              templateName: String(templateName || ""),
+              templateLanguage: String(language || "en"),
+              status: "sent",
+              sentAt: now,
+            });
+
+            await db
+              .update(whatsappCloudConversations)
+              .set({
+                messageCount: sql`${whatsappCloudConversations.messageCount} + 1`,
+                updatedAt: now,
+              })
+              .where(eq(whatsappCloudConversations.id, conversationId));
+          }
+        } catch (e: any) {
+          console.warn("[WhatsApp Cloud] Failed to persist broadcast message", { err: e?.message });
+        }
+
+        sent += 1;
+      }
+    });
+
+    await Promise.all(workers);
+
+    if (stoppedForRateLimit) {
+      const rl = stoppedForRateLimit as { retryAfter?: number; processed: number };
+      await recordRiskSignal({
+        userId,
+        type: "rate_limited",
+        details: {
+          source: "broadcast",
+          category: "broadcast",
+          retryAfter: rl.retryAfter,
+          recipientsCount: uniqueRecipients.length,
+          sent,
+          failed: failures.length,
+        },
+      });
+      await auditLog(
+        "whatsapp_throttle_hit",
+        {
+          resourceType: "broadcast",
+          resourceId: metaPhoneNumberId,
+          category: "broadcast",
+          recipientsCount: uniqueRecipients.length,
+          sent,
+          failed: failures.length,
+          retryAfter: rl.retryAfter || null,
+        },
+        req,
+        accountId,
+        "failure",
+        "Rate limit exceeded during broadcast"
+      );
+      return res.status(429).json({
+        error: "rate_limited",
+        message: "Rate limit exceeded during broadcast",
+        retryAfter: rl.retryAfter || 1,
+        sent,
+        failed: failures.length,
+      });
+    }
+
+    await auditLog(
+      "broadcast_complete",
+      {
+        resourceType: "broadcast",
+        resourceId: metaPhoneNumberId,
+        category: "broadcast",
+        recipientsCount: uniqueRecipients.length,
+        sent,
+        failed: failures.length,
+      },
+      req,
+      accountId
+    );
+
+    res.json({
+      success: true,
+      recipientsCount: uniqueRecipients.length,
+      sent,
+      failed: failures.length,
+      failures: failures.slice(0, 50),
+    });
+  } catch (error: any) {
+    if (error instanceof WhatsAppPolicyError) {
+      return res.status(error.httpStatus).json({ error: error.code, message: error.message });
+    }
+    console.error("Broadcast error:", error);
+    res.status(500).json({ error: "Failed to broadcast" });
   }
 });
 

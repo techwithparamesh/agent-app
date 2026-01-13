@@ -1730,6 +1730,39 @@ export const whatsappCloudAuditLog = mysqlTable("whatsapp_cloud_audit_log", {
   createdAtIdx: index("idx_wcal_created_at").on(table.createdAt),
 }));
 
+// WhatsApp Cloud Kill Switches - immediate stop controls
+export const whatsappCloudKillSwitches = mysqlTable("whatsapp_cloud_kill_switches", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  // global | user | account | phone
+  scopeType: varchar("scope_type", { length: 20 }).notNull(),
+  // for global, scopeId can be null
+  scopeId: varchar("scope_id", { length: 36 }),
+  enabled: boolean("enabled").notNull().default(false),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  scopeIdx: index("idx_wcks_scope").on(table.scopeType, table.scopeId),
+  enabledIdx: index("idx_wcks_enabled").on(table.enabled),
+}));
+
+// WhatsApp Cloud Risk State - anti-fraud scoring per user
+export const whatsappCloudRiskStates = mysqlTable("whatsapp_cloud_risk_states", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  score: int("score").notNull().default(0),
+  state: varchar("state", { length: 20 }).notNull().default("normal"), // normal | warned | paused | disabled
+  lastSignalAt: timestamp("last_signal_at"),
+  lastEvaluatedAt: timestamp("last_evaluated_at"),
+  reasons: json("reasons").$type<Array<{ type: string; at: string; details?: any }>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  userIdx: uniqueIndex("idx_wcrs_user").on(table.userId),
+  stateIdx: index("idx_wcrs_state").on(table.state),
+  scoreIdx: index("idx_wcrs_score").on(table.score),
+}));
+
 // WhatsApp Cloud Relations
 export const whatsappCloudAccountsRelations = relations(whatsappCloudAccounts, ({ one, many }) => ({
   user: one(users, {
@@ -1859,4 +1892,22 @@ export type InsertWhatsappCloudTemplate = z.infer<typeof insertWhatsappCloudTemp
 export type WhatsappCloudTemplate = typeof whatsappCloudTemplates.$inferSelect;
 
 export type InsertWhatsappCloudAuditLog = z.infer<typeof insertWhatsappCloudAuditLogSchema>;
+
+export const insertWhatsappCloudKillSwitchSchema = createInsertSchema(whatsappCloudKillSwitches).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWhatsappCloudRiskStateSchema = createInsertSchema(whatsappCloudRiskStates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertWhatsappCloudKillSwitch = z.infer<typeof insertWhatsappCloudKillSwitchSchema>;
+export type WhatsappCloudKillSwitch = typeof whatsappCloudKillSwitches.$inferSelect;
+
+export type InsertWhatsappCloudRiskState = z.infer<typeof insertWhatsappCloudRiskStateSchema>;
+export type WhatsappCloudRiskState = typeof whatsappCloudRiskStates.$inferSelect;
 export type WhatsappCloudAuditLog = typeof whatsappCloudAuditLog.$inferSelect;
